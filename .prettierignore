@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+public/sw.js
+public/swe-worker-*.js
+pnpm-lock.yaml
+docs/design/*.html
+CLAUDE.md
+docs/**
