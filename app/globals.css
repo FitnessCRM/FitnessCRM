@@ -1,1 +1,115 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * Tema único (oscuro). Tokens extraídos de docs/design/demo-navegable.html y CLAUDE.md.
+ * Ningún color literal fuera de este archivo: la paleta por defecto de Tailwind se
+ * desactiva para que `bg-red-500` no compile ni por descuido.
+ */
+@theme {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Fondo y superficies */
+  --color-background: #121110;
+  --color-background-deep: #0c0b0a;
+  --color-surface: #1a1815;
+  --color-surface-raised: #211e1b;
+  --color-surface-overlay: #26221e;
+  --color-border: #2a2622;
+  --color-border-strong: #2e2a25;
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-emphasis: rgba(255, 255, 255, 0.12);
+  --color-overlay: rgba(0, 0, 0, 0.6);
+
+  /* Texto */
+  --color-text-primary: #f2efe9;
+  --color-text-muted: #98928a;
+  --color-text-subtle: #6e6862;
+  --color-text-disabled: #4a453f;
+
+  /* Acento */
+  --color-accent: oklch(0.68 0.21 30);
+  --color-accent-hover: oklch(0.72 0.21 30);
+  --color-accent-bright: oklch(0.74 0.2 30);
+  --color-accent-emphasis: oklch(0.78 0.18 30);
+  --color-accent-soft: oklch(0.68 0.21 30 / 0.14);
+  --color-accent-outline: oklch(0.68 0.21 30 / 0.35);
+  --color-accent-strong: oklch(0.68 0.21 30 / 0.5);
+  --color-on-accent: #16100d;
+
+  /* Estado */
+  --color-success: oklch(0.72 0.13 155);
+  --color-success-soft: oklch(0.72 0.13 155 / 0.14);
+  --color-danger: oklch(0.72 0.19 25);
+  --color-danger-soft: oklch(0.72 0.19 25 / 0.14);
+
+  /* Anillo de foco (shadcn) */
+  --color-ring: oklch(0.68 0.21 30 / 0.5);
+
+  /* Tipografía */
+  --font-display: var(--font-oswald), "Oswald", sans-serif;
+  --font-ui: var(--font-inter-tight), "Inter Tight", sans-serif;
+  --font-sans: var(--font-ui);
+
+  --text-xs: 11px;
+  --text-xs--line-height: 1.4;
+  --text-sm: 13px;
+  --text-sm--line-height: 1.45;
+  --text-base: 15px;
+  --text-base--line-height: 1.5;
+  --text-lg: 17px;
+  --text-lg--line-height: 1.5;
+  --text-display-sm: 20px;
+  --text-display-sm--line-height: 1.1;
+  --text-display-md: 26px;
+  --text-display-md--line-height: 1.1;
+  --text-display-lg: 40px;
+  --text-display-lg--line-height: 1.05;
+  --text-display-xl: 44px;
+  --text-display-xl--line-height: 1.05;
+  --text-hero: 76px;
+  --text-hero--line-height: 0.98;
+
+  --tracking-label: 1.5px;
+  --tracking-wide: 2px;
+  --tracking-wider: 3px;
+
+  /* Formas */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-full: 99px;
+}
+
+@layer base {
+  * {
+    @apply border-border-subtle;
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background font-ui text-text-primary text-base antialiased;
+  }
+  ::placeholder {
+    @apply text-text-subtle;
+  }
+  ::selection {
+    @apply bg-accent text-on-accent;
+  }
+}
+
+@utility eyebrow {
+  @apply text-text-muted text-xs tracking-wide uppercase;
+}
+
+@utility section-title {
+  @apply font-display tracking-label text-text-muted text-[15px] font-semibold uppercase;
+}
+
+@utility page-title {
+  @apply font-display text-display-lg font-bold uppercase;
+}

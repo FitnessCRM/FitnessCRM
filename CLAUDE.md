@@ -143,7 +143,27 @@ verdad. El formulario valida contra él y el futuro backend también.
 **Tests.** Vitest sobre el dominio. Antes de darse por terminadas, I5, I9, I12, I15, I17 y I22
 tienen test. Los componentes no se testean todavía.
 
-**Commits.** Conventional commits, en inglés, rama por módulo sobre `main`.
+**Commits y ramas.** Todo en inglés. Conventional Commits: `type(scope): subject`.
+
+- `type`: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `style`, `perf`, `build`, `ci`.
+- `scope` (opcional, uno de): `domain`, `data`, `ui`, `cliente`, `entrenador`, `i18n`, `design`,
+  `pwa`, `deps`, `docs`.
+- `subject`: imperativo, minúscula inicial, sin punto final, ≤ 72 caracteres
+  (`feat(domain): add review completeness check`).
+- Cuerpo opcional que explica el *porqué*, no el qué. Pie con `BREAKING CHANGE:` si rompe un
+  contrato (puerto, esquema zod) y `Refs:` si cierra un issue.
+- Un commit = un cambio coherente. No mezclar refactor con feature.
+- Si un commit cambia una regla de `docs/dominio.md`, lo dice en el cuerpo (`Domain: ...`) para
+  que se sincronice el original.
+
+Ramas: `main` siempre en verde (`build`, `lint`, `typecheck`, `test`). Rama por módulo o
+sección, desde `main`, kebab-case y en inglés: `feature/<module>-<what>`, `fix/<what>`,
+`refactor/<what>`, `chore/<what>`, `docs/<what>` (`feature/client-routine-screen`,
+`fix/week-number-timezone`). Se integran con squash y el mensaje del squash sigue el formato de
+arriba. No se hace push directo a `main`.
+
+Pre-commit (husky + lint-staged) pasa ESLint y Prettier sobre lo staged; lo que no pasa no
+entra. Nunca se commitea `node_modules`, `.next`, `public/sw.js` ni `.env*`.
 
 ---
 
