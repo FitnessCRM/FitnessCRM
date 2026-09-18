@@ -61,6 +61,47 @@ export const es = {
       verRevision: "Ver revisión",
     },
   },
+  screens: {
+    weight: {
+      eyebrow: "Cuando tú quieras",
+      intro:
+        "Entrada libre y opcional. No hace falta pesarse a diario: puedes apuntarlo cuando quieras o dejarlo para el día de la revisión.",
+      form: {
+        title: "Añadir pesaje",
+        weight: "Peso (kg)",
+        date: "Fecha",
+        note: "Nota (opcional)",
+        notePlaceholder: "p. ej. en ayunas, tras el viaje…",
+        submit: "Guardar pesaje",
+        saving: "Guardando…",
+        weightRequired: "Escribe tu peso",
+        weightInvalid: "El peso debe ser un número en kg, por ejemplo 63,4",
+        dateInvalid: "Elige una fecha",
+        saveError: "No se ha podido guardar el pesaje.",
+      },
+      summary: {
+        latest: "Último",
+        sevenDayAverage: "Media 7 días",
+        sinceStart: "Desde inicio",
+        none: "—",
+      },
+      chart: {
+        title: "Últimas 6 semanas",
+        unit: "kg",
+        series: "Peso",
+        weekPrefix: "S",
+        empty: "La gráfica aparecerá con tu primer pesaje.",
+      },
+      history: {
+        title: "Historial",
+        today: "Hoy",
+        reviewDay: "Día de revisión",
+        note: "nota",
+        emptyTitle: "Sin pesajes todavía",
+        emptyHint: "Añade el primero cuando quieras. No hace falta pesarse a diario.",
+      },
+    },
+  },
   status: {
     client: { invitado: "Invitado", activo: "Activo", dado_de_baja: "Baja" },
     review: { borrador: "En curso", enviada: "Nueva", vista: "Vista", revisada: "Revisada" },

@@ -165,6 +165,19 @@ Fase 5 (navegación):
   (§11.2) tienen ruta y puerto, pero no diseño.
 - `app/favicon.ico` sigue siendo el de create-next-app.
 
+### Pantallas del cliente
+
+- **Peso** (`components/cliente/weight/`, 18-09-2026): formulario (react-hook-form + zod, coma
+  decimal admitida), tres cifras, gráfica de las últimas 6 semanas con `TrendChart` e historial
+  descendente con «Día de revisión». Las definiciones viven en `lib/domain/weight.ts` y tienen
+  test: **media 7 días** = media de los pesajes de los 7 días civiles que terminan en el último
+  pesaje (inclusive), `null` con menos de 2 pesajes en la ventana; **desde inicio** = último
+  pesaje − primer pesaje registrado, `null` con menos de 2 pesajes; **día de revisión** = la
+  revisión referencia ese pesaje como su peso (I9), no "cae en la ventana" porque la ventana es
+  la semana entera y marcaría todos; **gráfica** = último pesaje de cada semana del cliente, hueco
+  si no hubo. Fechas en `DD-MM-YYYY` por convención (la demo enseña "29 ago"). El delta solo se
+  pinta en verde cuando baja, como en la demo; para un cliente de hipertrofia eso es discutible.
+
 ## Siguiente
 
 Pantallas del cliente (rutina, menú, peso, revisión, progreso, membresía, ver revisión) sobre
