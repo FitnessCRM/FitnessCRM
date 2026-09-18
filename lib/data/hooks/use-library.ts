@@ -43,13 +43,13 @@ export function useSaveExercise() {
   });
 }
 
-/** Borra el ejercicio y lo retira de las rutinas: invalida biblioteca y rutinas. */
-export function useDeleteExercise() {
+/** Archiva el ejercicio y lo retira de las rutinas: invalida biblioteca y rutinas. */
+export function useArchiveExercise() {
   const ports = usePorts();
   const queryClient = useQueryClient();
   const trainerId = useTrainerId();
   return useMutation({
-    mutationFn: (exerciseId: string) => ports.exercises.deleteExercise(trainerId!, exerciseId),
+    mutationFn: (exerciseId: string) => ports.exercises.archiveExercise(trainerId!, exerciseId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.exercises(trainerId!) });
       void queryClient.invalidateQueries({ queryKey: ["routines", trainerId!] });

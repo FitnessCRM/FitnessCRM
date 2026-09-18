@@ -29,6 +29,7 @@ function exercise(
     equipment,
     videoUrl: `https://video.example.com/${id.replace("ex-", "")}`,
     description,
+    status: "activo",
     createdAt: ts("2026-02-01"),
   };
 }

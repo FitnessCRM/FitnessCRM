@@ -11,7 +11,7 @@ export function routinesUsingExercise<T extends RoutineBody & { id: string }>(
 }
 
 /**
- * Al borrar un ejercicio de la biblioteca, desaparece de las rutinas que lo prescribían.
+ * Al archivar un ejercicio de la biblioteca, desaparece de las rutinas que lo prescribían.
  * El entrenador ha sido avisado antes de confirmar; los días se conservan aunque queden vacíos.
  */
 export function removeExerciseFromRoutine<T extends Routine | RoutineTemplate>(

@@ -29,7 +29,7 @@ function routine(id: string, exerciseIds: string[]): Routine {
   };
 }
 
-describe("deleting a library exercise", () => {
+describe("archiving a library exercise", () => {
   const routines = [routine("a", ["ex-squat", "ex-press"]), routine("b", ["ex-press"])];
 
   it("reports which routines prescribe it so the trainer can be warned", () => {

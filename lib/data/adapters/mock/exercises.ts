@@ -1,18 +1,27 @@
 import type { ExercisePort } from "@/lib/data/ports";
 import { exerciseSchema, removeExerciseFromRoutine, routinesUsingExercise } from "@/lib/domain";
-import { findOwn, own, removeById, replaceById } from "./helpers";
+import { findOwn, own, replaceById } from "./helpers";
 import type { MockContext } from "./store";
 
 export function createExercisePort(ctx: MockContext): ExercisePort {
   return {
     listExercises: async (trainerId) =>
-      ctx.reply(own(ctx.state.exercises, trainerId).sort((a, b) => a.name.localeCompare(b.name))),
+      ctx.reply(
+        own(ctx.state.exercises, trainerId)
+          .filter((e) => e.status === "activo")
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      ),
     getExercise: async (trainerId, exerciseId) =>
       ctx.reply(
         ctx.state.exercises.find((e) => e.id === exerciseId && e.trainerId === trainerId) ?? null,
       ),
     createExercise: async (input) => {
-      const exercise = exerciseSchema.parse({ ...input, id: ctx.newId(), createdAt: ctx.now() });
+      const exercise = exerciseSchema.parse({
+        ...input,
+        id: ctx.newId(),
+        status: "activo",
+        createdAt: ctx.now(),
+      });
       ctx.state.exercises.push(exercise);
       return ctx.reply(exercise);
     },
@@ -32,8 +41,8 @@ export function createExercisePort(ctx: MockContext): ExercisePort {
         routineTemplateIds: templates.map((t) => t.id),
       });
     },
-    deleteExercise: async (trainerId, exerciseId) => {
-      findOwn(ctx.state.exercises, trainerId, exerciseId, "Ejercicio");
+    archiveExercise: async (trainerId, exerciseId) => {
+      const exercise = findOwn(ctx.state.exercises, trainerId, exerciseId, "Ejercicio");
       const now = ctx.now();
       ctx.state.routines = ctx.state.routines.map((r) =>
         r.trainerId === trainerId
@@ -45,8 +54,8 @@ export function createExercisePort(ctx: MockContext): ExercisePort {
           ? { ...removeExerciseFromRoutine(t, exerciseId), updatedAt: now }
           : t,
       );
-      removeById(ctx.state.exercises, exerciseId);
-      return ctx.reply(undefined);
+      exercise.status = "archivado";
+      return ctx.reply(exercise);
     },
   };
 }

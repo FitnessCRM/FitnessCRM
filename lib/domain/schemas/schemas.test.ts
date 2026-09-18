@@ -136,7 +136,14 @@ describe("misc invariants", () => {
   });
 
   it("exercise video is an external link or null (I20)", () => {
-    const e = { id: "e", trainerId: "t", name: "Sentadilla", createdAt: NOW, videoUrl: null };
+    const e = {
+      id: "e",
+      trainerId: "t",
+      name: "Sentadilla",
+      status: "activo",
+      createdAt: NOW,
+      videoUrl: null,
+    };
     expect(exerciseSchema.safeParse(e).success).toBe(true);
     expect(exerciseSchema.safeParse({ ...e, videoUrl: "https://video.example/x" }).success).toBe(
       true,

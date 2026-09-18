@@ -77,7 +77,7 @@ describe("tenancy (I1)", () => {
     expect(await p.clients.listClients("t-otro")).toEqual([]);
     expect(await p.clients.getClient("t-otro", MARTA)).toBeNull();
     expect(await p.reviews.listSubmittedReviews("t-otro")).toEqual([]);
-    await expect(p.exercises.deleteExercise("t-otro", "ex-press-banca")).rejects.toThrow(
+    await expect(p.exercises.archiveExercise("t-otro", "ex-press-banca")).rejects.toThrow(
       DomainError,
     );
   });
@@ -91,17 +91,21 @@ describe("tenancy (I1)", () => {
 });
 
 describe("flows", () => {
-  it("deleting an exercise warns about usage and removes it from routines and templates", async () => {
+  it("archiving an exercise warns about usage, removes it from routines and keeps the row (I13)", async () => {
     const p = ports();
     const usage = await p.exercises.getExerciseUsage(TRAINER, "ex-press-banca");
     expect(usage.clientIds).toEqual([MARTA]);
     expect(usage.routineTemplateIds.length).toBeGreaterThan(0);
-    await p.exercises.deleteExercise(TRAINER, "ex-press-banca");
+    await p.exercises.archiveExercise(TRAINER, "ex-press-banca");
     const routine = await p.routines.getActiveRoutine(TRAINER, MARTA);
     const ids = routine!.days.flatMap((d) => d.exercises.map((e) => e.exerciseId));
     expect(ids).not.toContain("ex-press-banca");
     expect(routine!.days).toHaveLength(5);
-    expect(await p.exercises.getExercise(TRAINER, "ex-press-banca")).toBeNull();
+    // Fuera de la biblioteca, pero la fila sigue ahí para leer WorkoutLogs antiguos.
+    expect((await p.exercises.listExercises(TRAINER)).map((e) => e.id)).not.toContain(
+      "ex-press-banca",
+    );
+    expect((await p.exercises.getExercise(TRAINER, "ex-press-banca"))?.status).toBe("archivado");
   });
 
   it("assigning a template clones it and activating archives the previous routine (I4)", async () => {

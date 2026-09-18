@@ -64,8 +64,8 @@ UI en español, identificadores de código en inglés.
 | Día de rutina | `RoutineDay` | Día 1, 2, 3… con etiqueta opcional ("Torso") |
 | Ejercicio prescrito | `RoutineDayExercise` | Un ejercicio dentro de un día, con su prescripción |
 | Registro de entreno | `WorkoutLog` | Serie realmente ejecutada. Opcional |
-| Macros | `MacroTargets` | Objetivo diario por tipo de día. Se edita aparte del menú |
-| Menú | `Menu` | Conjunto de comidas para un tipo de día. Puede haber varios; uno marcado como sugerido |
+| Macros objetivo | `MacroTargets` | Objetivo diario del cliente por tipo de día. Se edita aparte del menú |
+| Menú | `Menu` | Conjunto de comidas para un tipo de día, con macros propias declaradas por el entrenador. Puede haber varios; uno marcado como sugerido |
 | Tipo de día | `DayType` | `entrenamiento` \| `descanso` |
 | Comida | `Meal` | Bloque del menú: desayuno, comida, merienda, cena |
 | Alimento | `FoodItem` | Alimento con su peso en gramos |
@@ -79,6 +79,11 @@ UI en español, identificadores de código en inglés.
 | Respuesta | `QuestionnaireResponse` | Respuesta en una revisión, con enunciado y formato congelados |
 | Feedback | `feedbackVideoUrl`, `feedbackNote` | Respuesta del entrenador a una revisión. El vídeo es enlace externo |
 | Plantilla | `RoutineTemplate`, `MenuTemplate` | Rutina o menú sin cliente, base para clonar |
+
+**Los valores de enumeración se escriben en español** (`borrador`, `frente`, `pagada`,
+`entrenamiento`), porque son vocabulario del dominio; los identificadores siguen en inglés. Eso
+no los convierte en texto de interfaz: un valor de enumeración no se pinta nunca directamente en
+pantalla, se traduce desde `lib/i18n/es.ts` como cualquier otro literal.
 
 **Términos prohibidos**, por ambiguos: *dieta* (se dividió en macros y menú), *sesión* (día de
 rutina vs. entreno registrado), *periodo* (ya no existe como entidad), *bloque* (fuera del MVP),
@@ -120,6 +125,10 @@ comparación entre revisiones, el texto congelado sostiene la lectura fiel del h
 
 - **`Macros`** — proteína / carbohidratos / grasa en gramos. **Las kcal se derivan** (4/4/9) y no
   se almacenan. En la UI de asignación el campo kcal es de solo lectura y se recalcula solo.
+  El mismo objeto de valor se usa en dos sitios que no hay que confundir: `MacroTargets` es el
+  **objetivo diario del cliente**, y las macros que lleva cada `Menu` son **lo que el entrenador
+  declara que aporta ese menú**, informativas para el cliente. Ni son el objetivo ni se calculan
+  sumando los alimentos: las escribe el entrenador y pueden no cuadrar con los gramos del menú.
 - **`Prescripcion`** — series (entero), `repsMin` (entero), `repsMax` (entero o nulo: nulo = reps
   fijas), `rir` (texto libre, admite "2" y "1-2"), `rest` (texto libre, admite "3 min" y "el que
   necesites"), `note` (texto libre opcional).
@@ -154,7 +163,7 @@ marcan y no se reutiliza su número.
 | I10 | La comparación de fotos es una acción explícita del entrenador, nunca un estado derivado | Ausencia de automatismo |
 | I11 | El cliente lee su rutina, macros y menú; nunca los escribe | Backend |
 | I12 | Toda respuesta y toda medida conservan enunciado/etiqueta, formato y unidad vigentes en su creación. Editar el catálogo no altera el histórico | Columnas congeladas + escritura única |
-| I13 | Las entradas de catálogo no se borran: se archivan | Soft delete |
+| I13 | Nada de lo que cuelgue histórico se borra: preguntas, tipos de medida y ejercicios se archivan | Soft delete |
 | I14 | Las fotos de un cliente dado de baja se conservan, pero existe una operación explícita de borrado por cliente | Lógica de dominio + Storage |
 | I15 | El formato de una pregunta —tipo y límites de la escala— es inmutable desde que existe la primera respuesta. El enunciado es editable siempre | Lógica de dominio + backend |
 | I16 | Como máximo una revisión por cliente y número de semana | Índice único `(clientId, weekNumber)` o su equivalente |
@@ -167,6 +176,11 @@ marcan y no se reutiliza su número.
 
 I5, I9, I12, I15, I17 y I22 concentran casi toda la lógica de negocio real. Se cubren con tests
 desde el primer día.
+
+Cómo se implementan I5 e I9: la revisión guarda al crearse su **ventana** (las fechas entre las
+que vale un pesaje) y sus **requisitos congelados** (qué tipos de medida y qué preguntas se le
+exigen). Sin esos dos campos, I9 obliga a recalcular desde la fecha de alta en cada lectura e I5
+no tiene forma de resistir un cambio posterior del catálogo.
 
 Sobre I5: "exigido al abrirla" significa que la completitud **no** se calcula contra el catálogo
 actual. Si el entrenador añade un tipo de medida hoy, las revisiones de ayer no pueden pasar a
@@ -189,6 +203,13 @@ operación de **borrado a petición** que sí elimina las fotos de Storage y ano
 **Rutina / Macros / Menú** — `borrador` → `activo` → `archivado`
 Asignar uno nuevo archiva el anterior. El histórico se conserva para poder leer un `WorkoutLog`
 antiguo en su contexto.
+
+**Ejercicio** — `activo` → `archivado`
+El entrenador puede "eliminar" un ejercicio de su biblioteca. El sistema le avisa antes de qué
+clientes lo tienen prescrito y, si confirma, el ejercicio sale de la biblioteca y de las rutinas
+de esos clientes. **La fila no se borra: se archiva.** Un `WorkoutLog` antiguo tiene que poder
+seguir diciendo qué ejercicio se hizo, que es la misma razón por la que las rutinas se archivan
+en vez de borrarse.
 
 **Entrada de catálogo (pregunta, tipo de medida)** — `activa` → `archivada`
 Nunca se borra: hay histórico colgando. Archivar la saca de las revisiones futuras y de la

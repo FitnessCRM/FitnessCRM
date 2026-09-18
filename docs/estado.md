@@ -157,7 +157,7 @@ Fase 5 (navegación):
 - La maqueta dice "viernes, 29 agosto" pero el 29-08-2026 es sábado. Se mantiene la fecha; el
   día de la semana se calculará.
 - La demo muestra en el Día 1 del cliente ejercicios de pierna y en el editor Día 1 = Torso.
-- El "Eliminar" de la biblioteca y las macros por menú ya están resueltos (decisión 15).
+- El "Eliminar" de la biblioteca (archivar) y las macros por menú ya están resueltos (decisión 15).
 - Sin cubrir por el dominio ni la demo: la pantalla «Medidas» (§11.1) y el envío de feedback
   (§11.2) tienen ruta y puerto, pero no diseño.
 - `app/favicon.ico` sigue siendo el de create-next-app.
