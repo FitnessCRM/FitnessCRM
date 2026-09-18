@@ -85,7 +85,10 @@ Fases 1–2:
 3. Token `background-deep` (#0C0B0A) para sidebar y nav superior; `#100F0D` (marco) se ignoró.
 4. Inputs con borde `border-emphasis` (0.12); la demo usa 0.10.
 5. `text-sm` = 13px y `text-base` = 15px (shadcn heredaba 14/16).
-6. Botones `outline`/`ghost` en Oswald; en la demo los secundarios son Inter 12–13px. Pendiente.
+6. **Cerrado el 18-09-2026:** la demo tiene dos familias de botón secundario. `outline` sigue en
+   Oswald mayúsculas («Editar plan», «Solo actual»); `secondary` (con borde) y `ghost` (sin
+   borde) pasan a Inter 13px sin mayúsculas para «Editar», «Cancelar», «Eliminar», «Guardar
+   macros». `destructive` queda para acciones irreversibles.
 
 Fase 3 (dominio):
 

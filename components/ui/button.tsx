@@ -12,8 +12,11 @@ const buttonVariants = cva(
         destructive: "bg-danger-soft text-danger border border-danger/55 hover:bg-danger/25",
         outline:
           "border border-border-emphasis bg-transparent text-text-muted hover:border-accent hover:text-accent-emphasis",
-        secondary: "bg-border text-text-primary hover:bg-border-strong",
-        ghost: "text-text-muted hover:bg-surface-overlay hover:text-text-primary",
+        /* Secundarios de la demo (Editar, Eliminar, Cancelar): Inter 13px, sin mayúsculas. */
+        secondary:
+          "border border-border-emphasis bg-transparent font-ui text-sm font-normal normal-case tracking-normal text-text-muted hover:border-border-strong hover:bg-surface-overlay hover:text-text-primary",
+        ghost:
+          "font-ui text-sm font-normal normal-case tracking-normal text-text-muted hover:bg-surface-overlay hover:text-text-primary",
         link: "font-ui normal-case tracking-normal text-accent-hover underline-offset-4 hover:text-accent-emphasis hover:underline",
         pill: "rounded-full border border-border-emphasis bg-transparent font-ui text-xs font-normal text-text-muted hover:border-accent hover:text-text-primary",
       },

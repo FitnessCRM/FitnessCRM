@@ -42,6 +42,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { es } from "@/lib/i18n/es";
+import { TrendChart } from "@/components/charts/trend-chart";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { ClientsProbe } from "./clients-probe";
 
 const t = es.dev.kitchenSink;
@@ -178,9 +180,10 @@ export function KitchenSink() {
           <Row label="variant">
             <Button>+ Nuevo cliente</Button>
             <Button variant="outline">Editar plan</Button>
-            <Button variant="secondary">Todos</Button>
-            <Button variant="ghost">Cancelar</Button>
-            <Button variant="destructive">Eliminar</Button>
+            <Button variant="secondary">Editar</Button>
+            <Button variant="secondary">Cancelar</Button>
+            <Button variant="ghost">Eliminar</Button>
+            <Button variant="destructive">Borrar cliente</Button>
             <Button variant="link">Ver todas →</Button>
             <Button variant="pill">Registrar ▾</Button>
           </Row>
@@ -339,6 +342,35 @@ export function KitchenSink() {
 
         <Section title={t.data}>
           <ClientsProbe />
+        </Section>
+
+        <Section title={t.states}>
+          <div className="grid max-w-2xl gap-4">
+            <LoadingState />
+            <EmptyState
+              title={t.emptyTitle}
+              description={t.emptyHint}
+              action={<Button size="sm">{t.emptyAction}</Button>}
+            />
+            <ErrorState onRetry={() => undefined} />
+          </div>
+        </Section>
+
+        <Section title={t.chart}>
+          <div className="bg-surface border-border-subtle max-w-2xl rounded-xl border p-5">
+            <p className="section-title mb-2">{t.chartSample}</p>
+            <TrendChart
+              unit="kg"
+              series={[{ key: "kg", label: t.chartSeries }]}
+              data={[
+                { label: "S1", kg: 65.5 },
+                { label: "S2", kg: 64.8 },
+                { label: "S3", kg: null },
+                { label: "S4", kg: 63.9 },
+                { label: "S5", kg: 63.4 },
+              ]}
+            />
+          </div>
         </Section>
 
         <Section title={t.overlays}>

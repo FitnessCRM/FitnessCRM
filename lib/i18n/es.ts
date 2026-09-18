@@ -91,6 +91,13 @@ export const es = {
       table: "Tabla",
       overlays: "Capas",
       data: "Datos por el puerto",
+      states: "Estados",
+      chart: "Gráfica",
+      chartSample: "Evolución de peso",
+      chartSeries: "Peso",
+      emptyTitle: "Sin pesajes todavía",
+      emptyHint: "Añade el primero cuando quieras; no hace falta pesarse a diario.",
+      emptyAction: "Añadir pesaje",
     },
     clientsProbe: {
       title: "Clientes de la cartera",
