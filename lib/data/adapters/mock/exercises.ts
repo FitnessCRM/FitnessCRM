@@ -44,8 +44,9 @@ export function createExercisePort(ctx: MockContext): ExercisePort {
     archiveExercise: async (trainerId, exerciseId) => {
       const exercise = findOwn(ctx.state.exercises, trainerId, exerciseId, "Ejercicio");
       const now = ctx.now();
+      // Solo rutinas vivas: las archivadas existen para leer un entreno antiguo en su contexto.
       ctx.state.routines = ctx.state.routines.map((r) =>
-        r.trainerId === trainerId
+        r.trainerId === trainerId && r.status !== "archivado"
           ? { ...removeExerciseFromRoutine(r, exerciseId), updatedAt: now }
           : r,
       );

@@ -9,11 +9,14 @@ import {
 
 /**
  * Serie realmente ejecutada por el cliente. Opcional, suelta, nunca bloquea nada (§2).
- * Referencia la prescripción para poder leerla en su contexto aunque la rutina se archive.
+ * Lleva `exerciseId` propio: es la fila que sobrevive archivada (I13) y la que dice qué se hizo
+ * aunque el ejercicio se retire de la rutina. `routineId` y `routineDayExerciseId` dan el
+ * contexto (la prescripción) y solo se leen en rutinas archivadas, que no se tocan.
  */
 export const workoutLogSchema = z.object({
   ...tenantFields,
   clientId: idSchema,
+  exerciseId: idSchema,
   routineId: idSchema,
   routineDayExerciseId: idSchema,
   date: civilDateSchema,

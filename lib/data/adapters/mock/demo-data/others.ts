@@ -2,6 +2,7 @@ import type { Review, WorkoutLog } from "@/lib/domain";
 import { reviewWindowForWeek } from "@/lib/domain";
 import { measurementTypes, questions } from "./catalogs";
 import { CLIENT_IDS, DEMO_TODAY, TRAINER_ID, ts } from "./common";
+import { EXERCISE_IDS } from "./exercises";
 
 const REQUIREMENTS = {
   measurementTypeIds: measurementTypes.map((t) => t.id),
@@ -106,6 +107,7 @@ export const workoutLogs: WorkoutLog[] = [
     id: "wl-1",
     trainerId: TRAINER_ID,
     clientId: CLIENT_IDS.marta,
+    exerciseId: EXERCISE_IDS.squat,
     routineId: "rt-marta-hipertrofia",
     routineDayExerciseId: "r-marta-d2-e1",
     date: DEMO_TODAY,
@@ -118,6 +120,7 @@ export const workoutLogs: WorkoutLog[] = [
     id: "wl-2",
     trainerId: TRAINER_ID,
     clientId: CLIENT_IDS.marta,
+    exerciseId: EXERCISE_IDS.squat,
     routineId: "rt-marta-hipertrofia",
     routineDayExerciseId: "r-marta-d2-e1",
     date: DEMO_TODAY,

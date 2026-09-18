@@ -108,6 +108,25 @@ describe("flows", () => {
     expect((await p.exercises.getExercise(TRAINER, "ex-press-banca"))?.status).toBe("archivado");
   });
 
+  it("archiving leaves archived routines untouched and workout logs still name the exercise", async () => {
+    const p = ports();
+    const draft = await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-full-body-2d");
+    await p.routines.activateRoutine(TRAINER, draft.id); // archiva la rutina de hipertrofia
+    await p.exercises.archiveExercise(TRAINER, "ex-sentadilla-trasera");
+    const all = await p.routines.listRoutines(TRAINER, MARTA);
+    const archived = all.find((r) => r.id === "rt-marta-hipertrofia")!;
+    const active = all.find((r) => r.id === draft.id)!;
+    const ids = (r: typeof archived) => r.days.flatMap((d) => d.exercises.map((e) => e.exerciseId));
+    expect(archived.status).toBe("archivado");
+    expect(ids(archived)).toContain("ex-sentadilla-trasera");
+    expect(ids(active)).not.toContain("ex-sentadilla-trasera");
+    const logs = await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA, "rt-marta-hipertrofia");
+    expect(logs.every((l) => l.exerciseId === "ex-sentadilla-trasera")).toBe(true);
+    expect((await p.exercises.getExercise(TRAINER, logs[0]!.exerciseId))?.name).toBe(
+      "Sentadilla trasera",
+    );
+  });
+
   it("assigning a template clones it and activating archives the previous routine (I4)", async () => {
     const p = ports();
     const draft = await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-fuerza-basicos-3d");
