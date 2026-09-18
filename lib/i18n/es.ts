@@ -5,6 +5,78 @@
 export const APP_NAME = "HECTOR";
 
 export const es = {
+  common: {
+    loading: "Cargando…",
+    error: "Algo ha fallado",
+    retry: "Reintentar",
+    coachTag: "Coach",
+  },
+  roles: {
+    trainer: "Entrenador",
+    client: "Cliente",
+  },
+  nav: {
+    trainer: {
+      dashboard: "Dashboard",
+      clientes: "Clientes",
+      biblioteca: "Biblioteca",
+      plantillas: "Plantillas",
+      cuestionario: "Cuestionario",
+      medidas: "Medidas",
+      membresias: "Membresías",
+      asignacion: "Asignación",
+    },
+    client: {
+      rutina: "Rutina",
+      menu: "Menú",
+      peso: "Peso",
+      revision: "Revisión",
+      progreso: "Progreso",
+      membresia: "Membresía",
+    },
+  },
+  pages: {
+    login: { title: "Entrar", subtitle: "Accede con tus credenciales" },
+    trainer: {
+      dashboard: "Panel de control",
+      clientes: "Clientes",
+      clienteNuevo: "Alta de nuevo cliente",
+      clienteDetalle: "Detalle de cliente",
+      editor: "Editor de plan",
+      revisionCliente: "Revisión de cliente",
+      biblioteca: "Biblioteca",
+      plantillas: "Plantillas",
+      cuestionario: "Cuestionario de revisión",
+      medidas: "Tipos de medida",
+      membresias: "Membresías",
+      asignacion: "Asignación de plan",
+    },
+    client: {
+      rutina: "Rutina",
+      menu: "Menú de hoy",
+      peso: "Registro de peso",
+      revision: "Revisión semanal",
+      progreso: "Tu progreso",
+      membresia: "Membresía",
+      verRevision: "Ver revisión",
+    },
+  },
+  status: {
+    client: { invitado: "Invitado", activo: "Activo", dado_de_baja: "Baja" },
+    review: { borrador: "En curso", enviada: "Nueva", vista: "Vista", revisada: "Revisada" },
+    reviewCompleteness: { complete: "Completa", partial: "Parcial" },
+    payment: { pagada: "Pagada", no_pagada: "No pagada" },
+    plan: { borrador: "Borrador", activo: "Activo", archivado: "Archivado" },
+    catalog: { activa: "Activa", archivada: "Archivada" },
+    membershipType: {
+      mensual: "Mensual",
+      trimestral: "Trimestral",
+      semestral: "Semestral",
+      anual: "Anual",
+    },
+    dayType: { entrenamiento: "Día de entrenamiento", descanso: "Día de descanso" },
+    pose: { frente: "Frente", perfil: "Perfil", espalda: "Espalda" },
+  },
   dev: {
     kitchenSink: {
       eyebrow: "Solo en desarrollo",
@@ -27,11 +99,6 @@ export const es = {
       error: "No se han podido cargar los clientes.",
       retry: "Reintentar",
       empty: "Sin clientes todavía.",
-      status: {
-        invitado: "Invitado",
-        activo: "Activo",
-        dado_de_baja: "Baja",
-      },
     },
   },
 } as const;

@@ -1,9 +1,6 @@
-import { APP_NAME } from "@/lib/i18n/es";
+import { redirect } from "next/navigation";
 
+/** Sin auth todavía: la raíz manda al acceso. */
 export default function HomePage() {
-  return (
-    <main className="flex min-h-screen items-center justify-center">
-      <h1 className="text-2xl font-bold tracking-wide">{APP_NAME}</h1>
-    </main>
-  );
+  redirect("/login");
 }

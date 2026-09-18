@@ -40,7 +40,7 @@ export function ClientsProbe() {
               {client.firstName} {client.lastName}
             </span>
             <Badge variant={client.status === "activo" ? "success" : "outline"}>
-              {t.status[client.status]}
+              {es.status.client[client.status]}
             </Badge>
           </li>
         ))}

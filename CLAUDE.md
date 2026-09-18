@@ -72,8 +72,10 @@ todas formas porque el diseño móvil será otro. Por eso la regla 2 no es negoc
 app/
   (auth)/login/
   (cliente)/          rutina, menu, peso, revision, progreso, membresia, ver-revision
-  (entrenador)/       dashboard, clientes, biblioteca, plantillas, cuestionario,
-                      medidas, membresias, asignacion, editor, revision
+  (entrenador)/       dashboard, clientes, clientes/nuevo, clientes/[clientId],
+                      clientes/[clientId]/editor, clientes/[clientId]/revision,
+                      biblioteca, plantillas, cuestionario, medidas, membresias, asignacion
+  providers.tsx       raíz de composición: el único archivo que elige un adaptador
 components/
   ui/                 shadcn, retematizado
   cliente/ entrenador/ charts/
@@ -190,9 +192,15 @@ pnpm typecheck    # tsc --noEmit
 
 ## Estado
 
-Arranque, repo vacío. La primera tarea monta los cimientos: esqueleto, sistema de diseño,
-dominio con tests, capa de datos con adaptador en memoria y armazón de navegación. Sin backend,
-sin auth real y sin persistencia.
+Cimientos terminados (18-09-2026): esqueleto, sistema de diseño, dominio con tests, capa de
+datos con adaptador en memoria y armazón de navegación con las dos áreas. Sin backend, sin auth
+real y sin persistencia: `app/providers.tsx` monta el adaptador en memoria y `SessionPort`
+devuelve una sesión de demo (Adrián como entrenador, Marta como cliente). Detalle, decisiones y
+dudas en `docs/estado.md`.
+
+Dos decisiones del 18-09-2026 cambian `docs/dominio.md` y hay que sincronizar el original: cada
+menú lleva macros declaradas por el entrenador (informativas), y los ejercicios de la biblioteca
+se borran retirándolos de las rutinas tras avisar.
 
 Después, en este orden: pantallas del cliente, panel del entrenador, y por último la decisión de
 backend con su adaptador. Mantén esta sección al día conforme avance.
