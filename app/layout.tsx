@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter_Tight, Oswald } from "next/font/google";
 import { tokens } from "@/lib/design/tokens";
 import { APP_NAME } from "@/lib/i18n/es";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const oswald = Oswald({
@@ -34,7 +35,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es" className={`${oswald.variable} ${interTight.variable}`}>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

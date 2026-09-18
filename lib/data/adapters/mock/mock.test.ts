@@ -1,0 +1,203 @@
+import { describe, expect, it } from "vitest";
+import {
+  DomainError,
+  clientSchema,
+  exerciseSchema,
+  macroTargetsSchema,
+  measurementTypeSchema,
+  membershipSchema,
+  menuSchema,
+  menuTemplateSchema,
+  questionnaireQuestionSchema,
+  reviewSchema,
+  routineSchema,
+  routineTemplateSchema,
+  trainerSchema,
+  weightLogSchema,
+  workoutLogSchema,
+  isReviewComplete,
+} from "@/lib/domain";
+import { createDemoState, createMockPorts } from "./index";
+
+const TRAINER = "t-adrian";
+const MARTA = "c-marta";
+const ports = () => createMockPorts({ latencyMs: 0, now: () => "2026-08-29T10:00:00Z" });
+
+describe("demo data", () => {
+  it("validates against every domain schema", () => {
+    const s = createDemoState();
+    const check = (schema: { parse: (v: unknown) => unknown }, items: unknown[]) =>
+      items.forEach((i) => schema.parse(i));
+    check(trainerSchema, s.trainers);
+    check(clientSchema, s.clients);
+    check(membershipSchema, s.memberships);
+    check(exerciseSchema, s.exercises);
+    check(routineSchema, s.routines);
+    check(macroTargetsSchema, s.macroTargets);
+    check(menuSchema, s.menus);
+    check(routineTemplateSchema, s.routineTemplates);
+    check(menuTemplateSchema, s.menuTemplates);
+    check(measurementTypeSchema, s.measurementTypes);
+    check(questionnaireQuestionSchema, s.questions);
+    check(reviewSchema, s.reviews);
+    check(weightLogSchema, s.weightLogs);
+    check(workoutLogSchema, s.workoutLogs);
+  });
+
+  it("only references existing exercises from routines (I3) and existing weight logs from reviews (I9)", () => {
+    const s = createDemoState();
+    const exerciseIds = new Set(s.exercises.map((e) => e.id));
+    for (const r of [...s.routines, ...s.routineTemplates]) {
+      for (const d of r.days)
+        for (const e of d.exercises) expect(exerciseIds.has(e.exerciseId)).toBe(true);
+    }
+    const logIds = new Set(s.weightLogs.map((w) => w.id));
+    for (const r of s.reviews) if (r.weightLogId) expect(logIds.has(r.weightLogId)).toBe(true);
+  });
+
+  it("matches the demo: Marta's five weekly weights and waist/hip/thigh deltas", async () => {
+    const p = ports();
+    const reviews = await p.reviews.listClientReviews(TRAINER, MARTA);
+    const logs = await p.weightLogs.listWeightLogs(TRAINER, MARTA);
+    const kg = (r: (typeof reviews)[number]) => logs.find((l) => l.id === r.weightLogId)?.weightKg;
+    const byWeek = [...reviews].sort((a, b) => a.weekNumber - b.weekNumber);
+    expect(byWeek.map(kg)).toEqual([65.5, 64.8, 64.3, 63.9, 63.4]);
+    const m = (r: (typeof reviews)[number], id: string) =>
+      r.measurements.find((x) => x.measurementTypeId === id)?.value;
+    expect([m(byWeek[0]!, "mt-cintura"), m(byWeek[4]!, "mt-cintura")]).toEqual([74, 71]);
+    expect([m(byWeek[0]!, "mt-cadera"), m(byWeek[4]!, "mt-cadera")]).toEqual([98, 96.5]);
+    expect(m(byWeek[4]!, "mt-muslo")! - m(byWeek[0]!, "mt-muslo")!).toBeCloseTo(0.8);
+    expect(logs.filter((l) => l.date.startsWith("2026-08"))).toHaveLength(13);
+  });
+});
+
+describe("tenancy (I1)", () => {
+  it("returns nothing for another trainer", async () => {
+    const p = ports();
+    expect(await p.clients.listClients("t-otro")).toEqual([]);
+    expect(await p.clients.getClient("t-otro", MARTA)).toBeNull();
+    expect(await p.reviews.listSubmittedReviews("t-otro")).toEqual([]);
+    await expect(p.exercises.deleteExercise("t-otro", "ex-press-banca")).rejects.toThrow(
+      DomainError,
+    );
+  });
+
+  it("returns copies: mutating a result does not touch the store", async () => {
+    const p = ports();
+    const [first] = await p.clients.listClients(TRAINER);
+    first!.firstName = "Hackeada";
+    expect((await p.clients.listClients(TRAINER))[0]?.firstName).toBe("Marta");
+  });
+});
+
+describe("flows", () => {
+  it("deleting an exercise warns about usage and removes it from routines and templates", async () => {
+    const p = ports();
+    const usage = await p.exercises.getExerciseUsage(TRAINER, "ex-press-banca");
+    expect(usage.clientIds).toEqual([MARTA]);
+    expect(usage.routineTemplateIds.length).toBeGreaterThan(0);
+    await p.exercises.deleteExercise(TRAINER, "ex-press-banca");
+    const routine = await p.routines.getActiveRoutine(TRAINER, MARTA);
+    const ids = routine!.days.flatMap((d) => d.exercises.map((e) => e.exerciseId));
+    expect(ids).not.toContain("ex-press-banca");
+    expect(routine!.days).toHaveLength(5);
+    expect(await p.exercises.getExercise(TRAINER, "ex-press-banca")).toBeNull();
+  });
+
+  it("assigning a template clones it and activating archives the previous routine (I4)", async () => {
+    const p = ports();
+    const draft = await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-fuerza-basicos-3d");
+    expect(draft.status).toBe("borrador");
+    expect(draft.sourceTemplateName).toBe("Fuerza básicos 3d");
+    await p.routines.activateRoutine(TRAINER, draft.id);
+    const all = await p.routines.listRoutines(TRAINER, MARTA);
+    expect(all.filter((r) => r.status === "activo").map((r) => r.id)).toEqual([draft.id]);
+    expect(all.find((r) => r.id === "rt-marta-hipertrofia")?.status).toBe("archivado");
+  });
+
+  it("setting macros keeps one active set per day type (I4)", async () => {
+    const p = ports();
+    await p.macroTargets.setMacroTargets(TRAINER, MARTA, "descanso", {
+      proteinG: 150,
+      carbsG: 200,
+      fatG: 60,
+    });
+    const active = await p.macroTargets.listMacroTargets(TRAINER, MARTA);
+    expect(active.filter((m) => m.dayType === "descanso")).toHaveLength(1);
+    expect(active.find((m) => m.dayType === "descanso")?.macros.carbsG).toBe(200);
+  });
+
+  it("opens the current week's review once (I16), freezing the active catalog (I5/I22)", async () => {
+    const p = ports();
+    await p.measurementTypes.archiveMeasurementType(TRAINER, "mt-hombros");
+    const first = await p.reviews.openCurrentReview(TRAINER, "c-david");
+    const again = await p.reviews.openCurrentReview(TRAINER, "c-david");
+    expect(again.id).toBe(first.id);
+    expect(first.weekNumber).toBe(11);
+    expect(first.requirements.measurementTypeIds).not.toContain("mt-hombros");
+    expect(first.requirements.questionIds).toHaveLength(5);
+  });
+
+  it("rejects a review weight outside the window (I9) and edits after vista (I17)", async () => {
+    const p = ports();
+    const review = await p.reviews.openCurrentReview(TRAINER, "c-david");
+    await expect(
+      p.reviews.updateReviewDraft(TRAINER, review.id, { weightLogId: "w-c-marta-2026-08-01" }),
+    ).rejects.toThrow(DomainError);
+    const submitted = await p.reviews.submitReview(TRAINER, review.id);
+    expect(isReviewComplete(submitted).complete).toBe(false);
+    await p.reviews.markReviewViewed(TRAINER, review.id);
+    await expect(
+      p.reviews.updateReviewDraft(TRAINER, review.id, {
+        responses: [{ questionId: "q-energia", value: 3 }],
+      }),
+    ).rejects.toThrow(DomainError);
+  });
+
+  it("locks a question's format once answered but still allows editing the prompt (I15)", async () => {
+    const p = ports();
+    await expect(
+      p.questionnaire.updateQuestion(TRAINER, "q-energia", {
+        format: { kind: "escala", min: 1, max: 10 },
+      }),
+    ).rejects.toThrow(DomainError);
+    const q = await p.questionnaire.updateQuestion(TRAINER, "q-energia", {
+      prompt: "Energía (1-5)",
+    });
+    expect(q.prompt).toBe("Energía (1-5)");
+    const fresh = await p.questionnaire.createQuestion(TRAINER, {
+      prompt: "Estrés",
+      format: { kind: "texto" },
+    });
+    const changed = await p.questionnaire.updateQuestion(TRAINER, fresh.id, {
+      format: { kind: "escala", min: 1, max: 5 },
+    });
+    expect(changed.format.kind).toBe("escala");
+  });
+
+  it("feedback moves the review to revisada and the dashboard list shrinks", async () => {
+    const p = ports();
+    expect((await p.reviews.listSubmittedReviews(TRAINER)).map((r) => r.id)).toEqual([
+      "rv-marta-s5",
+      "rv-jorge-s8",
+      "rv-sara-s3",
+    ]);
+    await p.reviews.markReviewViewed(TRAINER, "rv-marta-s5");
+    const done = await p.reviews.sendReviewFeedback(TRAINER, "rv-marta-s5", {
+      videoUrl: "https://youtu.be/x",
+      note: "Bien",
+    });
+    expect(done.status).toBe("revisada");
+    expect((await p.reviews.listSubmittedReviews(TRAINER)).map((r) => r.id)).toEqual([
+      "rv-jorge-s8",
+      "rv-sara-s3",
+    ]);
+  });
+
+  it("simulates latency when asked", async () => {
+    const slow = createMockPorts({ latencyMs: 30 });
+    const started = Date.now();
+    await slow.session.getSession();
+    expect(Date.now() - started).toBeGreaterThanOrEqual(25);
+  });
+});

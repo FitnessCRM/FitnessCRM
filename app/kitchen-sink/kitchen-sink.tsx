@@ -42,6 +42,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { es } from "@/lib/i18n/es";
+import { ClientsProbe } from "./clients-probe";
 
 const t = es.dev.kitchenSink;
 
@@ -334,6 +335,10 @@ export function KitchenSink() {
               </TableBody>
             </Table>
           </Card>
+        </Section>
+
+        <Section title={t.data}>
+          <ClientsProbe />
         </Section>
 
         <Section title={t.overlays}>

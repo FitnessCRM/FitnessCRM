@@ -18,6 +18,20 @@ export const es = {
       cards: "Tarjetas",
       table: "Tabla",
       overlays: "Capas",
+      data: "Datos por el puerto",
+    },
+    clientsProbe: {
+      title: "Clientes de la cartera",
+      hint: "Lista leída por useClients(); el componente no sabe qué adaptador hay detrás.",
+      loading: "Cargando clientes…",
+      error: "No se han podido cargar los clientes.",
+      retry: "Reintentar",
+      empty: "Sin clientes todavía.",
+      status: {
+        invitado: "Invitado",
+        activo: "Activo",
+        dado_de_baja: "Baja",
+      },
     },
   },
 } as const;
