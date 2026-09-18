@@ -14,6 +14,39 @@ const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   prettier,
   {
+    /* Regla dura 2: el dominio es puro. Nada de React, Next, DOM ni capas superiores. */
+    files: ["lib/domain/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            { group: ["react", "react-*", "react/*"], message: "lib/domain no importa React" },
+            { group: ["next", "next/*"], message: "lib/domain no importa Next" },
+            {
+              group: [
+                "@/app/*",
+                "@/components/*",
+                "@/lib/data/*",
+                "@/lib/i18n/*",
+                "@/lib/design/*",
+              ],
+              message: "lib/domain no depende de capas superiores",
+            },
+          ],
+        },
+      ],
+      "no-restricted-globals": [
+        "error",
+        "window",
+        "document",
+        "fetch",
+        "localStorage",
+        "navigator",
+      ],
+    },
+  },
+  {
     ignores: [
       "node_modules/**",
       ".next/**",
