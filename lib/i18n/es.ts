@@ -10,6 +10,7 @@ export const es = {
     error: "Algo ha fallado",
     retry: "Reintentar",
     coachTag: "Coach",
+    trainerNote: { title: "Nota del entrenador" },
   },
   roles: {
     trainer: "Entrenador",
@@ -53,7 +54,7 @@ export const es = {
     },
     client: {
       rutina: "Rutina",
-      menu: "Menú de hoy",
+      menu: "Tu menú",
       peso: "Registro de peso",
       revision: "Revisión semanal",
       progreso: "Tu progreso",
@@ -203,8 +204,32 @@ export const es = {
       lastDate: "Última vez:",
       optional: "Registrar es opcional y no bloquea nada.",
     },
-    note: {
-      title: "Nota del entrenador",
+  },
+  screensMenu: {
+    eyebrow: "Menú asignado",
+    dayTypeLabel: "Tipo de día",
+    target: {
+      title: "Tu objetivo del día",
+      hint: "Es lo que te marca tu entrenador para el día entero.",
+      kcal: "kcal",
+      protein: "Proteína",
+      carbs: "Carbohidratos",
+      fat: "Grasas",
+      shareOfKcal: "de las kcal",
+      otherPrefix: "En",
+      otherMiddle: "tu objetivo es",
+      empty: "Tu entrenador todavía no te ha marcado macros.",
+    },
+    menus: {
+      suggested: "Sugerido",
+      provides: "aporta",
+      declared:
+        "Macros que declara tu entrenador para este menú. Ni es tu objetivo ni sale de sumar los alimentos: si no cuadran, es su criterio.",
+      grams: "g",
+      empty: {
+        title: "Sin menú para este tipo de día",
+        hint: "Tu entrenador todavía no te ha asignado uno.",
+      },
     },
   },
   screensProgress: {
@@ -249,6 +274,7 @@ export const es = {
       anual: "Anual",
     },
     dayType: { entrenamiento: "Día de entrenamiento", descanso: "Día de descanso" },
+    dayTypeShort: { entrenamiento: "entrenamiento", descanso: "descanso" },
     pose: { frente: "Frente", perfil: "Perfil", espalda: "Espalda" },
   },
   dev: {

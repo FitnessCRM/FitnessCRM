@@ -1,9 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { es } from "@/lib/i18n/es";
 
-const t = es.screensRoutine.note;
+const t = es.common.trainerNote;
 
-/** Nota del entrenador en la rutina, firmada con su nombre de pila y sin fecha. */
+/** Nota del entrenador (rutina o menú), firmada con su nombre de pila y sin fecha. */
 export function TrainerNoteCard({ note, trainerName }: { note: string; trainerName?: string }) {
   const firstName = trainerName?.split(" ")[0];
   return (

@@ -25,6 +25,17 @@ export function formatNumber(value: number): string {
   return upToTwoDecimals.format(value);
 }
 
+// `useGrouping: "always"`: es-ES no agrupa de 1.000 a 9.999 por defecto y la demo sí lo hace.
+const integer = new Intl.NumberFormat("es-ES", {
+  maximumFractionDigits: 0,
+  useGrouping: "always",
+});
+
+/** 2348 → "2.348". Para cifras grandes como las kcal, que en la demo llevan punto de millar. */
+export function formatInteger(value: number): string {
+  return integer.format(value);
+}
+
 /** −2.1 → "−2,1" (signo menos tipográfico), 0.8 → "+0,8", 0 → "0,0" */
 export function formatSignedDecimal(value: number): string {
   if (value > 0) return `+${oneDecimal.format(value)}`;

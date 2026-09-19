@@ -253,9 +253,37 @@ Fase 5 (navegación):
   **`/revision` sigue midiendo 688** por contenido suyo (la tira de completitud), no por el nav:
   es trabajo de la pasada responsive, que es una fase aparte y no se ha abierto.
 
+- **Menú** (`components/cliente/menu/`, 20-09-2026): selector de tipo de día, un menú por tarjeta
+  (el sugerido primero y abierto, los demás plegados) con sus comidas y gramos, objetivo del
+  cliente a la derecha y la nota del menú sugerido. Decisiones del 20-09-2026:
+  - **La pantalla se llama «Tu menú», no «Menú de hoy».** El tipo de día lo elige el cliente con
+    el selector: nada en el dominio dice si hoy entrena o descansa, igual que los días numéricos
+    de Rutina no tienen ancla de calendario. Derivarlo exigiría guardar en `Client` qué días
+    entrena, que es dominio nuevo y no está en el MVP. Cambia `pages.client.menu`.
+  - **Las dos cifras de macros se distinguen por etiqueta, no por contexto.** A la derecha, «Tu
+    objetivo del día» con «Es lo que te marca tu entrenador para el día entero». En cada menú, la
+    cifra va siempre con el verbo delante, «aporta 2.348 kcal · P 165 · C 260 · G 72», y al abrirlo
+    lo dice entero: «Macros que declara tu entrenador para este menú. Ni es tu objetivo ni sale de
+    sumar los alimentos: si no cuadran, es su criterio». **La app no las compara, ni las corrige,
+    ni impide que difieran**: es criterio del entrenador (§5). Los datos de demo las dejan
+    idénticas (165/260/72 en las dos), que es el caso peor para el etiquetado y por eso se
+    mantiene así.
+  - Las barras del objetivo son la **parte de las kcal** que aporta cada macro (4/4/9), con el
+    porcentaje en el `title`. La maqueta las pinta casi llenas sin decir qué miden.
+  - Las kcal se formatean con `formatInteger` (`lib/format.ts`): `es-ES` no agrupa los millares de
+    cuatro cifras y la demo escribe «2.400», así que va con `useGrouping: "always"`.
+  - **El selector NO usa el `Tabs` de Radix**: dentro del área de cliente genera ids distintos en
+    servidor y cliente y React avisa de hidratación en cada carga. Pasa con `value` controlado y
+    sin controlar; en `/kitchen-sink`, fuera del armazón del cliente, el mismo componente no falla.
+    Sin diagnosticar. Los botones propios (mismo patrón que las pestañas de día de Rutina) dejan
+    la consola limpia. **Ojo con otros primitivos de Radix con id dentro del área de cliente**
+    (`Select`, `Dialog`): el diálogo de Revisión solo se monta al abrirse y no se ha comprobado.
+  - `TrainerNoteCard` pasa a `components/cliente/` y su literal a `es.common.trainerNote`: lo usan
+    Rutina y Menú.
+
 ## Siguiente
 
-Quedan Menú, Membresía y Ver revisión, una por sección y con aprobación entre secciones.
+Quedan Membresía y Ver revisión, una por sección y con aprobación entre secciones.
 Después el **hito responsive** de abajo, luego el panel del entrenador, y por último la
 decisión de backend con su adaptador.
 

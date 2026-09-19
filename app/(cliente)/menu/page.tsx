@@ -1,10 +1,8 @@
-import { PageHeader } from "@/components/ui/page-header";
+import { MenuScreen } from "@/components/cliente/menu/menu-screen";
 import { es } from "@/lib/i18n/es";
 
-const title = es.pages.client.menu;
-
-export const metadata = { title };
+export const metadata = { title: es.pages.client.menu };
 
 export default function Page() {
-  return <PageHeader title={title} />;
+  return <MenuScreen />;
 }

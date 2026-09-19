@@ -29,7 +29,7 @@ import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 import { DaySummaryCard } from "./day-summary-card";
 import { ExerciseCard } from "./exercise-card";
-import { TrainerNoteCard } from "./trainer-note-card";
+import { TrainerNoteCard } from "../trainer-note-card";
 
 const t = es.screensRoutine;
 
