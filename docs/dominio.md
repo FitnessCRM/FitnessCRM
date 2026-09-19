@@ -127,8 +127,11 @@ comparación entre revisiones, el texto congelado sostiene la lectura fiel del h
   se almacenan. En la UI de asignación el campo kcal es de solo lectura y se recalcula solo.
   El mismo objeto de valor se usa en dos sitios que no hay que confundir: `MacroTargets` es el
   **objetivo diario del cliente**, y las macros que lleva cada `Menu` son **lo que el entrenador
-  declara que aporta ese menú**, informativas para el cliente. Ni son el objetivo ni se calculan
-  sumando los alimentos: las escribe el entrenador y pueden no cuadrar con los gramos del menú.
+  declara que aporta ese menú**, informativas para el cliente. Las escribe el entrenador y no se
+  derivan de nada: `FoodItem` solo guarda gramos, sin composición nutricional, así que la app no
+  puede calcular lo que aporta un menú ni contrastarlo con lo declarado. Que las macros de un
+  menú coincidan o no con el objetivo del cliente es criterio del entrenador, y la app ni lo
+  compara ni lo insinúa.
 - **`Prescripcion`** — series (entero), `repsMin` (entero), `repsMax` (entero o nulo: nulo = reps
   fijas), `rir` (texto libre, admite "2" y "1-2"), `rest` (texto libre, admite "3 min" y "el que
   necesites"), `note` (texto libre opcional).

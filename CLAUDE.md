@@ -209,9 +209,9 @@ devuelve una sesión de demo (Adrián como entrenador, Marta como cliente). Los 
 generan relativos a la fecha de hoy (Marta siempre en su semana 5), no con fechas fijas.
 Detalle, decisiones y dudas en `docs/estado.md`.
 
-Dos decisiones del 18-09-2026 cambian `docs/dominio.md` y hay que sincronizar el original: cada
-menú lleva macros declaradas por el entrenador (informativas), y los ejercicios de la biblioteca
-se borran retirándolos de las rutinas tras avisar.
+Las dos decisiones del 18-09-2026 —macros declaradas por menú y borrado de ejercicios por
+archivado— ya están en `docs/dominio.md` (§5 y §7), sincronizadas con el documento maestro el
+20-09-2026. La regla sigue en pie: si una decisión cambia ese documento, avísalo.
 
 Pantallas del cliente terminadas (20-09-2026): Peso, Revisión, Progreso, Rutina y Menú. Siguen
 Membresía y Ver revisión; luego la pasada responsive del área de cliente (un solo hito, en
