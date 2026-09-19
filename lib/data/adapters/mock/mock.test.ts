@@ -157,6 +157,31 @@ describe("flows", () => {
     );
   });
 
+  it("deletes a workout log only for its own trainer", async () => {
+    const p = ports();
+    const saved = await p.workoutLogs.saveWorkoutLog({
+      trainerId: TRAINER,
+      clientId: MARTA,
+      exerciseId: "ex-sentadilla-trasera",
+      routineId: "rt-marta-hipertrofia",
+      routineDayExerciseId: "r-marta-d2-e1",
+      date: TODAY,
+      setNumber: 3,
+      weightKg: 82.5,
+      reps: 6,
+    });
+    await expect(p.workoutLogs.deleteWorkoutLog("t-otro", saved.id)).rejects.toBeInstanceOf(
+      DomainError,
+    );
+    await p.workoutLogs.deleteWorkoutLog(TRAINER, saved.id);
+    const logs = await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA, "rt-marta-hipertrofia");
+    expect(logs.map((l) => l.id)).not.toContain(saved.id);
+    expect(logs.filter((l) => l.date === TODAY).map((l) => l.setNumber)).toEqual([1, 2]);
+    await expect(p.workoutLogs.deleteWorkoutLog(TRAINER, saved.id)).rejects.toMatchObject({
+      code: "not_found",
+    });
+  });
+
   it("assigning a template clones it and activating archives the previous routine (I4)", async () => {
     const p = ports();
     const draft = await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-fuerza-basicos-3d");

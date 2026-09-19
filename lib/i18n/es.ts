@@ -161,6 +161,52 @@ export const es = {
       cancel: "Seguir completando",
     },
   },
+  screensRoutine: {
+    week: "Semana",
+    day: "Día",
+    daysLabel: "Días de la rutina",
+    empty: {
+      title: "Sin rutina asignada",
+      hint: "Tu entrenador todavía no te ha asignado una rutina.",
+    },
+    emptyDay: {
+      title: "Día sin ejercicios",
+      hint: "Este día no tiene ejercicios prescritos.",
+    },
+    exercise: {
+      unknown: "Ejercicio no disponible",
+      video: "Ver vídeo del ejercicio",
+      set: "serie",
+      sets: "series",
+      reps: "reps",
+      rir: "RIR",
+      rest: "descanso",
+    },
+    log: {
+      toggle: "Registrar",
+      set: "Serie",
+      weight: "Peso (kg)",
+      reps: "Reps",
+      optional: "Opcional — no hace falta completar",
+      saving: "guardando…",
+      saved: "✓ guardada",
+      error: "no se ha guardado",
+      incomplete: "revisa peso y reps",
+      clearHint: "Vacía los dos campos para quitar una serie. Solo se edita el registro de hoy.",
+      lastTime: "última vez:",
+    },
+    summary: {
+      exercises: "Ejercicios",
+      sets: "Series",
+      of: "de",
+      logged: "series registradas hoy",
+      lastDate: "Última vez:",
+      optional: "Registrar es opcional y no bloquea nada.",
+    },
+    note: {
+      title: "Nota del entrenador",
+    },
+  },
   screensProgress: {
     weeksLabel: "semanas",
     weight: {

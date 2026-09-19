@@ -15,6 +15,16 @@ export function formatDecimal(value: number): string {
   return oneDecimal.format(value);
 }
 
+const upToTwoDecimals = new Intl.NumberFormat("es-ES", {
+  maximumFractionDigits: 2,
+  useGrouping: false,
+});
+
+/** 80 → "80", 82.5 → "82,5": cargas y cantidades que se escriben como se leen. */
+export function formatNumber(value: number): string {
+  return upToTwoDecimals.format(value);
+}
+
 /** −2.1 → "−2,1" (signo menos tipográfico), 0.8 → "+0,8", 0 → "0,0" */
 export function formatSignedDecimal(value: number): string {
   if (value > 0) return `+${oneDecimal.format(value)}`;

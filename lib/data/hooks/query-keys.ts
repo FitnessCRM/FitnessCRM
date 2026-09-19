@@ -8,6 +8,8 @@ export const queryKeys = {
   clientMemberships: (trainerId: string, clientId: string) =>
     ["memberships", trainerId, "client", clientId] as const,
   exercises: (trainerId: string) => ["exercises", trainerId] as const,
+  exercisesById: (trainerId: string, exerciseIds: readonly string[]) =>
+    ["exercises", trainerId, "ids", ...exerciseIds] as const,
   exerciseUsage: (trainerId: string, exerciseId: string) =>
     ["exercises", trainerId, exerciseId, "usage"] as const,
   routines: (trainerId: string, clientId: string) => ["routines", trainerId, clientId] as const,

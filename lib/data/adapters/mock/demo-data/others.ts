@@ -87,7 +87,10 @@ export function buildOtherReviews(d: DemoDates): Review[] {
   ];
 }
 
-/** Las dos series de sentadilla "guardadas" en la pantalla de rutina del cliente, hoy. */
+/**
+ * Las dos series de sentadilla "guardadas" hoy en la pantalla de rutina del cliente, más la
+ * vez anterior del mismo día de rutina, que la pantalla enseña como referencia de solo lectura.
+ */
 export function buildWorkoutLogs(d: DemoDates): WorkoutLog[] {
   const base = {
     trainerId: TRAINER_ID,
@@ -95,11 +98,12 @@ export function buildWorkoutLogs(d: DemoDates): WorkoutLog[] {
     exerciseId: EXERCISE_IDS.squat,
     routineId: "rt-marta-hipertrofia",
     routineDayExerciseId: "r-marta-d2-e1",
-    date: d.today,
   };
+  const previous = d.daysAgo(4);
   return [
     {
       ...base,
+      date: d.today,
       id: "wl-1",
       setNumber: 1,
       weightKg: 80,
@@ -108,11 +112,39 @@ export function buildWorkoutLogs(d: DemoDates): WorkoutLog[] {
     },
     {
       ...base,
+      date: d.today,
       id: "wl-2",
       setNumber: 2,
       weightKg: 82.5,
       reps: 7,
       createdAt: ts(d.today, "17:14:00"),
+    },
+    {
+      ...base,
+      date: previous,
+      id: "wl-3",
+      setNumber: 1,
+      weightKg: 77.5,
+      reps: 8,
+      createdAt: ts(previous, "17:08:00"),
+    },
+    {
+      ...base,
+      date: previous,
+      id: "wl-4",
+      setNumber: 2,
+      weightKg: 80,
+      reps: 8,
+      createdAt: ts(previous, "17:13:00"),
+    },
+    {
+      ...base,
+      date: previous,
+      id: "wl-5",
+      setNumber: 3,
+      weightKg: 80,
+      reps: 6,
+      createdAt: ts(previous, "17:18:00"),
     },
   ];
 }

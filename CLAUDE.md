@@ -207,6 +207,6 @@ Dos decisiones del 18-09-2026 cambian `docs/dominio.md` y hay que sincronizar el
 menú lleva macros declaradas por el entrenador (informativas), y los ejercicios de la biblioteca
 se borran retirándolos de las rutinas tras avisar.
 
-Pantallas del cliente terminadas (19-09-2026): Peso, Revisión y Progreso. Siguen Rutina, Menú,
+Pantallas del cliente terminadas (19-09-2026): Peso, Revisión, Progreso y Rutina. Siguen Menú,
 Membresía y Ver revisión; después el panel del entrenador, y por último la decisión de backend
 con su adaptador. Mantén esta sección al día conforme avance.

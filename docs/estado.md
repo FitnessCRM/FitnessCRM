@@ -211,6 +211,48 @@ Fase 5 (navegación):
   «n/4», el resto a `/ver-revision?review=id` con «Completa ✓» o «Parcial». Las líneas van con
   segmentos rectos: la demo no suaviza y una curva inventa valores entre semanas.
 
+- **Rutina** (`components/cliente/routine/`, 19-09-2026): pestañas por día numérico, tarjeta por
+  ejercicio con su prescripción («4 series · 6-8 reps · RIR 2 · descanso 3 min»; `repsMax` nulo
+  pinta reps fijas; RIR, descanso y nota tal como los escribe el entrenador, la nota como último
+  segmento) y registro opcional desplegable. Nombres por `getExercise` (`useExercisesById`), así
+  que un ejercicio archivado sigue nombrándose. Decisiones del 19-09-2026 con el propietario:
+  - **Sin «hoy» en pantalla.** Los días numéricos no tienen ancla de calendario. La tarjeta
+    lateral se titula con el día seleccionado («Día 2 · Pierna») y muestra ejercicios y series.
+    Fuera la «duración estimada» (no hay datos para calcularla) y el «Bloque 2 · Semana 5 de 12»
+    (queda «Semana 5»). «Sesión» no aparece: es término prohibido.
+  - **La rejilla es la de hoy y solo la de hoy** (`dayRecordOn`, con test): vacía si hoy no se ha
+    registrado nada, y con la fecha civil de hoy en la zona del entrenador, que es cuando se hizo.
+    Así escribir no vacía casillas y borrar nunca toca histórico: desde esta pantalla solo se
+    edita lo de hoy. La vez anterior del mismo día de rutina se enseña de solo lectura bajo cada
+    serie, «última vez: 80 kg × 6», con la fecha completa en el `title`
+    (`latestDayRecord(day, logs, { before: hoy })`, con test).
+  - **Contador** = «X de Y series registradas hoy». Aquí «hoy» es correcto: son registros fechados
+    hoy, no una suposición sobre qué día de rutina toca. La tarjeta añade «Última vez: DD-MM-YYYY».
+  - **Editar registros de otra fecha es deuda anotada**, no implementada: hoy solo se corrige lo
+    del día en curso. Si hace falta, pide pantalla propia (elegir fecha) o edición desde Progreso.
+  - **Día por defecto** = el siguiente al último día con registros, en el orden de la rutina y
+    volviendo al primero tras el último; sin registros, el primero (`defaultRoutineDay`, con
+    test). **Un cliente que nunca registre verá siempre el Día 1.** Si llega a molestar, la
+    salida es de dominio —marcar un día como hecho—, no memoria del navegador.
+  - **`deleteWorkoutLog` en el puerto** (cambio de contrato), en el adaptador y con test: vaciar
+    peso y reps de una serie guardada la retira. Una serie a medias no se guarda y avisa
+    («revisa peso y reps») marcando solo el campo que falla.
+  - La nota del entrenador se firma con su nombre de pila y **sin día**: `Routine` no guarda
+    cuándo se escribió la nota y `updatedAt` cambia con cualquier edición.
+  - Se guarda al salir de la fila o con Enter, no con botón: la demo no tiene botón y «✓
+    guardada» aparece por serie.
+  - Los datos de demo registran el Día 2 hoy y **la misma sentadilla cuatro días antes**, para que
+    se vea la línea de referencia; por eso la pantalla abre en el Día 3 y la captura enseña el
+    Día 1 (la pierna del Día 1 ya estaba anotada como contradicción).
+
+- **Barra del cliente en móvil** (`client-shell.tsx`, 20-09-2026): a 390 px todas las pantallas
+  del cliente medían 842 px de ancho. El nav ahora se desplaza dentro de su caja (`overflow-x-auto`
+  con la barra de scroll oculta y los enlaces sin encoger), el nombre corto se oculta y el
+  relleno baja a 16 px. Medido en un iframe de 390 px, no con la emulación del panel, que no
+  siempre se aplica: `/rutina`, `/peso`, `/progreso`, `/menu` y `/membresia` miden ya 390.
+  **`/revision` sigue midiendo 688** por contenido suyo (la tira de completitud), no por el nav:
+  es trabajo de la pasada responsive, que es una fase aparte y no se ha abierto.
+
 ## Siguiente
 
 Pantallas del cliente (rutina, menú, peso, revisión, progreso, membresía, ver revisión) sobre

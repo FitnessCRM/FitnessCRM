@@ -51,3 +51,17 @@ export function useSaveWorkoutLog(clientId: string | undefined) {
       }),
   });
 }
+
+export function useDeleteWorkoutLog(clientId: string | undefined, routineId: string | undefined) {
+  const ports = usePorts();
+  const queryClient = useQueryClient();
+  const trainerId = useTrainerId();
+  return useMutation({
+    mutationFn: (workoutLogId: string) =>
+      ports.workoutLogs.deleteWorkoutLog(trainerId!, workoutLogId),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workoutLogs(trainerId!, clientId!, routineId!),
+      }),
+  });
+}

@@ -27,9 +27,13 @@ export function ClientShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="bg-background-deep border-border-subtle flex h-16 shrink-0 items-center gap-10 border-b px-10">
-        <Brand />
-        <nav aria-label={es.roles.client} className="flex flex-1 gap-1.5">
+      <header className="bg-background-deep border-border-subtle flex h-16 shrink-0 items-center gap-10 border-b px-10 max-sm:gap-4 max-sm:px-4">
+        <Brand className="shrink-0" />
+        {/* El nav se desplaza dentro de su caja: en móvil no puede ensanchar la página. */}
+        <nav
+          aria-label={es.roles.client}
+          className="flex min-w-0 flex-1 [scrollbar-width:none] gap-1.5 overflow-x-auto [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
           {items.map((item) => {
             const active = [item.href, ...(item.also ?? [])].some(
               (h) => pathname === h || pathname.startsWith(`${h}/`),
@@ -40,7 +44,7 @@ export function ClientShell({ children }: { children: ReactNode }) {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "font-display tracking-label rounded-sm px-4 py-2 text-[14px] uppercase transition-colors",
+                  "font-display tracking-label shrink-0 rounded-sm px-4 py-2 text-[14px] uppercase transition-colors",
                   active ? "bg-accent text-on-accent" : "text-text-muted hover:text-text-primary",
                 )}
               >
@@ -49,8 +53,8 @@ export function ClientShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="flex items-center gap-3">
-          <span className="text-text-muted text-sm">
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="text-text-muted text-sm max-sm:hidden">
             {client.data ? shortNameOf(client.data.firstName, client.data.lastName) : " "}
           </span>
           <InitialsAvatar
@@ -58,7 +62,9 @@ export function ClientShell({ children }: { children: ReactNode }) {
           />
         </div>
       </header>
-      <main className="flex flex-1 flex-col gap-7 px-10 py-9">{children}</main>
+      <main className="flex flex-1 flex-col gap-7 px-10 py-9 max-sm:px-4 max-sm:py-6">
+        {children}
+      </main>
     </div>
   );
 }

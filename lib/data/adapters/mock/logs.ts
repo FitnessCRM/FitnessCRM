@@ -51,5 +51,10 @@ export function createWorkoutLogPort(ctx: MockContext): WorkoutLogPort {
       });
       return ctx.reply(replaceById(ctx.state.workoutLogs, log));
     },
+    deleteWorkoutLog: async (trainerId, workoutLogId) => {
+      findOwn(ctx.state.workoutLogs, trainerId, workoutLogId, "Serie");
+      removeById(ctx.state.workoutLogs, workoutLogId);
+      return ctx.reply(undefined);
+    },
   };
 }

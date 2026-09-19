@@ -16,6 +16,24 @@ export function useExercises() {
   });
 }
 
+/**
+ * Ejercicios por id, archivados incluidos (`getExercise`, no `listExercises`): una rutina puede
+ * nombrar uno que ya salió de la biblioteca. Un id inexistente queda fuera del mapa.
+ */
+export function useExercisesById(exerciseIds: readonly string[] | undefined) {
+  const ports = usePorts();
+  const trainerId = useTrainerId();
+  const ids = [...new Set(exerciseIds ?? [])].sort();
+  return useQuery({
+    queryKey: queryKeys.exercisesById(trainerId ?? "", ids),
+    queryFn: async () => {
+      const found = await Promise.all(ids.map((id) => ports.exercises.getExercise(trainerId!, id)));
+      return new Map(found.filter((e) => e !== null).map((e) => [e.id, e]));
+    },
+    enabled: trainerId !== undefined && exerciseIds !== undefined,
+  });
+}
+
 export function useExerciseUsage(exerciseId: string | undefined) {
   const ports = usePorts();
   const trainerId = useTrainerId();

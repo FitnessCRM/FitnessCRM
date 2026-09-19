@@ -1,10 +1,8 @@
-import { PageHeader } from "@/components/ui/page-header";
+import { RoutineScreen } from "@/components/cliente/routine/routine-screen";
 import { es } from "@/lib/i18n/es";
 
-const title = es.pages.client.rutina;
-
-export const metadata = { title };
+export const metadata = { title: es.pages.client.rutina };
 
 export default function Page() {
-  return <PageHeader title={title} />;
+  return <RoutineScreen />;
 }
