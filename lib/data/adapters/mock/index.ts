@@ -18,14 +18,16 @@ import { createTemplatePort } from "./templates";
 export interface MockPortsOptions {
   /** Latencia simulada por llamada. 150 ms por defecto; 0 en tests. */
   latencyMs?: number;
-  /** Estado inicial. Por defecto, los datos de la demo navegable. */
+  /** Estado inicial. Por defecto, los datos de la demo navegable relativos a `today`. */
   state?: MockState;
+  /** Fecha civil de "hoy" para generar los datos de demo. Por defecto, la actual. */
+  today?: string;
   now?: () => string;
 }
 
 /** Adaptador en memoria: implementa todos los puertos sobre un estado mutable en proceso. */
 export function createMockPorts(options: MockPortsOptions = {}): DataPorts & { state: MockState } {
-  const state = options.state ?? createDemoState();
+  const state = options.state ?? createDemoState(options.today);
   const wait = createLatency(options.latencyMs ?? 150);
   const ctx: MockContext = {
     state,
@@ -52,5 +54,5 @@ export function createMockPorts(options: MockPortsOptions = {}): DataPorts & { s
   };
 }
 
-export { createDemoState } from "./store";
+export { createDemoState, demoToday } from "./store";
 export type { MockState } from "./store";

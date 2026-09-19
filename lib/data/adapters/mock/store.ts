@@ -14,15 +14,16 @@ import type {
   WeightLog,
   WorkoutLog,
 } from "@/lib/domain";
+import { civilDateInTimeZone, type CivilDate } from "@/lib/domain";
 import type { Session } from "@/lib/data/ports";
 import { measurementTypes, questions } from "./demo-data/catalogs";
-import { CLIENT_IDS, DEMO_TODAY, TRAINER_ID } from "./demo-data/common";
+import { CLIENT_IDS, DEMO_TZ, TRAINER_ID, demoDates } from "./demo-data/common";
 import { exercises } from "./demo-data/exercises";
-import { macroTargets, menuTemplates, menus } from "./demo-data/nutrition";
-import { otherReviews, workoutLogs } from "./demo-data/others";
-import { clients, memberships, trainer } from "./demo-data/people";
-import { reviews, weightLogs } from "./demo-data/reviews";
-import { routineTemplates, routines } from "./demo-data/routines";
+import { buildNutrition } from "./demo-data/nutrition";
+import { buildOtherReviews, buildWorkoutLogs } from "./demo-data/others";
+import { buildClients, buildMemberships, trainer } from "./demo-data/people";
+import { buildMartaReviews, buildWeightLogs } from "./demo-data/reviews";
+import { buildRoutines } from "./demo-data/routines";
 
 /** Todo el estado del adaptador en memoria. Se muta en sitio; los puertos devuelven copias. */
 export interface MockState {
@@ -47,14 +48,25 @@ export interface MockState {
 
 const clone = <T>(value: T): T => structuredClone(value);
 
-/** Estado inicial con los datos de la demo navegable. Cada llamada devuelve una copia fresca. */
-export function createDemoState(): MockState {
+/** "Hoy" del adaptador: la fecha civil actual en la zona del entrenador de la demo. */
+export function demoToday(): CivilDate {
+  return civilDateInTimeZone(new Date(), DEMO_TZ);
+}
+
+/**
+ * Estado inicial con los datos de la demo navegable, generados relativos a `today` para que
+ * la maqueta no envejezca. Cada llamada devuelve una copia fresca.
+ */
+export function createDemoState(today: CivilDate = demoToday()): MockState {
+  const d = demoDates(today);
+  const { routineTemplates, routines } = buildRoutines(d);
+  const { macroTargets, menus, menuTemplates } = buildNutrition(d);
   return clone({
     session: { trainerId: TRAINER_ID, clientId: CLIENT_IDS.marta },
-    today: DEMO_TODAY,
+    today,
     trainers: [trainer],
-    clients,
-    memberships,
+    clients: buildClients(d),
+    memberships: buildMemberships(d),
     exercises,
     routines,
     macroTargets,
@@ -63,9 +75,9 @@ export function createDemoState(): MockState {
     menuTemplates,
     measurementTypes,
     questions,
-    reviews: [...reviews, ...otherReviews],
-    weightLogs,
-    workoutLogs,
+    reviews: [...buildMartaReviews(d), ...buildOtherReviews(d)],
+    weightLogs: buildWeightLogs(d),
+    workoutLogs: buildWorkoutLogs(d),
   });
 }
 

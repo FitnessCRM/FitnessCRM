@@ -1,58 +1,65 @@
 import type { BodyMeasurement, QuestionnaireResponse, Review, WeightLog } from "@/lib/domain";
-import { reviewWindowForWeek } from "@/lib/domain";
+import { addCivilDays, reviewWindowForWeek } from "@/lib/domain";
 import { measurementTypes, QUESTION_IDS, questions } from "./catalogs";
-import { CLIENT_IDS, TRAINER_ID, ts } from "./common";
+import { CLIENT_IDS, TRAINER_ID, ts, type DemoDates } from "./common";
 
-/** Pesajes diarios de Marta en agosto, tal como aparecen en el calendario de "Revisión de cliente". */
-const martaWeights: [date: string, kg: number, note?: string][] = [
-  ["2026-08-01", 65.5],
-  ["2026-08-03", 65.2],
-  ["2026-08-05", 65.0],
-  ["2026-08-08", 64.8],
-  ["2026-08-10", 64.7],
-  ["2026-08-12", 64.5],
-  ["2026-08-15", 64.3],
-  ["2026-08-17", 64.2],
-  ["2026-08-19", 64.6, "tras vacaciones"],
-  ["2026-08-22", 63.9],
-  ["2026-08-24", 64.1],
-  ["2026-08-26", 63.8],
-  ["2026-08-29", 63.4, "en ayunas, día de revisión"],
+/** Pesajes de Marta como días desde su alta (en la maqueta: 1, 3, 5, 8 … 29 de agosto). */
+const martaWeights: [dayOffset: number, kg: number, note?: string][] = [
+  [0, 65.5],
+  [2, 65.2],
+  [4, 65.0],
+  [7, 64.8],
+  [9, 64.7],
+  [11, 64.5],
+  [14, 64.3],
+  [16, 64.2],
+  [18, 64.6, "tras vacaciones"],
+  [21, 63.9],
+  [23, 64.1],
+  [25, 63.8],
+  [28, 63.4, "en ayunas, día de revisión"],
 ];
 
-const weightId = (clientId: string, date: string) => `w-${clientId}-${date}`;
+export const weightId = (clientId: string, date: string) => `w-${clientId}-${date}`;
 
-export const weightLogs: WeightLog[] = [
-  ...martaWeights.map(([date, weightKg, note = ""]) => ({
-    id: weightId(CLIENT_IDS.marta, date),
-    trainerId: TRAINER_ID,
-    clientId: CLIENT_IDS.marta,
-    date,
-    weightKg,
-    note,
-    createdAt: ts(date, "07:30:00"),
-  })),
-  {
-    id: weightId(CLIENT_IDS.jorge, "2026-08-29"),
-    trainerId: TRAINER_ID,
-    clientId: CLIENT_IDS.jorge,
-    date: "2026-08-29",
-    weightKg: 78.2,
-    note: "",
-    createdAt: ts("2026-08-29", "06:50:00"),
-  },
-  {
-    id: weightId(CLIENT_IDS.sara, "2026-08-28"),
-    trainerId: TRAINER_ID,
-    clientId: CLIENT_IDS.sara,
-    date: "2026-08-28",
-    weightKg: 61.0,
-    note: "",
-    createdAt: ts("2026-08-28", "07:10:00"),
-  },
-];
+export function buildWeightLogs(d: DemoDates): WeightLog[] {
+  const jorgeDate = d.today;
+  const saraDate = d.yesterday;
+  return [
+    ...martaWeights.map(([offset, weightKg, note = ""]) => {
+      const date = addCivilDays(d.martaStart, offset);
+      return {
+        id: weightId(CLIENT_IDS.marta, date),
+        trainerId: TRAINER_ID,
+        clientId: CLIENT_IDS.marta,
+        date,
+        weightKg,
+        note,
+        createdAt: ts(date, "07:30:00"),
+      };
+    }),
+    {
+      id: weightId(CLIENT_IDS.jorge, jorgeDate),
+      trainerId: TRAINER_ID,
+      clientId: CLIENT_IDS.jorge,
+      date: jorgeDate,
+      weightKg: 78.2,
+      note: "",
+      createdAt: ts(jorgeDate, "06:50:00"),
+    },
+    {
+      id: weightId(CLIENT_IDS.sara, saraDate),
+      trainerId: TRAINER_ID,
+      clientId: CLIENT_IDS.sara,
+      date: saraDate,
+      weightKg: 61.0,
+      note: "",
+      createdAt: ts(saraDate, "07:10:00"),
+    },
+  ];
+}
 
-const REQUIREMENTS = {
+export const REQUIREMENTS = {
   measurementTypeIds: measurementTypes.map((t) => t.id),
   questionIds: questions.map((q) => q.id),
 };
@@ -114,7 +121,6 @@ function responses(
 
 interface MartaWeek {
   week: number;
-  date: string;
   answers: [number, number, number, string, string];
   feedbackNote: string;
 }
@@ -122,75 +128,68 @@ interface MartaWeek {
 const martaWeeks: MartaWeek[] = [
   {
     week: 1,
-    date: "2026-08-01",
     answers: [3, 3, 4, "Punto de partida.", "Ninguna"],
     feedbackNote: "Fotos y medidas base",
   },
   {
     week: 2,
-    date: "2026-08-08",
     answers: [4, 3, 4, "Más energía en pierna.", "Ninguna"],
     feedbackNote: "Buen arranque, seguimos igual",
   },
   {
     week: 3,
-    date: "2026-08-15",
     answers: [3, 2, 3, "Semana floja de sueño.", "Ninguna"],
     feedbackNote: "Subida de carbos +20 g",
   },
   {
     week: 4,
-    date: "2026-08-22",
     answers: [4, 4, 4, "Ropa más suelta en cintura.", "Ninguna"],
     feedbackNote: "Vamos bien, mantén el descanso",
   },
 ];
 
-function martaReview(w: MartaWeek): Review {
-  const prefix = `rv-marta-s${w.week}`;
-  return {
-    id: prefix,
-    trainerId: TRAINER_ID,
-    clientId: CLIENT_IDS.marta,
-    weekNumber: w.week,
-    window: reviewWindowForWeek("2026-08-01", w.week),
-    status: "revisada",
-    requirements: REQUIREMENTS,
-    media: (["frente", "perfil", "espalda"] as const).map((pose) => ({
-      id: `${prefix}-${pose}`,
-      pose,
-      url: `demo://${prefix}/${pose}.jpg`,
-      uploadedAt: ts(w.date, "09:00:00"),
-    })),
-    weightLogId: weightId(CLIENT_IDS.marta, w.date),
-    measurements: measurementsForWeek(prefix, w.week),
-    responses: responses(prefix, w.answers),
-    feedbackVideoUrl: `https://youtu.be/hector-marta-s${w.week}`,
-    feedbackNote: w.feedbackNote,
-    createdAt: ts(w.date, "08:30:00"),
-    submittedAt: ts(w.date, "09:10:00"),
-    viewedAt: ts(w.date, "12:00:00"),
-    reviewedAt: ts(w.date, "18:00:00"),
-  };
-}
-
-const martaS5: Review = {
-  ...martaReview({
-    week: 5,
-    date: "2026-08-29",
-    answers: [
-      4,
-      3,
-      4,
-      "Me veo con más definición en la cintura. Semana dura en el trabajo pero he cumplido casi todo.",
-      "Ligera molestia en la rodilla derecha en la zancada búlgara, solo con peso alto.",
-    ],
-    feedbackNote: "",
-  }),
-  status: "enviada",
-  feedbackVideoUrl: null,
-  viewedAt: null,
-  reviewedAt: null,
+const martaS5: MartaWeek = {
+  week: 5,
+  answers: [
+    4,
+    3,
+    4,
+    "Me veo con más definición en la cintura. Semana dura en el trabajo pero he cumplido casi todo.",
+    "Ligera molestia en la rodilla derecha en la zancada búlgara, solo con peso alto.",
+  ],
+  feedbackNote: "",
 };
 
-export const reviews: Review[] = [...martaWeeks.map(martaReview), martaS5];
+/** Cinco revisiones de Marta: S1–S4 revisadas con feedback, S5 enviada hoy (la "Nueva" del panel). */
+export function buildMartaReviews(d: DemoDates): Review[] {
+  const build = (w: MartaWeek): Review => {
+    const prefix = `rv-marta-s${w.week}`;
+    const date = addCivilDays(d.martaStart, (w.week - 1) * 7);
+    const done = w.week < 5;
+    return {
+      id: prefix,
+      trainerId: TRAINER_ID,
+      clientId: CLIENT_IDS.marta,
+      weekNumber: w.week,
+      window: reviewWindowForWeek(d.martaStart, w.week),
+      status: done ? "revisada" : "enviada",
+      requirements: REQUIREMENTS,
+      media: (["frente", "perfil", "espalda"] as const).map((pose) => ({
+        id: `${prefix}-${pose}`,
+        pose,
+        url: `demo://${prefix}/${pose}.jpg`,
+        uploadedAt: ts(date, "09:00:00"),
+      })),
+      weightLogId: weightId(CLIENT_IDS.marta, date),
+      measurements: measurementsForWeek(prefix, w.week),
+      responses: responses(prefix, w.answers),
+      feedbackVideoUrl: done ? `https://youtu.be/hector-marta-s${w.week}` : null,
+      feedbackNote: w.feedbackNote,
+      createdAt: ts(date, "08:30:00"),
+      submittedAt: ts(date, "09:10:00"),
+      viewedAt: done ? ts(date, "12:00:00") : null,
+      reviewedAt: done ? ts(date, "18:00:00") : null,
+    };
+  };
+  return [...martaWeeks, martaS5].map(build);
+}

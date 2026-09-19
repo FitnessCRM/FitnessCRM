@@ -1,5 +1,5 @@
 import type { Prescription, Routine, RoutineDay, RoutineTemplate } from "@/lib/domain";
-import { CLIENT_IDS, TRAINER_ID, ts } from "./common";
+import { CLIENT_IDS, TRAINER_ID, ts, type DemoDates } from "./common";
 import { EXERCISE_IDS as EX } from "./exercises";
 
 type Rx = [
@@ -61,72 +61,75 @@ function hyper5dDays(prefix: string): RoutineDay[] {
   ];
 }
 
-const templateBase = { trainerId: TRAINER_ID, note: "", createdAt: ts("2026-03-01") };
-
-/** Las tres plantillas de rutina de la pantalla "Plantillas". */
-export const routineTemplates: RoutineTemplate[] = [
-  {
-    ...templateBase,
-    id: "rt-hiper-5d-v3",
-    name: "Hiper 5d v3",
-    description: "5 días · torso/pierna",
-    days: hyper5dDays("rt1"),
-    updatedAt: ts("2026-08-12"),
-  },
-  {
-    ...templateBase,
-    id: "rt-fuerza-basicos-3d",
-    name: "Fuerza básicos 3d",
-    description: "3 días · SBD",
-    days: [
-      day("rt2", 1, "Sentadilla", [
-        [EX.squat, 5, 5, null, "1", "4 min"],
-        [EX.legPress, 3, 8, 10, "2"],
-      ]),
-      day("rt2", 2, "Banca", [
-        [EX.bench, 5, 5, null, "1", "4 min"],
-        [EX.row, 4, 8, 10, "2"],
-      ]),
-      day("rt2", 3, "Peso muerto", [
-        [EX.rdl, 5, 5, null, "1", "4 min"],
-        [EX.pullup, 4, 6, 8, "2"],
-      ]),
-    ],
-    updatedAt: ts("2026-08-02"),
-  },
-  {
-    ...templateBase,
-    id: "rt-full-body-2d",
-    name: "Full body 2d",
-    description: "2 días · principiantes",
-    days: [
-      day("rt3", 1, "A", [
-        [EX.squat, 3, 8, 10, "3"],
-        [EX.bench, 3, 8, 10, "3"],
-        [EX.row, 3, 10, 12, "3"],
-      ]),
-      day("rt3", 2, "B", [
-        [EX.rdl, 3, 8, 10, "3"],
-        [EX.ohp, 3, 8, 10, "3"],
-        [EX.pullup, 3, 5, 8, "3"],
-      ]),
-    ],
-    updatedAt: ts("2026-07-15"),
-  },
-];
-
-/** Rutina activa de Marta, clonada de "Hiper 5d v3" y ajustada. */
-export const routines: Routine[] = [
-  {
-    id: "rt-marta-hipertrofia",
-    trainerId: TRAINER_ID,
-    clientId: CLIENT_IDS.marta,
-    name: "Hipertrofia — Torso / Pierna",
-    note: "Esta semana sube 2,5 kg en sentadilla si el RIR 2 se te queda fácil. En la búlgara prioriza el rango completo antes que el peso.",
-    days: hyper5dDays("r-marta"),
-    status: "activo",
-    sourceTemplateName: "Hiper 5d v3",
-    createdAt: ts("2026-08-01"),
-    updatedAt: ts("2026-08-24"),
-  },
-];
+/** Las tres plantillas de rutina de la pantalla "Plantillas" y la rutina activa de Marta. */
+export function buildRoutines(d: DemoDates): {
+  routineTemplates: RoutineTemplate[];
+  routines: Routine[];
+} {
+  const templateBase = { trainerId: TRAINER_ID, note: "", createdAt: ts(d.daysAgo(180)) };
+  const routineTemplates: RoutineTemplate[] = [
+    {
+      ...templateBase,
+      id: "rt-hiper-5d-v3",
+      name: "Hiper 5d v3",
+      description: "5 días · torso/pierna",
+      days: hyper5dDays("rt1"),
+      updatedAt: ts(d.daysAgo(17)),
+    },
+    {
+      ...templateBase,
+      id: "rt-fuerza-basicos-3d",
+      name: "Fuerza básicos 3d",
+      description: "3 días · SBD",
+      days: [
+        day("rt2", 1, "Sentadilla", [
+          [EX.squat, 5, 5, null, "1", "4 min"],
+          [EX.legPress, 3, 8, 10, "2"],
+        ]),
+        day("rt2", 2, "Banca", [
+          [EX.bench, 5, 5, null, "1", "4 min"],
+          [EX.row, 4, 8, 10, "2"],
+        ]),
+        day("rt2", 3, "Peso muerto", [
+          [EX.rdl, 5, 5, null, "1", "4 min"],
+          [EX.pullup, 4, 6, 8, "2"],
+        ]),
+      ],
+      updatedAt: ts(d.daysAgo(27)),
+    },
+    {
+      ...templateBase,
+      id: "rt-full-body-2d",
+      name: "Full body 2d",
+      description: "2 días · principiantes",
+      days: [
+        day("rt3", 1, "A", [
+          [EX.squat, 3, 8, 10, "3"],
+          [EX.bench, 3, 8, 10, "3"],
+          [EX.row, 3, 10, 12, "3"],
+        ]),
+        day("rt3", 2, "B", [
+          [EX.rdl, 3, 8, 10, "3"],
+          [EX.ohp, 3, 8, 10, "3"],
+          [EX.pullup, 3, 5, 8, "3"],
+        ]),
+      ],
+      updatedAt: ts(d.daysAgo(45)),
+    },
+  ];
+  const routines: Routine[] = [
+    {
+      id: "rt-marta-hipertrofia",
+      trainerId: TRAINER_ID,
+      clientId: CLIENT_IDS.marta,
+      name: "Hipertrofia — Torso / Pierna",
+      note: "Esta semana sube 2,5 kg en sentadilla si el RIR 2 se te queda fácil. En la búlgara prioriza el rango completo antes que el peso.",
+      days: hyper5dDays("r-marta"),
+      status: "activo",
+      sourceTemplateName: "Hiper 5d v3",
+      createdAt: ts(d.martaStart),
+      updatedAt: ts(d.daysAgo(5)),
+    },
+  ];
+  return { routineTemplates, routines };
+}

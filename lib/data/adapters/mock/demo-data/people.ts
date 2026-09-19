@@ -1,5 +1,5 @@
 import type { Client, Membership, Trainer } from "@/lib/domain";
-import { CLIENT_IDS, DEMO_TZ, TRAINER_ID, ts } from "./common";
+import { CLIENT_IDS, DEMO_TZ, TRAINER_ID, ts, type DemoDates } from "./common";
 
 export const trainer: Trainer = {
   id: TRAINER_ID,
@@ -34,62 +34,66 @@ function client(
   };
 }
 
-/** Semanas de la maqueta: Marta S5, Jorge S8, Sara S3, David S11 el 29-08-2026. */
-export const clients: Client[] = [
-  client(CLIENT_IDS.marta, "Marta", "Ruiz", "2026-08-01", {
-    phone: "+34 600 111 222",
-    goal: "Hipertrofia",
-    level: "Intermedio",
-  }),
-  client(CLIENT_IDS.jorge, "Jorge", "Lema", "2026-07-11", {
-    goal: "Definición",
-    level: "Avanzado",
-  }),
-  client(CLIENT_IDS.sara, "Sara", "Peña", "2026-08-15", {
-    lastName: "Peña Ortiz",
-    phone: "+34 612 345 678",
-    goal: "Recomposición corporal",
-    level: "Intermedio",
-  }),
-  client(CLIENT_IDS.david, "David", "Cano", "2026-06-20", {
-    goal: "Hipertrofia",
-    level: "Intermedio",
-  }),
-  client(CLIENT_IDS.lucia, "Lucía", "Torres", "2026-05-02", {
-    status: "dado_de_baja",
-    initialNotes: "Pausa por viaje largo",
-  }),
-];
-
-let n = 0;
-function membership(
-  clientId: string,
-  type: Membership["type"],
-  startDate: string,
-  endDate: string,
-  paymentStatus: Membership["paymentStatus"],
-): Membership {
-  return {
-    id: `mb-${++n}`,
-    trainerId: TRAINER_ID,
-    clientId,
-    type,
-    startDate,
-    endDate,
-    paymentStatus,
-    createdAt: ts(startDate),
-  };
+export function buildClients(d: DemoDates): Client[] {
+  return [
+    client(CLIENT_IDS.marta, "Marta", "Ruiz", d.martaStart, {
+      phone: "+34 600 111 222",
+      goal: "Hipertrofia",
+      level: "Intermedio",
+    }),
+    client(CLIENT_IDS.jorge, "Jorge", "Lema", d.jorgeStart, {
+      goal: "Definición",
+      level: "Avanzado",
+    }),
+    client(CLIENT_IDS.sara, "Sara", "Peña", d.saraStart, {
+      lastName: "Peña Ortiz",
+      phone: "+34 612 345 678",
+      goal: "Recomposición corporal",
+      level: "Intermedio",
+    }),
+    client(CLIENT_IDS.david, "David", "Cano", d.davidStart, {
+      goal: "Hipertrofia",
+      level: "Intermedio",
+    }),
+    client(CLIENT_IDS.lucia, "Lucía", "Torres", d.luciaStart, {
+      status: "dado_de_baja",
+      initialNotes: "Pausa por viaje largo",
+    }),
+  ];
 }
 
-export const memberships: Membership[] = [
-  membership(CLIENT_IDS.marta, "mensual", "2026-02-01", "2026-02-28", "pagada"),
-  membership(CLIENT_IDS.marta, "mensual", "2026-03-01", "2026-03-31", "pagada"),
-  membership(CLIENT_IDS.marta, "trimestral", "2026-04-01", "2026-06-30", "pagada"),
-  membership(CLIENT_IDS.marta, "trimestral", "2026-07-01", "2026-09-30", "pagada"),
-  membership(CLIENT_IDS.marta, "trimestral", "2026-10-01", "2026-12-31", "no_pagada"),
-  membership(CLIENT_IDS.jorge, "mensual", "2026-08-01", "2026-08-31", "pagada"),
-  membership(CLIENT_IDS.jorge, "mensual", "2026-09-01", "2026-09-30", "no_pagada"),
-  membership(CLIENT_IDS.sara, "mensual", "2026-08-15", "2026-09-14", "pagada"),
-  membership(CLIENT_IDS.david, "semestral", "2026-05-01", "2026-10-31", "pagada"),
-  membership(CLIENT_IDS.lucia, "mensual", "2026-08-01", "2026-08-31", "no_pagada"),
-];
+/** Membresías encadenadas hacia atrás desde la vigente; a Marta le quedan ~30 días, como en la demo. */
+export function buildMemberships(d: DemoDates): Membership[] {
+  let n = 0;
+  const membership = (
+    clientId: string,
+    type: Membership["type"],
+    startOffset: number,
+    endOffset: number,
+    paymentStatus: Membership["paymentStatus"],
+  ): Membership => {
+    const startDate = d.daysAhead(startOffset);
+    return {
+      id: `mb-${++n}`,
+      trainerId: TRAINER_ID,
+      clientId,
+      type,
+      startDate,
+      endDate: d.daysAhead(endOffset),
+      paymentStatus,
+      createdAt: ts(startDate),
+    };
+  };
+  return [
+    membership(CLIENT_IDS.marta, "mensual", -210, -182, "pagada"),
+    membership(CLIENT_IDS.marta, "mensual", -181, -151, "pagada"),
+    membership(CLIENT_IDS.marta, "trimestral", -150, -60, "pagada"),
+    membership(CLIENT_IDS.marta, "trimestral", -59, 30, "pagada"),
+    membership(CLIENT_IDS.marta, "trimestral", 31, 122, "no_pagada"),
+    membership(CLIENT_IDS.jorge, "mensual", -48, -19, "pagada"),
+    membership(CLIENT_IDS.jorge, "mensual", -18, 11, "no_pagada"),
+    membership(CLIENT_IDS.sara, "mensual", -15, 14, "pagada"),
+    membership(CLIENT_IDS.david, "semestral", -70, 112, "pagada"),
+    membership(CLIENT_IDS.lucia, "mensual", -48, -19, "no_pagada"),
+  ];
+}

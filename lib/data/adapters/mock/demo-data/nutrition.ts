@@ -1,5 +1,5 @@
 import type { MacroTargets, Meal, Menu, MenuBody, MenuTemplate } from "@/lib/domain";
-import { CLIENT_IDS, TRAINER_ID, ts } from "./common";
+import { CLIENT_IDS, TRAINER_ID, ts, type DemoDates } from "./common";
 
 type Food = [name: string, grams: number];
 
@@ -102,79 +102,86 @@ function menuDescanso(prefix: string): MenuBody {
   };
 }
 
-const clientMenu = (id: string, body: MenuBody): Menu => ({
-  id,
-  trainerId: TRAINER_ID,
-  clientId: CLIENT_IDS.marta,
-  ...body,
-  status: "activo",
-  sourceTemplateName: "Definición 2.400",
-  createdAt: ts("2026-08-01"),
-  updatedAt: ts("2026-08-01"),
-});
-
-export const menus: Menu[] = [
-  clientMenu("mn-marta-a", menuACasero("mn-marta-a")),
-  clientMenu("mn-marta-b", menuBTupper("mn-marta-b")),
-  clientMenu("mn-marta-descanso", menuDescanso("mn-marta-descanso")),
-];
-
-const targets = (
-  id: string,
-  dayType: MacroTargets["dayType"],
-  macros: MacroTargets["macros"],
-): MacroTargets => ({
-  id,
-  trainerId: TRAINER_ID,
-  clientId: CLIENT_IDS.marta,
-  dayType,
-  macros,
-  status: "activo",
-  createdAt: ts("2026-08-01"),
-  updatedAt: ts("2026-08-01"),
-});
-
-/** Macros del "Editor de plan": 165/260/72 entrenamiento, 150/190/65 descanso. */
-export const macroTargets: MacroTargets[] = [
-  targets("mt-marta-entrenamiento", "entrenamiento", { proteinG: 165, carbsG: 260, fatG: 72 }),
-  targets("mt-marta-descanso", "descanso", { proteinG: 150, carbsG: 190, fatG: 65 }),
-];
-
-export const menuTemplates: MenuTemplate[] = [
-  {
-    id: "mnt-definicion-2400",
+export function buildNutrition(d: DemoDates): {
+  menus: Menu[];
+  macroTargets: MacroTargets[];
+  menuTemplates: MenuTemplate[];
+} {
+  const clientMenu = (id: string, body: MenuBody): Menu => ({
+    id,
     trainerId: TRAINER_ID,
-    name: "Definición 2.400",
-    description: "2 tipos de día · 2 menús por tipo",
-    menus: [
-      { id: "mnt1-a", ...menuACasero("mnt1-a") },
-      { id: "mnt1-b", ...menuBTupper("mnt1-b") },
-      { id: "mnt1-d", ...menuDescanso("mnt1-d") },
-      { id: "mnt1-d2", ...menuDescanso("mnt1-d2"), name: "Menú descanso B", suggested: false },
-    ],
-    createdAt: ts("2026-03-01"),
-    updatedAt: ts("2026-08-20"),
-  },
-  {
-    id: "mnt-volumen-3000",
+    clientId: CLIENT_IDS.marta,
+    ...body,
+    status: "activo",
+    sourceTemplateName: "Definición 2.400",
+    createdAt: ts(d.martaStart),
+    updatedAt: ts(d.martaStart),
+  });
+
+  const menus: Menu[] = [
+    clientMenu("mn-marta-a", menuACasero("mn-marta-a")),
+    clientMenu("mn-marta-b", menuBTupper("mn-marta-b")),
+    clientMenu("mn-marta-descanso", menuDescanso("mn-marta-descanso")),
+  ];
+
+  const targets = (
+    id: string,
+    dayType: MacroTargets["dayType"],
+    macros: MacroTargets["macros"],
+  ): MacroTargets => ({
+    id,
     trainerId: TRAINER_ID,
-    name: "Volumen 3.000",
-    description: "2 tipos de día · 3 menús por tipo",
-    menus: [
-      {
-        id: "mnt2-a",
-        ...menuACasero("mnt2-a"),
-        name: "Volumen A",
-        macros: { proteinG: 190, carbsG: 380, fatG: 90 },
-      },
-      {
-        id: "mnt2-d",
-        ...menuDescanso("mnt2-d"),
-        name: "Volumen descanso",
-        macros: { proteinG: 180, carbsG: 300, fatG: 85 },
-      },
-    ],
-    createdAt: ts("2026-04-01"),
-    updatedAt: ts("2026-07-28"),
-  },
-];
+    clientId: CLIENT_IDS.marta,
+    dayType,
+    macros,
+    status: "activo",
+    createdAt: ts(d.martaStart),
+    updatedAt: ts(d.martaStart),
+  });
+
+  /** Macros del "Editor de plan": 165/260/72 entrenamiento, 150/190/65 descanso. */
+  const macroTargets: MacroTargets[] = [
+    targets("mt-marta-entrenamiento", "entrenamiento", { proteinG: 165, carbsG: 260, fatG: 72 }),
+    targets("mt-marta-descanso", "descanso", { proteinG: 150, carbsG: 190, fatG: 65 }),
+  ];
+
+  const menuTemplates: MenuTemplate[] = [
+    {
+      id: "mnt-definicion-2400",
+      trainerId: TRAINER_ID,
+      name: "Definición 2.400",
+      description: "2 tipos de día · 2 menús por tipo",
+      menus: [
+        { id: "mnt1-a", ...menuACasero("mnt1-a") },
+        { id: "mnt1-b", ...menuBTupper("mnt1-b") },
+        { id: "mnt1-d", ...menuDescanso("mnt1-d") },
+        { id: "mnt1-d2", ...menuDescanso("mnt1-d2"), name: "Menú descanso B", suggested: false },
+      ],
+      createdAt: ts(d.daysAgo(180)),
+      updatedAt: ts(d.daysAgo(9)),
+    },
+    {
+      id: "mnt-volumen-3000",
+      trainerId: TRAINER_ID,
+      name: "Volumen 3.000",
+      description: "2 tipos de día · 3 menús por tipo",
+      menus: [
+        {
+          id: "mnt2-a",
+          ...menuACasero("mnt2-a"),
+          name: "Volumen A",
+          macros: { proteinG: 190, carbsG: 380, fatG: 90 },
+        },
+        {
+          id: "mnt2-d",
+          ...menuDescanso("mnt2-d"),
+          name: "Volumen descanso",
+          macros: { proteinG: 180, carbsG: 300, fatG: 85 },
+        },
+      ],
+      createdAt: ts(d.daysAgo(150)),
+      updatedAt: ts(d.daysAgo(32)),
+    },
+  ];
+  return { menus, macroTargets, menuTemplates };
+}

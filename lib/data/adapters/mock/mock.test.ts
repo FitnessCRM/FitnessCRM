@@ -16,16 +16,20 @@ import {
   weightLogSchema,
   workoutLogSchema,
   isReviewComplete,
+  weekNumber,
 } from "@/lib/domain";
-import { createDemoState, createMockPorts } from "./index";
+import { createDemoState, createMockPorts, demoToday } from "./index";
 
 const TRAINER = "t-adrian";
 const MARTA = "c-marta";
-const ports = () => createMockPorts({ latencyMs: 0, now: () => "2026-08-29T10:00:00Z" });
+/** Fecha fija para que las expectativas sean deterministas; los datos se generan relativos a ella. */
+const TODAY = "2026-08-29";
+const ports = () =>
+  createMockPorts({ latencyMs: 0, today: TODAY, now: () => `${TODAY}T10:00:00Z` });
 
 describe("demo data", () => {
   it("validates against every domain schema", () => {
-    const s = createDemoState();
+    const s = createDemoState(TODAY);
     const check = (schema: { parse: (v: unknown) => unknown }, items: unknown[]) =>
       items.forEach((i) => schema.parse(i));
     check(trainerSchema, s.trainers);
@@ -45,7 +49,7 @@ describe("demo data", () => {
   });
 
   it("only references existing exercises from routines (I3) and existing weight logs from reviews (I9)", () => {
-    const s = createDemoState();
+    const s = createDemoState(TODAY);
     const exerciseIds = new Set(s.exercises.map((e) => e.id));
     for (const r of [...s.routines, ...s.routineTemplates]) {
       for (const d of r.days)
@@ -67,7 +71,33 @@ describe("demo data", () => {
     expect([m(byWeek[0]!, "mt-cintura"), m(byWeek[4]!, "mt-cintura")]).toEqual([74, 71]);
     expect([m(byWeek[0]!, "mt-cadera"), m(byWeek[4]!, "mt-cadera")]).toEqual([98, 96.5]);
     expect(m(byWeek[4]!, "mt-muslo")! - m(byWeek[0]!, "mt-muslo")!).toBeCloseTo(0.8);
-    expect(logs.filter((l) => l.date.startsWith("2026-08"))).toHaveLength(13);
+    expect(logs).toHaveLength(13);
+  });
+
+  it("is relative to today: any date keeps Marta in S5, Jorge in S8, Sara in S3 and David in S11", async () => {
+    for (const today of [demoToday(), "2027-03-14", "2026-12-31"]) {
+      const p = createMockPorts({ latencyMs: 0, today });
+      const trainer = (await p.trainer.getTrainer(TRAINER))!;
+      const weeks = Object.fromEntries(
+        (await p.clients.listClients(TRAINER)).map((c) => [
+          c.id,
+          weekNumber(c.startDate, today, trainer.timeZone),
+        ]),
+      );
+      expect(weeks).toMatchObject({ "c-marta": 5, "c-jorge": 8, "c-sara": 3, "c-david": 11 });
+      const s = createDemoState(today);
+      for (const r of s.reviews) {
+        reviewSchema.parse(r);
+        const log = s.weightLogs.find((w) => w.id === r.weightLogId)!;
+        expect(log.date >= r.window.start && log.date <= r.window.end).toBe(true);
+      }
+      s.memberships.forEach((m) => membershipSchema.parse(m));
+      expect((await p.reviews.listSubmittedReviews(TRAINER)).map((r) => r.id)).toEqual([
+        "rv-marta-s5",
+        "rv-jorge-s8",
+        "rv-sara-s3",
+      ]);
+    }
   });
 });
 
