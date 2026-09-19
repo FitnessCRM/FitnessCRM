@@ -19,9 +19,18 @@ export const tokens = {
     success: "oklch(0.72 0.13 155)",
     danger: "oklch(0.72 0.19 25)",
   },
-  /** Series de las gráficas de la demo: acento para la principal, neutros para las demás. */
+  /** Series de las gráficas: acento para la principal, después los tonos de la demo (06). */
   chart: {
-    series: ["oklch(0.68 0.21 30)", "oklch(0.72 0.19 25 / 0.7)", "#98928a", "#6e6862"],
+    series: [
+      "oklch(0.68 0.21 30)",
+      "oklch(0.68 0.1 30)",
+      "rgba(255, 255, 255, 0.35)",
+      "oklch(0.78 0.18 30)",
+      "#98928a",
+      "oklch(0.72 0.13 155)",
+      "#6e6862",
+      "oklch(0.55 0.15 30)",
+    ],
   },
   font: {
     ui: "var(--font-inter-tight), Inter Tight, sans-serif",

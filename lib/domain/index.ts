@@ -7,3 +7,4 @@ export * from "./review";
 export * from "./templates";
 export * from "./routine";
 export * from "./weight";
+export * from "./progress";

@@ -76,7 +76,7 @@ export function TrendChart({
             return (
               <Line
                 key={s.key}
-                type="monotone"
+                type="linear"
                 dataKey={s.key}
                 name={s.label}
                 stroke={color}

@@ -196,6 +196,18 @@ Fase 5 (navegación):
   imágenes recuperables. Con backend, la foto sube a Storage antes de guardar la URL en
   `ReviewMedia`.
 
+- **Progreso** (`components/cliente/progress/`, 19-09-2026): «Evolución de peso» con todas las
+  semanas del cliente (`weeklyWeights`) y el delta sin color; «Medidas», primera gráfica
+  multi-serie: `measurementSeries` en `lib/domain/progress.ts` da una serie por tipo de medida
+  presente en las revisiones, dispersa y con `null` donde no hubo valor, en orden de catálogo;
+  un tipo archivado conserva su histórico y se marca «archivado» en el selector, y no entra en
+  revisiones nuevas porque `openReview` solo congela tipos activos. Selector de tipos como en la
+  demo; por defecto se muestran los tres primeros del catálogo (la demo enseña cintura, cadera y
+  muslo, que son los que más varían: elegirlos automáticamente sería un juicio). Histórico
+  agrupado de dos en dos semanas (`groupReviewsByWeekPair`, §8); un borrador enlaza a Revisión con
+  «n/4», el resto a `/ver-revision?review=id` con «Completa ✓» o «Parcial». Las líneas van con
+  segmentos rectos: la demo no suaviza y una curva inventa valores entre semanas.
+
 ## Siguiente
 
 Pantallas del cliente (rutina, menú, peso, revisión, progreso, membresía, ver revisión) sobre
