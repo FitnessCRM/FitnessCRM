@@ -1,6 +1,6 @@
 # Estado del arranque
 
-Última actualización: 18-09-2026. Las cinco fases de la tarea de cimientos están hechas y en
+Última actualización: 19-09-2026. Las cinco fases de la tarea de cimientos están hechas y en
 `main`. Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
 ## Cómo se trabajó hasta aquí
@@ -58,7 +58,7 @@ Windows. Consecuencias:
   respuesta. Las invariantes se aplican con las funciones del dominio (I4, I9, I13, I15, I16,
   I17). `demo-data/` reproduce la demo: Adrián Vega, cinco clientes, 10 ejercicios, 3 plantillas
   de rutina, 2 de menú, rutina y menús de Marta, 10 membresías, 8 tipos de medida, 5 preguntas,
-  13 pesajes de agosto, 5 revisiones de Marta y las enviadas de Jorge y Sara. Un test valida
+  13 pesajes del último mes, 5 revisiones de Marta y las enviadas de Jorge y Sara. Un test valida
   cada dato contra su esquema. 13 tests.
 - `hooks/`: `PortsProvider` (contexto + `QueryClient`), `usePorts`, `queryKeys`, hooks de
   lectura para todos los puertos y mutaciones principales.
@@ -127,8 +127,11 @@ Fase 4 (datos):
     kcal (la maqueta dice 2.410) y el de descanso 2.145 (2.100). Manda la fórmula 4/4/9.
 20. **Lucía Torres está `dado_de_baja`**: la maqueta dice "Inactiva · pausado" y no hay estado
     pausado.
-21. Fechas de alta ajustadas para que el 29-08-2026 Marta esté en S5, Jorge en S8, Sara en S3 y
-    David en S11, como muestra el panel.
+21. **Datos de demo relativos a hoy** (19-09-2026, `a0238b8`): antes eran fechas fijas de agosto
+    y la gráfica de peso se vaciaba día a día. Ahora `createDemoState(today)` los genera a partir
+    de `demoToday()` (zona `Europe/Madrid`): hoy Marta está en S5 (su primer día), Jorge en S8,
+    Sara en S3 y David en S11, como muestra el panel. Los tests fijan un `today` y además prueban
+    varias fechas.
 22. La rutina de Marta sigue el editor (Día 1 Torso, Día 2 Pierna, Día 3 Torso) y no la pantalla
     de cliente, que pone pierna en el Día 1; se añadieron los días 4 y 5.
 23. Contadores de plantillas y ejercicios ("Rutinas · 5", "24 ejercicios"): confirmado por el
@@ -149,16 +152,16 @@ Fase 5 (navegación):
 ## Dudas / contradicciones detectadas
 
 - `docs/design/demo-navegable.html` es una versión estática (18 pantallas apiladas) generada a
-  partir de `Demo Navegable.dc.html`, que depende de un `support.js` ausente. Usa las capturas
-  de `docs/design/screens/`.
+  partir de `Demo Navegable.dc.html`, que depende de un `support.js` ausente. La referencia son
+  las capturas de `docs/design/screens/`; `CLAUDE.md` ya lo dice (19-09-2026).
 - La demo tiene **18** pantallas, no 16: además están «Detalle cliente», «Alta de cliente» y
   «Ver revisión».
 - Fuera del MVP según `dominio.md` pero presente en la demo: «Bloque 2 · Semana 5 de 12»,
   columna «Bloque», «Adherencia %», «2FA» en el login. Se omiten al maquetar.
 - La pantalla de revisión del cliente dice «La revisión solo se envía completa»; I5 dice que la
   completitud avisa y no bloquea. Manda el dominio.
-- La maqueta dice "viernes, 29 agosto" pero el 29-08-2026 es sábado. Se mantiene la fecha; el
-  día de la semana se calculará.
+- La maqueta dice "viernes, 29 agosto" pero el 29-08-2026 es sábado. Con los datos relativos a
+  hoy la fecha del panel será la real y el día de la semana se calcula.
 - La demo muestra en el Día 1 del cliente ejercicios de pierna y en el editor Día 1 = Torso.
 - El "Eliminar" de la biblioteca (archivar) y las macros por menú ya están resueltos (decisión 15).
 - Sin cubrir por el dominio ni la demo: la pantalla «Medidas» (§11.1) y el envío de feedback

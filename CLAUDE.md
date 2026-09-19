@@ -28,9 +28,10 @@ Estas seis se comprueban antes de dar por buena cualquier tarea.
    directamente: todo pasa por los hooks de `lib/data/hooks/`, que hablan con las interfaces de
    `lib/data/ports/`. Hoy las implementa el adaptador en memoria. Cambiar de backend debe ser
    escribir un adaptador nuevo y no tocar ni un componente.
-4. **El diseño es `docs/design/demo-navegable.html`.** Es una demo real y navegable con las 16
-   pantallas. Ábrela y míralas antes de maquetar. No inventes pantallas ni te desvíes del layout
-   sin decirlo.
+4. **El diseño son las capturas de `docs/design/screens/`.** Son las 18 pantallas del prototipo
+   aprobado; míralas antes de maquetar. `docs/design/demo-navegable.html` es un volcado estático
+   de la misma demo (sin navegación), útil para inspeccionar medidas y textos, no para navegar.
+   No inventes pantallas ni te desvíes del layout sin decirlo.
 5. **Las reglas de negocio son `docs/dominio.md`.** Si una petición choca con una invariante de
    su §6, dilo antes de programar. Si aparece un hueco que ese documento no cubre, pregunta —
    no asumas. Ese archivo es una **copia** del documento maestro que vive en el proyecto Hector
@@ -89,7 +90,8 @@ lib/
   i18n/es.ts          todos los literales visibles
 docs/
   dominio.md
-  design/demo-navegable.html
+  design/screens/     las 18 capturas del prototipo: la referencia visual
+  design/demo-navegable.html   volcado estático de la demo
 ```
 
 ---
@@ -197,12 +199,14 @@ pnpm typecheck    # tsc --noEmit
 Cimientos terminados (18-09-2026): esqueleto, sistema de diseño, dominio con tests, capa de
 datos con adaptador en memoria y armazón de navegación con las dos áreas. Sin backend, sin auth
 real y sin persistencia: `app/providers.tsx` monta el adaptador en memoria y `SessionPort`
-devuelve una sesión de demo (Adrián como entrenador, Marta como cliente). Detalle, decisiones y
-dudas en `docs/estado.md`.
+devuelve una sesión de demo (Adrián como entrenador, Marta como cliente). Los datos de demo se
+generan relativos a la fecha de hoy (Marta siempre en su semana 5), no con fechas fijas.
+Detalle, decisiones y dudas en `docs/estado.md`.
 
 Dos decisiones del 18-09-2026 cambian `docs/dominio.md` y hay que sincronizar el original: cada
 menú lleva macros declaradas por el entrenador (informativas), y los ejercicios de la biblioteca
 se borran retirándolos de las rutinas tras avisar.
 
-Después, en este orden: pantallas del cliente, panel del entrenador, y por último la decisión de
-backend con su adaptador. Mantén esta sección al día conforme avance.
+Pantallas del cliente terminadas (19-09-2026): Peso, Revisión y Progreso. Siguen Rutina, Menú,
+Membresía y Ver revisión; después el panel del entrenador, y por último la decisión de backend
+con su adaptador. Mantén esta sección al día conforme avance.
