@@ -186,9 +186,15 @@ Fase 5 (navegación):
   diálogo enumera fotos, peso, medidas y preguntas que faltan y deja «Enviar igualmente». **I9**:
   el peso es `weightForReview` sobre la ventana; si no hay pesaje, enlace a Peso. **I17**: con
   `vista` o `revisada` todo queda deshabilitado y sin acciones; con `enviada` se puede seguir
-  editando («Guardar cambios»). Las fotos son un `object URL` del navegador hasta que haya
-  Storage. El texto de la demo «solo se envía completa» se sustituyó por «puedes enviarla
-  incompleta», manda el dominio.
+  editando («Guardar cambios»). El texto de la demo «solo se envía completa» se sustituyó por
+  «puedes enviarla incompleta», manda el dominio. **La revisión no se persiste por visitar la
+  pantalla** (19-09-2026): el borrador vive en memoria y se abre (persistiendo y congelando
+  requisitos) en el primer campo que se escribe o la primera foto; si no, cada visita dejaría una
+  fila vacía ocupando el hueco de I16 y saliendo en Progreso como «en curso 0/4». **Fotos:
+  pendiente número uno cuando haya backend.** Hoy son `object URL` del navegador, revocadas al
+  desmontar, y no sobreviven a una recarga: una revisión puede quedar enviada y completa sin
+  imágenes recuperables. Con backend, la foto sube a Storage antes de guardar la URL en
+  `ReviewMedia`.
 
 ## Siguiente
 

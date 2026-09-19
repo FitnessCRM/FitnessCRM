@@ -28,15 +28,15 @@ export function useReview(reviewId: string | undefined) {
 }
 
 /**
- * La revisión de la semana actual del cliente. Abrirla es idempotente (I16): devuelve la
- * existente o crea el borrador congelando semana y catálogo.
+ * La revisión de la semana actual del cliente, o `null` si aún no ha empezado. Solo lee:
+ * abrirla (persistir y congelar requisitos) es la mutación `open`, en la primera edición real.
  */
 export function useCurrentReview(clientId: string | undefined) {
   const ports = usePorts();
   const trainerId = useTrainerId();
   return useQuery({
     queryKey: queryKeys.currentReview(trainerId ?? "", clientId ?? ""),
-    queryFn: () => ports.reviews.openCurrentReview(trainerId!, clientId!),
+    queryFn: () => ports.reviews.getCurrentReview(trainerId!, clientId!),
     enabled: trainerId !== undefined && clientId !== undefined,
   });
 }

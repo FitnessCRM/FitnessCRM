@@ -8,7 +8,13 @@ export interface ReviewPort {
   getReview(trainerId: string, reviewId: string): Promise<Review | null>;
   /** Revisiones `enviada` de toda la cartera: la lista "Revisiones recibidas" del panel. */
   listSubmittedReviews(trainerId: string): Promise<Review[]>;
-  /** Abre (o devuelve) el borrador de la semana actual del cliente. Congela semana y catálogo. */
+  /** La revisión de la semana actual del cliente si existe. Solo lectura: nunca crea nada. */
+  getCurrentReview(trainerId: string, clientId: string): Promise<Review | null>;
+  /**
+   * Abre (o devuelve) la revisión de la semana actual, congelando semana y catálogo. Se llama
+   * en la primera edición real del cliente, no al visitar la pantalla: una fila vacía ocuparía
+   * el hueco de I16 y el congelado marcaría "visitó" en vez de "empezó".
+   */
   openCurrentReview(trainerId: string, clientId: string): Promise<Review>;
   updateReviewDraft(
     trainerId: string,

@@ -48,6 +48,13 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
           .filter((r) => r.status === "enviada")
           .sort(bySubmittedDesc),
       ),
+    getCurrentReview: async (trainerId, clientId) => {
+      const client = findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
+      const week = weekNumber(client.startDate, ctx.state.today, trainerOf(trainerId).timeZone);
+      return ctx.reply(
+        ctx.state.reviews.find((r) => r.clientId === clientId && r.weekNumber === week) ?? null,
+      );
+    },
     openCurrentReview: async (trainerId, clientId) => {
       const client = findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
       const trainer = trainerOf(trainerId);

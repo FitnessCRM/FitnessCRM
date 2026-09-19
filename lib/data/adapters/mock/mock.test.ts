@@ -182,6 +182,8 @@ describe("flows", () => {
 
   it("opens the current week's review once (I16), freezing the active catalog (I5/I22)", async () => {
     const p = ports();
+    // Leer no crea: visitar la pantalla no deja una fila vacía.
+    expect(await p.reviews.getCurrentReview(TRAINER, "c-david")).toBeNull();
     await p.measurementTypes.archiveMeasurementType(TRAINER, "mt-hombros");
     const first = await p.reviews.openCurrentReview(TRAINER, "c-david");
     const again = await p.reviews.openCurrentReview(TRAINER, "c-david");
@@ -189,6 +191,7 @@ describe("flows", () => {
     expect(first.weekNumber).toBe(11);
     expect(first.requirements.measurementTypeIds).not.toContain("mt-hombros");
     expect(first.requirements.questionIds).toHaveLength(5);
+    expect((await p.reviews.getCurrentReview(TRAINER, "c-david"))?.id).toBe(first.id);
   });
 
   it("rejects a review weight outside the window (I9) and edits after vista (I17)", async () => {
