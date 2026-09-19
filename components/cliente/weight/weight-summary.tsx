@@ -28,11 +28,8 @@ export function WeightSummaryCard({ summary }: { summary: WeightSummary }) {
         value={summary.sevenDayAverage !== null ? formatDecimal(summary.sevenDayAverage) : t.none}
         label={t.sevenDayAverage}
       />
-      <Stat
-        value={delta !== null ? formatSignedDecimal(delta) : t.none}
-        label={t.sinceStart}
-        className={delta !== null && delta < 0 ? "text-success" : undefined}
-      />
+      {/* Sin color: la app no sabe hacia dónde quiere ir el cliente y no juzga. */}
+      <Stat value={delta !== null ? formatSignedDecimal(delta) : t.none} label={t.sinceStart} />
     </Card>
   );
 }

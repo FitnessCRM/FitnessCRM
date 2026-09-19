@@ -22,10 +22,35 @@ export function formatSignedDecimal(value: number): string {
   return oneDecimal.format(0);
 }
 
-/** "2026-08-29" → "29-08-2026" */
+/** "2026-08-29" → "29-08-2026". La forma por defecto de una fecha en pantalla. */
 export function formatCivilDate(date: CivilDate): string {
   const [y, m, d] = date.split("-");
   return `${d}-${m}-${y}`;
+}
+
+const MONTHS_SHORT = [
+  "ene",
+  "feb",
+  "mar",
+  "abr",
+  "may",
+  "jun",
+  "jul",
+  "ago",
+  "sep",
+  "oct",
+  "nov",
+  "dic",
+];
+
+/**
+ * Forma corta para listas cronológicas densas: "29 ago" si la fecha es del año en curso,
+ * `DD-MM-YYYY` si no. El `title` del elemento lleva siempre la fecha completa.
+ */
+export function formatShortDate(date: CivilDate, today: CivilDate): string {
+  if (date.slice(0, 4) !== today.slice(0, 4)) return formatCivilDate(date);
+  const [, m, d] = date.split("-");
+  return `${Number(d)} ${MONTHS_SHORT[Number(m) - 1]}`;
 }
 
 /** "63,4" | "63.4" | " 63 " → 63.4; texto no numérico → NaN */

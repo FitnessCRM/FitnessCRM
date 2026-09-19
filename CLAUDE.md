@@ -131,7 +131,9 @@ aparecen en ninguna pantalla.
 variables, ramas y commits en inglés. Todo literal visible sale de `lib/i18n/es.ts`; no hay
 strings sueltos en los componentes.
 
-**Fechas.** En pantalla siempre `DD-MM-YYYY`. En el dominio, fechas civiles `YYYY-MM-DD` para
+**Fechas.** En pantalla, `DD-MM-YYYY` por defecto. En listas cronológicas densas del año en
+curso, día y mes abreviado como en la demo («29 ago»); fuera del año en curso, `DD-MM-YYYY`.
+El `title` del elemento lleva siempre la fecha completa. Formateadores en `lib/format.ts`. En el dominio, fechas civiles `YYYY-MM-DD` para
 revisiones y pesajes, y timestamps UTC ISO para lo técnico. La zona horaria es configuración del
 entrenador, nunca una constante en el código.
 
