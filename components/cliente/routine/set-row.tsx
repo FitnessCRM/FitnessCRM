@@ -3,7 +3,7 @@
 import { useState, type FocusEvent, type KeyboardEvent } from "react";
 import { Input } from "@/components/ui/input";
 import type { CivilDate, WorkoutLog } from "@/lib/domain";
-import { formatCivilDate, formatNumber, parseDecimalInput } from "@/lib/format";
+import { formatNumber, formatShortDate, parseDecimalInput } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 
 const t = es.screensRoutine.log;
@@ -21,6 +21,7 @@ export function SetRow({
   setNumber,
   log,
   reference,
+  today,
   onSave,
   onDelete,
 }: {
@@ -29,6 +30,8 @@ export function SetRow({
   log: WorkoutLog | undefined;
   /** Misma serie en el último día registrado antes de hoy: referencia, no se edita. */
   reference: { log: WorkoutLog; date: CivilDate } | undefined;
+  /** Fecha civil de hoy, para escribir la fecha de la referencia en forma corta. */
+  today: CivilDate;
   onSave: (values: { weightKg: number; reps: number }) => Promise<unknown>;
   onDelete: (workoutLogId: string) => Promise<unknown>;
 }) {
@@ -88,8 +91,9 @@ export function SetRow({
     ) : log ? (
       <span className="text-success">{t.saved}</span>
     ) : reference ? (
-      <span className="text-text-subtle" title={formatCivilDate(reference.date)}>
-        {t.lastTime} {formatNumber(reference.log.weightKg)} kg × {reference.log.reps}
+      <span className="text-text-subtle">
+        {t.lastTime} ({formatShortDate(reference.date, today)}):{" "}
+        {formatNumber(reference.log.weightKg)} kg × {reference.log.reps}
       </span>
     ) : null;
 

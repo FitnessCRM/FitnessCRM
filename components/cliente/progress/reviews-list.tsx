@@ -7,7 +7,7 @@ import {
   type Review,
   type WeightLog,
 } from "@/lib/domain";
-import { formatCivilDate, formatDecimal, formatShortDate } from "@/lib/format";
+import { formatDecimal, formatShortDate } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 
@@ -55,12 +55,10 @@ export function ReviewsList({
             const completeness = isReviewComplete(review);
             const done = Object.values(completeness.blocks).filter(Boolean).length;
             const total = Object.keys(completeness.blocks).length;
-            const date = (review.submittedAt ?? review.createdAt).slice(0, 10);
             return (
               <Link
                 key={review.id}
                 href={draft ? "/revision" : `/ver-revision?review=${review.id}`}
-                title={formatCivilDate(date)}
                 className={cn(
                   "bg-surface flex items-center gap-3.5 rounded-xl border px-5 py-4 transition-colors",
                   draft

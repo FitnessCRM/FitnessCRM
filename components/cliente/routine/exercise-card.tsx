@@ -69,6 +69,7 @@ export function ExerciseCard({
   exercise,
   logs,
   reference,
+  today,
   defaultOpen,
   onSave,
   onDelete,
@@ -80,6 +81,8 @@ export function ExerciseCard({
   logs: WorkoutLog[];
   /** Las mismas series en el último día registrado antes de hoy. */
   reference: { logs: WorkoutLog[]; date: CivilDate } | undefined;
+  /** Fecha civil de hoy, para fechar la referencia en la fila. */
+  today: CivilDate;
   defaultOpen: boolean;
   onSave: (setNumber: number, values: { weightKg: number; reps: number }) => Promise<unknown>;
   onDelete: (workoutLogId: string) => Promise<unknown>;
@@ -136,6 +139,7 @@ export function ExerciseCard({
                 key={`${setNumber}-${log?.id ?? "none"}-${log?.weightKg}-${log?.reps}`}
                 setNumber={setNumber}
                 log={log}
+                today={today}
                 reference={
                   previous && reference ? { log: previous, date: reference.date } : undefined
                 }

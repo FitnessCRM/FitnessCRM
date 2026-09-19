@@ -275,11 +275,21 @@ Fase 5 (navegación):
   - **El selector NO usa el `Tabs` de Radix**: dentro del área de cliente genera ids distintos en
     servidor y cliente y React avisa de hidratación en cada carga. Pasa con `value` controlado y
     sin controlar; en `/kitchen-sink`, fuera del armazón del cliente, el mismo componente no falla.
-    Sin diagnosticar. Los botones propios (mismo patrón que las pestañas de día de Rutina) dejan
-    la consola limpia. **Ojo con otros primitivos de Radix con id dentro del área de cliente**
-    (`Select`, `Dialog`): el diálogo de Revisión solo se monta al abrirse y no se ha comprobado.
+    Los botones propios (mismo patrón que las pestañas de día de Rutina) dejan la consola limpia.
+    Ver el hito responsive: el diagnóstico va ahí.
   - `TrainerNoteCard` pasa a `components/cliente/` y su literal a `es.common.trainerNote`: lo usan
     Rutina y Menú.
+  - **Menú B declara macros que no son el objetivo ni cuadran con sus alimentos** (150/230/80 →
+    2.240 kcal, frente a 2.348 del objetivo; 20-09-2026). El Menú A sigue clavado al objetivo. Así
+    la pantalla enseña los dos casos que el etiquetado tiene que distinguir, y se puede verificar.
+
+- **Nada vive solo en un `title` en el área de cliente** (20-09-2026): en táctil no hay hover. Se
+  quitaron los tres que quedaban —porcentaje de las barras del objetivo, fecha del «última vez» de
+  Rutina y fechas del historial de Peso y del histórico de Progreso—. Ahora el porcentaje se pinta
+  («165 g · 28 %», con una línea que dice qué mide), la referencia lleva la fecha dentro
+  («última vez (16 sep): 80 kg × 6») y las fechas de las listas se leen en el texto, en forma corta
+  dentro del año en curso y completas fuera de él, con `dateTime` para máquinas. La regla, con la
+  distinción entre área de cliente y panel del entrenador, está en `CLAUDE.md`.
 
 ## Siguiente
 
@@ -300,6 +310,16 @@ lateral y comparador de fotos a dos columnas.
 Entra en esta pasada: los 688 px de `/revision` a 390 px (la tira de completitud), y lo que
 salga de revisar las demás. Ya hecho aparte, porque desbordaba todo el área: el nav de
 `client-shell.tsx`.
+
+**También entra: diagnosticar `components/ui/tabs.tsx`.** Dentro del área de cliente, sus ids no
+coinciden entre servidor y cliente y React avisa de hidratación en cada carga; en `/kitchen-sink`,
+fuera del armazón, no pasa. Comprobado el 20-09-2026 con `.next` borrado, servidor reiniciado y
+pestaña nueva, con las pestañas controladas y sin controlar. **No es el armazón ni Radix en
+general**: forzando abierto el diálogo de Revisión (`Dialog` de Radix, con sus tres ids, dentro del
+mismo armazón y presente en el HTML del servidor) la consola queda limpia. Es cosa de `Tabs`
+—o de su `RovingFocusGroup`—. En el cliente se esquivó con botones propios, pero **la revisión del
+entrenador necesita pestañas de verdad** (Fotos / Cuestionario / Peso corporal), así que ahí ya no
+vale esquivarlo: hay que arreglar el componente antes de empezar el panel.
 
 Cómo medir: en un iframe de 390 px, no con la emulación de viewport del panel de vista previa,
 que no siempre se aplica y da falsos positivos.

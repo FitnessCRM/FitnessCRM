@@ -134,10 +134,16 @@ variables, ramas y commits en inglés. Todo literal visible sale de `lib/i18n/es
 strings sueltos en los componentes.
 
 **Fechas.** En pantalla, `DD-MM-YYYY` por defecto. En listas cronológicas densas del año en
-curso, día y mes abreviado como en la demo («29 ago»); fuera del año en curso, `DD-MM-YYYY`.
-El `title` del elemento lleva siempre la fecha completa. Formateadores en `lib/format.ts`. En el dominio, fechas civiles `YYYY-MM-DD` para
+curso, día y mes abreviado como en la demo («29 ago»); fuera del año en curso, `DD-MM-YYYY`, que
+es lo que hace `formatShortDate`. El elemento lleva `dateTime` con la fecha ISO para máquinas.
+Formateadores en `lib/format.ts`. En el dominio, fechas civiles `YYYY-MM-DD` para
 revisiones y pesajes, y timestamps UTC ISO para lo técnico. La zona horaria es configuración del
 entrenador, nunca una constante en el código.
+
+**Táctil frente a escritorio.** En el **área de cliente**, que se usa en el móvil, ningún dato que
+el cliente necesite puede vivir solo en un `title`: en táctil no hay hover y ese texto no existe.
+Se pinta visible o se alcanza con un toque. En el **panel del entrenador**, que es de escritorio
+por naturaleza, el `title` sí vale como complemento —nunca como único sitio donde está el dato—.
 
 **Unidades.** El peso corporal siempre en kg (I18). Cada tipo de medida declara su unidad y el
 valor se guarda en ella, sin conversiones silenciosas. Las kcal se derivan de los macros (4/4/9)

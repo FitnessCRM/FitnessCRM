@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/states";
 import { reviewUsingWeightLog, type CivilDate, type Review, type WeightLog } from "@/lib/domain";
-import { formatCivilDate, formatDecimal, formatShortDate } from "@/lib/format";
+import { formatDecimal, formatShortDate } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 
@@ -46,9 +46,7 @@ export function WeightHistory({
                     className={cn("text-[14px]", isToday ? "text-text-primary" : "text-text-muted")}
                   >
                     {isToday ? `${t.today} · ` : ""}
-                    <time dateTime={log.date} title={formatCivilDate(log.date)}>
-                      {formatShortDate(log.date, today)}
-                    </time>
+                    <time dateTime={log.date}>{formatShortDate(log.date, today)}</time>
                     {log.note ? ` · ${t.note}: ${log.note}` : ""}
                   </p>
                   <div className="flex items-baseline gap-4">

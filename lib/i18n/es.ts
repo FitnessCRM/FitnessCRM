@@ -194,7 +194,7 @@ export const es = {
       error: "no se ha guardado",
       incomplete: "revisa peso y reps",
       clearHint: "Vacía los dos campos para quitar una serie. Solo se edita el registro de hoy.",
-      lastTime: "última vez:",
+      lastTime: "última vez",
     },
     summary: {
       exercises: "Ejercicios",
@@ -215,7 +215,7 @@ export const es = {
       protein: "Proteína",
       carbs: "Carbohidratos",
       fat: "Grasas",
-      shareOfKcal: "de las kcal",
+      shareOfKcal: "El porcentaje es la parte de las kcal que aporta cada macro.",
       otherPrefix: "En",
       otherMiddle: "tu objetivo es",
       empty: "Tu entrenador todavía no te ha marcado macros.",

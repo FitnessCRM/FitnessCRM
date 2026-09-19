@@ -47,11 +47,12 @@ export function TargetCard({
         {rows.map((row) => {
           const share = kcal === 0 ? 0 : (row.grams * row.kcal) / kcal;
           return (
-            <div key={row.label} title={`${Math.round(share * 100)} % ${t.shareOfKcal}`}>
-              <div className="flex items-baseline justify-between text-[13px]">
+            <div key={row.label}>
+              <div className="flex items-baseline justify-between gap-3 text-[13px]">
                 <span className="text-text-primary">{row.label}</span>
                 <span className="text-text-muted">
                   {formatNumber(row.grams)} {es.screensMenu.menus.grams}
+                  <span className="text-text-subtle"> · {Math.round(share * 100)} %</span>
                 </span>
               </div>
               <div className="bg-surface-overlay mt-1.5 h-1.5 overflow-hidden rounded-full">
@@ -64,6 +65,7 @@ export function TargetCard({
           );
         })}
       </div>
+      <p className="text-text-subtle text-xs leading-snug">{t.shareOfKcal}</p>
       {other ? (
         <p className="text-text-subtle text-[13px] leading-snug">
           {t.otherPrefix} {es.status.dayTypeShort[other.dayType]} {t.otherMiddle}{" "}

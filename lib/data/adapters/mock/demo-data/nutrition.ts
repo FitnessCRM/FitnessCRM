@@ -48,12 +48,17 @@ function menuACasero(prefix: string): MenuBody {
   };
 }
 
+/**
+ * El Menú B declara macros que NI coinciden con el objetivo del cliente (165/260/72) NI salen de
+ * sumar sus alimentos: las escribe el entrenador y es su criterio (§5). Está así a propósito,
+ * para que la pantalla de menú enseñe el caso que su etiquetado tiene que dejar claro.
+ */
 function menuBTupper(prefix: string): MenuBody {
   return {
     name: "Menú B — Rápido / Tupper",
     dayType: "entrenamiento",
     suggested: false,
-    macros: { proteinG: 168, carbsG: 255, fatG: 70 },
+    macros: { proteinG: 150, carbsG: 230, fatG: 80 },
     note: "",
     meals: [
       meal(prefix, "Desayuno", [

@@ -165,6 +165,7 @@ function RoutineView({
                   item={item}
                   exercise={exercises.get(item.exerciseId)}
                   logs={itemLogs}
+                  today={today}
                   reference={
                     previous?.date
                       ? {
