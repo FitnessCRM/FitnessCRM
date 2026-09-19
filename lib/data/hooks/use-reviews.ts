@@ -27,6 +27,20 @@ export function useReview(reviewId: string | undefined) {
   });
 }
 
+/**
+ * La revisión de la semana actual del cliente. Abrirla es idempotente (I16): devuelve la
+ * existente o crea el borrador congelando semana y catálogo.
+ */
+export function useCurrentReview(clientId: string | undefined) {
+  const ports = usePorts();
+  const trainerId = useTrainerId();
+  return useQuery({
+    queryKey: queryKeys.currentReview(trainerId ?? "", clientId ?? ""),
+    queryFn: () => ports.reviews.openCurrentReview(trainerId!, clientId!),
+    enabled: trainerId !== undefined && clientId !== undefined,
+  });
+}
+
 /** Revisiones `enviada` de toda la cartera ("Revisiones recibidas"). */
 export function useSubmittedReviews() {
   const ports = usePorts();

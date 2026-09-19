@@ -23,6 +23,8 @@ export const queryKeys = {
   reviews: (trainerId: string) => ["reviews", trainerId] as const,
   clientReviews: (trainerId: string, clientId: string) =>
     ["reviews", trainerId, "client", clientId] as const,
+  currentReview: (trainerId: string, clientId: string) =>
+    ["reviews", trainerId, "current", clientId] as const,
   submittedReviews: (trainerId: string) => ["reviews", trainerId, "submitted"] as const,
   review: (trainerId: string, reviewId: string) => ["reviews", trainerId, "id", reviewId] as const,
   weightLogs: (trainerId: string, clientId: string) =>

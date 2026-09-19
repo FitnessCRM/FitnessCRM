@@ -178,6 +178,18 @@ Fase 5 (navegación):
   si no hubo. Fechas en `DD-MM-YYYY` por convención (la demo enseña "29 ago"). El delta solo se
   pinta en verde cuando baja, como en la demo; para un cliente de hipertrofia eso es discutible.
 
+- **Revisión** (`components/cliente/review/`, 19-09-2026): abre o recupera la revisión de la semana
+  actual (`useCurrentReview`, idempotente por I16). Los campos salen de los **requisitos
+  congelados** al abrirla, no del catálogo actual; etiqueta y formato se leen primero de la copia
+  congelada (I12) y después del catálogo. **I5**: la tira de cuatro bloques y la barra de progreso
+  se calculan en vivo con `applyReviewDraft` + `isReviewComplete`; al enviar incompleta, un
+  diálogo enumera fotos, peso, medidas y preguntas que faltan y deja «Enviar igualmente». **I9**:
+  el peso es `weightForReview` sobre la ventana; si no hay pesaje, enlace a Peso. **I17**: con
+  `vista` o `revisada` todo queda deshabilitado y sin acciones; con `enviada` se puede seguir
+  editando («Guardar cambios»). Las fotos son un `object URL` del navegador hasta que haya
+  Storage. El texto de la demo «solo se envía completa» se sustituyó por «puedes enviarla
+  incompleta», manda el dominio.
+
 ## Siguiente
 
 Pantallas del cliente (rutina, menú, peso, revisión, progreso, membresía, ver revisión) sobre

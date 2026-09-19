@@ -1,11 +1,7 @@
-import type { Pose, Review, ReviewFeedback } from "@/lib/domain";
+import type { Pose, Review, ReviewDraft, ReviewFeedback } from "@/lib/domain";
 
 /** Lo que el cliente puede rellenar mientras la revisión sigue editable (I17). */
-export interface ReviewDraftChanges {
-  weightLogId?: string | null;
-  measurements?: { measurementTypeId: string; value: number }[];
-  responses?: { questionId: string; value: number | string }[];
-}
+export type ReviewDraftChanges = ReviewDraft;
 
 export interface ReviewPort {
   listClientReviews(trainerId: string, clientId: string): Promise<Review[]>;

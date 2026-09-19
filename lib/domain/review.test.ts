@@ -14,6 +14,7 @@ import {
 import { DomainError } from "./errors";
 import {
   answerQuestion,
+  applyReviewDraft,
   canClientEditReview,
   isReviewComplete,
   markReviewViewed,
@@ -259,5 +260,48 @@ describe("review lifecycle: borrador → enviada → vista → revisada", () => 
     expect(() =>
       sendReviewFeedback(review({ status: "enviada" }), { videoUrl: null, note: "" }, NOW),
     ).toThrow(DomainError);
+  });
+});
+
+describe("applyReviewDraft (vista previa tolerante)", () => {
+  const catalog = {
+    measurementTypes: [measurementType(), measurementType({ id: "mt-cadera", label: "Cadera" })],
+    questions: [question(), question({ id: "q-texto", format: { kind: "texto" } })],
+  };
+
+  it("applies valid entries and reports completeness without persisting", () => {
+    const base = review({ media: [media("frente"), media("perfil"), media("espalda")] });
+    const preview = applyReviewDraft(
+      base,
+      {
+        weightLogId: "w-1",
+        measurements: [{ measurementTypeId: "mt-cintura", value: 71 }],
+        responses: [{ questionId: "q-energia", value: 4 }],
+      },
+      catalog,
+    );
+    expect(isReviewComplete(preview).complete).toBe(true);
+    expect(base.measurements).toEqual([]);
+    expect(preview.measurements[0]).toMatchObject({ label: "Cintura", unit: "cm", value: 71 });
+  });
+
+  it("skips invalid or unknown entries instead of throwing", () => {
+    const preview = applyReviewDraft(
+      review(),
+      {
+        measurements: [
+          { measurementTypeId: "mt-desconocido", value: 1 },
+          { measurementTypeId: "mt-cintura", value: Number.NaN },
+        ],
+        responses: [
+          { questionId: "q-energia", value: 9 },
+          { questionId: "q-texto", value: "bien" },
+        ],
+      },
+      catalog,
+    );
+    expect(preview.measurements).toEqual([]);
+    expect(preview.responses.map((r) => r.questionId)).toEqual(["q-texto"]);
+    expect(isReviewComplete(preview).missing.questionIds).toEqual(["q-energia"]);
   });
 });

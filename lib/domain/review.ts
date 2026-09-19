@@ -231,3 +231,52 @@ export function sendReviewFeedback(review: Review, feedback: ReviewFeedback, now
     reviewedAt: now,
   };
 }
+
+/* ---------- Borrador del cliente: vista previa tolerante ---------- */
+
+/** Lo que el cliente rellena en su pantalla. Es el mismo contrato que usa el puerto. */
+export interface ReviewDraft {
+  weightLogId?: string | null;
+  measurements?: { measurementTypeId: string; value: number }[];
+  responses?: { questionId: string; value: number | string }[];
+}
+
+export interface ReviewCatalog {
+  measurementTypes: readonly Pick<MeasurementType, "id" | "label" | "unit">[];
+  questions: readonly Pick<QuestionnaireQuestion, "id" | "prompt" | "format">[];
+}
+
+/**
+ * Aplica un borrador a la revisión sin persistir y sin lanzar: las entradas inválidas
+ * (valor fuera de escala, tipo desconocido) se omiten. Sirve para calcular la completitud en
+ * vivo mientras el cliente escribe; la escritura real sigue siendo estricta en el puerto.
+ */
+export function applyReviewDraft(
+  review: Review,
+  draft: ReviewDraft,
+  catalog: ReviewCatalog,
+): Review {
+  let n = 0;
+  const previewId = () => `preview-${++n}`;
+  const next: Review = { ...review };
+  if (draft.weightLogId !== undefined) next.weightLogId = draft.weightLogId;
+  if (draft.measurements) {
+    next.measurements = draft.measurements.flatMap(({ measurementTypeId, value }) => {
+      const type = catalog.measurementTypes.find((t) => t.id === measurementTypeId);
+      return type && Number.isFinite(value) ? [recordMeasurement(type, value, previewId)] : [];
+    });
+  }
+  if (draft.responses) {
+    next.responses = draft.responses.flatMap(({ questionId, value }) => {
+      const question = catalog.questions.find((q) => q.id === questionId);
+      if (!question) return [];
+      try {
+        return [answerQuestion(question, value, previewId)];
+      } catch (error) {
+        if (error instanceof DomainError) return [];
+        throw error;
+      }
+    });
+  }
+  return next;
+}

@@ -1,10 +1,8 @@
-import { PageHeader } from "@/components/ui/page-header";
+import { ReviewScreen } from "@/components/cliente/review/review-screen";
 import { es } from "@/lib/i18n/es";
 
-const title = es.pages.client.revision;
-
-export const metadata = { title };
+export const metadata = { title: es.pages.client.revision };
 
 export default function Page() {
-  return <PageHeader title={title} />;
+  return <ReviewScreen />;
 }
