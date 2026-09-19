@@ -255,6 +255,23 @@ Fase 5 (navegación):
 
 ## Siguiente
 
-Pantallas del cliente (rutina, menú, peso, revisión, progreso, membresía, ver revisión) sobre
-los hooks existentes, una por sección y con aprobación entre secciones. Después el panel del
-entrenador, y por último la decisión de backend con su adaptador.
+Quedan Menú, Membresía y Ver revisión, una por sección y con aprobación entre secciones.
+Después el **hito responsive** de abajo, luego el panel del entrenador, y por último la
+decisión de backend con su adaptador.
+
+### Hito: pasada responsive del área de cliente
+
+**Una sola pasada sobre todas las pantallas del cliente, cuando estén las cuatro que faltan y
+antes de empezar el panel del entrenador** (decidido el 20-09-2026). No se hace pantalla a
+pantalla: mientras tanto, a cada pantalla nueva solo se le exige que no desborde el viewport.
+
+El porqué: el área de cliente es la que se usa en el móvil —el cliente mira su rutina en el
+gimnasio— y el panel del entrenador es de escritorio por naturaleza, con tablas densas, barra
+lateral y comparador de fotos a dos columnas.
+
+Entra en esta pasada: los 688 px de `/revision` a 390 px (la tira de completitud), y lo que
+salga de revisar las demás. Ya hecho aparte, porque desbordaba todo el área: el nav de
+`client-shell.tsx`.
+
+Cómo medir: en un iframe de 390 px, no con la emulación de viewport del panel de vista previa,
+que no siempre se aplica y da falsos positivos.
