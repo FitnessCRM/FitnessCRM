@@ -1,10 +1,8 @@
-import { PageHeader } from "@/components/ui/page-header";
+import { MembershipScreen } from "@/components/cliente/membership/membership-screen";
 import { es } from "@/lib/i18n/es";
 
-const title = es.pages.client.membresia;
-
-export const metadata = { title };
+export const metadata = { title: es.pages.client.membresia };
 
 export default function Page() {
-  return <PageHeader title={title} />;
+  return <MembershipScreen />;
 }

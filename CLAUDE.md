@@ -213,7 +213,7 @@ Las dos decisiones del 18-09-2026 —macros declaradas por menú y borrado de ej
 archivado— ya están en `docs/dominio.md` (§5 y §7), sincronizadas con el documento maestro el
 20-09-2026. La regla sigue en pie: si una decisión cambia ese documento, avísalo.
 
-Pantallas del cliente terminadas (20-09-2026): Peso, Revisión, Progreso, Rutina y Menú. Siguen
-Membresía y Ver revisión; luego la pasada responsive del área de cliente (un solo hito, en
+Pantallas del cliente terminadas (20-09-2026): Peso, Revisión, Progreso, Rutina, Menú y
+Membresía. Queda Ver revisión; luego la pasada responsive del área de cliente (un solo hito, en
 `docs/estado.md`); después el panel del entrenador, y por último la decisión de backend con su
 adaptador. Mantén esta sección al día conforme avance.

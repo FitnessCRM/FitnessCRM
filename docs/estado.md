@@ -291,9 +291,28 @@ Fase 5 (navegación):
   dentro del año en curso y completas fuera de él, con `dateTime` para máquinas. La regla, con la
   distinción entre área de cliente y panel del entrenador, está en `CLAUDE.md`.
 
+- **Membresía** (`components/cliente/membership/`, 20-09-2026): la membresía en curso con su
+  tiempo restante, la próxima renovación si está registrada, y el historial completo. **Solo
+  lectura**: el cliente no toca nada de su membresía y el cobro pasa fuera de la app (§10, I21),
+  así que se mantiene el texto de la maqueta «Si tienes dudas sobre un pago, escribe a tu
+  entrenador». Las renovaciones son filas nuevas, nunca ediciones (§7).
+  - `lib/domain/membership.ts`, con test: `membershipStanding` da la actual (la que contiene la
+    fecha; si dos se solapan, la que empezó más tarde), la siguiente (la primera que empieza
+    después), los días que quedan y la parte transcurrida. Primer y último día cuentan como
+    dentro: el último día quedan 0 días y la barra está llena. `membershipHistory` ordena de la
+    más reciente a la más antigua.
+  - **Fechas en `DD-MM-YYYY`**, también en la tabla. La maqueta escribe «1 jul 2026», pero la
+    convención de `CLAUDE.md` reserva la forma corta para listas del año en curso y aquí los
+    periodos cruzan de año: «20-01-2027» junto a «20-10-2026» se lee sin pensar.
+  - Estados de pago con la misma píldora en ficha y tabla (`PaymentPill`), verde pagada y roja no
+    pagada, sin importes ni datos de pago.
+  - Huecos cubiertos que la maqueta no enseña: sin membresía en curso (hueco entre dos periodos o
+    ninguna todavía) sale un vacío explicativo y, si hay una futura, se sigue anunciando; si la
+    próxima ya está pagada, el pie dice que empieza al terminar la actual en vez de pedir el pago.
+
 ## Siguiente
 
-Quedan Membresía y Ver revisión, una por sección y con aprobación entre secciones.
+Queda Ver revisión, una por sección y con aprobación entre secciones.
 Después el **hito responsive** de abajo, luego el panel del entrenador, y por último la
 decisión de backend con su adaptador.
 

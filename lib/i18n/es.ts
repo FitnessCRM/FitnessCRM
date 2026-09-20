@@ -232,6 +232,39 @@ export const es = {
       },
     },
   },
+  screensMembership: {
+    eyebrow: "Tu plan con",
+    current: {
+      start: "Inicio",
+      end: "Fin",
+      remaining: "Tiempo restante",
+      days: "días",
+      lastDay: "último día",
+      none: {
+        title: "Sin membresía en curso",
+        hint: "Tu entrenador registra aquí los periodos que contratas.",
+      },
+    },
+    next: {
+      title: "Próxima renovación",
+      hint: "Se activará al confirmar el pago.",
+      paidHint: "Empieza cuando termine la actual.",
+    },
+    history: {
+      title: "Historial de renovaciones",
+      type: "Tipo",
+      start: "Inicio",
+      end: "Fin",
+      status: "Estado",
+      currentTag: "actual",
+      nextTag: "próxima",
+      empty: {
+        title: "Sin renovaciones todavía",
+        hint: "Aquí verás cada periodo que contrates.",
+      },
+    },
+    footer: "Si tienes dudas sobre un pago, escribe a tu entrenador.",
+  },
   screensProgress: {
     weeksLabel: "semanas",
     weight: {
