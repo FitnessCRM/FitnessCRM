@@ -316,6 +316,15 @@ Queda Ver revisión, una por sección y con aprobación entre secciones.
 Después el **hito responsive** de abajo, luego el panel del entrenador, y por último la
 decisión de backend con su adaptador.
 
+### Anotado para el panel del entrenador
+
+- **Marcar las membresías solapadas en la tabla de Membresías** (20-09-2026). El dominio no
+  prohíbe que dos periodos de un cliente se solapen y no se va a llevar allí. La pantalla del
+  cliente lo resuelve en silencio: `membershipStanding` enseña la que empezó más tarde. Eso
+  significa que, si el entrenador se equivoca de fechas, **el cliente ve una membresía y el
+  entrenador cree que aplica otra**. La tabla del entrenador tiene que marcar el solape donde se
+  crea, que es donde se puede corregir.
+
 ### Hito: pasada responsive del área de cliente
 
 **Una sola pasada sobre todas las pantallas del cliente, cuando estén las cuatro que faltan y
