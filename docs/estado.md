@@ -310,9 +310,29 @@ Fase 5 (navegación):
     ninguna todavía) sale un vacío explicativo y, si hay una futura, se sigue anunciando; si la
     próxima ya está pagada, el pie dice que empieza al terminar la actual en vez de pedir el pago.
 
+- **Ver revisión** (`components/cliente/view-review/`, 20-09-2026): solo lectura de una revisión
+  ya enviada. Cifras, las tres fotos, las respuestas y el feedback. Los borradores no se leen
+  aquí: se rellenan en Revisión, y Progreso ya enlaza cada uno a su sitio.
+  - **El vídeo es un enlace externo (I20)**: `target="_blank"`, `rel="noopener noreferrer"` y,
+    antes de pulsarlo, se dice que abre pestaña nueva y a qué host lleva («youtu.be»). La app no
+    embebe el vídeo ni lo aloja.
+  - **Las respuestas salen de la copia congelada** de la revisión —enunciado y formato—, nunca del
+    catálogo actual (I12). El máximo de la escala también sale del formato congelado, así que una
+    pregunta que era 1-5 se sigue leyendo «4/5» aunque hoy sea 1-10.
+  - Huecos que la maqueta no enseña: **enviada sin feedback todavía** (la S5 de la demo) sale como
+    «Todavía sin feedback», distinguiendo si el entrenador ya la abrió (`vista`) o no; **fotos no
+    recuperables** (deuda de las `object URL`) se detectan con `onError` y dicen por qué no están,
+    en vez de un hueco roto; sin ninguna revisión enviada, vacío explicativo.
+  - La cabecera de cifras enseña el peso y **las dos primeras medidas de la revisión**, en orden de
+    catálogo. La maqueta enseña cintura y cadera; elegirlas automáticamente sería un juicio, el
+    mismo criterio que en Progreso.
+  - El selector de revisión es un `<select>` nativo: en táctil abre el selector del sistema y no
+    depende de `ui/select`, que es Radix y está por diagnosticar. La revisión elegida viaja en la
+    query (`?review=`), así que la página necesita `Suspense` para seguir siendo estática.
+
 ## Siguiente
 
-Queda Ver revisión, una por sección y con aprobación entre secciones.
+Las siete pantallas del cliente están terminadas.
 Después el **hito responsive** de abajo, luego el panel del entrenador, y por último la
 decisión de backend con su adaptador.
 

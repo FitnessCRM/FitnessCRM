@@ -162,6 +162,46 @@ export const es = {
       cancel: "Seguir completando",
     },
   },
+  screensViewReview: {
+    eyebrow: "Progreso / Revisiones",
+    picker: { label: "Elegir revisión", latest: "última" },
+    summary: {
+      weight: "Peso",
+      noWeight: "Sin peso",
+      versus: "vs. semana",
+      complete: "Completa ✓",
+      partial: "Parcial",
+    },
+    photos: {
+      poseLabel: "foto",
+      missing: "Foto no disponible",
+      missingHint: "Se subió desde este navegador y no se ha guardado todavía.",
+      none: "Esta revisión no tiene fotos.",
+    },
+    answers: {
+      title: "Tus respuestas",
+      none: "No respondiste el cuestionario en esta revisión.",
+    },
+    feedback: {
+      title: "Feedback del entrenador",
+      videoTitle: "Feedback en vídeo",
+      watch: "Ver el vídeo",
+      external: "Se abre en una pestaña nueva. Es un enlace externo:",
+      pendingTitle: "Todavía sin feedback",
+      pendingSent: "Tu entrenador aún no ha abierto esta revisión.",
+      pendingSeen: "Tu entrenador ya la ha abierto. Su feedback llegará aquí.",
+    },
+    others: {
+      title: "Revisiones anteriores",
+      withVideo: "vídeo disponible",
+      draft: "en curso",
+      none: "No hay más revisiones.",
+    },
+    empty: {
+      title: "Sin revisiones enviadas",
+      hint: "Cuando envíes tu primera revisión, la verás aquí con el feedback de tu entrenador.",
+    },
+  },
   screensRoutine: {
     week: "Semana",
     day: "Día",
