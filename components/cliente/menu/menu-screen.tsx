@@ -4,10 +4,10 @@ import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryBoundary } from "@/components/ui/query-boundary";
 import { EmptyState } from "@/components/ui/states";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DAY_TYPES, type DayType, type MacroTargets, type Menu } from "@/lib/domain";
 import { useActiveMenus, useMacroTargets, useSessionClientId, useTrainer } from "@/lib/data/hooks";
 import { es } from "@/lib/i18n/es";
-import { cn } from "@/lib/utils";
 import { TrainerNoteCard } from "../trainer-note-card";
 import { MenuCard } from "./menu-card";
 import { TargetCard } from "./target-card";
@@ -32,34 +32,16 @@ export function MenuScreen() {
       <div className="flex min-w-0 flex-col gap-5">
         <PageHeader eyebrow={t.eyebrow} title={es.pages.client.menu} />
 
-        {/* Botones propios, no el Tabs de Radix: dentro del área de cliente sus ids no coinciden
-            entre servidor y cliente y React avisa de hidratación. Mismo patrón que Rutina. */}
-        <div
-          role="tablist"
-          aria-label={t.dayTypeLabel}
-          className="bg-surface flex w-fit gap-1 rounded-md p-1"
-        >
-          {DAY_TYPES.map((type) => {
-            const active = type === dayType;
-            return (
-              <button
-                key={type}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setDayType(type)}
-                className={cn(
-                  "font-display focus-visible:ring-ring/50 rounded-sm px-3.5 py-2 text-[13px] tracking-[1px] uppercase transition-colors outline-none focus-visible:ring-[3px]",
-                  active
-                    ? "bg-border-strong text-text-primary"
-                    : "text-text-muted hover:text-text-primary",
-                )}
-              >
+        {/* El tipo de día lo elige el cliente: el estado manda y las pestañas van controladas. */}
+        <Tabs value={dayType} onValueChange={(value) => setDayType(value as DayType)}>
+          <TabsList variant="segmented">
+            {DAY_TYPES.map((type) => (
+              <TabsTrigger key={type} value={type}>
                 {es.status.dayType[type]}
-              </button>
-            );
-          })}
-        </div>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
 
         <QueryBoundary
           query={menus}

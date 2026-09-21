@@ -12,7 +12,9 @@ Windows. Consecuencias:
   archivos; `core.fileMode = false` en `.git/config` y no lo quites en Windows.
 - Para más componentes shadcn: `pnpm dlx shadcn@latest add <componente>` y retematizar a mano
   (`bg-primary`, `text-muted-foreground`, `dark:*`, sombras → tokens de `app/globals.css`).
-- `.claude/launch.json` arranca `pnpm dev` en el puerto 3000 desde el navegador integrado.
+- `.claude/launch.json` arranca `pnpm dev` en el puerto 3000 desde el navegador integrado, y
+  `prod` (`pnpm start`, puerto 3100) el build de producción, que es donde se confirma cualquier
+  aviso que solo se vea en desarrollo.
 
 ## Hecho
 
@@ -272,11 +274,9 @@ Fase 5 (navegación):
     porcentaje en el `title`. La maqueta las pinta casi llenas sin decir qué miden.
   - Las kcal se formatean con `formatInteger` (`lib/format.ts`): `es-ES` no agrupa los millares de
     cuatro cifras y la demo escribe «2.400», así que va con `useGrouping: "always"`.
-  - **El selector NO usa el `Tabs` de Radix**: dentro del área de cliente genera ids distintos en
-    servidor y cliente y React avisa de hidratación en cada carga. Pasa con `value` controlado y
-    sin controlar; en `/kitchen-sink`, fuera del armazón del cliente, el mismo componente no falla.
-    Los botones propios (mismo patrón que las pestañas de día de Rutina) dejan la consola limpia.
-    Ver el hito responsive: el diagnóstico va ahí.
+  - El selector usa el `Tabs` de Radix, controlado. Durante un rato llevó botones propios por un
+    aviso de hidratación que resultó ser **solo del servidor de desarrollo en frío**: ver el
+    diagnóstico en el hito responsive (20-09-2026).
   - `TrainerNoteCard` pasa a `components/cliente/` y su literal a `es.common.trainerNote`: lo usan
     Rutina y Menú.
   - **Menú B declara macros que no son el objetivo ni cuadran con sus alimentos** (150/230/80 →
@@ -359,15 +359,27 @@ Entra en esta pasada: los 688 px de `/revision` a 390 px (la tira de completitud
 salga de revisar las demás. Ya hecho aparte, porque desbordaba todo el área: el nav de
 `client-shell.tsx`.
 
-**También entra: diagnosticar `components/ui/tabs.tsx`.** Dentro del área de cliente, sus ids no
-coinciden entre servidor y cliente y React avisa de hidratación en cada carga; en `/kitchen-sink`,
-fuera del armazón, no pasa. Comprobado el 20-09-2026 con `.next` borrado, servidor reiniciado y
-pestaña nueva, con las pestañas controladas y sin controlar. **No es el armazón ni Radix en
-general**: forzando abierto el diálogo de Revisión (`Dialog` de Radix, con sus tres ids, dentro del
-mismo armazón y presente en el HTML del servidor) la consola queda limpia. Es cosa de `Tabs`
-—o de su `RovingFocusGroup`—. En el cliente se esquivó con botones propios, pero **la revisión del
-entrenador necesita pestañas de verdad** (Fotos / Cuestionario / Peso corporal), así que ahí ya no
-vale esquivarlo: hay que arreglar el componente antes de empezar el panel.
+**Diagnosticado el 20-09-2026: `components/ui/tabs.tsx` no está roto.** El aviso de hidratación
+—ids de Radix distintos en servidor y cliente— **solo aparece en el servidor de desarrollo cuando
+compila la ruta por primera vez**. Qué se probó:
+
+1. Una sonda temporal con el mismo `Tabs` dentro del armazón de cliente, a dos profundidades y con
+   consultas alrededor: hidrata limpia. Luego no es el armazón, ni la profundidad, ni TanStack.
+2. La pantalla de Menú con `Tabs` otra vez, en un servidor ya caliente: limpia, y el id del DOM es
+   justo el que el servidor había mandado en el fallo anterior.
+3. La misma pantalla con `.next` borrado, servidor recién arrancado y pestaña nueva: **reproduce**.
+   Es decir, depende de que la ruta se compile en esa primera petición, no del componente.
+4. `pnpm build` + `pnpm start` (entrada `prod` en `.claude/launch.json`, puerto 3100): consola
+   limpia, el id del HTML servido es estable entre peticiones y coincide con el del DOM ya
+   hidratado, y el selector funciona. **En producción no ocurre.**
+
+Conclusión: era un artefacto de desarrollo, no un defecto que se despache. Menú vuelve a usar
+`Tabs` y **la revisión del entrenador puede usarlo sin rodeos**. La prueba del `Dialog` del día 20
+no demostraba lo que parecía: se hizo en caliente, donde tampoco falla `Tabs`.
+
+**Regla que deja esto:** un aviso de hidratación visto solo en `pnpm dev` no se da por bueno hasta
+comprobarlo contra `pnpm build` + `pnpm start`. Lo mismo que con el ancho del viewport: si la
+medición depende del entorno, se confirma en el entorno que cuenta.
 
 Cómo medir: en un iframe de 390 px, no con la emulación de viewport del panel de vista previa,
 que no siempre se aplica y da falsos positivos.
