@@ -145,6 +145,14 @@ el cliente necesite puede vivir solo en un `title`: en táctil no hay hover y es
 Se pinta visible o se alcanza con un toque. En el **panel del entrenador**, que es de escritorio
 por naturaleza, el `title` sí vale como complemento —nunca como único sitio donde está el dato—.
 
+**Columna lateral en móvil.** Cuando en móvil las dos columnas pasan a una, lo que estaba en la
+lateral **sube por encima del contenido principal cuando es contexto para leerlo, y baja cuando es
+un resumen de lo que ya has leído**. Cada bloque de la lateral se clasifica por separado, no la
+columna entera: en Rutina la nota del entrenador sube y el resumen de series baja. Se hace
+disolviendo las columnas con `max-lg:contents` y dando `order` a cada bloque, sin duplicar
+componentes; el contenedor lateral es un `div`, no un `aside`, porque `contents` sobre un landmark
+pierde su semántica en algunos navegadores.
+
 **Unidades.** El peso corporal siempre en kg (I18). Cada tipo de medida declara su unidad y el
 valor se guarda en ella, sin conversiones silenciosas. Las kcal se derivan de los macros (4/4/9)
 y no se almacenan.
@@ -224,6 +232,7 @@ archivado— ya están en `docs/dominio.md` (§5 y §7), sincronizadas con el do
 20-09-2026. La regla sigue en pie: si una decisión cambia ese documento, avísalo.
 
 Pantallas del cliente terminadas (20-09-2026), las siete: Peso, Revisión, Progreso, Rutina,
-Menú, Membresía y Ver revisión. Ahora la pasada responsive del área de cliente (un solo hito, en
-`docs/estado.md`); después el panel del entrenador, y por último la decisión de backend con su
+Menú, Membresía y Ver revisión, y pasada responsive del área de cliente hecha (21-09-2026, detalle
+en `docs/estado.md`). Antes del panel del entrenador se monta la coordinación con otra persona,
+que cambia cómo se trabaja en el repo; después el panel, y por último la decisión de backend con su
 adaptador. Mantén esta sección al día conforme avance.

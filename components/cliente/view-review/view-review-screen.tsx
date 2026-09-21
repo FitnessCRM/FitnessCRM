@@ -93,23 +93,35 @@ function ViewReview({
         </label>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px]">
-        <div className="flex min-w-0 flex-col gap-4">
+      {/* En móvil las dos columnas se disuelven (`contents`) y el orden lo pone cada bloque: el
+          feedback sube justo después de las cifras, que es a lo que viene el cliente, en vez de
+          quedar debajo de las fotos y las respuestas. */}
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[1fr_400px] lg:gap-8">
+        <div className="flex min-w-0 flex-col gap-4 max-lg:contents">
           <SummaryBar
+            className="max-lg:order-1"
             review={review}
             weightKg={weightOf(review)}
             previousWeightKg={weightOf(previous)}
             previousWeek={previous?.weekNumber}
           />
-          <ReviewPhotos review={review} />
-          <AnswersCard review={review} />
+          <div className="max-lg:order-3">
+            <ReviewPhotos review={review} />
+          </div>
+          <div className="max-lg:order-4">
+            <AnswersCard review={review} />
+          </div>
         </div>
 
-        <aside className="flex flex-col gap-4">
-          <FeedbackCard review={review} />
-          <h2 className="section-title mt-1">{t.others.title}</h2>
-          <OtherReviews reviews={sent} currentId={review.id} logs={logs} today={today} />
-        </aside>
+        <div className="flex flex-col gap-4 max-lg:contents">
+          <div className="max-lg:order-2">
+            <FeedbackCard review={review} />
+          </div>
+          <div className="flex flex-col gap-4 max-lg:order-5">
+            <h2 className="section-title mt-1">{t.others.title}</h2>
+            <OtherReviews reviews={sent} currentId={review.id} logs={logs} today={today} />
+          </div>
+        </div>
       </div>
     </>
   );

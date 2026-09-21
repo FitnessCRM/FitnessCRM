@@ -8,7 +8,7 @@ export function PaymentPill({ status, className }: { status: PaymentStatus; clas
   return (
     <span
       className={cn(
-        "tracking-label inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase",
+        "tracking-label inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap uppercase",
         paid
           ? "bg-success-soft text-success border-success/35 border"
           : "bg-danger-soft text-danger border-danger/35 border",

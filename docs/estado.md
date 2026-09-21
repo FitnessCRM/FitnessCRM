@@ -345,7 +345,7 @@ decisión de backend con su adaptador.
   entrenador cree que aplica otra**. La tabla del entrenador tiene que marcar el solape donde se
   crea, que es donde se puede corregir.
 
-### Hito: pasada responsive del área de cliente
+### Hito: pasada responsive del área de cliente — hecho (21-09-2026)
 
 **Una sola pasada sobre todas las pantallas del cliente, cuando estén las cuatro que faltan y
 antes de empezar el panel del entrenador** (decidido el 20-09-2026). No se hace pantalla a
@@ -358,6 +358,55 @@ lateral y comparador de fotos a dos columnas.
 Entra en esta pasada: los 688 px de `/revision` a 390 px (la tira de completitud), y lo que
 salga de revisar las demás. Ya hecho aparte, porque desbordaba todo el área: el nav de
 `client-shell.tsx`.
+
+**Cómo se midió.** En un iframe de 390 px (dentro de él la página dispone de 375: la barra de
+scroll vertical del iframe ocupa 15 px, cosa que en un móvil no pasa, así que la prueba es más
+estricta que el teléfono). Antes de fiarse del instrumento se comprobó que detectaba el fallo
+conocido de `/revision` (688 px, y señalaba la tira). Tres comprobaciones por pantalla: que nada
+desborde el viewport, ningún control tocable por debajo de 32 px, y que el apartado activo del nav
+se vea entero. Un «desborde» de las gráficas de Peso y Progreso resultó ser un falso positivo del
+propio instrumento: el contenedor que medía era un envoltorio de Recharts de ancho 0. **Todo se
+repitió al final contra el build de producción**: las siete pantallas pasan, sin avisos de
+hidratación. Y a ojo, porque no desbordar no es leerse bien.
+
+**Qué se cambió:**
+
+- **Revisión.** La tira de completitud va debajo del título y en 2×2; era la de los 688 px. La barra
+  de envío pliega: la barra de progreso con su contador en una fila y los botones debajo, apilados
+  y con «Enviar revisión» arriba (en borrador se salía 8 px de la columna; se comprobó forzando el
+  estado borrador, porque la demo solo tiene la revisión enviada).
+- **Membresía.** La tabla no desbordaba pero no se leía: las fechas se partían en tres renglones y
+  la píldora en dos. En móvil cada fila es una ficha de dos líneas —tipo y estado; inicio y fin con
+  su etiqueta—, con la misma tabla semántica y las cabeceras solo para lectores de pantalla. En
+  escritorio sigue siendo tabla (comprobado a 1280).
+- **Ver revisión.** Las fotos van siempre en tres columnas, también en móvil —las poses se
+  comparan una junto a otra—, con un solo aviso debajo si alguna no se recuperó, en vez de uno por
+  foto. Y en móvil el feedback sube justo después de las cifras: antes quedaba debajo de las fotos
+  y las respuestas, a casi 3.000 px. Se hace disolviendo las columnas con `display: contents` y
+  ordenando cada bloque; la columna lateral pasa de `aside` a `div` porque `contents` sobre un
+  landmark pierde su semántica en algunos navegadores. La página baja de 2.949 a 1.713 px.
+- **Progreso.** Los botones del selector de medidas medían 15 px de alto; ahora 32.
+- **Rutina.** «Registrar» medía 29 px de alto; ahora 32.
+- **Menú.** En móvil la flecha del desplegable caía sola en un tercer renglón; ahora va en la línea
+  del título y «aporta…» debajo.
+- **Nav del cliente.** En móvil el apartado activo podía quedar fuera de la vista (en Peso solo
+  asomaba un filo rojo). Ahora se centra al cargar, al terminar de cargar las fuentes y cuando
+  cambia el ancho del nav: la barra de scroll de un navegador estrecho aparece al cargar el
+  contenido y lo descentraba 15 px.
+
+- **Columna lateral en móvil** (decidido por el propietario el 21-09-2026, regla en `CLAUDE.md`):
+  sube lo que es contexto para leer el contenido principal y baja lo que es resumen de lo leído,
+  bloque a bloque. Aplicado así:
+  - **Rutina:** la nota del entrenador sube, entre el título y los días; el resumen de series del
+    día baja al final.
+  - **Menú:** «Tu objetivo del día» y la nota del menú suben, entre el selector de tipo de día y la
+    lista de menús: el objetivo es lo que da sentido a cada «aporta…». El selector va antes porque
+    los dos dependen del tipo de día elegido.
+  - **Ver revisión:** el feedback sube tras las cifras (ya estaba); «Revisiones anteriores» baja.
+  - **Progreso y Membresía** ya cumplían: la lista de revisiones de Progreso es resumen y queda
+    debajo; en Membresía la membresía en curso es contexto y ya iba primero.
+  - **Peso y Revisión** no tienen columna lateral: son dos columnas de peso parecido y se quedan en
+    su orden.
 
 **Diagnosticado el 20-09-2026: `components/ui/tabs.tsx` no está roto.** El aviso de hidratación
 —ids de Radix distintos en servidor y cliente— **solo aparece en el servidor de desarrollo cuando

@@ -143,7 +143,8 @@ function ReviewEditor({ review, persisted, clientId, types, questions, logs }: E
 
   return (
     <>
-      <div className="flex items-start justify-between gap-6">
+      {/* En móvil la tira va debajo del título: al lado no cabe (medía 688 px a 390). */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
         <PageHeader eyebrow={`${t.week} ${review.weekNumber}`} title={es.pages.client.revision} />
         <CompletenessStrip completeness={completeness} />
       </div>

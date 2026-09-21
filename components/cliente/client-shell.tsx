@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Brand } from "@/components/ui/brand";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
 import { useClient, useSessionClientId } from "@/lib/data/hooks";
@@ -24,6 +24,33 @@ const items: { href: string; label: string; also?: string[] }[] = [
 export function ClientShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const client = useClient(useSessionClientId());
+  const navRef = useRef<HTMLElement>(null);
+
+  // En móvil el nav se desplaza en su caja: centra el apartado activo, o no se ve dónde estás.
+  // Se recalcula al cargar las fuentes (Oswald ensancha los enlaces) y al cambiar el ancho del
+  // nav (en un navegador estrecho, la barra de scroll aparece cuando carga el contenido).
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const center = () => {
+      const active = nav.querySelector<HTMLElement>('[aria-current="page"]');
+      if (!active || nav.scrollWidth <= nav.clientWidth) return;
+      const box = nav.getBoundingClientRect();
+      const item = active.getBoundingClientRect();
+      nav.scrollLeft += item.left + item.width / 2 - (box.left + box.width / 2);
+    };
+    center();
+    let cancelled = false;
+    void document.fonts?.ready.then(() => {
+      if (!cancelled) center();
+    });
+    const observer = new ResizeObserver(center);
+    observer.observe(nav);
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+    };
+  }, [pathname]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -31,6 +58,7 @@ export function ClientShell({ children }: { children: ReactNode }) {
         <Brand className="shrink-0" />
         {/* El nav se desplaza dentro de su caja: en móvil no puede ensanchar la página. */}
         <nav
+          ref={navRef}
           aria-label={es.roles.client}
           className="flex min-w-0 flex-1 [scrollbar-width:none] gap-1.5 overflow-x-auto [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >

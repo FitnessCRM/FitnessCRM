@@ -45,13 +45,16 @@ export function MenuCard({ menu, defaultOpen }: { menu: Menu; defaultOpen: boole
             {t.suggested}
           </span>
         ) : null}
-        <span className="text-text-muted ml-auto text-[13px] max-sm:ml-0 max-sm:w-full">
+        <span className="text-text-muted ml-auto text-[13px] max-sm:order-last max-sm:ml-0 max-sm:w-full">
           {providesLine(menu)}
         </span>
         {open ? (
-          <ChevronDownIcon aria-hidden className="text-text-muted size-4 shrink-0" />
+          <ChevronDownIcon aria-hidden className="text-text-muted size-4 shrink-0 max-sm:ml-auto" />
         ) : (
-          <ChevronRightIcon aria-hidden className="text-text-muted size-4 shrink-0" />
+          <ChevronRightIcon
+            aria-hidden
+            className="text-text-muted size-4 shrink-0 max-sm:ml-auto"
+          />
         )}
       </button>
 

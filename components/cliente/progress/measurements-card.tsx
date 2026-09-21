@@ -40,7 +40,11 @@ export function MeasurementsCard({ series }: { series: MeasurementSeries[] }) {
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 p-0">
         <CardTitle>{t.title}</CardTitle>
         {series.length ? (
-          <div role="group" aria-label={t.hint} className="flex flex-wrap gap-3.5 text-xs">
+          <div
+            role="group"
+            aria-label={t.hint}
+            className="flex flex-wrap gap-x-1.5 gap-y-1 text-xs"
+          >
             {series.map((s, i) => {
               const on = selected.has(s.typeId);
               return (
@@ -50,7 +54,8 @@ export function MeasurementsCard({ series }: { series: MeasurementSeries[] }) {
                   aria-pressed={on}
                   onClick={() => toggle(s.typeId)}
                   className={cn(
-                    "flex items-center gap-1.5 transition-colors",
+                    // 32 px de alto: medían 15 y en el móvil se tocan con el dedo.
+                    "focus-visible:ring-ring/50 flex min-h-8 items-center gap-1.5 rounded-sm px-2 transition-colors outline-none focus-visible:ring-[3px]",
                     on ? "text-text-primary" : "text-text-subtle hover:text-text-muted",
                   )}
                 >

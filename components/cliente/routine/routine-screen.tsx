@@ -124,12 +124,20 @@ function RoutineView({
   const previous = day ? latestDayRecord(day, logs, { before: today }) : undefined;
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
-      <div className="flex min-w-0 flex-col gap-5">
-        <PageHeader eyebrow={eyebrow} title={routine.name} />
+    // En móvil la columna lateral se reparte (CLAUDE.md, «Columna lateral en móvil»): la nota del
+    // entrenador es contexto y sube antes de los días; el resumen de series es resumen y baja.
+    <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[1fr_320px] lg:gap-8">
+      <div className="flex min-w-0 flex-col gap-5 max-lg:contents">
+        <div className="max-lg:order-1">
+          <PageHeader eyebrow={eyebrow} title={routine.name} />
+        </div>
 
         {routine.days.length > 0 ? (
-          <div role="tablist" aria-label={t.daysLabel} className="flex flex-wrap gap-2">
+          <div
+            role="tablist"
+            aria-label={t.daysLabel}
+            className="flex flex-wrap gap-2 max-lg:order-3"
+          >
             {routine.days.map((d) => {
               const active = d.id === day?.id;
               return (
@@ -154,9 +162,13 @@ function RoutineView({
         ) : null}
 
         {!day || !record || day.exercises.length === 0 ? (
-          <EmptyState title={t.emptyDay.title} description={t.emptyDay.hint} />
+          <EmptyState
+            className="max-lg:order-4"
+            title={t.emptyDay.title}
+            description={t.emptyDay.hint}
+          />
         ) : (
-          <div role="tabpanel" className="flex flex-col gap-3">
+          <div role="tabpanel" className="flex flex-col gap-3 max-lg:order-4">
             {day.exercises.map((item, index) => {
               const itemLogs = record.logs.filter((l) => l.routineDayExerciseId === item.id);
               return (
@@ -193,12 +205,18 @@ function RoutineView({
         )}
       </div>
 
-      <aside className="flex flex-col gap-4 lg:pt-3.5">
+      <div className="flex flex-col gap-4 max-lg:contents lg:pt-3.5">
         {day && record ? (
-          <DaySummaryCard day={day} record={record} previousDate={previous?.date ?? null} />
+          <div className="max-lg:order-5">
+            <DaySummaryCard day={day} record={record} previousDate={previous?.date ?? null} />
+          </div>
         ) : null}
-        {routine.note ? <TrainerNoteCard note={routine.note} trainerName={trainerName} /> : null}
-      </aside>
+        {routine.note ? (
+          <div className="max-lg:order-2">
+            <TrainerNoteCard note={routine.note} trainerName={trainerName} />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

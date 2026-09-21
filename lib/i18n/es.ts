@@ -174,9 +174,10 @@ export const es = {
     },
     photos: {
       poseLabel: "foto",
-      missing: "Foto no disponible",
-      missingHint: "Se subió desde este navegador y no se ha guardado todavía.",
-      none: "Esta revisión no tiene fotos.",
+      missing: "No disponible",
+      missingHint:
+        "Las fotos que faltan se subieron desde un navegador y todavía no se guardan fuera de él.",
+      none: "Sin foto",
     },
     answers: {
       title: "Tus respuestas",

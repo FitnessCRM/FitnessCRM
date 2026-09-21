@@ -109,7 +109,7 @@ export function ExerciseCard({
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => setOpen((v) => !v)}
-          className="border-border-emphasis text-text-muted hover:border-accent hover:text-text-primary tracking-label focus-visible:ring-ring/50 rounded-full border px-3.5 py-1.5 text-xs uppercase outline-none focus-visible:ring-[3px] max-sm:ml-auto"
+          className="border-border-emphasis text-text-muted hover:border-accent hover:text-text-primary tracking-label focus-visible:ring-ring/50 inline-flex min-h-8 items-center rounded-full border px-3.5 py-1.5 text-xs uppercase outline-none focus-visible:ring-[3px] max-sm:ml-auto"
         >
           {t.log.toggle}
           {open ? (

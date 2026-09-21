@@ -59,15 +59,17 @@ export function SubmitBar({
       {status !== "borrador" ? (
         <p className="text-text-muted text-[13px]">{t.banners[status]}</p>
       ) : null}
-      <div className="flex items-center gap-4">
-        <div className="bg-border h-1.5 flex-1 overflow-hidden rounded-full">
+      {/* En móvil los botones bajan a su fila, apilados y con el principal arriba: al lado
+          aplastaban la barra y, en borrador, «Enviar revisión» se salía de la columna. */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <div className="bg-border h-1.5 min-w-[120px] flex-1 overflow-hidden rounded-full">
           <div className="bg-accent h-full" style={{ width: `${(done / total) * 100}%` }} />
         </div>
         <span className="text-text-muted text-[13px]">
           {done} {t.progress.of} {total} {t.progress.blocks}
         </span>
         {editable ? (
-          <>
+          <div className="flex gap-3 max-sm:w-full max-sm:flex-col-reverse">
             <Button variant="secondary" disabled={isSaving} onClick={onSave}>
               {status === "borrador" ? t.actions.saveDraft : t.actions.saveChanges}
             </Button>
@@ -76,7 +78,7 @@ export function SubmitBar({
                 {isSaving ? t.actions.saving : t.actions.submit}
               </Button>
             ) : null}
-          </>
+          </div>
         ) : null}
       </div>
       {saveError ? <ErrorState message={t.actions.saveError} /> : null}

@@ -28,12 +28,20 @@ export function MenuScreen() {
   const [dayType, setDayType] = useState<DayType>("entrenamiento");
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
-      <div className="flex min-w-0 flex-col gap-5">
-        <PageHeader eyebrow={t.eyebrow} title={es.pages.client.menu} />
+    // En móvil la columna lateral sube (CLAUDE.md, «Columna lateral en móvil»): el objetivo y la
+    // nota son contexto para leer los menús, así que van entre el selector y la lista.
+    <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[1fr_320px] lg:gap-8">
+      <div className="flex min-w-0 flex-col gap-5 max-lg:contents">
+        <div className="max-lg:order-1">
+          <PageHeader eyebrow={t.eyebrow} title={es.pages.client.menu} />
+        </div>
 
         {/* El tipo de día lo elige el cliente: el estado manda y las pestañas van controladas. */}
-        <Tabs value={dayType} onValueChange={(value) => setDayType(value as DayType)}>
+        <Tabs
+          className="max-lg:order-2"
+          value={dayType}
+          onValueChange={(value) => setDayType(value as DayType)}
+        >
           <TabsList variant="segmented">
             {DAY_TYPES.map((type) => (
               <TabsTrigger key={type} value={type}>
@@ -43,21 +51,27 @@ export function MenuScreen() {
           </TabsList>
         </Tabs>
 
-        <QueryBoundary
-          query={menus}
-          isEmpty={(data) => (data ?? []).filter((m) => m.dayType === dayType).length === 0}
-          empty={<EmptyState title={t.menus.empty.title} description={t.menus.empty.hint} />}
-        >
-          {(data) => <MenuList menus={data} dayType={dayType} />}
-        </QueryBoundary>
+        <div className="max-lg:order-5">
+          <QueryBoundary
+            query={menus}
+            isEmpty={(data) => (data ?? []).filter((m) => m.dayType === dayType).length === 0}
+            empty={<EmptyState title={t.menus.empty.title} description={t.menus.empty.hint} />}
+          >
+            {(data) => <MenuList menus={data} dayType={dayType} />}
+          </QueryBoundary>
+        </div>
       </div>
 
-      <aside className="flex flex-col gap-4 lg:pt-3.5">
-        <QueryBoundary query={targets} isEmpty={() => false} empty={null}>
-          {(data) => <TargetCard {...splitTargets(data, dayType)} />}
-        </QueryBoundary>
-        <MenuNote menus={menus.data} dayType={dayType} trainerName={trainer.data?.name} />
-      </aside>
+      <div className="flex flex-col gap-4 max-lg:contents lg:pt-3.5">
+        <div className="max-lg:order-3">
+          <QueryBoundary query={targets} isEmpty={() => false} empty={null}>
+            {(data) => <TargetCard {...splitTargets(data, dayType)} />}
+          </QueryBoundary>
+        </div>
+        <div className="empty:hidden max-lg:order-4">
+          <MenuNote menus={menus.data} dayType={dayType} trainerName={trainer.data?.name} />
+        </div>
+      </div>
     </div>
   );
 }

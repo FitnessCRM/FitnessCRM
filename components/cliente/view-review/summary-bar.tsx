@@ -8,11 +8,13 @@ const t = es.screensViewReview.summary;
 
 /** Cabecera de cifras: peso, las dos primeras medidas, el cambio de peso y si quedó completa. */
 export function SummaryBar({
+  className,
   review,
   weightKg,
   previousWeightKg,
   previousWeek,
 }: {
+  className?: string;
   review: Review;
   weightKg: number | undefined;
   previousWeightKg: number | undefined;
@@ -26,7 +28,9 @@ export function SummaryBar({
   const complete = isReviewComplete(review).complete;
 
   return (
-    <Card className="flex-row flex-wrap items-end justify-between gap-6 px-[22px] py-5">
+    <Card
+      className={cn("flex-row flex-wrap items-end justify-between gap-6 px-[22px] py-5", className)}
+    >
       <div className="flex flex-wrap items-end gap-x-9 gap-y-4">
         <Figure
           label={t.weight}
