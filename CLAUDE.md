@@ -155,6 +155,16 @@ verdad. El formulario valida contra él y el futuro backend también.
 **Tests.** Vitest sobre el dominio. Antes de darse por terminadas, I5, I9, I12, I15, I17 y I22
 tienen test. Los componentes no se testean todavía.
 
+**Verificar el entorno antes de concluir.** Antes de dar por buena una comprobación, confirma que
+el entorno mide lo que crees. Ya ha mentido tres veces: la emulación de viewport del panel que no
+siempre se aplicaba (se mide en un iframe del ancho exacto), un diálogo comprobado cerrado que
+nunca llegaba al HTML del servidor (se fuerza abierto para que hidrate), y un aviso de hidratación
+que solo daba la primera compilación de `pnpm dev`. Si una medición depende del entorno, compruébala
+contra un caso conocido —que detecte el fallo que sabes que existe— y repítela en el entorno que
+cuenta. Y **«solo sale en dev» no significa «no importa»**: significa que hay que comprobarlo en
+producción (`pnpm build` + `pnpm start`, entrada `prod` de `.claude/launch.json`) antes de decidir,
+en los dos sentidos —ni se descarta sin mirar, ni se arregla lo que en producción no pasa—.
+
 **Commits y ramas.** Todo en inglés. Conventional Commits: `type(scope): subject`.
 
 - `type`: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `style`, `perf`, `build`, `ci`.

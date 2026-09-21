@@ -377,9 +377,10 @@ Conclusión: era un artefacto de desarrollo, no un defecto que se despache. Men�
 `Tabs` y **la revisión del entrenador puede usarlo sin rodeos**. La prueba del `Dialog` del día 20
 no demostraba lo que parecía: se hizo en caliente, donde tampoco falla `Tabs`.
 
-**Regla que deja esto:** un aviso de hidratación visto solo en `pnpm dev` no se da por bueno hasta
-comprobarlo contra `pnpm build` + `pnpm start`. Lo mismo que con el ancho del viewport: si la
-medición depende del entorno, se confirma en el entorno que cuenta.
+**Regla que deja esto**, generalizada en `CLAUDE.md` («Verificar el entorno antes de concluir»):
+antes de concluir nada, verifica que el entorno mide lo que crees; y «solo sale en dev» no quiere
+decir «no importa», sino que hay que comprobarlo en producción antes de decidir, en los dos
+sentidos.
 
 Cómo medir: en un iframe de 390 px, no con la emulación de viewport del panel de vista previa,
 que no siempre se aplica y da falsos positivos.
