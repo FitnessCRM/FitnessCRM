@@ -332,9 +332,10 @@ Fase 5 (navegación):
 
 ## Siguiente
 
-Las siete pantallas del cliente están terminadas.
-Después el **hito responsive** de abajo, luego el panel del entrenador, y por último la
-decisión de backend con su adaptador.
+Las siete pantallas del cliente y el hito responsive están terminados. Desde el 21-09-2026
+trabajan dos personas (sección «Equipo» de `CLAUDE.md`): el panel del entrenador se reparte por
+pantallas completas en el tablero de Trello, y este archivo pasa a ser un resumen curado que solo
+edita quien integra. Por último, la decisión de backend con su adaptador.
 
 ### Anotado para el panel del entrenador
 

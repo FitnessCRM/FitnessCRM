@@ -34,10 +34,11 @@ Estas seis se comprueban antes de dar por buena cualquier tarea.
    No inventes pantallas ni te desvíes del layout sin decirlo.
 5. **Las reglas de negocio son `docs/dominio.md`.** Si una petición choca con una invariante de
    su §6, dilo antes de programar. Si aparece un hueco que ese documento no cubre, pregunta —
-   no asumas. Ese archivo es una **copia** del documento maestro que vive en el proyecto Hector
-   de Claude: si una decisión lo cambia, avísalo para sincronizar el original.
-6. **Trabaja por secciones.** Una sección, luego aprobación explícita, luego la siguiente. No
-   encadenes módulos enteros sin parar.
+   no asumas. **El maestro es el repo**: `docs/` manda, y el proyecto Hector de claude.ai es un
+   espejo que se actualiza cuando una decisión se cierra. Un cambio de dominio no se edita desde
+   una rama de feature (ver «Equipo»).
+6. **Trabaja por secciones.** Una sección —una tarjeta del tablero—, luego aprobación explícita de
+   quien corresponda (ver «Equipo»), luego la siguiente. No encadenes módulos enteros sin parar.
 
 ---
 
@@ -184,16 +185,87 @@ en los dos sentidos —ni se descarta sin mirar, ni se arregla lo que en producc
   contrato (puerto, esquema zod) y `Refs:` si cierra un issue.
 - Un commit = un cambio coherente. No mezclar refactor con feature.
 - Si un commit cambia una regla de `docs/dominio.md`, lo dice en el cuerpo (`Domain: ...`) para
-  que se sincronice el original.
+  que se actualice el espejo de claude.ai.
 
 Ramas: `main` siempre en verde (`build`, `lint`, `typecheck`, `test`). Rama por módulo o
 sección, desde `main`, kebab-case y en inglés: `feature/<module>-<what>`, `fix/<what>`,
 `refactor/<what>`, `chore/<what>`, `docs/<what>` (`feature/client-routine-screen`,
 `fix/week-number-timezone`). Se integran con squash y el mensaje del squash sigue el formato de
-arriba. No se hace push directo a `main`.
+arriba. No se hace push directo a `main`. Con el tablero, la rama de una tarjeta es
+`feature/<id-tarjeta>-<slug>` (ver «Equipo»).
 
 Pre-commit (husky + lint-staged) pasa ESLint y Prettier sobre lo staged; lo que no pasa no
 entra. Nunca se commitea `node_modules`, `.next`, `public/sw.js` ni `.env*`.
+
+---
+
+## Equipo
+
+Dos desarrolladores, cada uno con su Claude Code sobre el mismo repo
+(`github.com/danimoreno73/FitnessCRM`).
+
+**Reparto: por pantallas completas.** Cada uno coge pantallas enteras del panel del entrenador,
+nunca capas de la misma pantalla. Dividir por «uno el dominio, otro la UI» bloquea al segundo
+constantemente, porque cada pantalla necesita dominio nuevo.
+
+**Los componentes compartidos los toca quien llegue primero.** Todo lo que vive en
+`components/ui/`, `lib/domain/`, `lib/data/ports/` y `lib/i18n/es.ts` es terreno común. Antes de
+modificar algo de ahí que ya exista, mira si la otra rama lo está tocando: si la tarjeta del otro
+está en curso y cae sobre el mismo archivo, dilo en la tarjeta antes de editarlo. Añadir cosas
+nuevas no necesita aviso; cambiar la firma de algo que ya usa otra pantalla, sí.
+
+**Aprobación.** Cada uno aprueba las pantallas de su propio reparto antes de integrar. Lo que
+toca el dominio, los puertos o los componentes compartidos lo aprueban los dos, porque afecta al
+trabajo del otro. «Espera mi aprobación» significa esperar la de quien corresponda según esto.
+
+**Ramas y commits.** Una rama por tarjeta, nombrada `feature/<id-tarjeta>-<slug>`. El
+identificador de la tarjeta va también en el commit de integración. Se integra con squash sobre
+`main`.
+
+### El tablero
+
+Trello. Cada tarjeta es una unidad de trabajo aprobable: una pantalla, un hito, una decisión.
+
+Listas: **Backlog** · **Listo para empezar** · **En curso** · **En revisión** · **Hecho**
+
+Reglas que Claude Code debe cumplir:
+
+1. **Antes de escribir una línea de código, comprueba que la tarjeta existe, está asignada a
+   quien va a trabajar y está en «En curso».** Si no está, muévela tú y dilo. Si no existe
+   tarjeta, para y pregunta: trabajo sin tarjeta es trabajo que el otro no ve venir.
+2. **Una tarjeta en curso por persona.** Si vas a empezar otra, la anterior se cierra o vuelve a
+   «Listo para empezar» con una nota de dónde se quedó.
+3. **Al terminar, la tarjeta pasa a «En revisión»**, con un comentario que diga: qué se hizo, qué
+   decisiones se tomaron que no estaban en las instrucciones, y qué quedó anotado como deuda. Ese
+   comentario es lo que lee el otro; no lo resumas de más.
+4. **A «Hecho» solo se llega tras la aprobación y la integración en `main`.** La mueve quien
+   integra, no quien desarrolla.
+5. **Si al trabajar aparece algo que no es de esta tarjeta** —una deuda, un fallo de otra
+   pantalla, una contradicción en los documentos— crea una tarjeta en Backlog y sigue con lo
+   tuyo. No lo arregles de paso: un arreglo fuera de alcance en una rama ajena es lo que rompe
+   el reparto.
+
+### `docs/estado.md` y `docs/dominio.md` con dos personas
+
+Con dos ramas paralelas, `estado.md` sería un imán de conflictos: dos agentes escribiendo el mismo
+párrafo en cada merge. Se parte en dos:
+
+- **Lo de cada feature va al comentario de la tarjeta y a la descripción del PR**, no a
+  `estado.md`. Ahí vive el detalle de lo que se hizo y por qué.
+- **`estado.md` queda como resumen curado**, y **solo lo edita quien integra, en el commit de
+  integración**. Nunca durante el desarrollo de una rama. Lo mismo vale para la sección «Estado»
+  de este archivo.
+
+Lo mismo para `docs/dominio.md`: si una decisión de desarrollo cambia el dominio, no lo edites en
+tu rama. Anótalo en la tarjeta, ciérralo con los dos, y que entre en `main` en su propio commit
+con `Domain:` en el cuerpo.
+
+### Lo que no cambia
+
+Estas cuatro siguen siendo innegociables: sin SDK de backend hasta que se decida, `lib/domain/`
+puro, los datos solo por los hooks, y ni un literal suelto fuera de `lib/i18n/es.ts`. Y el
+criterio de terminado tampoco cambia: compila, pasan `lint`, `typecheck` y `test`, los tres
+estados implementados, y comparada en el navegador contra su captura.
 
 ---
 
@@ -228,11 +300,11 @@ generan relativos a la fecha de hoy (Marta siempre en su semana 5), no con fecha
 Detalle, decisiones y dudas en `docs/estado.md`.
 
 Las dos decisiones del 18-09-2026 —macros declaradas por menú y borrado de ejercicios por
-archivado— ya están en `docs/dominio.md` (§5 y §7), sincronizadas con el documento maestro el
-20-09-2026. La regla sigue en pie: si una decisión cambia ese documento, avísalo.
+archivado— están en `docs/dominio.md` (§5 y §7). Desde el 21-09-2026 el maestro es el repo y el
+proyecto de claude.ai es su espejo.
 
 Pantallas del cliente terminadas (20-09-2026), las siete: Peso, Revisión, Progreso, Rutina,
 Menú, Membresía y Ver revisión, y pasada responsive del área de cliente hecha (21-09-2026, detalle
-en `docs/estado.md`). Antes del panel del entrenador se monta la coordinación con otra persona,
-que cambia cómo se trabaja en el repo; después el panel, y por último la decisión de backend con su
-adaptador. Mantén esta sección al día conforme avance.
+en `docs/estado.md`). Coordinación de equipo montada (21-09-2026, sección «Equipo»): lo siguiente
+es el panel del entrenador, repartido por pantallas, y por último la decisión de backend con su
+adaptador. Esta sección la actualiza quien integra.
