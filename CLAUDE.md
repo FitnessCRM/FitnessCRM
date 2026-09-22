@@ -194,6 +194,10 @@ sección, desde `main`, kebab-case y en inglés: `feature/<module>-<what>`, `fix
 arriba. No se hace push directo a `main`. Con el tablero, la rama de una tarjeta es
 `feature/<id-tarjeta>-<slug>` (ver «Equipo»).
 
+**No subir nada al remoto.** Claude Code hace commits en ramas locales y nada más: ni `git push`,
+ni crear PR, ni tocar la configuración del repo en GitHub. Subir lo hacemos nosotros. Cuando una
+rama esté lista, dilo y espera — «lista» no es permiso para empujarla.
+
 Pre-commit (husky + lint-staged) pasa ESLint y Prettier sobre lo staged; lo que no pasa no
 entra. Nunca se commitea `node_modules`, `.next`, `public/sw.js` ni `.env*`.
 
