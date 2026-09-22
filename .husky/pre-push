@@ -1,0 +1,16 @@
+#!/bin/sh
+# `main` solo se toca por PR (CLAUDE.md, «No subir nada al remoto»). Esto cubre el despiste
+# humano; la protección de rama en GitHub es la que lo impone de verdad.
+# Se salta con `git push --no-verify`, a propósito: es para equivocarse, no para prohibir.
+
+protected='refs/heads/main'
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  if [ "$remote_ref" = "$protected" ]; then
+    echo "pre-push: no se empuja a main directamente." >&2
+    echo "          Abre una rama y un PR; main se integra desde ahí." >&2
+    exit 1
+  fi
+done
+
+exit 0

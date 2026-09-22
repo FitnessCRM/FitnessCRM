@@ -198,6 +198,11 @@ arriba. No se hace push directo a `main`. Con el tablero, la rama de una tarjeta
 ni crear PR, ni tocar la configuración del repo en GitHub. Subir lo hacemos nosotros. Cuando una
 rama esté lista, dilo y espera — «lista» no es permiso para empujarla.
 
+**`main` solo se toca por PR.** Nadie empuja a `main`, ni personas ni agentes: se integra desde
+una rama por pull request. Lo imponen dos cosas distintas y las dos hacen falta: la protección de
+rama en GitHub, que no se salta, y el hook `pre-push` de husky, que evita el despiste antes de
+llegar al servidor (`.husky/pre-push`; se instala solo con `pnpm install`).
+
 Pre-commit (husky + lint-staged) pasa ESLint y Prettier sobre lo staged; lo que no pasa no
 entra. Nunca se commitea `node_modules`, `.next`, `public/sw.js` ni `.env*`.
 
