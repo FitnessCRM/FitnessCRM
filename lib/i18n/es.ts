@@ -442,7 +442,8 @@ export const es = {
     },
   },
   status: {
-    client: { invitado: "Invitado", activo: "Activo", dado_de_baja: "Baja" },
+    /** Califican a una persona: invariables en género (ver «Idioma» en CLAUDE.md). */
+    client: { invitado: "Invitación pendiente", activo: "En activo", dado_de_baja: "Baja" },
     review: { borrador: "En curso", enviada: "Nueva", vista: "Vista", revisada: "Revisada" },
     reviewCompleteness: { complete: "Completa", partial: "Parcial" },
     payment: { pagada: "Pagada", no_pagada: "No pagada" },
