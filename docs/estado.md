@@ -387,6 +387,27 @@ Fase 5 (navegación):
   más de lo que evita para un formulario de cuatro campos. En su lugar el pie va pegado abajo, en
   acento mientras haya cambios, y lo dice con todas las letras.
 
+- **Terreno común antes de Detalle de cliente** (tarjeta 32, integrada el 27-09-2026). Dos cosas
+  que salieron del reconocimiento de la captura 10 y que, por la regla «lo compartido va primero y
+  va solo», aterrizaron en `main` antes que la pantalla.
+  - **Las etiquetas de estado de cliente pierden el género.** La maqueta escribe «Activa» y
+    `es.status.client` decía «Activo»: ahora son «Invitación pendiente», «En activo» y «Baja».
+    Cambian solo los literales; los valores del dominio (`invitado`, `activo`, `dado_de_baja`) son
+    identificadores y no se tocan. La regla general está en «Idioma» de `CLAUDE.md`, porque
+    reaparece con cada literal nuevo y no basta con arreglar estos tres.
+  - **`MeasurementsCard` y `WeightEvolutionCard` pasan a `components/charts/`**, con sus literales
+    de `es.screensProgress.{weight,measurements}` a `es.charts.{weight,measurements}`: un
+    componente que usan las dos áreas no cuelga de una pantalla, tampoco en el archivo de textos.
+    Se movieron las dos, y no solo la de medidas, porque la gráfica de peso del entrenador es
+    exactamente la del cliente con otro título. El título pasa a ser una prop opcional con el
+    valor de antes por defecto, para que la pantalla del entrenador pueda titularla sin volver a
+    editar terreno común. Traslado e imports: Progreso se comprobó en el navegador después y se
+    comporta igual.
+  - **La tercera salida —que `components/entrenador/` importe de `components/cliente/`— queda
+    descartada por escrito** en «Estructura» de `CLAUDE.md`. Es peor que mover: convierte un área
+    en dependencia de la otra y ata su diseño, y el día que la UI de cliente se reescriba para
+    móvil se lleva por delante el panel. Sin el porqué escrito, parece la opción barata.
+
 ## Siguiente
 
 Las siete pantallas del cliente y el hito responsive están terminados. Desde el 21-09-2026
