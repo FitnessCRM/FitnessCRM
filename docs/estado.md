@@ -351,6 +351,42 @@ Fase 5 (navegación):
     `ClientInput` incluye `status` pero el adaptador **no** lo fuerza, así que hoy es honesto;
     anotado en la tarjeta del alta de cliente.
 
+- **Cuestionario y Medidas** (`components/entrenador/catalog/`, tarjeta 12, integrada el
+  27-09-2026). Las dos pantallas comparten `CatalogList`, el armazón del catálogo ordenable del
+  entrenador: orden con botones de subir y bajar —sin dependencia de arrastre, accesible por
+  teclado y usable en táctil—, archivado con aviso corto, archivadas en sección plegada con
+  «Restaurar», «+ Añadir» al final y vacío explicativo. Cada pantalla solo pone los campos de su
+  fila.
+  - **El puerto gana `unarchive`** en los dos catálogos. Sin él, archivar por error obligaba a
+    crear otra entrada: otro id, y por tanto la serie de esa medida partida en dos en las
+    gráficas de Progreso. Restaurar devuelve la entrada con su id y su orden, y vuelve a exigirse
+    en la siguiente revisión que se abra. Con test.
+  - **Cuestionario**: el enunciado se edita siempre; el formato —tipo y límites de la escala— se
+    ve **deshabilitado** en cuanto la pregunta tiene respuestas (I15), con la razón al lado y qué
+    hacer en su lugar. Enseñarlo bloqueado, y no negarlo al guardar, es lo que evita que el
+    entrenador escriba un cambio que el dominio va a rechazar.
+  - **Medidas** (§11.1, la pantalla que la maqueta no tiene): etiqueta y unidad corta con
+    sugerencias de las ya usadas. La unidad pasa por `canonicalText`, así que «CM» se guarda «cm».
+  - **Los datos de demo traen una pregunta sin responder** («Estrés fuera del gimnasio»): con las
+    cinco originales ya respondidas, el formato editable no se veía en pantalla ni se podía
+    verificar. El generador de respuestas de Jorge y Sara la excluye a propósito, y el test de
+    apertura de revisión comprueba que se exige y que sigue sin respuestas.
+
+  Tres decisiones que no estaban en la tarjeta:
+  1. **Guardado mixto.** El orden, el archivado y la restauración se aplican en el acto: son
+     acciones estructurales, cada una con su llamada al puerto y su confirmación. Los textos
+     —enunciado, formato, etiqueta, unidad— son borrador hasta «Guardar», como en la maqueta.
+  2. **Las filas nuevas viven en local** hasta guardar, porque crear exige enunciado o etiqueta no
+     vacíos. Salen al final de la lista, con borde de acento y validación en línea.
+  3. **`useQuestionsWithResponses`**, hook que pregunta al puerto por cada pregunta activa si ya
+     tiene respuestas: es lo que permite enseñar el bloqueo antes de intentarlo. Con backend
+     necesitará un contador en vez del conjunto de respuestas; anotado en la tarjeta del adaptador.
+
+  **Los catálogos pierden el borrador al salir de la pantalla.** Salir sin guardar pierde los
+  textos editados. **Decidido no poner guardia de navegación**: interceptar la navegación cuesta
+  más de lo que evita para un formulario de cuatro campos. En su lugar el pie va pegado abajo, en
+  acento mientras haya cambios, y lo dice con todas las letras.
+
 ## Siguiente
 
 Las siete pantallas del cliente y el hito responsive están terminados. Desde el 21-09-2026
@@ -360,13 +396,6 @@ edita quien integra. Por último, la decisión de backend con su adaptador.
 
 ### Anotado para el panel del entrenador
 
-- **Los catálogos pierden el borrador al salir de la pantalla** (27-09-2026; decidido en la
-  tarjeta 12, **todavía en revisión, no en `main`**). En Cuestionario y Medidas el orden, el
-  archivado y la restauración se aplican en el acto, pero los textos —enunciado, formato,
-  etiqueta y unidad— son borrador hasta pulsar «Guardar»: salir de la pantalla sin guardar los
-  pierde. **Decidido no poner guardia de navegación**: interceptar la navegación cuesta más de lo
-  que evita para un formulario de cuatro campos. En su lugar el pie va pegado abajo, en acento
-  mientras haya cambios, y lo dice con todas las letras.
 - **Marcar las membresías solapadas en la tabla de Membresías** (20-09-2026). El dominio no
   prohíbe que dos periodos de un cliente se solapen y no se va a llevar allí. La pantalla del
   cliente lo resuelve en silencio: `membershipStanding` enseña la que empezó más tarde. Eso
