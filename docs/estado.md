@@ -371,6 +371,17 @@ Fase 5 (navegación):
     cinco originales ya respondidas, el formato editable no se veía en pantalla ni se podía
     verificar. El generador de respuestas de Jorge y Sara la excluye a propósito, y el test de
     apertura de revisión comprueba que se exige y que sigue sin respuestas.
+  - **Esa pregunta dejó «Parcial» todas las revisiones de demo** (tarjeta 33, arreglada el
+    27-09-2026). Las ocho compartían un `REQUIREMENTS` calculado del catálogo actual, así que la
+    pregunta nueva pasó a exigirse también en revisiones cerradas semanas antes, que nadie podía
+    haber respondido: Progreso las enseñaba «Parcial» donde la captura 06 pone «Completa ✓». El
+    dominio ya hacía lo correcto —`openReview` congela los requisitos al crear la revisión e
+    `isReviewComplete` los lee de ahí (I5)—, así que el fallo era solo del seed. La foto pasa a
+    ir **escrita a mano**, con los ids literales, y se llama `REQUIREMENTS_BEFORE_STRESS_QUESTION`:
+    lo que falló no fue su valor sino que una constante compartida se calculara de datos vivos, y
+    con un nombre genérico la novena revisión de demo la reutilizaría igual. El test recorre las
+    revisiones de demo y exige que ninguna pida una pregunta sin responder ni un id que no exista
+    en el catálogo; la de Sara, parcial a propósito por no tener medidas, queda exenta por nombre.
 
   Tres decisiones que no estaban en la tarjeta:
   1. **Guardado mixto.** El orden, el archivado y la restauración se aplican en el acto: son
@@ -386,6 +397,27 @@ Fase 5 (navegación):
   textos editados. **Decidido no poner guardia de navegación**: interceptar la navegación cuesta
   más de lo que evita para un formulario de cuatro campos. En su lugar el pie va pegado abajo, en
   acento mientras haya cambios, y lo dice con todas las letras.
+
+- **Terreno común antes de Detalle de cliente** (tarjeta 32, integrada el 27-09-2026). Dos cosas
+  que salieron del reconocimiento de la captura 10 y que, por la regla «lo compartido va primero y
+  va solo», aterrizaron en `main` antes que la pantalla.
+  - **Las etiquetas de estado de cliente pierden el género.** La maqueta escribe «Activa» y
+    `es.status.client` decía «Activo»: ahora son «Invitación pendiente», «En activo» y «Baja».
+    Cambian solo los literales; los valores del dominio (`invitado`, `activo`, `dado_de_baja`) son
+    identificadores y no se tocan. La regla general está en «Idioma» de `CLAUDE.md`, porque
+    reaparece con cada literal nuevo y no basta con arreglar estos tres.
+  - **`MeasurementsCard` y `WeightEvolutionCard` pasan a `components/charts/`**, con sus literales
+    de `es.screensProgress.{weight,measurements}` a `es.charts.{weight,measurements}`: un
+    componente que usan las dos áreas no cuelga de una pantalla, tampoco en el archivo de textos.
+    Se movieron las dos, y no solo la de medidas, porque la gráfica de peso del entrenador es
+    exactamente la del cliente con otro título. El título pasa a ser una prop opcional con el
+    valor de antes por defecto, para que la pantalla del entrenador pueda titularla sin volver a
+    editar terreno común. Traslado e imports: Progreso se comprobó en el navegador después y se
+    comporta igual.
+  - **La tercera salida —que `components/entrenador/` importe de `components/cliente/`— queda
+    descartada por escrito** en «Estructura» de `CLAUDE.md`. Es peor que mover: convierte un área
+    en dependencia de la otra y ata su diseño, y el día que la UI de cliente se reescriba para
+    móvil se lleva por delante el panel. Sin el porqué escrito, parece la opción barata.
 
 ## Siguiente
 
