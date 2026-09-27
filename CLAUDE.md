@@ -239,11 +239,24 @@ identificador de la tarjeta va en el título del PR (`Refs: card <id>` en el cue
 con *Squash and merge* en GitHub, nunca en local.
 
 **Después de cada fusión: sincronizar y borrar.** En cuanto un PR se fusiona, `git fetch origin` y
-`git reset --hard origin/main` en el `main` local, y borrar la rama fusionada (local y remota). El
-squash crea en el remoto **un commit nuevo, con un SHA que no existe en local**, así que los dos
-`main` divergen aunque el contenido sea el mismo. El síntoma, que no parece un problema de git:
-ramificar o rebasar desde el `main` viejo arrastra los commits originales de la rama ya fusionada,
-y el PR siguiente aparece con cambios que no son suyos y con conflictos contra código idéntico.
+`git reset --hard origin/main` en el `main` local. El squash crea en el remoto **un commit nuevo,
+con un SHA que no existe en local**: lo normal es que el `main` local quede simplemente detrás, y
+si además tenía commits propios, divergido. El síntoma de no hacerlo, que no parece un problema de
+git: ramificar o rebasar desde el `main` viejo arrastra los commits originales de la rama ya
+fusionada, y el PR siguiente aparece con cambios que no son suyos y con conflictos contra código
+idéntico.
+
+Luego se borra la rama. **`git branch -d` se va a negar**: por el SHA nuevo, git no la ve
+fusionada aunque su contenido esté dentro. Antes de forzar con `-D`, compruébalo —
+`git diff origin/main <rama> -- <los archivos que tocaba>` tiene que salir vacío — y no al revés:
+un `git diff` completo contra `main` enseña los cambios *de las otras* ramas y parece que falta
+algo. La rama remota suele borrarla GitHub al fusionar el PR; compruébalo con
+`git ls-remote --heads origin`.
+
+**Rebasar una rama que salió de otra rama.** Si la base ya está fusionada, no basta con
+`git rebase main`: los commits de la base traen SHA distintos del squash y git no los descarta de
+forma fiable. Se corta a mano con `git rebase --onto main <último-commit-de-la-base>`, que los deja
+fuera por construcción.
 
 ### El tablero
 
