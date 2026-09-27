@@ -238,6 +238,13 @@ trabajo del otro. «Espera mi aprobación» significa esperar la de quien corres
 identificador de la tarjeta va en el título del PR (`Refs: card <id>` en el cuerpo). Se fusiona
 con *Squash and merge* en GitHub, nunca en local.
 
+**Después de cada fusión: sincronizar y borrar.** En cuanto un PR se fusiona, `git fetch origin` y
+`git reset --hard origin/main` en el `main` local, y borrar la rama fusionada (local y remota). El
+squash crea en el remoto **un commit nuevo, con un SHA que no existe en local**, así que los dos
+`main` divergen aunque el contenido sea el mismo. El síntoma, que no parece un problema de git:
+ramificar o rebasar desde el `main` viejo arrastra los commits originales de la rama ya fusionada,
+y el PR siguiente aparece con cambios que no son suyos y con conflictos contra código idéntico.
+
 ### El tablero
 
 Trello. Cada tarjeta es una unidad de trabajo aprobable: una pantalla, un hito, una decisión.
@@ -254,8 +261,10 @@ Reglas que Claude Code debe cumplir:
 3. **Al terminar, la tarjeta pasa a «En revisión»**, con un comentario que diga: qué se hizo, qué
    decisiones se tomaron que no estaban en las instrucciones, y qué quedó anotado como deuda. Ese
    comentario es lo que lee el otro; no lo resumas de más.
-4. **A «Hecho» solo se llega cuando el PR está fusionado en `main`.** La mueve quien fusiona el
-   PR, no quien desarrolla.
+4. **A «Hecho» solo se llega cuando están fusionados los dos PR: el de código y el de
+   documentación.** La mueve quien fusiona, no quien desarrolla. Mientras el de documentación no
+   esté dentro, la tarjeta sigue en «En revisión»: si no, ese PR queda siempre para luego y
+   `estado.md` se atrasa solo.
 5. **Si al trabajar aparece algo que no es de esta tarjeta** —una deuda, un fallo de otra
    pantalla, una contradicción en los documentos— crea una tarjeta en Backlog y sigue con lo
    tuyo. No lo arregles de paso: un arreglo fuera de alcance en una rama ajena es lo que rompe
