@@ -59,6 +59,25 @@ describe("demo data", () => {
     for (const r of s.reviews) if (r.weightLogId) expect(logIds.has(r.weightLogId)).toBe(true);
   });
 
+  it("requires of each review only what existed when it was opened (I5)", () => {
+    const s = createDemoState(TODAY);
+    const typeIds = new Set(s.measurementTypes.map((t) => t.id));
+    const questionIds = new Set(s.questions.map((q) => q.id));
+    /** La de Sara se envió a propósito sin medidas: es el caso «Parcial» de la demo. */
+    const PARTIAL_ON_PURPOSE = "rv-sara-s3";
+    expect(s.reviews.some((r) => r.id === PARTIAL_ON_PURPOSE)).toBe(true);
+
+    for (const review of s.reviews) {
+      for (const id of review.requirements.measurementTypeIds) expect(typeIds.has(id)).toBe(true);
+      for (const id of review.requirements.questionIds) expect(questionIds.has(id)).toBe(true);
+      // Nadie puede responder una pregunta que no existía al abrir la revisión: exigirla dejaba
+      // en «Parcial» revisiones cerradas semanas antes.
+      const missing = isReviewComplete(review).missing;
+      expect(missing.questionIds).toEqual([]);
+      if (review.id !== PARTIAL_ON_PURPOSE) expect(missing.measurementTypeIds).toEqual([]);
+    }
+  });
+
   it("matches the demo: Marta's five weekly weights and waist/hip/thigh deltas", async () => {
     const p = ports();
     const reviews = await p.reviews.listClientReviews(TRAINER, MARTA);
