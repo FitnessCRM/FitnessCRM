@@ -371,6 +371,17 @@ Fase 5 (navegación):
     cinco originales ya respondidas, el formato editable no se veía en pantalla ni se podía
     verificar. El generador de respuestas de Jorge y Sara la excluye a propósito, y el test de
     apertura de revisión comprueba que se exige y que sigue sin respuestas.
+  - **Esa pregunta dejó «Parcial» todas las revisiones de demo** (tarjeta 33, arreglada el
+    27-09-2026). Las ocho compartían un `REQUIREMENTS` calculado del catálogo actual, así que la
+    pregunta nueva pasó a exigirse también en revisiones cerradas semanas antes, que nadie podía
+    haber respondido: Progreso las enseñaba «Parcial» donde la captura 06 pone «Completa ✓». El
+    dominio ya hacía lo correcto —`openReview` congela los requisitos al crear la revisión e
+    `isReviewComplete` los lee de ahí (I5)—, así que el fallo era solo del seed. La foto pasa a
+    ir **escrita a mano**, con los ids literales, y se llama `REQUIREMENTS_BEFORE_STRESS_QUESTION`:
+    lo que falló no fue su valor sino que una constante compartida se calculara de datos vivos, y
+    con un nombre genérico la novena revisión de demo la reutilizaría igual. El test recorre las
+    revisiones de demo y exige que ninguna pida una pregunta sin responder ni un id que no exista
+    en el catálogo; la de Sara, parcial a propósito por no tener medidas, queda exenta por nombre.
 
   Tres decisiones que no estaban en la tarjeta:
   1. **Guardado mixto.** El orden, el archivado y la restauración se aplican en el acto: son
