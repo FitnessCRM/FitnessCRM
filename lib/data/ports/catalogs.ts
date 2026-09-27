@@ -15,6 +15,11 @@ export interface MeasurementTypePort {
   ): Promise<MeasurementType>;
   reorderMeasurementTypes(trainerId: string, orderedIds: string[]): Promise<MeasurementType[]>;
   archiveMeasurementType(trainerId: string, typeId: string): Promise<void>;
+  /**
+   * Deshace un archivado. Sin esto, archivar por error obliga a crear otra entrada: otro id, y
+   * por tanto la serie de esa medida se parte en dos en las gráficas.
+   */
+  unarchiveMeasurementType(trainerId: string, typeId: string): Promise<void>;
 }
 
 export interface QuestionnairePort {
@@ -31,6 +36,8 @@ export interface QuestionnairePort {
   ): Promise<QuestionnaireQuestion>;
   reorderQuestions(trainerId: string, orderedIds: string[]): Promise<QuestionnaireQuestion[]>;
   archiveQuestion(trainerId: string, questionId: string): Promise<void>;
+  /** Deshace un archivado: la pregunta vuelve a pedirse en las revisiones siguientes. */
+  unarchiveQuestion(trainerId: string, questionId: string): Promise<void>;
   /** Si existe alguna respuesta a la pregunta, su formato es inmutable. */
   questionHasResponses(trainerId: string, questionId: string): Promise<boolean>;
 }

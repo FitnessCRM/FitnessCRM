@@ -27,12 +27,17 @@ export const QUESTION_IDS = {
   hunger: "q-hambre",
   howSeen: "q-como-te-has-visto",
   pain: "q-molestias",
+  stress: "q-estres",
 } as const;
 
 const scale: ResponseFormat = { kind: "escala", min: 1, max: 5 };
 const text: ResponseFormat = { kind: "texto" };
 
-/** Las cinco preguntas de la pantalla "Cuestionario de revisión". */
+/**
+ * Las cinco preguntas de la pantalla "Cuestionario de revisión", más una recién añadida que
+ * todavía no ha recibido respuestas: es la que enseña el formato editable, porque el de las
+ * otras cinco está bloqueado por I15.
+ */
 const questionRows: { id: string; prompt: string; format: ResponseFormat }[] = [
   { id: QUESTION_IDS.energy, prompt: "Energía en los entrenos", format: scale },
   { id: QUESTION_IDS.sleep, prompt: "Calidad del sueño", format: scale },
@@ -43,6 +48,7 @@ const questionRows: { id: string; prompt: string; format: ResponseFormat }[] = [
     format: { kind: "texto" },
   },
   { id: QUESTION_IDS.pain, prompt: "Molestias o dolores", format: text },
+  { id: QUESTION_IDS.stress, prompt: "Estrés fuera del gimnasio", format: scale },
 ];
 
 export const questions: QuestionnaireQuestion[] = questionRows.map((q, order) => ({

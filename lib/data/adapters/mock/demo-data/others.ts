@@ -1,14 +1,17 @@
 import type { Review, WorkoutLog } from "@/lib/domain";
 import { reviewWindowForWeek } from "@/lib/domain";
-import { measurementTypes, questions } from "./catalogs";
+import { QUESTION_IDS, measurementTypes, questions } from "./catalogs";
 import { CLIENT_IDS, TRAINER_ID, ts, type DemoDates } from "./common";
 import { EXERCISE_IDS } from "./exercises";
 import { REQUIREMENTS, weightId } from "./reviews";
 
 const poses = ["frente", "perfil", "espalda"] as const;
 
+/** La pregunta de estrés es posterior a estas revisiones: nadie la ha respondido todavía. */
+const answeredQuestions = questions.filter((q) => q.id !== QUESTION_IDS.stress);
+
 function fullAnswers(prefix: string, scale: number, text: string) {
-  return questions.map((q) =>
+  return answeredQuestions.map((q) =>
     q.format.kind === "escala"
       ? {
           id: `${prefix}-${q.id}`,

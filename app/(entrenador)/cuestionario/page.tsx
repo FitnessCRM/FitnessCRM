@@ -1,10 +1,8 @@
-import { PageHeader } from "@/components/ui/page-header";
+import { QuestionnaireScreen } from "@/components/entrenador/catalog/questionnaire-screen";
 import { es } from "@/lib/i18n/es";
 
-const title = es.pages.trainer.cuestionario;
-
-export const metadata = { title };
+export const metadata = { title: es.pages.trainer.cuestionario };
 
 export default function Page() {
-  return <PageHeader title={title} />;
+  return <QuestionnaireScreen />;
 }

@@ -46,6 +46,11 @@ export function createMeasurementTypePort(ctx: MockContext): MeasurementTypePort
       findOwn(ctx.state.measurementTypes, trainerId, typeId, "Tipo de medida").status = "archivada";
       return ctx.reply(undefined);
     },
+    unarchiveMeasurementType: async (trainerId, typeId) => {
+      // Vuelve con su id y su orden: el histórico de esa medida sigue siendo una sola serie.
+      findOwn(ctx.state.measurementTypes, trainerId, typeId, "Tipo de medida").status = "activa";
+      return ctx.reply(undefined);
+    },
   };
 }
 
@@ -89,6 +94,10 @@ export function createQuestionnairePort(ctx: MockContext): QuestionnairePort {
       ctx.reply(reorder(mine(trainerId), orderedIds)),
     archiveQuestion: async (trainerId, questionId) => {
       findOwn(ctx.state.questions, trainerId, questionId, "Pregunta").status = "archivada";
+      return ctx.reply(undefined);
+    },
+    unarchiveQuestion: async (trainerId, questionId) => {
+      findOwn(ctx.state.questions, trainerId, questionId, "Pregunta").status = "activa";
       return ctx.reply(undefined);
     },
     questionHasResponses: async (trainerId, questionId) =>
