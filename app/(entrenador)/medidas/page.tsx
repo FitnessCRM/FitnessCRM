@@ -1,10 +1,8 @@
-import { PageHeader } from "@/components/ui/page-header";
+import { MeasurementsScreen } from "@/components/entrenador/catalog/measurements-screen";
 import { es } from "@/lib/i18n/es";
 
-const title = es.pages.trainer.medidas;
-
-export const metadata = { title };
+export const metadata = { title: es.pages.trainer.medidas };
 
 export default function Page() {
-  return <PageHeader title={title} />;
+  return <MeasurementsScreen />;
 }
