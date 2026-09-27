@@ -22,6 +22,8 @@ export const queryKeys = {
   menuTemplates: (trainerId: string) => ["menu-templates", trainerId] as const,
   measurementTypes: (trainerId: string) => ["measurement-types", trainerId] as const,
   questions: (trainerId: string) => ["questions", trainerId] as const,
+  questionsWithResponses: (trainerId: string, questionIds: readonly string[]) =>
+    ["questions", trainerId, "with-responses", ...questionIds] as const,
   reviews: (trainerId: string) => ["reviews", trainerId] as const,
   clientReviews: (trainerId: string, clientId: string) =>
     ["reviews", trainerId, "client", clientId] as const,

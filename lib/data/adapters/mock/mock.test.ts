@@ -219,6 +219,39 @@ describe("flows", () => {
     expect((await p.reviews.getCurrentReview(TRAINER, "c-david"))?.id).toBe(first.id);
   });
 
+  it("unarchives a catalogue entry with its own id, so its history stays one series", async () => {
+    const p = ports();
+    await p.measurementTypes.archiveMeasurementType(TRAINER, "mt-hombros");
+    const archived = (await p.measurementTypes.listMeasurementTypes(TRAINER)).find(
+      (m) => m.id === "mt-hombros",
+    );
+    expect(archived?.status).toBe("archivada");
+
+    await p.measurementTypes.unarchiveMeasurementType(TRAINER, "mt-hombros");
+    const restored = (await p.measurementTypes.listMeasurementTypes(TRAINER)).find(
+      (m) => m.id === "mt-hombros",
+    );
+    expect(restored?.status).toBe("activa");
+    expect(restored?.order).toBe(archived?.order);
+
+    // Y vuelve a exigirse en la siguiente revisión que se abra.
+    const review = await p.reviews.openCurrentReview(TRAINER, "c-david");
+    expect(review.requirements.measurementTypeIds).toContain("mt-hombros");
+  });
+
+  it("unarchives a question too, and refuses an unknown id", async () => {
+    const p = ports();
+    await p.questionnaire.archiveQuestion(TRAINER, "q-energia");
+    await p.questionnaire.unarchiveQuestion(TRAINER, "q-energia");
+    const question = (await p.questionnaire.listQuestions(TRAINER)).find(
+      (q) => q.id === "q-energia",
+    );
+    expect(question?.status).toBe("activa");
+    await expect(p.questionnaire.unarchiveQuestion(TRAINER, "q-no-existe")).rejects.toBeInstanceOf(
+      DomainError,
+    );
+  });
+
   it("rejects a review weight outside the window (I9) and edits after vista (I17)", async () => {
     const p = ports();
     const review = await p.reviews.openCurrentReview(TRAINER, "c-david");
