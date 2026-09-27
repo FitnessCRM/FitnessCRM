@@ -1,10 +1,8 @@
-import { PageHeader } from "@/components/ui/page-header";
+import { LibraryScreen } from "@/components/entrenador/library/library-screen";
 import { es } from "@/lib/i18n/es";
 
-const title = es.pages.trainer.biblioteca;
-
-export const metadata = { title };
+export const metadata = { title: es.pages.trainer.biblioteca };
 
 export default function Page() {
-  return <PageHeader title={title} />;
+  return <LibraryScreen />;
 }

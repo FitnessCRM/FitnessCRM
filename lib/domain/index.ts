@@ -8,5 +8,6 @@ export * from "./templates";
 export * from "./routine";
 export * from "./workout";
 export * from "./membership";
+export * from "./text";
 export * from "./weight";
 export * from "./progress";
