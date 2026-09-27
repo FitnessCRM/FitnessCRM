@@ -335,6 +335,11 @@ puro, los datos solo por los hooks, y ni un literal suelto fuera de `lib/i18n/es
 criterio de terminado tampoco cambia: compila, pasan `lint`, `typecheck` y `test`, los tres
 estados implementados, y comparada en el navegador contra su captura.
 
+Ese criterio es **para las ramas de código**. Un PR de solo documentación se da por terminado
+cuando el texto es correcto y pasa `lint`: no toca una línea de código, así que no puede romper el
+build. Sin esta distinción, o se corre el build por ceremonia o se salta el criterio por sentido
+común, y las dos cosas lo erosionan igual.
+
 ---
 
 ## Vocabulario
