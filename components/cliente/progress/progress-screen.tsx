@@ -1,5 +1,7 @@
 "use client";
 
+import { MeasurementsCard } from "@/components/charts/measurements-card";
+import { WeightEvolutionCard } from "@/components/charts/weight-evolution-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { ErrorState, LoadingState } from "@/components/ui/states";
 import {
@@ -19,9 +21,7 @@ import {
 } from "@/lib/data/hooks";
 import { todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
-import { MeasurementsCard } from "./measurements-card";
 import { ReviewsList } from "./reviews-list";
-import { WeightEvolutionCard } from "./weight-evolution-card";
 
 const t = es.screensProgress;
 
