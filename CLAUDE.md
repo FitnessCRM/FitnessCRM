@@ -251,6 +251,14 @@ otra: con dos personas, una rama apilada deja el PR del otro esperando a que se 
 mete en su diff commits que no son suyos. Si al trabajar aparece que hace falta algo compartido,
 sale en su propio PR y la pantalla espera a que esté en `main`.
 
+**Subir es el paso previo a fusionar, no el premio por terminar.** La rama se sube justo antes de
+abrir el PR y fusionarlo, no en cuanto alguien la da por lista: entre una cosa y otra puede entrar
+otro commit. Y si después de decir «lista» se le añade algo, hay que **avisarlo explícitamente**:
+el PR ya abierto no se entera solo y quien fusiona está mirando una foto vieja. El síntoma es
+silencioso —el PR se fusiona sin los últimos commits y todo parece correcto— y lo destapa la
+comprobación de contenido antes del `-D`, cuando la rama que ibas a borrar resulta que todavía
+tiene trabajo que no está en `main`.
+
 **Después de cada fusión: sincronizar y borrar.** En cuanto un PR se fusiona, `git fetch origin` y
 `git reset --hard origin/main` en el `main` local. El squash crea en el remoto **un commit nuevo,
 con un SHA que no existe en local**: lo normal es que el `main` local quede simplemente detrás, y
