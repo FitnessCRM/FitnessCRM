@@ -282,7 +282,7 @@ export const es = {
     save: "Guardar",
     saving: "Guardando…",
     saveError: "No se ha podido guardar. Inténtalo otra vez.",
-    unsaved: "Hay cambios sin guardar.",
+    unsaved: "Hay cambios sin guardar. Si sales de la pantalla, se pierden.",
     archivedTitle: "Archivadas",
     archivedHint:
       "No se piden en las revisiones nuevas. Lo ya registrado se conserva tal y como se preguntó entonces.",

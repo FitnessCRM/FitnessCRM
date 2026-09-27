@@ -215,7 +215,12 @@ describe("flows", () => {
     expect(again.id).toBe(first.id);
     expect(first.weekNumber).toBe(11);
     expect(first.requirements.measurementTypeIds).not.toContain("mt-hombros");
-    expect(first.requirements.questionIds).toHaveLength(5);
+    expect(first.requirements.questionIds).toHaveLength(6);
+    // La sexta es la recién añadida: se exige desde ya, pero todavía nadie la ha respondido,
+    // así que su formato sigue siendo editable (I15).
+    expect(first.requirements.questionIds).toContain("q-estres");
+    expect(await p.questionnaire.questionHasResponses(TRAINER, "q-estres")).toBe(false);
+    expect(await p.questionnaire.questionHasResponses(TRAINER, "q-energia")).toBe(true);
     expect((await p.reviews.getCurrentReview(TRAINER, "c-david"))?.id).toBe(first.id);
   });
 

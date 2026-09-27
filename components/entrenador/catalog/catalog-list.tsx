@@ -124,8 +124,20 @@ export function CatalogList<T extends CatalogEntry>({
 
       {hasError ? <ErrorState message={t.saveError} /> : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-text-subtle text-[13px]">{isDirty ? t.unsaved : t.applies}</p>
+      {/* Pegado abajo y en acento cuando hay borrador: salir de la pantalla lo pierde, así que
+          el aviso no puede quedarse arriba fuera de la vista. */}
+      <div
+        className={cn(
+          "sticky bottom-0 z-10 -mx-1 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 backdrop-blur",
+          isDirty ? "border-accent-outline bg-accent-soft" : "bg-background/80 border-transparent",
+        )}
+      >
+        <p
+          aria-live="polite"
+          className={cn("text-[13px]", isDirty ? "text-accent-bright" : "text-text-subtle")}
+        >
+          {isDirty ? t.unsaved : t.applies}
+        </p>
         <Button onClick={onSave} disabled={isSaving || !isDirty}>
           {isSaving ? t.saving : t.save}
         </Button>
