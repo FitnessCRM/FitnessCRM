@@ -95,6 +95,15 @@ docs/
   design/demo-navegable.html   volcado estático de la demo
 ```
 
+**`cliente/` y `entrenador/` son hermanas: ninguna importa de la otra.** Cuando las dos necesitan
+el mismo componente, se mueve a un sitio neutro —`components/charts/`, `components/ui/`— y las dos
+importan de ahí; sus literales se mueven con él, fuera de la clave de una pantalla. La salida
+rápida —que `entrenador/` importe de `components/cliente/`— es peor que mover, y hay que decir por
+qué o alguien la elegirá: convierte un área en dependencia de la otra, ata su diseño (un
+componente pensado para el móvil del cliente pasa a mandar en el escritorio del entrenador) y el
+día que se reescriba la UI de cliente para móvil se lleva por delante el panel. Mover cuesta un PR
+pequeño de terreno común; deshacer el atajo cuesta más y más tarde.
+
 ---
 
 ## Sistema de diseño
@@ -133,6 +142,14 @@ aparecen en ninguna pantalla.
 **Idioma.** La UI es española, el código es inglés. Nombres de archivos, tipos, funciones,
 variables, ramas y commits en inglés. Todo literal visible sale de `lib/i18n/es.ts`; no hay
 strings sueltos en los componentes.
+
+**Ninguna etiqueta sobre una persona lleva género.** Un literal que califique a alguien tiene que
+ser invariable: hay clientes y clientas, y ni se duplica cada etiqueta por género ni se deduce del
+nombre. Se escribe como sustantivo o locución —«En activo», «Invitación pendiente», «Baja»— y no
+como adjetivo concordado —«Activo», «Invitado»—. Esto es solo `lib/i18n/es.ts`, que es donde está
+el texto visible: los valores del dominio (`activo`, `invitado`, `dado_de_baja`) son
+identificadores y no se tocan. La regla reaparece cada vez que alguien escribe un literal nuevo,
+por eso está aquí y no en un comentario.
 
 **Fechas.** En pantalla, `DD-MM-YYYY` por defecto. En listas cronológicas densas del año en
 curso, día y mes abreviado como en la demo («29 ago»); fuera del año en curso, `DD-MM-YYYY`, que
