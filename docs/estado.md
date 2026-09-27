@@ -330,6 +330,27 @@ Fase 5 (navegación):
     depende de `ui/select`, que es Radix y está por diagnosticar. La revisión elegida viaja en la
     query (`?review=`), así que la página necesita `Suspense` para seguir siendo estática.
 
+### Panel del entrenador
+
+- **Biblioteca de ejercicios** (`components/entrenador/library/`, tarjeta 7, integrada el
+  27-09-2026). Primera pantalla del panel; deja montados los tres patrones que reutilizan las
+  demás: rejilla con filtros, panel de edición lateral y acción destructiva con aviso.
+  - **«Eliminar» archiva** (I13, §7). Antes de confirmar, el diálogo **nombra a los clientes** que
+    tienen el ejercicio prescrito y cuántas plantillas se ven afectadas, y dice que las rutinas
+    archivadas se quedan intactas para que un `WorkoutLog` antiguo siga resolviendo el nombre.
+  - **El vídeo no se embebe** (I20): donde la maqueta pone un recuadro de previsualización hay un
+    enlace que dice a qué host lleva y abre en pestaña nueva.
+  - **Grupo y material son texto libre**, con sugerencias de los valores existentes en vez de
+    selects, y los filtros se derivan de los datos. Al guardar pasan por `canonicalText`
+    (`lib/domain/text.ts`, con test): recorta y adopta la grafía ya existente ignorando
+    mayúsculas y tildes, así que «pierna» y «Pierna» no acaban siendo dos filtros. **No unifica
+    plurales**: «Piernas» sigue siendo un valor distinto, porque eso ya sería decidir por el
+    entrenador.
+  - `ExerciseInput` deja de exigir `status` (tarjeta 29): el adaptador siempre crea en «activo»,
+    así que el tipo solo producía relleno. Revisados los demás puertos: era el único con ese vicio.
+    `ClientInput` incluye `status` pero el adaptador **no** lo fuerza, así que hoy es honesto;
+    anotado en la tarjeta del alta de cliente.
+
 ## Siguiente
 
 Las siete pantallas del cliente y el hito responsive están terminados. Desde el 21-09-2026
@@ -339,6 +360,13 @@ edita quien integra. Por último, la decisión de backend con su adaptador.
 
 ### Anotado para el panel del entrenador
 
+- **Los catálogos pierden el borrador al salir de la pantalla** (27-09-2026; decidido en la
+  tarjeta 12, **todavía en revisión, no en `main`**). En Cuestionario y Medidas el orden, el
+  archivado y la restauración se aplican en el acto, pero los textos —enunciado, formato,
+  etiqueta y unidad— son borrador hasta pulsar «Guardar»: salir de la pantalla sin guardar los
+  pierde. **Decidido no poner guardia de navegación**: interceptar la navegación cuesta más de lo
+  que evita para un formulario de cuatro campos. En su lugar el pie va pegado abajo, en acento
+  mientras haya cambios, y lo dice con todas las letras.
 - **Marcar las membresías solapadas en la tabla de Membresías** (20-09-2026). El dominio no
   prohíbe que dos periodos de un cliente se solapen y no se va a llevar allí. La pantalla del
   cliente lo resuelve en silencio: `membershipStanding` enseña la que empezó más tarde. Eso

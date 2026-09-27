@@ -1,7 +1,8 @@
 import type { Exercise } from "@/lib/domain";
 
-export type ExerciseInput = Omit<Exercise, "id" | "createdAt">;
-export type ExerciseChanges = Partial<Omit<ExerciseInput, "trainerId" | "status">>;
+/** Lo que aporta quien crea. `status` no: un ejercicio nace «activo» y solo se archiva (§7). */
+export type ExerciseInput = Omit<Exercise, "id" | "createdAt" | "status">;
+export type ExerciseChanges = Partial<Omit<ExerciseInput, "trainerId">>;
 
 /** Qué rutinas de cliente prescriben un ejercicio: base del aviso previo al archivado. */
 export interface ExerciseUsage {

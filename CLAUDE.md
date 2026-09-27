@@ -314,6 +314,7 @@ proyecto de claude.ai es su espejo.
 
 Pantallas del cliente terminadas (20-09-2026), las siete: Peso, Revisión, Progreso, Rutina,
 Menú, Membresía y Ver revisión, y pasada responsive del área de cliente hecha (21-09-2026, detalle
-en `docs/estado.md`). Coordinación de equipo montada (21-09-2026, sección «Equipo»): lo siguiente
-es el panel del entrenador, repartido por pantallas, y por último la decisión de backend con su
-adaptador. Esta sección la actualiza quien integra.
+en `docs/estado.md`). Coordinación de equipo montada (21-09-2026, sección «Equipo»). Del panel del
+entrenador está integrada la Biblioteca de ejercicios (27-09-2026); el resto se reparte por
+pantallas en el tablero, y por último la decisión de backend con su adaptador. Esta sección se
+actualiza en el PR de documentación posterior a cada fusión.
