@@ -190,18 +190,25 @@ en los dos sentidos —ni se descarta sin mirar, ni se arregla lo que en producc
 Ramas: `main` siempre en verde (`build`, `lint`, `typecheck`, `test`). Rama por módulo o
 sección, desde `main`, kebab-case y en inglés: `feature/<module>-<what>`, `fix/<what>`,
 `refactor/<what>`, `chore/<what>`, `docs/<what>` (`feature/client-routine-screen`,
-`fix/week-number-timezone`). Se integran con squash y el mensaje del squash sigue el formato de
-arriba. No se hace push directo a `main`. Con el tablero, la rama de una tarjeta es
-`feature/<id-tarjeta>-<slug>` (ver «Equipo»).
+`fix/week-number-timezone`). **La fusión ocurre en GitHub**, con *Squash and merge*: el título del
+PR sigue el formato de commit de arriba y su descripción explica el porqué. Nadie fusiona en local
+ni empuja a `main`. Con el tablero, la rama de una tarjeta es `feature/<id-tarjeta>-<slug>`
+(ver «Equipo»).
 
 **No subir nada al remoto.** Claude Code hace commits en ramas locales y nada más: ni `git push`,
-ni crear PR, ni tocar la configuración del repo en GitHub. Subir lo hacemos nosotros. Cuando una
-rama esté lista, dilo y espera — «lista» no es permiso para empujarla.
+ni crear PR, ni fusionar, ni tocar la configuración del repo en GitHub. Subir y fusionar lo
+hacemos nosotros. Lo que hace Claude Code es dejar la rama lista —verde en `lint`, `typecheck`,
+`test` y `build`, con la tarjeta en «En revisión» y su comentario— y decirlo. «Lista» no es
+permiso para empujarla.
 
-**`main` solo se toca por PR.** Nadie empuja a `main`, ni personas ni agentes: se integra desde
-una rama por pull request. Lo imponen dos cosas distintas y las dos hacen falta: la protección de
-rama en GitHub, que no se salta, y el hook `pre-push` de husky, que evita el despiste antes de
-llegar al servidor (`.husky/pre-push`; se instala solo con `pnpm install`).
+**`main` solo se toca por PR.** Nadie empuja a `main`, ni personas ni agentes: se sube la rama, se
+abre el PR y la fusión ocurre en GitHub con *Squash and merge*. Si alguien necesita `--no-verify`
+para empujar `main`, es señal de que se está saltando el flujo, no de que el hook estorbe.
+
+Hoy la única barrera es el hook `pre-push` de husky (`.husky/pre-push`, se instala con
+`pnpm install`), que se salta con `--no-verify`: la regla vale por acuerdo. La protección de rama
+en GitHub, que no se salta, está pendiente de activar — hasta entonces, el acuerdo es lo único que
+hay.
 
 Pre-commit (husky + lint-staged) pasa ESLint y Prettier sobre lo staged; lo que no pasa no
 entra. Nunca se commitea `node_modules`, `.next`, `public/sw.js` ni `.env*`.
@@ -228,8 +235,15 @@ toca el dominio, los puertos o los componentes compartidos lo aprueban los dos, 
 trabajo del otro. «Espera mi aprobación» significa esperar la de quien corresponda según esto.
 
 **Ramas y commits.** Una rama por tarjeta, nombrada `feature/<id-tarjeta>-<slug>`. El
-identificador de la tarjeta va también en el commit de integración. Se integra con squash sobre
-`main`.
+identificador de la tarjeta va en el título del PR (`Refs: card <id>` en el cuerpo). Se fusiona
+con *Squash and merge* en GitHub, nunca en local.
+
+**Después de cada fusión: sincronizar y borrar.** En cuanto un PR se fusiona, `git fetch origin` y
+`git reset --hard origin/main` en el `main` local, y borrar la rama fusionada (local y remota). El
+squash crea en el remoto **un commit nuevo, con un SHA que no existe en local**, así que los dos
+`main` divergen aunque el contenido sea el mismo. El síntoma, que no parece un problema de git:
+ramificar o rebasar desde el `main` viejo arrastra los commits originales de la rama ya fusionada,
+y el PR siguiente aparece con cambios que no son suyos y con conflictos contra código idéntico.
 
 ### El tablero
 
@@ -247,8 +261,10 @@ Reglas que Claude Code debe cumplir:
 3. **Al terminar, la tarjeta pasa a «En revisión»**, con un comentario que diga: qué se hizo, qué
    decisiones se tomaron que no estaban en las instrucciones, y qué quedó anotado como deuda. Ese
    comentario es lo que lee el otro; no lo resumas de más.
-4. **A «Hecho» solo se llega tras la aprobación y la integración en `main`.** La mueve quien
-   integra, no quien desarrolla.
+4. **A «Hecho» solo se llega cuando están fusionados los dos PR: el de código y el de
+   documentación.** La mueve quien fusiona, no quien desarrolla. Mientras el de documentación no
+   esté dentro, la tarjeta sigue en «En revisión»: si no, ese PR queda siempre para luego y
+   `estado.md` se atrasa solo.
 5. **Si al trabajar aparece algo que no es de esta tarjeta** —una deuda, un fallo de otra
    pantalla, una contradicción en los documentos— crea una tarjeta en Backlog y sigue con lo
    tuyo. No lo arregles de paso: un arreglo fuera de alcance en una rama ajena es lo que rompe
@@ -261,13 +277,19 @@ párrafo en cada merge. Se parte en dos:
 
 - **Lo de cada feature va al comentario de la tarjeta y a la descripción del PR**, no a
   `estado.md`. Ahí vive el detalle de lo que se hizo y por qué.
-- **`estado.md` queda como resumen curado**, y **solo lo edita quien integra, en el commit de
-  integración**. Nunca durante el desarrollo de una rama. Lo mismo vale para la sección «Estado»
-  de este archivo.
+- **`estado.md` queda como resumen curado** y **nunca viaja en la rama de una pantalla**: si lo
+  hiciera, dos ramas paralelas pelearían por el mismo párrafo en cada fusión. Como la fusión
+  ocurre en GitHub y ya no hay commit de integración donde meterlo, se escribe **después**: en
+  cuanto el PR está fusionado, quien llevaba la tarjeta saca `docs/<algo>-estado` desde `main`
+  recién actualizado, escribe el resumen y abre un PR aparte que se fusiona enseguida. La ventana
+  de conflicto son minutos. Lo mismo vale para la sección «Estado» de este archivo.
+- **Mientras tanto el detalle vive en la tarjeta**, que es de donde se copia. Escribir en
+  `estado.md` algo que todavía no está en `main` no vale ni pidiéndolo quien integra: si hace
+  falta dejarlo escrito, va a «Anotado para el panel del entrenador» y marcado como pendiente.
 
 Lo mismo para `docs/dominio.md`: si una decisión de desarrollo cambia el dominio, no lo edites en
-tu rama. Anótalo en la tarjeta, ciérralo con los dos, y que entre en `main` en su propio commit
-con `Domain:` en el cuerpo.
+tu rama. Anótalo en la tarjeta, ciérralo con los dos, y que entre en `main` en su propio PR, con
+`Domain:` en el cuerpo del commit.
 
 ### Lo que no cambia
 
