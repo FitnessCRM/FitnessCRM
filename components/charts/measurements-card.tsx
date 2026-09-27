@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { TrendChart, type TrendPoint } from "@/components/charts/trend-chart";
+import { TrendChart, type TrendPoint } from "./trend-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { tokens } from "@/lib/design/tokens";
 import type { MeasurementSeries } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 
-const t = es.screensProgress.measurements;
+const t = es.charts.measurements;
 const DEFAULT_VISIBLE = 3;
 
 /**
@@ -16,7 +16,13 @@ const DEFAULT_VISIBLE = 3;
  * Un tipo archivado conserva su serie (marcado «archivado»); las series son dispersas y de
  * distinta longitud, y un hueco se pinta como hueco.
  */
-export function MeasurementsCard({ series }: { series: MeasurementSeries[] }) {
+export function MeasurementsCard({
+  series,
+  title = t.title,
+}: {
+  series: MeasurementSeries[];
+  title?: string;
+}) {
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(series.slice(0, DEFAULT_VISIBLE).map((s) => s.typeId)),
   );
@@ -38,7 +44,7 @@ export function MeasurementsCard({ series }: { series: MeasurementSeries[] }) {
   return (
     <Card className="gap-3 p-6 py-6">
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 p-0">
-        <CardTitle>{t.title}</CardTitle>
+        <CardTitle>{title}</CardTitle>
         {series.length ? (
           <div
             role="group"

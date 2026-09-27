@@ -413,8 +413,8 @@ export const es = {
     },
     footer: "Si tienes dudas sobre un pago, escribe a tu entrenador.",
   },
-  screensProgress: {
-    weeksLabel: "semanas",
+  /** Gráficas de `components/charts/`: las usan las dos áreas, así que no cuelgan de una pantalla. */
+  charts: {
     weight: {
       title: "Evolución de peso",
       unit: "kg",
@@ -428,6 +428,9 @@ export const es = {
       empty: "Sin medidas registradas todavía.",
       noneSelected: "Elige al menos una medida.",
     },
+  },
+  screensProgress: {
+    weeksLabel: "semanas",
     reviews: {
       title: "Revisiones",
       week: "Semana",
