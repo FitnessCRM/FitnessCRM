@@ -382,6 +382,13 @@ Fase 5 (navegación):
     con un nombre genérico la novena revisión de demo la reutilizaría igual. El test recorre las
     revisiones de demo y exige que ninguna pida una pregunta sin responder ni un id que no exista
     en el catálogo; la de Sara, parcial a propósito por no tener medidas, queda exenta por nombre.
+  - **Una revisión enseña las preguntas que tenía al abrirse, no las del catálogo de hoy, y eso es
+    lo esperado.** Hoy el Cuestionario del entrenador tiene seis preguntas y las cinco revisiones
+    de Marta enseñan cinco: esa revisión preguntó cinco cosas y así tiene que leerse siempre.
+    No es un resto del arreglo de la tarjeta 33 ni un dato que falte. Lo mismo vale para el
+    enunciado y el formato de cada respuesta, congelados en ella (I12): editar el catálogo no
+    reescribe el histórico. Lo que sí sería un fallo es lo contrario — que una revisión cerrada
+    empezara a enseñar, o a exigir, una pregunta posterior a su apertura.
 
   Tres decisiones que no estaban en la tarjeta:
   1. **Guardado mixto.** El orden, el archivado y la restauración se aplican en el acto: son
