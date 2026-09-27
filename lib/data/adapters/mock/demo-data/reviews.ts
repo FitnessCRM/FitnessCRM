@@ -59,9 +59,36 @@ export function buildWeightLogs(d: DemoDates): WeightLog[] {
   ];
 }
 
-export const REQUIREMENTS = {
-  measurementTypeIds: measurementTypes.map((t) => t.id),
-  questionIds: questions.map((q) => q.id),
+/**
+ * Los requisitos tal y como estaban **antes de que se añadiera la pregunta de estrés**, que es
+ * cuando se abrieron todas las revisiones de demo: las ocho medidas y las cinco preguntas
+ * originales. `openReview` congela los requisitos al crear la revisión y la completitud se mide
+ * contra esa foto, no contra el catálogo de hoy (I5).
+ *
+ * Va escrita a mano a propósito. Calcularla del catálogo es lo que rompió esto: al añadir la
+ * pregunta de estrés, revisiones cerradas semanas antes pasaron a exigir una pregunta que nadie
+ * podía haber respondido, y las cinco de Marta aparecieron «Parcial». El nombre dice de cuándo es
+ * la foto para que una revisión de demo abierta después de otro cambio de catálogo **no reutilice
+ * esta**, sino que escriba la suya.
+ */
+export const REQUIREMENTS_BEFORE_STRESS_QUESTION = {
+  measurementTypeIds: [
+    "mt-cuello",
+    "mt-pecho",
+    "mt-cintura",
+    "mt-cadera",
+    "mt-brazo",
+    "mt-muslo",
+    "mt-gemelo",
+    "mt-hombros",
+  ],
+  questionIds: [
+    QUESTION_IDS.energy,
+    QUESTION_IDS.sleep,
+    QUESTION_IDS.hunger,
+    QUESTION_IDS.howSeen,
+    QUESTION_IDS.pain,
+  ],
 };
 
 /** Valores base (S1) y variación total en cinco semanas: cintura −3,0 · cadera −1,5 · muslo +0,8. */
@@ -173,7 +200,7 @@ export function buildMartaReviews(d: DemoDates): Review[] {
       weekNumber: w.week,
       window: reviewWindowForWeek(d.martaStart, w.week),
       status: done ? "revisada" : "enviada",
-      requirements: REQUIREMENTS,
+      requirements: REQUIREMENTS_BEFORE_STRESS_QUESTION,
       media: (["frente", "perfil", "espalda"] as const).map((pose) => ({
         id: `${prefix}-${pose}`,
         pose,

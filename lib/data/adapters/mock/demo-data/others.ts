@@ -3,7 +3,7 @@ import { reviewWindowForWeek } from "@/lib/domain";
 import { QUESTION_IDS, measurementTypes, questions } from "./catalogs";
 import { CLIENT_IDS, TRAINER_ID, ts, type DemoDates } from "./common";
 import { EXERCISE_IDS } from "./exercises";
-import { REQUIREMENTS, weightId } from "./reviews";
+import { REQUIREMENTS_BEFORE_STRESS_QUESTION, weightId } from "./reviews";
 
 const poses = ["frente", "perfil", "espalda"] as const;
 
@@ -40,7 +40,7 @@ export function buildOtherReviews(d: DemoDates): Review[] {
       weekNumber: 8,
       window: reviewWindowForWeek(d.jorgeStart, 8),
       status: "enviada",
-      requirements: REQUIREMENTS,
+      requirements: REQUIREMENTS_BEFORE_STRESS_QUESTION,
       media: poses.map((pose) => ({
         id: `rv-jorge-s8-${pose}`,
         pose,
@@ -70,7 +70,7 @@ export function buildOtherReviews(d: DemoDates): Review[] {
       weekNumber: 3,
       window: reviewWindowForWeek(d.saraStart, 3),
       status: "enviada",
-      requirements: REQUIREMENTS,
+      requirements: REQUIREMENTS_BEFORE_STRESS_QUESTION,
       media: poses.map((pose) => ({
         id: `rv-sara-s3-${pose}`,
         pose,
