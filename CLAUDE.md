@@ -174,6 +174,12 @@ cuenta. Y **«solo sale en dev» no significa «no importa»**: significa que ha
 producción (`pnpm build` + `pnpm start`, entrada `prod` de `.claude/launch.json`) antes de decidir,
 en los dos sentidos —ni se descarta sin mirar, ni se arregla lo que en producción no pasa—.
 
+**Para el servidor de desarrollo antes de construir.** `pnpm build` reescribe `.next`, que es lo
+que está sirviendo `pnpm dev` en ese momento: el servidor sigue respondiendo HTML pero sus chunks
+pasan a dar 404, y la pantalla se queda en «Cargando…» sin que nada en el código esté mal. Usar
+otro puerto **no** aísla: `pnpm start` sirve ese mismo `.next`. Así que se para `dev`, se
+construye, y se vuelve a arrancar. Si el servidor lo arrancó otra persona, avísala antes.
+
 **Commits y ramas.** Todo en inglés. Conventional Commits: `type(scope): subject`.
 
 - `type`: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `style`, `perf`, `build`, `ci`.
@@ -238,6 +244,13 @@ trabajo del otro. «Espera mi aprobación» significa esperar la de quien corres
 identificador de la tarjeta va en el título del PR (`Refs: card <id>` en el cuerpo). Se fusiona
 con *Squash and merge* en GitHub, nunca en local.
 
+**Lo compartido va primero y va solo.** Un helper de dominio, un cambio de puerto o un componente
+de `components/ui/` que vaya a usar más de una pantalla **aterriza en `main` en su propio PR
+pequeño, antes que las pantallas que lo necesitan**. Nada de apilar una rama de pantalla sobre
+otra: con dos personas, una rama apilada deja el PR del otro esperando a que se revise el mío y le
+mete en su diff commits que no son suyos. Si al trabajar aparece que hace falta algo compartido,
+sale en su propio PR y la pantalla espera a que esté en `main`.
+
 **Después de cada fusión: sincronizar y borrar.** En cuanto un PR se fusiona, `git fetch origin` y
 `git reset --hard origin/main` en el `main` local. El squash crea en el remoto **un commit nuevo,
 con un SHA que no existe en local**: lo normal es que el `main` local quede simplemente detrás, y
@@ -282,6 +295,17 @@ Reglas que Claude Code debe cumplir:
    pantalla, una contradicción en los documentos— crea una tarjeta en Backlog y sigue con lo
    tuyo. No lo arregles de paso: un arreglo fuera de alcance en una rama ajena es lo que rompe
    el reparto.
+
+### La documentación va en su propio PR
+
+**`CLAUDE.md`, `docs/dominio.md` y `docs/estado.md` no viajan nunca en una rama de feature.** Van
+en su propio PR de documentación. Por dos motivos distintos, y los dos pesan:
+
+1. **Son los tres archivos que editamos los dos**, así que son justo donde se dan los conflictos.
+   Con una pantalla en cada rama, el código casi nunca choca; estos archivos, siempre.
+2. **Una regla enterrada en el PR de una pantalla no la lee nadie.** Quien revisa una pantalla
+   mira la pantalla: el párrafo de proceso pasa de largo, y acaba siendo una regla que existe en
+   el repo pero que nadie ha leído ni acordado.
 
 ### `docs/estado.md` y `docs/dominio.md` con dos personas
 
