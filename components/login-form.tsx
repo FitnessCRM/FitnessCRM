@@ -30,7 +30,7 @@ export function LoginForm() {
         { email, password },
         {
           onSuccess: () => {
-            router.push("/trainer/dashboard");
+            router.push("/dashboard");
           },
           onError: (error) => {
             if (error instanceof Error) {
