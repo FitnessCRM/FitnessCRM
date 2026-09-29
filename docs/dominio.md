@@ -1,7 +1,7 @@
 # Dominio — HECTOR
 
 Cuarta pasada. Reconcilia el dominio cerrado en la tercera pasada con la demo navegable
-aprobada (`docs/design/demo-navegable.html`, 16 pantallas). **Donde el diseño y la tercera
+aprobada (`docs/design/demo-navegable.html`, 18 pantallas). **Donde el diseño y la tercera
 pasada discrepaban, manda el diseño**: es posterior y responde a peticiones explícitas.
 
 Estado: dominio cerrado para el MVP. Backend decidido el 29-09-2026: **Firebase para datos y
