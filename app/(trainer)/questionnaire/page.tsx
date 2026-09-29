@@ -1,4 +1,4 @@
-import { QuestionnaireScreen } from "@/components/entrenador/catalog/questionnaire-screen";
+﻿import { QuestionnaireScreen } from "@/components/trainer/catalog/questionnaire-screen";
 import { es } from "@/lib/i18n/es";
 
 export const metadata = { title: es.pages.trainer.cuestionario };
