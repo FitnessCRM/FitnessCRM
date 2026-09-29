@@ -2,7 +2,6 @@ import type { DataPorts } from "@/lib/data/ports";
 import { createMeasurementTypePort, createQuestionnairePort } from "./catalogs";
 import { createExercisePort } from "./exercises";
 import { createIdFactory } from "./ids";
-import { createLatency } from "./latency";
 import { createWeightLogPort, createWorkoutLogPort } from "./logs";
 import {
   createClientPort,
@@ -16,8 +15,6 @@ import { clone, createDemoState, type MockContext, type MockState } from "./stor
 import { createTemplatePort } from "./templates";
 
 export interface MockPortsOptions {
-  /** Latencia simulada por llamada. 150 ms por defecto; 0 en tests. */
-  latencyMs?: number;
   /** Estado inicial. Por defecto, los datos de la demo navegable relativos a `today`. */
   state?: MockState;
   /** Fecha civil de "hoy" para generar los datos de demo. Por defecto, la actual. */
@@ -28,12 +25,11 @@ export interface MockPortsOptions {
 /** Adaptador en memoria: implementa todos los puertos sobre un estado mutable en proceso. */
 export function createMockPorts(options: MockPortsOptions = {}): DataPorts & { state: MockState } {
   const state = options.state ?? createDemoState(options.today);
-  const wait = createLatency(options.latencyMs ?? 150);
   const ctx: MockContext = {
     state,
     newId: createIdFactory(),
     now: options.now ?? (() => new Date().toISOString()),
-    reply: (value) => wait(clone(value)),
+    reply: (value) => Promise.resolve(clone(value)),
   };
   return {
     state,
