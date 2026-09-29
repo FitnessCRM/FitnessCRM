@@ -19,9 +19,14 @@ Arquitectura multi-tenant desde el primer día, aunque en el lanzamiento solo op
 
 Estas seis se comprueban antes de dar por buena cualquier tarea.
 
-1. **No hay backend elegido.** Firebase y Supabase están en debate. **No instales ni importes
-   ningún SDK de backend, ni `firebase`, ni `@supabase/*`, ni un ORM, ni nada que hable con una
-   base de datos.** Si una tarea parece exigirlo, para y pregunta.
+1. **El backend está decidido, pero no implementado.** Firebase para los datos y la auth, y el
+   Drive del entrenador para las imágenes de las revisiones (`docs/dominio.md` §9 y §12). La
+   instrucción operativa no cambia: **no instales ni importes ningún SDK de backend, ni
+   `firebase`, ni `@supabase/*`, ni un ORM, ni nada que hable con una base de datos.** Cuando se
+   coja la tarjeta del adaptador, el SDK entra **solo por `lib/data/adapters/firebase/`**, detrás
+   de las interfaces de `lib/data/ports/`: ningún componente y ningún hook lo importa nunca, que
+   es lo que hace que la regla 3 siga siendo cierta con un backend real detrás. Si una tarea
+   parece exigirlo antes de esa tarjeta, para y pregunta.
 2. **El dominio es puro.** Nada dentro de `lib/domain/` importa React, Next, el DOM ni la red.
    Es TypeScript y zod, y se ejecuta igual en Node, en el navegador y algún día en React Native.
 3. **Los datos entran por el puerto.** Ningún componente llama a una fuente de datos
@@ -405,5 +410,7 @@ Pantallas del cliente terminadas (20-09-2026), las siete: Peso, Revisión, Progr
 Menú, Membresía y Ver revisión, y pasada responsive del área de cliente hecha (21-09-2026, detalle
 en `docs/estado.md`). Coordinación de equipo montada (21-09-2026, sección «Equipo»). Del panel del
 entrenador están integradas la Biblioteca de ejercicios y los catálogos de Cuestionario y Medidas
-(27-09-2026); el resto se reparte por pantallas en el tablero, y por último la decisión de backend con su adaptador. Esta sección se
+(27-09-2026); el resto se reparte por pantallas en el tablero. Backend decidido el 29-09-2026
+—Firebase para datos y auth, Drive del entrenador para las imágenes—, escrito en `docs/dominio.md`
+§9 y §12 y todavía sin implementar: queda su adaptador, que es lo último. Esta sección se
 actualiza en el PR de documentación posterior a cada fusión.
