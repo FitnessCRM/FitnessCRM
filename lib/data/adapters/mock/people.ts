@@ -6,6 +6,18 @@ import type { MockContext } from "./store";
 export function createSessionPort(ctx: MockContext): SessionPort {
   return {
     getSession: async () => ctx.reply(ctx.state.session),
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    login: async (email, _password) => {
+      const trainer = ctx.state.trainers.find((t) => t.email === email);
+      if (!trainer) throw new Error("Email no encontrado");
+
+      // En mock, cualquier password sirve; con Firebase se validaría realmente
+      ctx.state.session = { trainerId: trainer.id, clientId: null };
+      return ctx.reply(ctx.state.session);
+    },
+    logout: async () => {
+      ctx.state.session = { trainerId: "", clientId: null };
+    },
   };
 }
 

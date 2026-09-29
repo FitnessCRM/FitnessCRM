@@ -10,4 +10,6 @@ export interface Session {
 
 export interface SessionPort {
   getSession(): Promise<Session>;
+  login(email: string, password: string): Promise<Session>;
+  logout(): Promise<void>;
 }

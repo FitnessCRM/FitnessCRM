@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePorts } from "./ports-provider";
 import { queryKeys } from "./query-keys";
 
@@ -31,5 +31,17 @@ export function useTrainer() {
     queryKey: queryKeys.trainer(trainerId ?? ""),
     queryFn: () => ports.trainer.getTrainer(trainerId!),
     enabled: trainerId !== undefined,
+  });
+}
+
+export function useLogin() {
+  const ports = usePorts();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (credentials: { email: string; password: string }) =>
+      ports.session.login(credentials.email, credentials.password),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.session });
+    },
   });
 }

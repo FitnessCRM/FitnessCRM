@@ -1,12 +1,19 @@
 import { es } from "@/lib/i18n/es";
+import { LoginHero } from "@/components/login-hero";
+import { LoginForm } from "@/components/login-form";
 
 export const metadata = { title: es.pages.login.title };
 
 export default function LoginPage() {
   return (
-    <section className="bg-surface border-border-subtle w-full max-w-[420px] rounded-xl border p-9">
-      <h1 className="font-display text-display-md font-bold uppercase">{es.pages.login.title}</h1>
-      <p className="text-text-muted mt-1 text-sm">{es.pages.login.subtitle}</p>
-    </section>
+    <div className="flex min-h-screen w-full flex-col lg:flex-row">
+      <div className="border-border-subtle flex flex-col lg:w-[56%] lg:shrink-0 lg:border-r">
+        <LoginHero />
+      </div>
+
+      <div className="bg-surface/40 flex flex-1 flex-col items-center justify-center px-6 py-12 lg:py-0">
+        <LoginForm />
+      </div>
+    </div>
   );
 }
