@@ -1,9 +1,24 @@
 "use client";
 
-import { MeasurementsCard } from "@/components/charts/measurements-card";
-import { WeightEvolutionCard } from "@/components/charts/weight-evolution-card";
+import dynamic from "next/dynamic";
 import { PageHeader } from "@/components/ui/page-header";
 import { ErrorState, LoadingState } from "@/components/ui/states";
+
+const MeasurementsCard = dynamic(
+  () => import("@/components/charts/measurements-card").then((m) => m.MeasurementsCard),
+  {
+    ssr: false,
+    loading: () => <div className="border-border-subtle h-80 rounded-lg border p-6" />,
+  },
+);
+
+const WeightEvolutionCard = dynamic(
+  () => import("@/components/charts/weight-evolution-card").then((m) => m.WeightEvolutionCard),
+  {
+    ssr: false,
+    loading: () => <div className="border-border-subtle h-60 rounded-lg border p-6" />,
+  },
+);
 import {
   DomainError,
   changeSinceStart,

@@ -24,8 +24,7 @@ const TRAINER = "t-adrian";
 const MARTA = "c-marta";
 /** Fecha fija para que las expectativas sean deterministas; los datos se generan relativos a ella. */
 const TODAY = "2026-08-29";
-const ports = () =>
-  createMockPorts({ latencyMs: 0, today: TODAY, now: () => `${TODAY}T10:00:00Z` });
+const ports = () => createMockPorts({ today: TODAY, now: () => `${TODAY}T10:00:00Z` });
 
 describe("demo data", () => {
   it("validates against every domain schema", () => {
@@ -95,7 +94,7 @@ describe("demo data", () => {
 
   it("is relative to today: any date keeps Marta in S5, Jorge in S8, Sara in S3 and David in S11", async () => {
     for (const today of [demoToday(), "2027-03-14", "2026-12-31"]) {
-      const p = createMockPorts({ latencyMs: 0, today });
+      const p = createMockPorts({ today });
       const trainer = (await p.trainer.getTrainer(TRAINER))!;
       const weeks = Object.fromEntries(
         (await p.clients.listClients(TRAINER)).map((c) => [
@@ -330,12 +329,5 @@ describe("flows", () => {
       "rv-jorge-s8",
       "rv-sara-s3",
     ]);
-  });
-
-  it("simulates latency when asked", async () => {
-    const slow = createMockPorts({ latencyMs: 30 });
-    const started = Date.now();
-    await slow.session.getSession();
-    expect(Date.now() - started).toBeGreaterThanOrEqual(25);
   });
 });
