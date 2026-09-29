@@ -58,6 +58,22 @@ const byStartDesc = <T extends { startDate: string }>(a: T, b: T) =>
 
 export function createMembershipPort(ctx: MockContext): MembershipPort {
   return {
+    listMembershipsWithClients: async (trainerId) => {
+      const clients = own(ctx.state.clients, trainerId);
+      const rows = own(ctx.state.memberships, trainerId).flatMap((membership) => {
+        const client = clients.find((c) => c.id === membership.clientId);
+        if (!client) return [];
+        const { id, firstName, lastName, status } = client;
+        return [{ membership, client: { id, firstName, lastName, status } }];
+      });
+      const name = (r: (typeof rows)[number]) => `${r.client.firstName} ${r.client.lastName}`;
+      rows.sort(
+        (a, b) =>
+          name(a).localeCompare(name(b), "es") ||
+          b.membership.startDate.localeCompare(a.membership.startDate),
+      );
+      return ctx.reply(rows);
+    },
     listMemberships: async (trainerId) =>
       ctx.reply(own(ctx.state.memberships, trainerId).sort(byStartDesc)),
     listClientMemberships: async (trainerId, clientId) =>

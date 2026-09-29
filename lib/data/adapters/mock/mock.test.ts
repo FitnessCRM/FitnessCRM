@@ -125,6 +125,7 @@ describe("tenancy (I1)", () => {
     expect(await p.clients.listClients("t-otro")).toEqual([]);
     expect(await p.clients.getClient("t-otro", MARTA)).toBeNull();
     expect(await p.reviews.listSubmittedReviews("t-otro")).toEqual([]);
+    expect(await p.memberships.listMembershipsWithClients("t-otro")).toEqual([]);
     await expect(p.exercises.archiveExercise("t-otro", "ex-press-banca")).rejects.toThrow(
       DomainError,
     );
@@ -135,6 +136,38 @@ describe("tenancy (I1)", () => {
     const [first] = await p.clients.listClients(TRAINER);
     first!.firstName = "Hackeada";
     expect((await p.clients.listClients(TRAINER))[0]?.firstName).toBe("Marta");
+  });
+});
+
+describe("memberships", () => {
+  it("lists every membership with its client, by client name and then latest start first", async () => {
+    const rows = await ports().memberships.listMembershipsWithClients(TRAINER);
+    expect(rows.length).toBe(createDemoState(TODAY).memberships.length);
+    const marta = rows.filter((r) => r.client.id === MARTA).map((r) => r.membership.startDate);
+    expect(marta).toEqual([...marta].sort().reverse());
+    const names = rows.map((r) => `${r.client.firstName} ${r.client.lastName}`);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, "es")));
+  });
+
+  it("edits type, dates and payment status through the domain schema, and refuses end before start", async () => {
+    const p = ports();
+    const [first] = await p.memberships.listMembershipsWithClients(TRAINER);
+    const membership = first!.membership;
+    const saved = await p.memberships.updateMembership(TRAINER, membership.id, {
+      type: "anual",
+      paymentStatus: membership.paymentStatus === "pagada" ? "no_pagada" : "pagada",
+    });
+    expect(saved).toMatchObject({
+      id: membership.id,
+      clientId: membership.clientId,
+      type: "anual",
+    });
+    await expect(
+      p.memberships.updateMembership(TRAINER, membership.id, { endDate: "2000-01-01" }),
+    ).rejects.toThrow();
+    await expect(
+      p.memberships.updateMembership("t-otro", membership.id, { type: "mensual" }),
+    ).rejects.toThrow(DomainError);
   });
 });
 

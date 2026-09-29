@@ -63,6 +63,16 @@ export function useMemberships() {
   });
 }
 
+export function useMembershipsWithClients() {
+  const ports = usePorts();
+  const trainerId = useTrainerId();
+  return useQuery({
+    queryKey: queryKeys.membershipsWithClients(trainerId ?? ""),
+    queryFn: () => ports.memberships.listMembershipsWithClients(trainerId!),
+    enabled: trainerId !== undefined,
+  });
+}
+
 export function useClientMemberships(clientId: string | undefined) {
   const ports = usePorts();
   const trainerId = useTrainerId();
