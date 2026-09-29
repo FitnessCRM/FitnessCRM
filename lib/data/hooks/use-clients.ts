@@ -1,11 +1,12 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   ClientChanges,
   ClientInput,
   MembershipChanges,
   MembershipInput,
+  MembershipQuery,
 } from "@/lib/data/ports";
 import { usePorts } from "./ports-provider";
 import { queryKeys } from "./query-keys";
@@ -63,13 +64,15 @@ export function useMemberships() {
   });
 }
 
-export function useMembershipsWithClients() {
+export function useMembershipsWithClients(query: MembershipQuery) {
   const ports = usePorts();
   const trainerId = useTrainerId();
   return useQuery({
-    queryKey: queryKeys.membershipsWithClients(trainerId ?? ""),
-    queryFn: () => ports.memberships.listMembershipsWithClients(trainerId!),
+    queryKey: queryKeys.membershipsWithClients(trainerId ?? "", query),
+    queryFn: () => ports.memberships.listMembershipsWithClients(trainerId!, query),
     enabled: trainerId !== undefined,
+    // Al pasar de página o filtrar se sigue viendo la tabla anterior hasta que llega la nueva.
+    placeholderData: keepPreviousData,
   });
 }
 

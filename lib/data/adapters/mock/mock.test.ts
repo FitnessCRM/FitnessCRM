@@ -125,7 +125,16 @@ describe("tenancy (I1)", () => {
     expect(await p.clients.listClients("t-otro")).toEqual([]);
     expect(await p.clients.getClient("t-otro", MARTA)).toBeNull();
     expect(await p.reviews.listSubmittedReviews("t-otro")).toEqual([]);
-    expect(await p.memberships.listMembershipsWithClients("t-otro")).toEqual([]);
+    expect(
+      (
+        await p.memberships.listMembershipsWithClients("t-otro", {
+          filter: "all",
+          today: TODAY,
+          page: 0,
+          pageSize: 50,
+        })
+      ).rows,
+    ).toEqual([]);
     await expect(p.exercises.archiveExercise("t-otro", "ex-press-banca")).rejects.toThrow(
       DomainError,
     );
@@ -140,19 +149,54 @@ describe("tenancy (I1)", () => {
 });
 
 describe("memberships", () => {
-  it("lists every membership with its client, by client name and then latest start first", async () => {
-    const rows = await ports().memberships.listMembershipsWithClients(TRAINER);
-    expect(rows.length).toBe(createDemoState(TODAY).memberships.length);
-    const marta = rows.filter((r) => r.client.id === MARTA).map((r) => r.membership.startDate);
-    expect(marta).toEqual([...marta].sort().reverse());
+  const query = { filter: "all", today: TODAY, page: 0, pageSize: 4 } as const;
+
+  it("pages on the server, by client name and then latest start first, with counts for the whole set", async () => {
+    const p = ports().memberships;
+    const total = createDemoState(TODAY).memberships.length;
+    const first = await p.listMembershipsWithClients(TRAINER, query);
+    const second = await p.listMembershipsWithClients(TRAINER, { ...query, page: 1 });
+    expect(first.rows).toHaveLength(4);
+    expect(first.counts.all).toBe(total);
+    const rows = [...first.rows, ...second.rows];
+    const ids = rows.map((r) => r.membership.id);
+    expect(new Set(ids).size).toBe(ids.length);
     const names = rows.map((r) => `${r.client.firstName} ${r.client.lastName}`);
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, "es")));
+    const marta = rows.filter((r) => r.client.id === MARTA).map((r) => r.membership.startDate);
+    expect(marta).toEqual([...marta].sort().reverse());
+  });
+
+  it("filters by client and by cut, and the counts follow the client but not the cut", async () => {
+    const p = ports().memberships;
+    const all = { ...query, pageSize: 50, clientId: MARTA };
+    const marta = await p.listMembershipsWithClients(TRAINER, all);
+    expect(marta.rows.every((r) => r.client.id === MARTA)).toBe(true);
+    expect(marta.counts.all).toBe(marta.rows.length);
+    const unpaid = await p.listMembershipsWithClients(TRAINER, { ...all, filter: "unpaid" });
+    expect(unpaid.rows.every((r) => r.membership.paymentStatus === "no_pagada")).toBe(true);
+    expect(unpaid.counts).toEqual(marta.counts);
+    expect(unpaid.rows.length).toBe(marta.counts.unpaid);
+  });
+
+  it("flags an overlap even when its pair is on another page", async () => {
+    const p = ports().memberships;
+    const all = { ...query, pageSize: 50, clientId: MARTA };
+    const { rows } = await p.listMembershipsWithClients(TRAINER, all);
+    const latest = rows[0]!;
+    const oldest = rows.at(-1)!;
+    await p.updateMembership(TRAINER, oldest.membership.id, {
+      endDate: latest.membership.endDate,
+    });
+    const page = await p.listMembershipsWithClients(TRAINER, { ...all, pageSize: 1 });
+    expect(page.rows).toHaveLength(1);
+    expect(page.overlappingIds).toContain(page.rows[0]!.membership.id);
   });
 
   it("edits type, dates and payment status through the domain schema, and refuses end before start", async () => {
     const p = ports();
-    const [first] = await p.memberships.listMembershipsWithClients(TRAINER);
-    const membership = first!.membership;
+    const { rows } = await p.memberships.listMembershipsWithClients(TRAINER, query);
+    const membership = rows[0]!.membership;
     const saved = await p.memberships.updateMembership(TRAINER, membership.id, {
       type: "anual",
       paymentStatus: membership.paymentStatus === "pagada" ? "no_pagada" : "pagada",

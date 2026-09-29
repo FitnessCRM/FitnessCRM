@@ -1,5 +1,11 @@
 import type { ClientPort, MembershipPort, SessionPort, TrainerPort } from "@/lib/data/ports";
-import { clientSchema, membershipSchema } from "@/lib/domain";
+import {
+  clientSchema,
+  matchesMembershipFilter,
+  membershipSchema,
+  overlappingMembershipIds,
+  type MembershipStatusFilter,
+} from "@/lib/domain";
 import { findOwn, own, replaceById } from "./helpers";
 import type { MockContext } from "./store";
 
@@ -58,21 +64,36 @@ const byStartDesc = <T extends { startDate: string }>(a: T, b: T) =>
 
 export function createMembershipPort(ctx: MockContext): MembershipPort {
   return {
-    listMembershipsWithClients: async (trainerId) => {
+    listMembershipsWithClients: async (trainerId, query) => {
       const clients = own(ctx.state.clients, trainerId);
-      const rows = own(ctx.state.memberships, trainerId).flatMap((membership) => {
+      const owned = own(ctx.state.memberships, trainerId);
+      const all = owned.flatMap((membership) => {
         const client = clients.find((c) => c.id === membership.clientId);
         if (!client) return [];
         const { id, firstName, lastName, status } = client;
         return [{ membership, client: { id, firstName, lastName, status } }];
       });
-      const name = (r: (typeof rows)[number]) => `${r.client.firstName} ${r.client.lastName}`;
-      rows.sort(
+      const name = (r: (typeof all)[number]) => `${r.client.firstName} ${r.client.lastName}`;
+      all.sort(
         (a, b) =>
           name(a).localeCompare(name(b), "es") ||
           b.membership.startDate.localeCompare(a.membership.startDate),
       );
-      return ctx.reply(rows);
+
+      const ofClient = all.filter((r) => !query.clientId || r.client.id === query.clientId);
+      const count = (filter: MembershipStatusFilter) =>
+        ofClient.filter((r) => matchesMembershipFilter(r.membership, filter, query.today)).length;
+      const matching = ofClient.filter((r) =>
+        matchesMembershipFilter(r.membership, query.filter, query.today),
+      );
+      const rows = matching.slice(query.page * query.pageSize, (query.page + 1) * query.pageSize);
+      // El solape se calcula sobre todas las suyas: la otra puede estar en otra página o filtrada.
+      const overlapping = overlappingMembershipIds(owned);
+      return ctx.reply({
+        rows,
+        counts: { all: count("all"), unpaid: count("unpaid"), expiring: count("expiring") },
+        overlappingIds: rows.map((r) => r.membership.id).filter((id) => overlapping.has(id)),
+      });
     },
     listMemberships: async (trainerId) =>
       ctx.reply(own(ctx.state.memberships, trainerId).sort(byStartDesc)),
