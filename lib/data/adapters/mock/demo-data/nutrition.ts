@@ -15,8 +15,8 @@ function meal(prefix: string, name: string, foods: Food[]): Meal {
   };
 }
 
-/** "Menú A — Casero" de la pantalla del cliente, comida por comida. */
-function menuACasero(prefix: string): MenuBody {
+/** "Menu A — Home style" from client screen, meal by meal. */
+function homeStyleMenuBody(prefix: string): MenuBody {
   return {
     name: "Menú A — Casero",
     dayType: "entrenamiento",
@@ -49,11 +49,11 @@ function menuACasero(prefix: string): MenuBody {
 }
 
 /**
- * El Menú B declara macros que NI coinciden con el objetivo del cliente (165/260/72) NI salen de
- * sumar sus alimentos: las escribe el entrenador y es su criterio (§5). Está así a propósito,
- * para que la pantalla de menú enseñe el caso que su etiquetado tiene que dejar claro.
+ * Menu B declares macros that match neither the client's target (165/260/72) nor the sum of its food:
+ * the trainer writes and decides them (§5). By design, so the menu screen showcases the case
+ * that its labeling must make clear.
  */
-function menuBTupper(prefix: string): MenuBody {
+function quickTupperMenuBody(prefix: string): MenuBody {
   return {
     name: "Menú B — Rápido / Tupper",
     dayType: "entrenamiento",
@@ -80,7 +80,7 @@ function menuBTupper(prefix: string): MenuBody {
   };
 }
 
-function menuDescanso(prefix: string): MenuBody {
+function restDayMenuBody(prefix: string): MenuBody {
   return {
     name: "Menú descanso",
     dayType: "descanso",
@@ -124,9 +124,9 @@ export function buildNutrition(d: DemoDates): {
   });
 
   const menus: Menu[] = [
-    clientMenu("mn-marta-a", menuACasero("mn-marta-a")),
-    clientMenu("mn-marta-b", menuBTupper("mn-marta-b")),
-    clientMenu("mn-marta-descanso", menuDescanso("mn-marta-descanso")),
+    clientMenu("mn-marta-a", homeStyleMenuBody("mn-marta-a")),
+    clientMenu("mn-marta-b", quickTupperMenuBody("mn-marta-b")),
+    clientMenu("mn-marta-descanso", restDayMenuBody("mn-marta-descanso")),
   ];
 
   const targets = (
@@ -157,10 +157,10 @@ export function buildNutrition(d: DemoDates): {
       name: "Definición 2.400",
       description: "2 tipos de día · 2 menús por tipo",
       menus: [
-        { id: "mnt1-a", ...menuACasero("mnt1-a") },
-        { id: "mnt1-b", ...menuBTupper("mnt1-b") },
-        { id: "mnt1-d", ...menuDescanso("mnt1-d") },
-        { id: "mnt1-d2", ...menuDescanso("mnt1-d2"), name: "Menú descanso B", suggested: false },
+        { id: "mnt1-a", ...homeStyleMenuBody("mnt1-a") },
+        { id: "mnt1-b", ...quickTupperMenuBody("mnt1-b") },
+        { id: "mnt1-d", ...restDayMenuBody("mnt1-d") },
+        { id: "mnt1-d2", ...restDayMenuBody("mnt1-d2"), name: "Menú descanso B", suggested: false },
       ],
       createdAt: ts(d.daysAgo(180)),
       updatedAt: ts(d.daysAgo(9)),
@@ -173,13 +173,13 @@ export function buildNutrition(d: DemoDates): {
       menus: [
         {
           id: "mnt2-a",
-          ...menuACasero("mnt2-a"),
+          ...homeStyleMenuBody("mnt2-a"),
           name: "Volumen A",
           macros: { proteinG: 190, carbsG: 380, fatG: 90 },
         },
         {
           id: "mnt2-d",
-          ...menuDescanso("mnt2-d"),
+          ...restDayMenuBody("mnt2-d"),
           name: "Volumen descanso",
           macros: { proteinG: 180, carbsG: 300, fatG: 85 },
         },

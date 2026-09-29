@@ -3,8 +3,8 @@ import { addCivilDays, reviewWindowForWeek } from "@/lib/domain";
 import { measurementTypes, QUESTION_IDS, questions } from "./catalogs";
 import { CLIENT_IDS, TRAINER_ID, ts, type DemoDates } from "./common";
 
-/** Pesajes de Marta como días desde su alta (en la maqueta: 1, 3, 5, 8 … 29 de agosto). */
-const martaWeights: [dayOffset: number, kg: number, note?: string][] = [
+/** Demo client weight logs as days offset from enrollment (matches: 1, 3, 5, 8 … 29 of August). */
+const demoClientWeights: [dayOffset: number, kg: number, note?: string][] = [
   [0, 65.5],
   [2, 65.2],
   [4, 65.0],
@@ -26,7 +26,7 @@ export function buildWeightLogs(d: DemoDates): WeightLog[] {
   const jorgeDate = d.today;
   const saraDate = d.yesterday;
   return [
-    ...martaWeights.map(([offset, weightKg, note = ""]) => {
+    ...demoClientWeights.map(([offset, weightKg, note = ""]) => {
       const date = addCivilDays(d.martaStart, offset);
       return {
         id: weightId(CLIENT_IDS.marta, date),
@@ -146,13 +146,13 @@ function responses(
   ];
 }
 
-interface MartaWeek {
+interface DemoClientReviewWeek {
   week: number;
   answers: [number, number, number, string, string];
   feedbackNote: string;
 }
 
-const martaWeeks: MartaWeek[] = [
+const demoReviewWeeks: DemoClientReviewWeek[] = [
   {
     week: 1,
     answers: [3, 3, 4, "Punto de partida.", "Ninguna"],
@@ -175,7 +175,7 @@ const martaWeeks: MartaWeek[] = [
   },
 ];
 
-const martaS5: MartaWeek = {
+const demoReviewWeekS5: DemoClientReviewWeek = {
   week: 5,
   answers: [
     4,
@@ -187,9 +187,9 @@ const martaS5: MartaWeek = {
   feedbackNote: "",
 };
 
-/** Cinco revisiones de Marta: S1–S4 revisadas con feedback, S5 enviada hoy (la "Nueva" del panel). */
-export function buildMartaReviews(d: DemoDates): Review[] {
-  const build = (w: MartaWeek): Review => {
+/** Five demo client reviews: weeks 1–4 reviewed with feedback, week 5 submitted today (the "New" badge on dashboard). */
+export function buildDemoClientReviews(d: DemoDates): Review[] {
+  const build = (w: DemoClientReviewWeek): Review => {
     const prefix = `rv-marta-s${w.week}`;
     const date = addCivilDays(d.martaStart, (w.week - 1) * 7);
     const done = w.week < 5;
@@ -218,5 +218,5 @@ export function buildMartaReviews(d: DemoDates): Review[] {
       reviewedAt: done ? ts(date, "18:00:00") : null,
     };
   };
-  return [...martaWeeks, martaS5].map(build);
+  return [...demoReviewWeeks, demoReviewWeekS5].map(build);
 }
