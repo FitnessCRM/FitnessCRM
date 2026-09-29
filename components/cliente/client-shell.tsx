@@ -13,12 +13,12 @@ const nav = es.nav.client;
 
 /** Nav superior del cliente (pantalla 02). «Ver revisión» cuelga de Progreso. */
 const items: { href: string; label: string; also?: string[] }[] = [
-  { href: "/rutina", label: nav.rutina },
+  { href: "/routine", label: nav.rutina },
   { href: "/menu", label: nav.menu },
-  { href: "/peso", label: nav.peso },
-  { href: "/revision", label: nav.revision },
-  { href: "/progreso", label: nav.progreso, also: ["/ver-revision"] },
-  { href: "/membresia", label: nav.membresia },
+  { href: "/weight", label: nav.peso },
+  { href: "/review", label: nav.revision },
+  { href: "/progress", label: nav.progreso, also: ["/view-review"] },
+  { href: "/membership", label: nav.membresia },
 ];
 
 export function ClientShell({ children }: { children: ReactNode }) {

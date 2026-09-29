@@ -15,12 +15,12 @@ const nav = es.nav.trainer;
 const items: { href: string; label: string }[] = [
   { href: "/dashboard", label: nav.dashboard },
   { href: "/clientes", label: nav.clientes },
-  { href: "/biblioteca", label: nav.biblioteca },
-  { href: "/plantillas", label: nav.plantillas },
-  { href: "/cuestionario", label: nav.cuestionario },
-  { href: "/medidas", label: nav.medidas },
-  { href: "/membresias", label: nav.membresias },
-  { href: "/asignacion", label: nav.asignacion },
+  { href: "/library", label: nav.biblioteca },
+  { href: "/templates", label: nav.plantillas },
+  { href: "/questionnaire", label: nav.cuestionario },
+  { href: "/measurements", label: nav.medidas },
+  { href: "/memberships", label: nav.membresias },
+  { href: "/assignment", label: nav.asignacion },
 ];
 
 export function TrainerShell({ children }: { children: ReactNode }) {

@@ -80,7 +80,7 @@ function ViewReview({
           </span>
           <select
             value={review.id}
-            onChange={(event) => router.replace(`/ver-revision?review=${event.target.value}`)}
+            onChange={(event) => router.replace(`/view-review?review=${event.target.value}`)}
             className="border-accent-outline bg-surface text-text-primary focus-visible:ring-ring/50 h-11 rounded-md border px-3.5 text-[14px] outline-none focus-visible:ring-[3px]"
           >
             {sent.map((r, index) => (
@@ -148,7 +148,7 @@ function OtherReviews({
         return (
           <Link
             key={r.id}
-            href={`/ver-revision?review=${r.id}`}
+            href={`/view-review?review=${r.id}`}
             className={cn(
               "bg-surface border-border-subtle hover:border-border-emphasis rounded-xl border px-5 py-3.5 transition-colors",
             )}
