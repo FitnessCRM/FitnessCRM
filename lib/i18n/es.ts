@@ -37,7 +37,31 @@ export const es = {
     },
   },
   pages: {
-    login: { title: "Entrar", subtitle: "Accede con tus credenciales" },
+    login: {
+      title: "Entrar",
+      subtitle: "Accede con tus credenciales",
+      hero: {
+        tagline: "El progreso no se adivina. Se mide.",
+        headline: { lead: ["El progreso", "no se adivina."], accent: "Se mide." },
+        description: "Rutina, dieta y revisiones en un solo sitio, entre tú y tu entrenador.",
+      },
+      stats: {
+        weeks: { number: "12", label: "Semanas de bloque" },
+        reviews: { number: "6", label: "Revisiones" },
+        ratio: { number: "1:1", label: "Seguimiento" },
+      },
+      form: {
+        email: "Email",
+        emailPlaceholder: "tu@email.com",
+        password: "Contraseña",
+        passwordPlaceholder: "••••••••",
+        submit: "Continuar",
+        submitting: "Entrando…",
+        forgotPassword: "He olvidado mi contraseña",
+        errorInvalid: "Email o contraseña incorrectos",
+        errorNetwork: "No se ha podido conectar",
+      },
+    },
     trainer: {
       dashboard: "Panel de control",
       clientes: "Clientes",
