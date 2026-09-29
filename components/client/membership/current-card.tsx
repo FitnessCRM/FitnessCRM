@@ -3,7 +3,7 @@ import { EmptyState } from "@/components/ui/states";
 import type { Membership } from "@/lib/domain";
 import { formatCivilDate } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
-import { PaymentPill } from "./payment-pill";
+import { PaymentPill } from "@/components/ui/payment-pill";
 
 const t = es.screensMembership.current;
 
