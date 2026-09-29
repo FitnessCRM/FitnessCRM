@@ -29,7 +29,7 @@ export function WeightBlock({ log }: { log: WeightLog | null }) {
         </>
       ) : (
         <Button asChild variant="secondary" size="sm">
-          <Link href="/peso">{t.goToWeight}</Link>
+          <Link href="/weight">{t.goToWeight}</Link>
         </Button>
       )}
     </Card>

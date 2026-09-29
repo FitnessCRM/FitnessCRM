@@ -58,7 +58,7 @@ export function ReviewsList({
             return (
               <Link
                 key={review.id}
-                href={draft ? "/revision" : `/ver-revision?review=${review.id}`}
+                href={draft ? "/review" : `/view-review?review=${review.id}`}
                 className={cn(
                   "bg-surface flex items-center gap-3.5 rounded-xl border px-5 py-4 transition-colors",
                   draft
