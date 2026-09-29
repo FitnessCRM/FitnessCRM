@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isExpiringSoon,
+  matchesMembershipFilter,
   membershipHistory,
   membershipStanding,
   overlappingMembershipIds,
@@ -128,5 +129,19 @@ describe("overlappingMembershipIds", () => {
     const a = membership("2026-07-01", "2026-07-31");
     const other = { ...membership("2026-07-15", "2026-08-15"), clientId: "other" };
     expect(overlappingMembershipIds([a, other]).size).toBe(0);
+  });
+});
+
+describe("matchesMembershipFilter", () => {
+  const unpaidOver = membership("2026-06-01", "2026-06-30", "no_pagada");
+  const paidEnding = membership("2026-09-01", "2026-09-30");
+
+  it("all matches everything, unpaid looks at payment only, expiring only at current ones", () => {
+    const today = "2026-09-25";
+    expect(matchesMembershipFilter(unpaidOver, "all", today)).toBe(true);
+    expect(matchesMembershipFilter(unpaidOver, "unpaid", today)).toBe(true);
+    expect(matchesMembershipFilter(unpaidOver, "expiring", today)).toBe(false);
+    expect(matchesMembershipFilter(paidEnding, "unpaid", today)).toBe(false);
+    expect(matchesMembershipFilter(paidEnding, "expiring", today)).toBe(true);
   });
 });

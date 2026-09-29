@@ -75,3 +75,16 @@ export function overlappingMembershipIds(memberships: readonly Membership[]): Se
   }
   return overlapping;
 }
+
+/** Los tres cortes de la tabla del entrenador. */
+export type MembershipStatusFilter = "all" | "unpaid" | "expiring";
+
+export function matchesMembershipFilter(
+  membership: Membership,
+  filter: MembershipStatusFilter,
+  today: CivilDate,
+): boolean {
+  if (filter === "unpaid") return membership.paymentStatus === "no_pagada";
+  if (filter === "expiring") return isExpiringSoon(membership, today);
+  return true;
+}
