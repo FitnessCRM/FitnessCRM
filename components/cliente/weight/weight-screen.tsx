@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryBoundary } from "@/components/ui/query-boundary";
 import { EmptyState } from "@/components/ui/states";
@@ -25,7 +26,14 @@ import { es } from "@/lib/i18n/es";
 import { WeightForm } from "./weight-form";
 import { WeightHistory } from "./weight-history";
 import { WeightSummaryCard } from "./weight-summary";
-import { WeightTrendCard } from "./weight-trend-card";
+
+const WeightTrendCard = dynamic(
+  () => import("./weight-trend-card").then((m) => m.WeightTrendCard),
+  {
+    ssr: false,
+    loading: () => <div className="border-border-subtle h-60 rounded-lg border p-6" />,
+  },
+);
 
 const t = es.screens.weight;
 
