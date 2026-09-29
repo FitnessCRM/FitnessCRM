@@ -1,4 +1,4 @@
-import { RoutineScreen } from "@/components/cliente/routine/routine-screen";
+﻿import { RoutineScreen } from "@/components/client/routine/routine-screen";
 import { es } from "@/lib/i18n/es";
 
 export const metadata = { title: es.pages.client.rutina };

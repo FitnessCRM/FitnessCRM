@@ -1,12 +1,12 @@
-import { Suspense } from "react";
-import { ViewReviewScreen } from "@/components/cliente/view-review/view-review-screen";
+﻿import { Suspense } from "react";
+import { ViewReviewScreen } from "@/components/client/view-review/view-review-screen";
 import { LoadingState } from "@/components/ui/states";
 import { es } from "@/lib/i18n/es";
 
 export const metadata = { title: es.pages.client.verRevision };
 
 export default function Page() {
-  // La revisión elegida viaja en la query: Suspense para que la página siga siendo estática.
+  // La revisiÃ³n elegida viaja en la query: Suspense para que la pÃ¡gina siga siendo estÃ¡tica.
   return (
     <Suspense fallback={<LoadingState />}>
       <ViewReviewScreen />

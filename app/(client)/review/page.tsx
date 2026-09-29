@@ -1,4 +1,4 @@
-import { ReviewScreen } from "@/components/cliente/review/review-screen";
+﻿import { ReviewScreen } from "@/components/client/review/review-screen";
 import { es } from "@/lib/i18n/es";
 
 export const metadata = { title: es.pages.client.revision };
