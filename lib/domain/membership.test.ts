@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { membershipHistory, membershipStanding } from "./membership";
+import {
+  isExpiringSoon,
+  membershipHistory,
+  membershipStanding,
+  overlappingMembershipIds,
+} from "./membership";
 import type { Membership } from "./schemas";
 
 let seq = 0;
@@ -81,5 +86,47 @@ describe("membershipHistory", () => {
       membership("2026-04-01", "2026-06-30"),
     ]);
     expect(rows.map((m) => m.startDate)).toEqual(["2026-10-01", "2026-07-01", "2026-04-01"]);
+  });
+});
+
+describe("isExpiringSoon", () => {
+  const m = membership("2026-09-01", "2026-09-30");
+
+  it("is true for the current membership within 7 days of its end, last day included", () => {
+    expect(isExpiringSoon(m, "2026-09-23")).toBe(true);
+    expect(isExpiringSoon(m, "2026-09-30")).toBe(true);
+    expect(isExpiringSoon(m, "2026-09-22")).toBe(false);
+  });
+
+  it("is false when it has not started or is already over", () => {
+    expect(isExpiringSoon(m, "2026-08-31")).toBe(false);
+    expect(isExpiringSoon(m, "2026-10-01")).toBe(false);
+  });
+});
+
+describe("overlappingMembershipIds", () => {
+  it("flags both memberships of a pair that overlap, extremes included", () => {
+    const a = membership("2026-07-01", "2026-07-31");
+    const b = membership("2026-07-31", "2026-08-31");
+    expect([...overlappingMembershipIds([a, b])].sort()).toEqual([a.id, b.id].sort());
+  });
+
+  it("does not flag back-to-back memberships", () => {
+    const a = membership("2026-07-01", "2026-07-31");
+    const b = membership("2026-08-01", "2026-08-31");
+    expect(overlappingMembershipIds([a, b]).size).toBe(0);
+  });
+
+  it("catches a short one inside a long one, even with another in between", () => {
+    const long = membership("2026-01-01", "2026-12-31");
+    const middle = membership("2026-03-01", "2026-03-31");
+    const late = membership("2026-06-01", "2026-06-30");
+    expect(overlappingMembershipIds([long, middle, late]).size).toBe(3);
+  });
+
+  it("only compares memberships of the same client", () => {
+    const a = membership("2026-07-01", "2026-07-31");
+    const other = { ...membership("2026-07-15", "2026-08-15"), clientId: "other" };
+    expect(overlappingMembershipIds([a, other]).size).toBe(0);
   });
 });

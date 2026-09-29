@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  membershipEditSchema,
   membershipSchema,
   prescriptionSchema,
   questionnaireResponseSchema,
@@ -133,6 +134,21 @@ describe("misc invariants", () => {
     expect(membershipSchema.safeParse(m).success).toBe(true);
     expect(membershipSchema.safeParse({ ...m, endDate: "2026-06-30" }).success).toBe(false);
     expect(Object.keys(membershipSchema.parse(m))).not.toContain("amount");
+  });
+
+  it("membership edit only takes the four editable fields and keeps end >= start", () => {
+    const edit = {
+      type: "mensual",
+      startDate: "2026-09-01",
+      endDate: "2026-09-30",
+      paymentStatus: "no_pagada",
+    };
+    expect(membershipEditSchema.safeParse(edit).success).toBe(true);
+    expect(membershipEditSchema.safeParse({ ...edit, endDate: "2026-08-31" }).success).toBe(false);
+    expect(membershipEditSchema.safeParse({ ...edit, type: "quincenal" }).success).toBe(false);
+    expect(Object.keys(membershipEditSchema.parse({ ...edit, clientId: "x" }))).not.toContain(
+      "clientId",
+    );
   });
 
   it("exercise video is an external link or null (I20)", () => {
