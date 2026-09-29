@@ -10,7 +10,7 @@ const poses = ["frente", "perfil", "espalda"] as const;
 /** La pregunta de estrés es posterior a estas revisiones: nadie la ha respondido todavía. */
 const answeredQuestions = questions.filter((q) => q.id !== QUESTION_IDS.stress);
 
-function fullAnswers(prefix: string, scale: number, text: string) {
+function createCompleteAnswerSet(prefix: string, scale: number, text: string) {
   return answeredQuestions.map((q) =>
     q.format.kind === "escala"
       ? {
@@ -55,7 +55,7 @@ export function buildOtherReviews(d: DemoDates): Review[] {
         label: t.label,
         unit: t.unit,
       })),
-      responses: fullAnswers("rv-jorge-s8", 4, "Todo en orden."),
+      responses: createCompleteAnswerSet("rv-jorge-s8", 4, "Todo en orden."),
       feedbackVideoUrl: null,
       feedbackNote: "",
       createdAt: ts(d.today, "04:30:00"),
@@ -79,7 +79,7 @@ export function buildOtherReviews(d: DemoDates): Review[] {
       })),
       weightLogId: weightId(CLIENT_IDS.sara, d.yesterday),
       measurements: [],
-      responses: fullAnswers("rv-sara-s3", 3, "Sin novedades."),
+      responses: createCompleteAnswerSet("rv-sara-s3", 3, "Sin novedades."),
       feedbackVideoUrl: null,
       feedbackNote: "",
       createdAt: ts(d.yesterday, "19:30:00"),

@@ -22,7 +22,7 @@ import { exercises } from "./demo-data/exercises";
 import { buildNutrition } from "./demo-data/nutrition";
 import { buildOtherReviews, buildWorkoutLogs } from "./demo-data/others";
 import { buildClients, buildMemberships, trainer } from "./demo-data/people";
-import { buildMartaReviews, buildWeightLogs } from "./demo-data/reviews";
+import { buildDemoClientReviews, buildWeightLogs } from "./demo-data/reviews";
 import { buildRoutines } from "./demo-data/routines";
 
 /** Todo el estado del adaptador en memoria. Se muta en sitio; los puertos devuelven copias. */
@@ -75,7 +75,7 @@ export function createDemoState(today: CivilDate = demoToday()): MockState {
     menuTemplates,
     measurementTypes,
     questions,
-    reviews: [...buildMartaReviews(d), ...buildOtherReviews(d)],
+    reviews: [...buildDemoClientReviews(d), ...buildOtherReviews(d)],
     weightLogs: buildWeightLogs(d),
     workoutLogs: buildWorkoutLogs(d),
   });
