@@ -7,7 +7,7 @@ export const metadata = { title: es.pages.login.title };
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen w-full flex-col lg:flex-row">
-      <div className="border-border-subtle flex flex-col lg:w-[640px] lg:shrink-0 lg:border-r">
+      <div className="border-border-subtle flex flex-col lg:w-[56%] lg:shrink-0 lg:border-r">
         <LoginHero />
       </div>
 
