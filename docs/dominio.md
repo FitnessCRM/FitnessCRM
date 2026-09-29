@@ -4,8 +4,9 @@ Cuarta pasada. Reconcilia el dominio cerrado en la tercera pasada con la demo na
 aprobada (`docs/design/demo-navegable.html`, 16 pantallas). **Donde el diseño y la tercera
 pasada discrepaban, manda el diseño**: es posterior y responde a peticiones explícitas.
 
-Estado: dominio cerrado para el MVP. Sin backend elegido (Firebase vs. Postgres/Supabase en
-debate) — ver §12.
+Estado: dominio cerrado para el MVP. Backend decidido el 29-09-2026: **Firebase para datos y
+auth, y el Drive del entrenador para las imágenes de las revisiones** — ver §12 y §9. Decidido no
+es implementado: el código sigue sin ninguna referencia a un backend.
 
 ---
 
@@ -158,22 +159,22 @@ marcan y no se reutiliza su número.
 | I2 | Un cliente pertenece a exactamente un entrenador | FK + backend |
 | I3 | Una rutina solo usa ejercicios de la biblioteca de su mismo entrenador | Validación de dominio + backend |
 | I4 | Un cliente tiene como máximo una rutina activa, un juego de macros por tipo de día y un menú activo por tipo de día | Lógica de dominio |
-| I5 | Una revisión está **completa** ⟺ 3 fotos (frente, perfil, espalda) + peso en ventana + un valor por cada tipo de medida exigido al abrirla + todas las preguntas exigidas al abrirla. **La completitud no bloquea el envío**: se avisa y el cliente decide | `lib/domain/review` |
+| I5 | Una revisión está **completa** ⟺ 3 fotos (frente, perfil, espalda) + peso en ventana + un valor por cada tipo de medida exigido al abrirla + todas las preguntas exigidas al abrirla. **La completitud no bloquea el envío**: se avisa y el cliente decide. Es una **foto del momento del envío**: si una imagen desaparece después, la revisión ni se reabre ni pasa a incompleta | `lib/domain/review` |
 | ~~I6~~ | ~~La periodicidad la fija el entrenador y el cliente no la escribe~~ | **Derogada** (§1.3). La cadencia sigue siendo del entrenador, pero es orientativa |
 | ~~I7~~ | ~~Una revisión pertenece a exactamente un periodo~~ | **Derogada**: el periodo ya no existe |
 | I8 | Los tipos de medida provienen del catálogo **del entrenador**, cerrado para el cliente | FK + backend |
 | I9 | El peso de una revisión es un `WeightLog` con fecha dentro de la ventana de la revisión | Lógica de dominio |
 | I10 | La comparación de fotos es una acción explícita del entrenador, nunca un estado derivado | Ausencia de automatismo |
 | I11 | El cliente lee su rutina, macros y menú; nunca los escribe | Backend |
-| I12 | Toda respuesta y toda medida conservan enunciado/etiqueta, formato y unidad vigentes en su creación. Editar el catálogo no altera el histórico | Columnas congeladas + escritura única |
+| I12 | Toda respuesta y toda medida conservan enunciado/etiqueta, formato y unidad vigentes en su creación. Editar el catálogo no altera el histórico. Lo único que puede faltar de una revisión antigua es la **imagen**, que vive fuera de la app (§9) | Columnas congeladas + escritura única |
 | I13 | Nada de lo que cuelgue histórico se borra: preguntas, tipos de medida y ejercicios se archivan | Soft delete |
-| I14 | Las fotos de un cliente dado de baja se conservan, pero existe una operación explícita de borrado por cliente | Lógica de dominio + Storage |
+| I14 | Las imágenes viven en el Drive del entrenador y **la app no puede borrarlas**: el borrado de las fotos lo hace el entrenador a mano, en su Drive. La app sí borra el resto de los datos del cliente, con una operación explícita por cliente | Fuera de la app (Drive) para las imágenes · lógica de dominio para lo demás |
 | I15 | El formato de una pregunta —tipo y límites de la escala— es inmutable desde que existe la primera respuesta. El enunciado es editable siempre | Lógica de dominio + backend |
 | I16 | Como máximo una revisión por cliente y número de semana | Índice único `(clientId, weekNumber)` o su equivalente |
 | I17 | El cliente puede editar su revisión hasta que el entrenador la marca como `vista` | Lógica de dominio + backend |
 | I18 | El peso corporal se almacena siempre en kg | Validación + convención |
 | ~~I19~~ | ~~Los periodos cerrados no se recalculan al cambiar la periodicidad~~ | **Derogada**: no hay periodos |
-| I20 | El vídeo, tanto de ejercicio como de feedback, es siempre un enlace externo. La app no aloja vídeo | Validación de URL |
+| I20 | El vídeo, tanto de ejercicio como de feedback, es siempre un enlace externo. La app **no aloja vídeo ni imágenes**: las fotos de revisión viven en el Drive del entrenador (§9) | Validación de URL |
 | I21 | Una membresía registra estado de pago, nunca importes cobrados ni datos de pago | Modelo de datos |
 | I22 | `weekNumber` se congela al crear la revisión y no se recalcula nunca | Escritura única |
 
@@ -190,6 +191,12 @@ actual. Si el entrenador añade un tipo de medida hoy, las revisiones de ayer no
 estar incompletas. La revisión guarda, al crearse, el conjunto de tipos y preguntas que se le
 exigen.
 
+Y por el mismo motivo, desde que las imágenes viven fuera de la app (§9), **la completitud se
+congela con el envío**. Que una foto ya no se pueda abrir no reabre la revisión ni la vuelve
+"Parcial": lo que se envió, se envió. Decir lo contrario dejaría el histórico a merced de lo que
+pase en un Drive que la app no controla, y una revisión cerrada hace ocho semanas podría cambiar
+de estado sola.
+
 Sobre I17: el tope de la tercera pasada ("o hasta que se abre el periodo siguiente") desaparece
 con los periodos. Si el entrenador no abre nunca la revisión, el cliente puede seguir editándola.
 Es aceptable: el entrenador recibe aviso de revisión nueva y el flujo real es que la mira.
@@ -200,8 +207,10 @@ Es aceptable: el entrenador recibe aviso de revisión nueva y el flujo real es q
 
 **Cliente** — `invitado` → `activo` → `dado_de_baja`
 La baja conserva el histórico completo, fotos incluidas, sin caducidad. Aparte existe una
-operación de **borrado a petición** que sí elimina las fotos de Storage y anonimiza el histórico
-(I14, §9).
+operación de **borrado a petición** que anonimiza el histórico y borra los datos del cliente.
+**Esa operación no alcanza a las imágenes**: viven en el Drive del entrenador y las borra él a
+mano (I14, §9). Son dos actos distintos y hay que contarlos como tales, porque el segundo puede
+no ocurrir.
 
 **Rutina / Macros / Menú** — `borrador` → `activo` → `archivado`
 Asignar uno nuevo archiva el anterior. El histórico se conserva para poder leer un `WorkoutLog`
@@ -256,20 +265,44 @@ weekNumber(client, date) = floor((date - client.startDate) / 7 días) + 1
 
 ---
 
-## 9. Retención de fotos
+## 9. Dónde viven las fotos y cómo se borran
 
-Conservación indefinida, también tras la baja del cliente.
+**Decidido el 29-09-2026: las imágenes de las revisiones van al Drive del entrenador**, una
+carpeta por cliente compartida con la cuenta de Google de ese cliente. No a Firebase Storage. Los
+datos y la autenticación siguen en Firebase (§12). Conservación indefinida, también tras la baja.
 
-Las fotos de composición corporal son datos personales de categoría sensible bajo el RGPD. La
-conservación indefinida es válida siempre que exista finalidad declarada y el cliente pueda
-ejercer su derecho de supresión. En términos de dominio (I14):
+Esto tiene una consecuencia que no se puede suavizar, y de la que cuelga el resto de esta sección:
+**la app no puede borrar las fotos.** No es que delegue el borrado: no tiene la capacidad, porque
+los archivos no son suyos. Viven en una cuenta de Google que la app no administra.
 
-1. Una operación de borrado por cliente, invocable en cualquier momento, que elimine los objetos
-   de Storage y no solo las filas.
-2. Un texto de consentimiento en el alta que declare finalidad y plazo.
+De ahí salen cuatro cosas, y las cuatro son del dominio, no de la interfaz:
 
-Esto no es asesoramiento legal; conviene contrastarlo con quien lleve la protección de datos del
-entrenador antes del lanzamiento.
+1. **El borrado de las imágenes es un acto manual del entrenador en su Drive.** Si un cliente
+   ejerce su derecho de supresión, alguien tiene que pedírselo al entrenador y el entrenador tiene
+   que entrar en su Drive y borrar la carpeta. Si no lo hace, no ocurre — y la app no puede
+   comprobarlo, ni registrar que ocurrió, ni enseñar que se cumplió.
+2. **El borrado del resto de los datos del cliente sigue siendo de la app**, con su operación
+   explícita por cliente: revisiones, medidas, respuestas, pesajes, registros de entreno. Son dos
+   actos separados y hay que contarlos separados. Dar por hecho que el primero arrastra al segundo
+   es exactamente el error que esta sección existe para evitar.
+3. **El texto de consentimiento del alta deja de ser una nota y pasa a ser obligatorio.** Ya no
+   basta con declarar finalidad y plazo: tiene que decir **dónde viven las fotos** (el Drive del
+   entrenador), **quién las custodia** (el entrenador, no la app) y **a quién se le pide el
+   borrado** (al entrenador). Sin eso, el cliente no puede ejercer un derecho que la app no está
+   en condiciones de ejecutar por él.
+4. **La ausencia de una imagen es un estado esperado, no un fallo.** El entrenador puede mover,
+   renombrar o borrar un archivo en su Drive en cualquier momento, y la app se entera al intentar
+   leerlo. Así que **la app tiene que detectar que la imagen no está y decirlo, nunca enseñar un
+   hueco roto**: el mismo patrón que ya usa Ver revisión —un marcador en el sitio de la foto y un
+   aviso único explicando por qué falta, no uno por foto—. Lo que no cambia es el resto de la
+   revisión: medidas y respuestas siguen congeladas e intactas (I12), y la completitud sigue
+   siendo la del envío (I5).
+
+Las fotos de composición corporal son datos personales de categoría sensible bajo el RGPD, y esta
+decisión mueve su custodia fuera de la app. **Esto no es asesoramiento legal, y ahora menos que
+antes**: conviene contrastar con quien lleve la protección de datos del entrenador —antes del
+lanzamiento— tanto el texto de consentimiento como quién figura como responsable del tratamiento
+de unos archivos que están en el Drive personal del entrenador.
 
 ---
 
@@ -278,7 +311,8 @@ entrenador antes del lanzamiento.
 - **Cobro de pagos.** Se registra si una membresía está pagada; el dinero se mueve fuera de la app.
 - **Mensajería y chat.** El feedback del entrenador es un vídeo enlazado y una nota, no una
   conversación.
-- **Alojamiento de vídeo.** Solo enlaces externos (I20).
+- **Alojamiento de vídeo e imágenes.** El vídeo es siempre un enlace externo y las fotos viven en
+  el Drive del entrenador (I20, §9). La app no guarda archivos.
 - **2FA.** Post-MVP.
 - **Bloques de entrenamiento.** Post-MVP.
 - **Adherencia calculada.** Sin definición clara de la métrica, fuera de la UI.
@@ -299,17 +333,25 @@ La demo no cubre estas dos cosas y el MVP las necesita:
 
 ---
 
-## 12. Backend: decisión abierta
+## 12. Backend: Firebase para datos y auth, Drive para las imágenes
 
-Firebase vs. Postgres/Supabase, sin decidir. Consecuencia para el dominio:
+**Decidido el 29-09-2026.** Los datos y la autenticación van a Firebase. Las imágenes de las
+revisiones **no** van a Firebase Storage: van al Drive del entrenador, una carpeta por cliente
+compartida con la cuenta de Google del cliente (§9).
 
-La columna "dónde se garantiza" de §6 asigna a Postgres —RLS, FKs, índices únicos parciales,
-checks, triggers— buena parte del trabajo. **Con Firestore ninguna de esas herramientas existe**:
-I1, I2, I3, I4, I8, I13, I15, I16 y I18 pasan de garantía del motor a reglas de seguridad más
-lógica de aplicación, es decir, código que hay que escribir, testear y mantener.
+Lo que hasta ahora era el coste hipotético de elegir Firebase pasa a ser trabajo pendiente y
+conviene dejarlo escrito para que nadie lo descubra a mitad del adaptador. La columna "dónde se
+garantiza" de §6 asignaba a Postgres —RLS, FKs, índices únicos parciales, checks, triggers— buena
+parte del trabajo. **Con Firestore ninguna de esas herramientas existe**: I1, I2, I3, I4, I8, I13,
+I15, I16 y I18 pasan de garantía del motor a reglas de seguridad más lógica de aplicación, es
+decir, código que hay que escribir, testear y mantener. A cambio, Firebase resuelve auth con 2FA
+de serie, hosting y push sin trabajo — y, con las fotos en Drive, la autenticación con Google deja
+de ser una opción entre otras: es la que sostiene el acceso del cliente a su carpeta.
 
-No es un veto a Firebase — resuelve auth con 2FA de serie, hosting y push sin trabajo — pero es
-el coste real de esa opción, y conviene pesarlo con esto delante.
-
-Hasta que se decida, el código **no** contiene ninguna referencia a ningún backend: el dominio es
-puro y el acceso a datos pasa por interfaces con un adaptador en memoria.
+La decisión está tomada, pero **no está implementada, y eso no cambia todavía ninguna regla del
+código**: el dominio sigue puro, el acceso a datos sigue pasando por las interfaces de
+`lib/data/ports/` con el adaptador en memoria, y no se instala ni se importa ningún SDK hasta que
+se coja la tarjeta del adaptador. Lo que sí cambia es que las interfaces ya se pueden diseñar
+sabiendo que detrás habrá Firestore y un Drive ajeno, en vez de un Storage propio: en particular,
+**leer una imagen es una operación que puede fallar por ausencia y tiene que poder decirlo** (§9),
+no una URL que siempre resuelve.
