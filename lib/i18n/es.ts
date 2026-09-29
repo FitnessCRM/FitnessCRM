@@ -437,6 +437,49 @@ export const es = {
     },
     footer: "Si tienes dudas sobre un pago, escribe a tu entrenador.",
   },
+  screensTrainerMemberships: {
+    eyebrow: "Pagos y renovaciones",
+    filters: {
+      label: "Filtrar membresías",
+      all: "Todas",
+      unpaid: "No pagadas",
+      expiring: "Caducan pronto",
+      /** `{days}` lo rellena la pantalla con `EXPIRING_SOON_DAYS`. */
+      expiringHint: "Vigentes que acaban en los próximos {days} días",
+      client: "Cliente",
+      clientPlaceholder: "Buscar cliente…",
+      allClients: "Todos los clientes",
+      noClients: "Ningún cliente coincide",
+    },
+    pagination: {
+      label: "Paginación",
+      previous: "Anterior",
+      next: "Siguiente",
+      /** `{page}`, `{pages}` y `{total}` los rellena la pantalla. */
+      summary: "Página {page} de {pages} · {total} membresías",
+    },
+    columns: { client: "Cliente", type: "Tipo", start: "Inicio", end: "Fin", status: "Estado" },
+    actions: { edit: "Editar", save: "Guardar", saving: "Guardando…", cancel: "Cancelar" },
+    overlap: {
+      tag: "Solapada",
+      hint: "Se solapa con otra membresía de este cliente. El cliente ve la que empezó más tarde.",
+    },
+    form: {
+      dateInvalid: "Elige una fecha",
+      endBeforeStart: "El fin no puede ser anterior al inicio",
+      saveError: "No se ha podido guardar la membresía.",
+    },
+    legend:
+      "Verde = pagada · Rojo = pendiente de pago. El cliente ve su estado en su pestaña Membresía.",
+    empty: {
+      title: "Sin membresías todavía",
+      hint: "Aparecerán aquí cuando des de alta a un cliente con su membresía inicial.",
+    },
+    noMatches: {
+      title: "Ninguna membresía coincide",
+      hint: "Prueba con otro cliente o quita el filtro.",
+    },
+  },
   /** Gráficas de `components/charts/`: las usan las dos áreas, así que no cuelgan de una pantalla. */
   charts: {
     weight: {

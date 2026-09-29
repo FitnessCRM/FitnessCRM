@@ -9,7 +9,7 @@ import { formatCivilDate, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { CurrentCard } from "./current-card";
 import { HistoryTable } from "./history-table";
-import { PaymentPill } from "./payment-pill";
+import { PaymentPill } from "@/components/ui/payment-pill";
 
 const t = es.screensMembership;
 

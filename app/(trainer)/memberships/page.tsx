@@ -1,10 +1,8 @@
-import { PageHeader } from "@/components/ui/page-header";
+import { MembershipsScreen } from "@/components/trainer/memberships/memberships-screen";
 import { es } from "@/lib/i18n/es";
 
-const title = es.pages.trainer.membresias;
-
-export const metadata = { title };
+export const metadata = { title: es.pages.trainer.membresias };
 
 export default function Page() {
-  return <PageHeader title={title} />;
+  return <MembershipsScreen />;
 }
