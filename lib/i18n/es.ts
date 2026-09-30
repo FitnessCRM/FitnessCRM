@@ -20,6 +20,8 @@ export const es = {
     client: "Cliente",
   },
   nav: {
+    /** Nombre accesible del botón de hamburguesa (solo icono, sin texto visible). */
+    toggle: "Menú",
     trainer: {
       dashboard: "Dashboard",
       clientes: "Clientes",

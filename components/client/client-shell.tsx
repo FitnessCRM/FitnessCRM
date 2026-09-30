@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Brand } from "@/components/ui/brand";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
+import { MobileNav } from "@/components/ui/mobile-nav";
 import { useClient, useSessionClientId } from "@/lib/data/hooks";
 import { es } from "@/lib/i18n/es";
 import { cn, initialsOf, shortNameOf } from "@/lib/utils";
@@ -24,48 +25,31 @@ const items: { href: string; label: string; also?: string[] }[] = [
 export function ClientShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const client = useClient(useSessionClientId());
-  const navRef = useRef<HTMLElement>(null);
-
-  // En móvil el nav se desplaza en su caja: centra el apartado activo, o no se ve dónde estás.
-  // Se recalcula al cargar las fuentes (Oswald ensancha los enlaces) y al cambiar el ancho del
-  // nav (en un navegador estrecho, la barra de scroll aparece cuando carga el contenido).
-  useEffect(() => {
-    const nav = navRef.current;
-    if (!nav) return;
-    const center = () => {
-      const active = nav.querySelector<HTMLElement>('[aria-current="page"]');
-      if (!active || nav.scrollWidth <= nav.clientWidth) return;
-      const box = nav.getBoundingClientRect();
-      const item = active.getBoundingClientRect();
-      nav.scrollLeft += item.left + item.width / 2 - (box.left + box.width / 2);
-    };
-    center();
-    let cancelled = false;
-    void document.fonts?.ready.then(() => {
-      if (!cancelled) center();
-    });
-    const observer = new ResizeObserver(center);
-    observer.observe(nav);
-    return () => {
-      cancelled = true;
-      observer.disconnect();
-    };
-  }, [pathname]);
+  const isActive = (item: (typeof items)[number]) =>
+    [item.href, ...(item.also ?? [])].some((h) => pathname === h || pathname.startsWith(`${h}/`));
+  const initials = client.data ? initialsOf(client.data.firstName, client.data.lastName) : "";
+  const shortName = client.data ? shortNameOf(client.data.firstName, client.data.lastName) : " ";
 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="bg-background-deep border-border-subtle flex h-16 shrink-0 items-center gap-10 border-b px-10 max-sm:gap-4 max-sm:px-4">
+        {/* Por debajo de `lg` los seis enlaces no caben: hamburguesa en vez de nav con scroll. */}
+        <MobileNav
+          className="lg:hidden"
+          label={es.roles.client}
+          items={items.map((item) => ({ ...item, active: isActive(item) }))}
+          header={<Brand />}
+          footer={
+            <div className="flex items-center gap-2.5">
+              <InitialsAvatar initials={initials} />
+              <p className="truncate text-[14px] font-semibold">{shortName}</p>
+            </div>
+          }
+        />
         <Brand className="shrink-0" />
-        {/* El nav se desplaza dentro de su caja: en móvil no puede ensanchar la página. */}
-        <nav
-          ref={navRef}
-          aria-label={es.roles.client}
-          className="flex min-w-0 flex-1 [scrollbar-width:none] gap-1.5 overflow-x-auto [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-        >
+        <nav aria-label={es.roles.client} className="flex min-w-0 flex-1 gap-1.5 max-lg:hidden">
           {items.map((item) => {
-            const active = [item.href, ...(item.also ?? [])].some(
-              (h) => pathname === h || pathname.startsWith(`${h}/`),
-            );
+            const active = isActive(item);
             return (
               <Link
                 key={item.href}
