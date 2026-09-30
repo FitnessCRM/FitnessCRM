@@ -70,7 +70,7 @@ UI en español, identificadores de código en inglés.
 | Tipo de día | `DayType` | `entrenamiento` \| `descanso` |
 | Comida | `Meal` | Bloque del menú: desayuno, comida, merienda, cena |
 | Alimento | `FoodItem` | Alimento con su peso en gramos |
-| Registro de peso | `WeightLog` | Peso en una fecha, en kg, con nota opcional |
+| Registro de peso | `WeightLog` | Peso en una fecha, en kg, con nota opcional. Uno por cliente y fecha (I23) |
 | Revisión | `Review` | Corte semanal: fotos + peso + medidas + cuestionario |
 | Semana | `weekNumber` | Entero derivado de la fecha de alta del cliente. Se congela en la revisión |
 | Tipo de medida | `MeasurementType` | Entrada del catálogo del entrenador: etiqueta + unidad + orden |
@@ -177,9 +177,10 @@ marcan y no se reutiliza su número.
 | I20 | El vídeo, tanto de ejercicio como de feedback, es siempre un enlace externo. La app **no aloja vídeo ni imágenes**: las fotos de revisión viven en el Drive del entrenador (§9) | Validación de URL |
 | I21 | Una membresía registra estado de pago, nunca importes cobrados ni datos de pago | Modelo de datos |
 | I22 | `weekNumber` se congela al crear la revisión y no se recalcula nunca | Escritura única |
+| I23 | Como máximo un `WeightLog` por cliente y fecha civil. Registrar un peso en una fecha que ya tiene pesaje **lo actualiza** en lugar de crear otro: conserva su identidad y su fecha de creación (la revisión que lo referencia, I9, no se rompe) y sustituye el peso. La nota se sustituye solo si llega una; si llega vacía, se conserva la anterior | Lógica de dominio + backend (índice único `(clientId, date)` o id determinista `clientId_fecha`) |
 
-I5, I9, I12, I15, I17 y I22 concentran casi toda la lógica de negocio real. Se cubren con tests
-desde el primer día.
+I5, I9, I12, I15, I17, I22 e I23 concentran casi toda la lógica de negocio real. Se cubren con
+tests desde el primer día.
 
 Cómo se implementan I5 e I9: la revisión guarda al crearse su **ventana** (las fechas entre las
 que vale un pesaje) y sus **requisitos congelados** (qué tipos de medida y qué preguntas se le
@@ -343,7 +344,7 @@ Lo que hasta ahora era el coste hipotético de elegir Firebase pasa a ser trabaj
 conviene dejarlo escrito para que nadie lo descubra a mitad del adaptador. La columna "dónde se
 garantiza" de §6 asignaba a Postgres —RLS, FKs, índices únicos parciales, checks, triggers— buena
 parte del trabajo. **Con Firestore ninguna de esas herramientas existe**: I1, I2, I3, I4, I8, I13,
-I15, I16 y I18 pasan de garantía del motor a reglas de seguridad más lógica de aplicación, es
+I15, I16, I18 e I23 pasan de garantía del motor a reglas de seguridad más lógica de aplicación, es
 decir, código que hay que escribir, testear y mantener. A cambio, Firebase resuelve auth con 2FA
 de serie, hosting y push sin trabajo — y, con las fotos en Drive, la autenticación con Google deja
 de ser una opción entre otras: es la que sostiene el acceso del cliente a su carpeta.
