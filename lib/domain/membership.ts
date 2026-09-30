@@ -1,5 +1,28 @@
-import { civilDaysBetween } from "./week";
-import type { CivilDate, Membership } from "./schemas";
+import { addCivilDays, civilDaysBetween } from "./week";
+import type { CivilDate, Membership, MembershipType } from "./schemas";
+
+const MONTHS_PER_TYPE: Record<MembershipType, number> = {
+  mensual: 1,
+  trimestral: 3,
+  semestral: 6,
+  anual: 12,
+};
+
+/**
+ * Último día de una membresía que empieza en `startDate`: los meses de su tipo menos un día, con
+ * los extremos incluidos (trimestral desde el 01-09 acaba el 30-11 y la siguiente empieza el
+ * 01-12). Si el mes de destino es más corto se queda en su último día. Solo propone un fin: el
+ * entrenador puede corregirlo, y el esquema solo exige que no sea anterior al inicio.
+ */
+export function membershipEndDate(type: MembershipType, startDate: CivilDate): CivilDate {
+  const [y, m, d] = startDate.split("-").map(Number) as [number, number, number];
+  const target = m - 1 + MONTHS_PER_TYPE[type];
+  const lastDayOfTarget = new Date(Date.UTC(y, target + 1, 0)).getUTCDate();
+  const next = new Date(Date.UTC(y, target, Math.min(d, lastDayOfTarget)))
+    .toISOString()
+    .slice(0, 10);
+  return addCivilDays(next, -1);
+}
 
 /**
  * Estado de la membresía de un cliente en una fecha. Solo lectura: el cobro pasa fuera de la app
