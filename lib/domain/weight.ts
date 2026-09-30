@@ -12,6 +12,19 @@ export const MIN_LOGS_FOR_AVERAGE = 2;
 const byDateThenCreated = (a: WeightLog, b: WeightLog) =>
   a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt);
 
+/**
+ * I23: un pesaje por cliente y fecha. Registrar sobre una fecha que ya tiene pesaje lo
+ * actualiza: el peso se sustituye y la nota solo si llega una; vacía, se conserva la anterior.
+ * Devuelve los campos que hay que escribir; `id` y `createdAt` del existente no se tocan.
+ */
+export function mergeWeightLogInput<T extends Pick<WeightLog, "note">>(
+  existing: Pick<WeightLog, "note"> | undefined,
+  input: T,
+): T {
+  const note = input.note.trim();
+  return { ...input, note: note || existing?.note || "" };
+}
+
 /** Último pesaje: fecha más reciente y, a igual fecha, el creado más tarde. */
 export function latestWeightLog(logs: readonly WeightLog[]): WeightLog | null {
   return logs.length ? [...logs].sort(byDateThenCreated).at(-1)! : null;

@@ -4,6 +4,7 @@ import {
   changeSinceStart,
   lastWeeksRange,
   latestWeightLog,
+  mergeWeightLogInput,
   reviewUsingWeightLog,
   sevenDayAverage,
   weeklyWeights,
@@ -123,5 +124,24 @@ describe("reviewUsingWeightLog", () => {
     const reviews = [review({ weightLogId: "m" })];
     expect(reviewUsingWeightLog(log("m", "2026-08-29", 63.4), reviews)?.id).toBe("r-1");
     expect(reviewUsingWeightLog(log("l", "2026-08-26", 63.8), reviews)).toBeNull();
+  });
+});
+
+describe("mergeWeightLogInput (I23)", () => {
+  it("replaces the note when a new one arrives", () => {
+    expect(mergeWeightLogInput({ note: "antes" }, { weightKg: 64, note: "  ahora " }).note).toBe(
+      "ahora",
+    );
+  });
+
+  it("keeps the previous note when the new one is empty", () => {
+    expect(mergeWeightLogInput({ note: "antes" }, { weightKg: 64, note: "" }).note).toBe("antes");
+    expect(mergeWeightLogInput({ note: "antes" }, { weightKg: 64, note: "   " }).note).toBe(
+      "antes",
+    );
+  });
+
+  it("has nothing to keep on a first weigh-in", () => {
+    expect(mergeWeightLogInput(undefined, { weightKg: 64, note: "" }).note).toBe("");
   });
 });
