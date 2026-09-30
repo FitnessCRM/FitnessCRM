@@ -1,10 +1,12 @@
-import type { MembershipQuery } from "@/lib/data/ports";
+import type { ClientTrackingQuery, MembershipQuery } from "@/lib/data/ports";
 
 /** Claves de TanStack Query. Todas empiezan por el `trainerId` de la sesión salvo la sesión misma. */
 export const queryKeys = {
   session: ["session"] as const,
   trainer: (trainerId: string) => ["trainer", trainerId] as const,
   clients: (trainerId: string) => ["clients", trainerId] as const,
+  clientsTracking: (trainerId: string, query: ClientTrackingQuery) =>
+    ["clients", trainerId, "tracking", query] as const,
   client: (trainerId: string, clientId: string) => ["clients", trainerId, clientId] as const,
   memberships: (trainerId: string) => ["memberships", trainerId] as const,
   membershipsWithClients: (trainerId: string, query: MembershipQuery) =>
