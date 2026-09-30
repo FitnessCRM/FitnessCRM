@@ -11,10 +11,19 @@ export function createWeightLogPort(ctx: MockContext): WeightLogPort {
           .filter((w) => w.clientId === clientId)
           .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt)),
       ),
-    addWeightLog: async (input) => {
-      const log = weightLogSchema.parse({ ...input, id: ctx.newId(), createdAt: ctx.now() });
-      ctx.state.weightLogs.push(log);
-      return ctx.reply(log);
+    saveWeightLog: async (input) => {
+      const existing = ctx.state.weightLogs.find(
+        (w) =>
+          w.trainerId === input.trainerId && w.clientId === input.clientId && w.date === input.date,
+      );
+      const log = weightLogSchema.parse({
+        ...input,
+        // Nota vacía: se conserva la anterior (I23).
+        note: input.note.trim() || existing?.note,
+        id: existing?.id ?? ctx.newId(),
+        createdAt: existing?.createdAt ?? ctx.now(),
+      });
+      return ctx.reply(replaceById(ctx.state.weightLogs, log));
     },
     deleteWeightLog: async (trainerId, weightLogId) => {
       findOwn(ctx.state.weightLogs, trainerId, weightLogId, "Pesaje");

@@ -14,7 +14,7 @@ import {
   type WeightLog,
 } from "@/lib/domain";
 import {
-  useAddWeightLog,
+  useSaveWeightLog,
   useClient,
   useClientReviews,
   useSessionClientId,
@@ -60,7 +60,7 @@ export function WeightScreen() {
   const client = useClient(clientId);
   const logs = useWeightLogs(clientId);
   const reviews = useClientReviews(clientId);
-  const addWeightLog = useAddWeightLog(clientId);
+  const saveWeightLog = useSaveWeightLog(clientId);
 
   const today = todayCivil(trainer.data?.timeZone);
 
@@ -73,9 +73,9 @@ export function WeightScreen() {
         </div>
         <WeightForm
           today={today}
-          isSaving={addWeightLog.isPending}
-          saveError={addWeightLog.isError}
-          onSubmit={(values) => addWeightLog.mutateAsync(values)}
+          isSaving={saveWeightLog.isPending}
+          saveError={saveWeightLog.isError}
+          onSubmit={(values) => saveWeightLog.mutateAsync(values)}
         />
         <QueryBoundary query={logs} isEmpty={() => false} empty={null}>
           {(data) => <WeightSummaryCard summary={weightSummary(data)} />}

@@ -216,6 +216,45 @@ describe("memberships", () => {
 });
 
 describe("flows", () => {
+  it("registering a weight on a day that already has one updates it in place (I23)", async () => {
+    const p = ports();
+    const before = await p.weightLogs.listWeightLogs(TRAINER, MARTA);
+    const date = "2026-08-30"; // sin pesaje en la demo
+    const base = { trainerId: TRAINER, clientId: MARTA, date };
+    const first = await p.weightLogs.saveWeightLog({ ...base, weightKg: 63.0, note: "En ayunas" });
+    const second = await p.weightLogs.saveWeightLog({ ...base, weightKg: 62.8, note: "" });
+    const after = await p.weightLogs.listWeightLogs(TRAINER, MARTA);
+    const sameDay = after.filter((w) => w.date === date);
+    expect(sameDay).toHaveLength(1);
+    expect(after).toHaveLength(before.length + 1);
+    expect(second.id).toBe(first.id);
+    expect(second.createdAt).toBe(first.createdAt);
+    expect(sameDay[0]).toMatchObject({ weightKg: 62.8, note: "En ayunas" });
+    const third = await p.weightLogs.saveWeightLog({
+      ...base,
+      weightKg: 62.7,
+      note: "Tras correr",
+    });
+    expect(third.note).toBe("Tras correr");
+  });
+
+  it("keeps a review's weight link valid when its weight log is updated (I9, I23)", async () => {
+    const p = ports();
+    const s = createDemoState(TODAY);
+    const linked = s.reviews.find((r) => r.weightLogId)!;
+    const log = s.weightLogs.find((w) => w.id === linked.weightLogId)!;
+    const updated = await p.weightLogs.saveWeightLog({
+      trainerId: log.trainerId,
+      clientId: log.clientId,
+      date: log.date,
+      weightKg: log.weightKg + 0.4,
+      note: "",
+    });
+    expect(updated.id).toBe(log.id);
+    const reviews = await p.reviews.listClientReviews(TRAINER, log.clientId);
+    expect(reviews.find((r) => r.id === linked.id)!.weightLogId).toBe(log.id);
+  });
+
   it("archiving an exercise warns about usage, removes it from routines and keeps the row (I13)", async () => {
     const p = ports();
     const usage = await p.exercises.getExerciseUsage(TRAINER, "ex-press-banca");
