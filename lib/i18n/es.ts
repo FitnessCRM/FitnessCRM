@@ -5,6 +5,9 @@
 export const APP_NAME = "HECTOR";
 
 export const es = {
+  actions: {
+    newClient: "Nuevo cliente",
+  },
   common: {
     loading: "Cargando…",
     error: "Algo ha fallado",
@@ -494,6 +497,25 @@ export const es = {
       archived: "archivado",
       empty: "Sin medidas registradas todavía.",
       noneSelected: "Elige al menos una medida.",
+    },
+  },
+  /** Componentes `components/`: literales que comparten varios componentes. */
+  components: {
+    dashboard: {
+      activeClients: "CLIENTES ACTIVOS",
+      unviewedReviews: "REVISIONES SIN REVISAR",
+      thisWeekReviews: "REVISIONES ESTA SEMANA",
+      inactiveClients: "CLIENTES INACTIVOS",
+      recentReviews: "REVISIONES RECIBIDAS",
+      noReviews: "Sin revisiones aún.",
+      seeAll: "Ver todas",
+      activeTabLabel: "Activos",
+      inactiveTabLabel: "Inactivos",
+      clientCol: "CLIENTE",
+      blockCol: "BLOQUE",
+      lastReviewCol: "ÚLTIMA REVISIÓN",
+      statusCol: "ESTADO",
+      noClients: "Sin clientes.",
     },
   },
   screensProgress: {
