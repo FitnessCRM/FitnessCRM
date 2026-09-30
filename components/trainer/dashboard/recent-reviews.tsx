@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
 import type { Review } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
-import { initialsOf, shortNameOf } from "@/lib/utils";
+import { initialsOf } from "@/lib/utils";
 import { isReviewComplete } from "@/lib/domain";
 
 const t = es.components.dashboard;
@@ -11,10 +12,20 @@ const tStatus = es.status.review;
 
 type ReviewWithClient = Review & { clientName: string };
 
-export function RecentReviews({ reviews }: { reviews: ReviewWithClient[] }) {
-  const recent = [...reviews]
-    .sort((a, b) => new Date(b.submittedAt ?? 0).getTime() - new Date(a.submittedAt ?? 0).getTime())
-    .slice(0, 3);
+export function RecentReviews({
+  reviews,
+  page,
+  total,
+  pageSize,
+  onPageChange,
+}: {
+  reviews: ReviewWithClient[];
+  page: number;
+  total: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+}) {
+  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div className="border-border bg-surface flex flex-col gap-4 rounded-lg border p-6">
@@ -23,20 +34,37 @@ export function RecentReviews({ reviews }: { reviews: ReviewWithClient[] }) {
       </h2>
 
       <div className="space-y-3">
-        {recent.length === 0 ? (
+        {reviews.length === 0 ? (
           <p className="text-text-muted text-sm">{t.noReviews}</p>
         ) : (
-          recent.map((review) => <ReviewRow key={review.id} review={review} />)
+          reviews.map((review) => <ReviewRow key={review.id} review={review} />)
         )}
       </div>
 
-      {reviews.length > 3 && (
-        <Link
-          href="/clientes"
-          className="text-accent hover:text-accent-hover mt-2 text-sm font-medium"
-        >
-          {t.seeAll} →
-        </Link>
+      {totalPages > 1 && (
+        <div className="border-border-emphasis mt-4 flex items-center justify-between gap-2 border-t pt-4">
+          <span className="text-text-muted text-xs">
+            Página {page + 1} de {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page === 0}
+              onClick={() => onPageChange(page - 1)}
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page === totalPages - 1}
+              onClick={() => onPageChange(page + 1)}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );

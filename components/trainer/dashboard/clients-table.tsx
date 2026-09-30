@@ -1,42 +1,85 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
+import { Button } from "@/components/ui/button";
 import type { Client } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 import { cn, initialsOf } from "@/lib/utils";
 
 const t = es.components.dashboard;
 
-export function ClientsTable({ clients }: { clients: Client[] }) {
-  const [tab, setTab] = useState<"active" | "inactive">("active");
+export function ClientsTable({
+  clients,
+  filter,
+  onFilterChange,
+  page,
+  total,
+  pageSize,
+  onPageChange,
+  counts,
+}: {
+  clients: Client[];
+  filter: "activo" | "inactivo" | "todos";
+  onFilterChange: (f: "activo" | "inactivo" | "todos") => void;
+  page: number;
+  total: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  counts: Record<"activo" | "inactivo" | "todos", number>;
+}) {
+  const totalPages = Math.ceil(total / pageSize);
 
-  const activeClients = useMemo(() => clients.filter((c) => c.status === "activo"), [clients]);
-  const inactiveClients = useMemo(() => clients.filter((c) => c.status !== "activo"), [clients]);
-
-  const displayed = tab === "active" ? activeClients : inactiveClients;
+  const handleTabChange = (value: string) => {
+    onFilterChange(value as "activo" | "inactivo" | "todos");
+  };
 
   return (
     <div className="border-border bg-surface flex flex-col gap-4 rounded-lg border p-6">
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "active" | "inactive")}>
+      <Tabs value={filter} onValueChange={handleTabChange}>
         <TabsList className="mb-4 flex w-full">
-          <TabsTrigger value="active" className="flex-1">
-            {t.activeTabLabel} {activeClients.length}
+          <TabsTrigger value="activo" className="flex-1">
+            {t.activeTabLabel} {counts.activo}
           </TabsTrigger>
-          <TabsTrigger value="inactive" className="flex-1">
-            {t.inactiveTabLabel} {inactiveClients.length}
+          <TabsTrigger value="inactivo" className="flex-1">
+            {t.inactiveTabLabel} {counts.inactivo}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="active" className="m-0">
-          <Table clients={activeClients} />
+        <TabsContent value="activo" className="m-0">
+          <Table clients={clients} />
         </TabsContent>
-        <TabsContent value="inactive" className="m-0">
-          <Table clients={inactiveClients} />
+        <TabsContent value="inactivo" className="m-0">
+          <Table clients={clients} />
         </TabsContent>
       </Tabs>
+
+      {totalPages > 1 && (
+        <div className="border-border-emphasis mt-4 flex items-center justify-between gap-2 border-t pt-4">
+          <span className="text-text-muted text-xs">
+            Página {page + 1} de {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page === 0}
+              onClick={() => onPageChange(page - 1)}
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page === totalPages - 1}
+              onClick={() => onPageChange(page + 1)}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
