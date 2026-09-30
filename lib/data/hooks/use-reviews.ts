@@ -64,6 +64,17 @@ export function useSubmittedReviewsPage(page: number, pageSize: number) {
   });
 }
 
+/** Contadores de revisiones de toda la cartera para el panel de control. */
+export function useReviewStats() {
+  const ports = usePorts();
+  const trainerId = useTrainerId();
+  return useQuery({
+    queryKey: [...queryKeys.reviews(trainerId ?? ""), "stats"],
+    queryFn: () => ports.reviews.getReviewStats(trainerId!),
+    enabled: trainerId !== undefined,
+  });
+}
+
 type ReviewMutation =
   | { open: { clientId: string } }
   | { reviewId: string; draft: ReviewDraftChanges }

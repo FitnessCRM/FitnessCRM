@@ -59,6 +59,15 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
 
       return ctx.reply({ rows, total });
     },
+    getReviewStats: async (trainerId) => {
+      const all = own(ctx.state.reviews, trainerId);
+      const weekAgo = new Date(ctx.now()).getTime() - 7 * 24 * 60 * 60 * 1000;
+      return ctx.reply({
+        unviewed: all.filter((r) => r.status === "enviada").length,
+        thisWeek: all.filter((r) => r.submittedAt !== null && Date.parse(r.submittedAt) >= weekAgo)
+          .length,
+      });
+    },
     getCurrentReview: async (trainerId, clientId) => {
       const client = findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
       const week = weekNumber(client.startDate, ctx.state.today, trainerOf(trainerId).timeZone);
