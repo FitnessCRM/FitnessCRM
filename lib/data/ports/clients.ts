@@ -1,8 +1,11 @@
 import type { CivilDate, Client, ClientStatus, Membership } from "@/lib/domain";
 
-/** Datos que aporta el entrenador al dar de alta. El resto (id, createdAt) lo pone el adaptador. */
-export type ClientInput = Omit<Client, "id" | "createdAt">;
-export type ClientChanges = Partial<Omit<ClientInput, "trainerId">>;
+/**
+ * Datos que aporta el entrenador al dar de alta. El resto lo pone el adaptador: `id`, `createdAt`
+ * y `status`, porque un cliente nace siempre `invitado` (§7) y pasar a `activo` es otra operación.
+ */
+export type ClientInput = Omit<Client, "id" | "createdAt" | "status">;
+export type ClientChanges = Partial<Omit<Client, "id" | "createdAt" | "trainerId">>;
 
 /** Estado de cliente para filtrar en dashboard. */
 export type ClientStatusFilter = "activo" | "inactivo" | "todos";

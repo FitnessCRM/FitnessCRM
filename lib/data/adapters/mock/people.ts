@@ -118,7 +118,12 @@ export function createClientPort(ctx: MockContext): ClientPort {
         ctx.state.clients.find((c) => c.id === clientId && c.trainerId === trainerId) ?? null,
       ),
     createClient: async (input) => {
-      const client = clientSchema.parse({ ...input, id: ctx.newId(), createdAt: ctx.now() });
+      const client = clientSchema.parse({
+        ...input,
+        status: "invitado",
+        id: ctx.newId(),
+        createdAt: ctx.now(),
+      });
       ctx.state.clients.push(client);
       return ctx.reply(client);
     },
