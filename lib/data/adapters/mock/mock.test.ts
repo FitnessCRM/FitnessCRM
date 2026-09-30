@@ -163,6 +163,27 @@ describe("client tracking (server-side)", () => {
   });
 });
 
+describe("client signup", () => {
+  it("always creates the client as invitado, even if the input carries another status", async () => {
+    const p = ports().clients;
+    const input = {
+      trainerId: TRAINER,
+      firstName: "Sara",
+      lastName: "Peña",
+      email: "sara@example.com",
+      phone: "",
+      goal: "",
+      level: "",
+      initialNotes: "",
+      startDate: TODAY,
+      reviewCadence: { everyDays: 7 },
+    };
+    const created = await p.createClient({ ...input, status: "activo" } as typeof input);
+    expect(created.status).toBe("invitado");
+    expect((await p.getClient(TRAINER, created.id))?.status).toBe("invitado");
+  });
+});
+
 describe("tenancy (I1)", () => {
   it("returns nothing for another trainer", async () => {
     const p = ports();

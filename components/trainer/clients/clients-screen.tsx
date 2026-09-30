@@ -22,7 +22,7 @@ const FILTERS: ClientTrackingFilter[] = ["todos", "activo", "invitado", "dado_de
 const PAGE_SIZE = 10;
 
 /**
- * Seguimiento de clientes (`/clientes`): la cartera del entrenador de un vistazo. Cada fila lleva
+ * Seguimiento de clientes (`/clients`): la cartera del entrenador de un vistazo. Cada fila lleva
  * al detalle del cliente y el botón de la cabecera al alta. Filtra, busca y pagina el servidor:
  * la pantalla solo pide la página que enseña. Las revisiones nuevas van primero.
  */
@@ -71,7 +71,7 @@ export function ClientsScreen() {
         description={t.empty.hint}
         action={
           <Button asChild variant="outline">
-            <Link href="/clientes/nuevo">{es.actions.newClient}</Link>
+            <Link href="/clients/new">{es.actions.newClient}</Link>
           </Button>
         }
       />
@@ -172,7 +172,7 @@ export function ClientsScreen() {
         title={es.pages.trainer.clientes}
         actions={
           <Button asChild>
-            <Link href="/clientes/nuevo">+ {es.actions.newClient}</Link>
+            <Link href="/clients/new">+ {es.actions.newClient}</Link>
           </Button>
         }
       />

@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   isExpiringSoon,
+  membershipEndDate,
   matchesMembershipFilter,
   membershipHistory,
   membershipStanding,
   overlappingMembershipIds,
 } from "./membership";
 import type { Membership } from "./schemas";
+import { addCivilDays } from "./week";
 
 let seq = 0;
 function membership(
@@ -143,5 +145,25 @@ describe("matchesMembershipFilter", () => {
     expect(matchesMembershipFilter(unpaidOver, "expiring", today)).toBe(false);
     expect(matchesMembershipFilter(paidEnding, "unpaid", today)).toBe(false);
     expect(matchesMembershipFilter(paidEnding, "expiring", today)).toBe(true);
+  });
+});
+
+describe("membershipEndDate", () => {
+  it("ends the day before the same day of the month the type counts to", () => {
+    expect(membershipEndDate("mensual", "2026-09-01")).toBe("2026-09-30");
+    expect(membershipEndDate("trimestral", "2026-09-01")).toBe("2026-11-30");
+    expect(membershipEndDate("semestral", "2026-09-15")).toBe("2027-03-14");
+    expect(membershipEndDate("anual", "2026-09-01")).toBe("2027-08-31");
+  });
+
+  it("makes the next period start the day after the end", () => {
+    const end = membershipEndDate("trimestral", "2026-09-01");
+    expect(addCivilDays(end, 1)).toBe("2026-12-01");
+  });
+
+  it("stays in the last day of a shorter month and crosses the year", () => {
+    expect(membershipEndDate("mensual", "2026-01-31")).toBe("2026-02-27");
+    expect(membershipEndDate("anual", "2028-02-29")).toBe("2029-02-27");
+    expect(membershipEndDate("trimestral", "2026-11-15")).toBe("2027-02-14");
   });
 });

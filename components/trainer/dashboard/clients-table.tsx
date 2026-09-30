@@ -123,7 +123,7 @@ function ClientRow({ client }: { client: Client }) {
     <tr className="border-border-emphasis hover:bg-surface-raised border-b transition-colors">
       <td className="px-3 py-3">
         <Link
-          href={`/clientes/${client.id}`}
+          href={`/clients/${client.id}`}
           className="text-text-primary flex items-center gap-2 hover:underline"
         >
           <InitialsAvatar initials={initialsOf(client.firstName, client.lastName)} />

@@ -63,9 +63,10 @@ export function useClient(clientId: string | undefined) {
 export function useCreateClient() {
   const ports = usePorts();
   const queryClient = useQueryClient();
+  const trainerId = useTrainerId();
   return useMutation({
-    mutationFn: (input: Omit<ClientInput, "trainerId"> & { trainerId?: string }) =>
-      ports.clients.createClient({ ...input, trainerId: input.trainerId! }),
+    mutationFn: (input: Omit<ClientInput, "trainerId">) =>
+      ports.clients.createClient({ ...input, trainerId: trainerId! }),
     onSuccess: (client) =>
       queryClient.invalidateQueries({ queryKey: queryKeys.clients(client.trainerId) }),
   });
@@ -127,6 +128,11 @@ export function useSaveMembership() {
       "create" in input
         ? ports.memberships.createMembership({ ...input.create, trainerId: trainerId! })
         : ports.memberships.updateMembership(trainerId!, input.membershipId, input.changes),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.memberships(trainerId!) }),
+    // El seguimiento de clientes también enseña la membresía vigente de cada uno.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.memberships(trainerId!) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.clients(trainerId!) }),
+      ]),
   });
 }

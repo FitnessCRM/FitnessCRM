@@ -15,7 +15,7 @@ const nav = es.nav.trainer;
 /** Barra lateral del entrenador (pantalla 09). El orden incluye «Medidas», hueco §11.1. */
 const items: { href: string; label: string }[] = [
   { href: "/dashboard", label: nav.dashboard },
-  { href: "/clientes", label: nav.clientes },
+  { href: "/clients", label: nav.clientes },
   { href: "/library", label: nav.biblioteca },
   { href: "/templates", label: nav.plantillas },
   { href: "/questionnaire", label: nav.cuestionario },

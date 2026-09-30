@@ -535,6 +535,56 @@ export const es = {
       emptyHint: "La primera aparecerá cuando empieces tu revisión semanal.",
     },
   },
+  screensClientSignup: {
+    eyebrow: "Clientes / Nuevo",
+    data: {
+      title: "Datos del cliente",
+      firstName: "Nombre",
+      lastName: "Apellidos",
+      email: "Email",
+      phone: "Teléfono",
+      goal: "Objetivo",
+      level: "Nivel",
+      selectPlaceholder: "Sin especificar",
+      notes: "Notas iniciales",
+      notesPlaceholder: "Lesiones, preferencias, disponibilidad…",
+      startDate: "Fecha de alta",
+      startDateHint:
+        "Es el origen de la numeración de semanas. Cambiarla después no reetiqueta las revisiones ya enviadas.",
+    },
+    /** Se guardan tal cual en `goal` y `level`, que en el dominio son texto libre. */
+    goals: [
+      "Recomposición corporal",
+      "Pérdida de grasa",
+      "Ganancia muscular",
+      "Rendimiento",
+      "Salud y bienestar",
+    ],
+    levels: ["Principiante", "Intermedio", "Avanzado"],
+    membership: {
+      title: "Membresía",
+      type: "Tipo",
+      start: "Fecha inicio",
+      end: "Fecha fin",
+      payment: "Estado del pago",
+    },
+    next: {
+      title: "Siguiente paso",
+      hint: "Puedes asignar rutina y menú ahora o dejarlo para después.",
+      assign: "Crear y asignar plan →",
+    },
+    actions: { cancel: "Cancelar", submit: "Crear cliente e invitar", submitting: "Creando…" },
+    errors: {
+      firstNameRequired: "Escribe el nombre",
+      lastNameRequired: "Escribe los apellidos",
+      emailInvalid: "Escribe un email válido",
+      dateInvalid: "Elige una fecha",
+      endBeforeStart: "El fin no puede ser anterior al inicio",
+      clientFailed: "No se ha podido crear el cliente.",
+      membershipFailed:
+        "El cliente se ha creado, pero no su membresía. Vuelve a pulsar para añadirla.",
+    },
+  },
   screensClients: {
     eyebrow: "Tu cartera",
     search: { label: "Buscar cliente", placeholder: "Buscar por nombre…" },
