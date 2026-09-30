@@ -1,10 +1,8 @@
-import { PageHeader } from "@/components/ui/page-header";
+import { ClientSignupScreen } from "@/components/trainer/clients/client-signup-screen";
 import { es } from "@/lib/i18n/es";
 
-const title = es.pages.trainer.clienteNuevo;
-
-export const metadata = { title };
+export const metadata = { title: es.pages.trainer.clienteNuevo };
 
 export default function Page() {
-  return <PageHeader title={title} />;
+  return <ClientSignupScreen />;
 }
