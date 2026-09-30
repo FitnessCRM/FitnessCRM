@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReviewDraftChanges } from "@/lib/data/ports";
 import type { Pose, ReviewFeedback } from "@/lib/domain";
 import { usePorts } from "./ports-provider";
@@ -48,6 +48,29 @@ export function useSubmittedReviews() {
   return useQuery({
     queryKey: queryKeys.submittedReviews(trainerId ?? ""),
     queryFn: () => ports.reviews.listSubmittedReviews(trainerId!),
+    enabled: trainerId !== undefined,
+  });
+}
+
+/** Página de revisiones `enviada` para el dashboard, con paginación en servidor. */
+export function useSubmittedReviewsPage(page: number, pageSize: number) {
+  const ports = usePorts();
+  const trainerId = useTrainerId();
+  return useQuery({
+    queryKey: [...queryKeys.submittedReviews(trainerId ?? ""), "paginated", page, pageSize],
+    queryFn: () => ports.reviews.listSubmittedReviewsPage(trainerId!, { page, pageSize }),
+    enabled: trainerId !== undefined,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Contadores de revisiones de toda la cartera para el panel de control. */
+export function useReviewStats() {
+  const ports = usePorts();
+  const trainerId = useTrainerId();
+  return useQuery({
+    queryKey: [...queryKeys.reviews(trainerId ?? ""), "stats"],
+    queryFn: () => ports.reviews.getReviewStats(trainerId!),
     enabled: trainerId !== undefined,
   });
 }

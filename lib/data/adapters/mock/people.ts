@@ -42,6 +42,27 @@ export function createTrainerPort(ctx: MockContext): TrainerPort {
 export function createClientPort(ctx: MockContext): ClientPort {
   return {
     listClients: async (trainerId) => ctx.reply(own(ctx.state.clients, trainerId)),
+    listClientsWithPagination: async (trainerId, query) => {
+      const all = own(ctx.state.clients, trainerId);
+      const filtered =
+        query.filter === "activo"
+          ? all.filter((c) => c.status === "activo")
+          : query.filter === "inactivo"
+            ? all.filter((c) => c.status !== "activo")
+            : all;
+
+      const total = filtered.length;
+      const start = query.page * query.pageSize;
+      const rows = filtered.slice(start, start + query.pageSize);
+
+      const counts = {
+        activo: all.filter((c) => c.status === "activo").length,
+        inactivo: all.filter((c) => c.status !== "activo").length,
+        todos: all.length,
+      };
+
+      return ctx.reply({ rows, counts });
+    },
     getClient: async (trainerId, clientId) =>
       ctx.reply(
         ctx.state.clients.find((c) => c.id === clientId && c.trainerId === trainerId) ?? null,
