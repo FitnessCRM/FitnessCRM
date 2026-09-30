@@ -46,7 +46,7 @@ export function ClientShell({ children }: { children: ReactNode }) {
             </div>
           }
         />
-        <Brand className="shrink-0" />
+        <Brand className="shrink-0 max-lg:hidden" />
         <nav aria-label={es.roles.client} className="flex min-w-0 flex-1 gap-1.5 max-lg:hidden">
           {items.map((item) => {
             const active = isActive(item);
@@ -65,7 +65,7 @@ export function ClientShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3 max-lg:hidden">
           <span className="text-text-muted text-sm max-sm:hidden">
             {client.data ? shortNameOf(client.data.firstName, client.data.lastName) : " "}
           </span>
