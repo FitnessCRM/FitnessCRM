@@ -221,8 +221,8 @@ describe("flows", () => {
     const before = await p.weightLogs.listWeightLogs(TRAINER, MARTA);
     const date = "2026-08-30"; // sin pesaje en la demo
     const base = { trainerId: TRAINER, clientId: MARTA, date };
-    const first = await p.weightLogs.addWeightLog({ ...base, weightKg: 63.0, note: "En ayunas" });
-    const second = await p.weightLogs.addWeightLog({ ...base, weightKg: 62.8, note: "" });
+    const first = await p.weightLogs.saveWeightLog({ ...base, weightKg: 63.0, note: "En ayunas" });
+    const second = await p.weightLogs.saveWeightLog({ ...base, weightKg: 62.8, note: "" });
     const after = await p.weightLogs.listWeightLogs(TRAINER, MARTA);
     const sameDay = after.filter((w) => w.date === date);
     expect(sameDay).toHaveLength(1);
@@ -230,6 +230,12 @@ describe("flows", () => {
     expect(second.id).toBe(first.id);
     expect(second.createdAt).toBe(first.createdAt);
     expect(sameDay[0]).toMatchObject({ weightKg: 62.8, note: "En ayunas" });
+    const third = await p.weightLogs.saveWeightLog({
+      ...base,
+      weightKg: 62.7,
+      note: "Tras correr",
+    });
+    expect(third.note).toBe("Tras correr");
   });
 
   it("keeps a review's weight link valid when its weight log is updated (I9, I23)", async () => {
@@ -237,7 +243,7 @@ describe("flows", () => {
     const s = createDemoState(TODAY);
     const linked = s.reviews.find((r) => r.weightLogId)!;
     const log = s.weightLogs.find((w) => w.id === linked.weightLogId)!;
-    const updated = await p.weightLogs.addWeightLog({
+    const updated = await p.weightLogs.saveWeightLog({
       trainerId: log.trainerId,
       clientId: log.clientId,
       date: log.date,

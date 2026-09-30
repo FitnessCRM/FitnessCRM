@@ -9,6 +9,6 @@ export interface WeightLogPort {
    * Registra el peso de una fecha (I23): si el cliente ya tiene pesaje ese día, lo actualiza
    * conservando su `id` y `createdAt`; una nota vacía conserva la anterior.
    */
-  addWeightLog(input: WeightLogInput): Promise<WeightLog>;
+  saveWeightLog(input: WeightLogInput): Promise<WeightLog>;
   deleteWeightLog(trainerId: string, weightLogId: string): Promise<void>;
 }

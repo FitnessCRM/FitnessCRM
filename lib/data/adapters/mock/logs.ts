@@ -1,5 +1,5 @@
 import type { WeightLogPort, WorkoutLogPort } from "@/lib/data/ports";
-import { mergeWeightLogInput, weightLogSchema, workoutLogSchema } from "@/lib/domain";
+import { weightLogSchema, workoutLogSchema } from "@/lib/domain";
 import { findOwn, own, removeById, replaceById } from "./helpers";
 import type { MockContext } from "./store";
 
@@ -11,13 +11,15 @@ export function createWeightLogPort(ctx: MockContext): WeightLogPort {
           .filter((w) => w.clientId === clientId)
           .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt)),
       ),
-    addWeightLog: async (input) => {
+    saveWeightLog: async (input) => {
       const existing = ctx.state.weightLogs.find(
         (w) =>
           w.trainerId === input.trainerId && w.clientId === input.clientId && w.date === input.date,
       );
       const log = weightLogSchema.parse({
-        ...mergeWeightLogInput(existing, input),
+        ...input,
+        // Nota vacía: se conserva la anterior (I23).
+        note: input.note.trim() || existing?.note,
         id: existing?.id ?? ctx.newId(),
         createdAt: existing?.createdAt ?? ctx.now(),
       });

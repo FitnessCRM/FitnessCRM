@@ -16,13 +16,13 @@ export function useWeightLogs(clientId: string | undefined) {
   });
 }
 
-export function useAddWeightLog(clientId: string | undefined) {
+export function useSaveWeightLog(clientId: string | undefined) {
   const ports = usePorts();
   const queryClient = useQueryClient();
   const trainerId = useTrainerId();
   return useMutation({
     mutationFn: (input: Omit<WeightLogInput, "trainerId" | "clientId">) =>
-      ports.weightLogs.addWeightLog({ ...input, trainerId: trainerId!, clientId: clientId! }),
+      ports.weightLogs.saveWeightLog({ ...input, trainerId: trainerId!, clientId: clientId! }),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.weightLogs(trainerId!, clientId!) }),
   });
