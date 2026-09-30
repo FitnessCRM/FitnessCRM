@@ -4,6 +4,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import type {
   ClientChanges,
   ClientInput,
+  ClientTrackingQuery,
   MembershipChanges,
   MembershipInput,
   MembershipQuery,
@@ -33,6 +34,18 @@ export function useClientsWithPagination(
     queryKey: [...queryKeys.clients(trainerId ?? ""), "paginated", filter, page, pageSize],
     queryFn: () => ports.clients.listClientsWithPagination(trainerId!, { filter, page, pageSize }),
     enabled: trainerId !== undefined,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useClientsTracking(query: ClientTrackingQuery) {
+  const ports = usePorts();
+  const trainerId = useTrainerId();
+  return useQuery({
+    queryKey: queryKeys.clientsTracking(trainerId ?? "", query),
+    queryFn: () => ports.clients.listClientsTracking(trainerId!, query),
+    enabled: trainerId !== undefined,
+    // Al pasar de página o filtrar se sigue viendo la lista anterior hasta que llega la nueva.
     placeholderData: keepPreviousData,
   });
 }

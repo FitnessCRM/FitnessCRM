@@ -119,6 +119,50 @@ describe("demo data", () => {
   });
 });
 
+describe("client tracking (server-side)", () => {
+  const query = { filter: "todos", search: "", today: TODAY, page: 0, pageSize: 2 } as const;
+
+  it("paginates, puts new reviews first and counts without paginating", async () => {
+    const p = ports();
+    const first = await p.clients.listClientsTracking(TRAINER, query);
+    const second = await p.clients.listClientsTracking(TRAINER, { ...query, page: 1 });
+    expect(first.rows).toHaveLength(2);
+    expect(first.rows.every((r) => r.newReviewWeek !== null)).toBe(true);
+    expect(first.counts.todos).toBe(
+      first.counts.activo + first.counts.invitado + first.counts.dado_de_baja,
+    );
+    const ids = [...first.rows, ...second.rows].map((r) => r.client.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("filters by status and searches by name ignoring accents", async () => {
+    const p = ports();
+    const active = await p.clients.listClientsTracking(TRAINER, {
+      ...query,
+      filter: "activo",
+      pageSize: 50,
+    });
+    expect(active.rows.every((r) => r.client.status === "activo")).toBe(true);
+    const marta = await p.clients.listClientsTracking(TRAINER, { ...query, search: "  MARTA " });
+    expect(marta.rows.map((r) => r.client.id)).toEqual(["c-marta"]);
+    expect(marta.counts.todos).toBe(1);
+  });
+
+  it("returns the active routine name as the plan", async () => {
+    const p = ports();
+    const { rows } = await p.clients.listClientsTracking(TRAINER, { ...query, search: "marta" });
+    const routine = await p.routines.getActiveRoutine(TRAINER, "c-marta");
+    expect(rows[0]!.routineName).toBe(routine?.name ?? null);
+    expect(rows[0]!.routineName).not.toBeNull();
+  });
+
+  it("is tenant-scoped (I1)", async () => {
+    const page = await ports().clients.listClientsTracking("t-otro", query);
+    expect(page.rows).toEqual([]);
+    expect(page.counts.todos).toBe(0);
+  });
+});
+
 describe("tenancy (I1)", () => {
   it("returns nothing for another trainer", async () => {
     const p = ports();

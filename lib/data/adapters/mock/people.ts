@@ -1,7 +1,14 @@
-import type { ClientPort, MembershipPort, SessionPort, TrainerPort } from "@/lib/data/ports";
+import type {
+  ClientPort,
+  ClientTrackingFilter,
+  MembershipPort,
+  SessionPort,
+  TrainerPort,
+} from "@/lib/data/ports";
 import {
   clientSchema,
   matchesMembershipFilter,
+  membershipStanding,
   membershipSchema,
   overlappingMembershipIds,
   type MembershipStatusFilter,
@@ -61,6 +68,49 @@ export function createClientPort(ctx: MockContext): ClientPort {
         todos: all.length,
       };
 
+      return ctx.reply({ rows, counts });
+    },
+    listClientsTracking: async (trainerId, query) => {
+      const fold = (text: string) =>
+        text
+          .normalize("NFD")
+          .replace(/\p{Diacritic}/gu, "")
+          .toLowerCase();
+      const needle = fold(query.search.trim());
+      const memberships = own(ctx.state.memberships, trainerId);
+      const routines = own(ctx.state.routines, trainerId).filter((r) => r.status === "activo");
+      const newReviewWeek = new Map<string, number>();
+      for (const r of own(ctx.state.reviews, trainerId)) {
+        if (r.status === "enviada") newReviewWeek.set(r.clientId, r.weekNumber);
+      }
+
+      const named = own(ctx.state.clients, trainerId).filter((c) =>
+        fold(`${c.firstName} ${c.lastName}`).includes(needle),
+      );
+      const counts: Record<ClientTrackingFilter, number> = {
+        todos: named.length,
+        invitado: named.filter((c) => c.status === "invitado").length,
+        activo: named.filter((c) => c.status === "activo").length,
+        dado_de_baja: named.filter((c) => c.status === "dado_de_baja").length,
+      };
+      const matching = named
+        .filter((c) => query.filter === "todos" || c.status === query.filter)
+        .sort(
+          (a, b) =>
+            Number(newReviewWeek.has(b.id)) - Number(newReviewWeek.has(a.id)) ||
+            a.firstName.localeCompare(b.firstName, "es"),
+        );
+      const rows = matching
+        .slice(query.page * query.pageSize, (query.page + 1) * query.pageSize)
+        .map((client) => ({
+          client,
+          routineName: routines.find((r) => r.clientId === client.id)?.name ?? null,
+          newReviewWeek: newReviewWeek.get(client.id) ?? null,
+          membership: membershipStanding(
+            memberships.filter((m) => m.clientId === client.id),
+            query.today,
+          ).current,
+        }));
       return ctx.reply({ rows, counts });
     },
     getClient: async (trainerId, clientId) =>
