@@ -163,10 +163,24 @@ Formateadores en `lib/format.ts`. En el dominio, fechas civiles `YYYY-MM-DD` par
 revisiones y pesajes, y timestamps UTC ISO para lo técnico. La zona horaria es configuración del
 entrenador, nunca una constante en el código.
 
-**Táctil frente a escritorio.** En el **área de cliente**, que se usa en el móvil, ningún dato que
-el cliente necesite puede vivir solo en un `title`: en táctil no hay hover y ese texto no existe.
-Se pinta visible o se alcanza con un toque. En el **panel del entrenador**, que es de escritorio
-por naturaleza, el `title` sí vale como complemento —nunca como único sitio donde está el dato—.
+**Responsive en las dos áreas.** Toda pantalla, del cliente o del entrenador, tiene que ser usable
+en escritorio, tablet (768 px) y móvil (390 px). El área de cliente se piensa primero para el
+móvil; el panel del entrenador, primero para escritorio, pero **no es solo de escritorio**: ninguna
+de sus pantallas se da por hecha si a 390 px se desborda, se corta o deja un control sin alcanzar.
+Una pantalla que no cabe con sentido en móvil (el editor de plan puede ser el caso) no se fuerza:
+se dice y se propone qué se ofrece en su lugar. El punto de corte es `lg` (1024 px), el mismo al
+que las rejillas pasan a una columna.
+
+**Táctil frente a escritorio.** Como las dos áreas se usan en táctil, en ninguna un dato o una
+acción puede vivir solo en un `title`: en táctil no hay hover y ese texto no existe. Se pinta
+visible o se alcanza con un toque. En el panel del entrenador el `title` sigue valiendo como
+complemento —nunca como único sitio donde está el dato—. Los controles pequeños miden al menos
+32 px de alto.
+
+**Navegación en tablet y móvil.** Por debajo de `lg` el menú de navegación es una hamburguesa, en
+el panel del entrenador y donde el diseño lo pida. Hasta que exista ese patrón (tarjeta
+«Navegación · Menú hamburguesa en tablet y móvil»), la barra lateral fija de 232 px es una deuda
+conocida, no una pauta a imitar.
 
 **Columna lateral en móvil.** Cuando en móvil las dos columnas pasan a una, lo que estaba en la
 lateral **sube por encima del contenido principal cuando es contexto para leerlo, y baja cuando es
@@ -363,7 +377,11 @@ tu rama. Anótalo en la tarjeta, ciérralo con los dos, y que entre en `main` en
 Estas cuatro siguen siendo innegociables: sin SDK de backend hasta que se decida, `lib/domain/`
 puro, los datos solo por los hooks, y ni un literal suelto fuera de `lib/i18n/es.ts`. Y el
 criterio de terminado tampoco cambia: compila, pasan `lint`, `typecheck` y `test`, los tres
-estados implementados, y comparada en el navegador contra su captura.
+estados implementados, comparada en el navegador contra su captura, y comprobada a 390 y 768 px
+en un iframe del ancho exacto (ver «Verificar el entorno antes de concluir»). Esto último rige
+desde que se cierre la tarjeta «Navegación · Menú hamburguesa»: hasta entonces, el panel del
+entrenador hereda la barra lateral y se anota como deuda lo que ella impida medir. Las pantallas
+del panel anteriores a esta regla se adaptan en la tarjeta «Panel responsive».
 
 Ese criterio es **para las ramas de código**. Un PR de solo documentación se da por terminado
 cuando el texto es correcto y pasa `lint`: no toca una línea de código, así que no puede romper el
