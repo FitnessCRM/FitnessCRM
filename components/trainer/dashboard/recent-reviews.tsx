@@ -27,11 +27,9 @@ export function RecentReviews({ reviews }: { reviews: ReviewWithClient[] }) {
         )}
       </div>
 
-      <div className="border-border-emphasis mt-4 flex justify-end border-t pt-4">
-        <Button asChild variant="secondary" size="sm">
-          <Link href="/reviews">{t.seeAll}</Link>
-        </Button>
-      </div>
+      <Button asChild variant="link" size="sm" className="self-start px-0">
+        <Link href="/reviews">{t.seeAll}</Link>
+      </Button>
     </div>
   );
 }
@@ -62,12 +60,11 @@ function ReviewRow({ review }: { review: ReviewWithClient }) {
 }
 
 function ReviewBadge({ type }: { type: "nueva" | "parcial" | "completa" }) {
-  const badgeConfig: Record<typeof type, { label: string; variant: "destructive" | "secondary" }> =
-    {
-      nueva: { label: tStatus.enviada, variant: "destructive" },
-      parcial: { label: es.status.reviewCompleteness.partial, variant: "secondary" },
-      completa: { label: es.status.reviewCompleteness.complete, variant: "secondary" },
-    };
+  const badgeConfig: Record<typeof type, { label: string; variant: "default" | "outline" }> = {
+    nueva: { label: tStatus.enviada, variant: "default" },
+    parcial: { label: es.status.reviewCompleteness.partial, variant: "outline" },
+    completa: { label: es.status.reviewCompleteness.complete, variant: "outline" },
+  };
 
   const config = badgeConfig[type];
   return <Badge variant={config.variant}>{config.label}</Badge>;

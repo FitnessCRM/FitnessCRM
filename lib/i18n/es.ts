@@ -508,7 +508,7 @@ export const es = {
       inactiveClients: "CLIENTES INACTIVOS",
       recentReviews: "REVISIONES RECIBIDAS",
       noReviews: "Sin revisiones aún.",
-      seeAll: "Ver todas",
+      seeAll: "Ver todas →",
       activeTabLabel: "Activos",
       inactiveTabLabel: "Inactivos",
       clientCol: "CLIENTE",

@@ -20,7 +20,7 @@ type ReviewWithClient = Review & { clientName: string };
 
 export function DashboardContent() {
   const [clientsPage, setClientsPage] = useState(0);
-  const [clientsFilter, setClientsFilter] = useState<"activo" | "inactivo" | "todos">("todos");
+  const [clientsFilter, setClientsFilter] = useState<"activo" | "inactivo" | "todos">("activo");
 
   const reviewsQuery = useSubmittedReviewsPage(0, RECENT_REVIEWS_COUNT);
   const statsQuery = useReviewStats();
