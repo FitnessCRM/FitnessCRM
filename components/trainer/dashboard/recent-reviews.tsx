@@ -12,21 +12,7 @@ const tStatus = es.status.review;
 
 type ReviewWithClient = Review & { clientName: string };
 
-export function RecentReviews({
-  reviews,
-  page,
-  total,
-  pageSize,
-  onPageChange,
-}: {
-  reviews: ReviewWithClient[];
-  page: number;
-  total: number;
-  pageSize: number;
-  onPageChange: (page: number) => void;
-}) {
-  const totalPages = Math.ceil(total / pageSize);
-
+export function RecentReviews({ reviews }: { reviews: ReviewWithClient[] }) {
   return (
     <div className="border-border bg-surface flex flex-col gap-4 rounded-lg border p-6">
       <h2 className="text-text-primary text-sm font-semibold tracking-wider uppercase">
@@ -41,31 +27,11 @@ export function RecentReviews({
         )}
       </div>
 
-      {totalPages > 1 && (
-        <div className="border-border-emphasis mt-4 flex items-center justify-between gap-2 border-t pt-4">
-          <span className="text-text-muted text-xs">
-            Página {page + 1} de {totalPages}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={page === 0}
-              onClick={() => onPageChange(page - 1)}
-            >
-              Anterior
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={page === totalPages - 1}
-              onClick={() => onPageChange(page + 1)}
-            >
-              Siguiente
-            </Button>
-          </div>
-        </div>
-      )}
+      <div className="border-border-emphasis mt-4 flex justify-end border-t pt-4">
+        <Button asChild variant="secondary" size="sm">
+          <Link href="/reviews">{t.seeAll}</Link>
+        </Button>
+      </div>
     </div>
   );
 }
