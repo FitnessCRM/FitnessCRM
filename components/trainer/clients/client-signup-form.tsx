@@ -134,7 +134,7 @@ export function ClientSignupForm({
   const submitLabel = isSaving ? t.actions.submitting : t.actions.submit;
   const cancel = (className?: string) => (
     <Button asChild variant="secondary" className={className}>
-      <Link href="/clientes">{t.actions.cancel}</Link>
+      <Link href="/clients">{t.actions.cancel}</Link>
     </Button>
   );
 

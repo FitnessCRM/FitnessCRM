@@ -39,7 +39,7 @@ export function ClientRow({ row, timeZone }: { row: ClientTrackingRow; timeZone:
   return (
     <li className="border-border-subtle border-b last:border-b-0">
       <Link
-        href={`/clientes/${client.id}`}
+        href={`/clients/${client.id}`}
         aria-label={`${t.openDetail} ${fullName}`}
         className={cn(
           ROW_GRID,

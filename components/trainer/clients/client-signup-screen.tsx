@@ -16,7 +16,7 @@ const t = es.screensClientSignup;
 const DEFAULT_REVIEW_EVERY_DAYS = 7;
 
 /**
- * Alta de cliente (`/clientes/nuevo`). Crea el cliente —siempre `invitado`, lo fija el adaptador—
+ * Alta de cliente (`/clients/new`). Crea el cliente —siempre `invitado`, lo fija el adaptador—
  * y su membresía inicial. Son dos escrituras de los puertos y no hay transacción entre ellas: si
  * la segunda falla el cliente ya existe, y reintentar solo repite la membresía en vez de crear un
  * segundo cliente.
@@ -65,7 +65,7 @@ export function ClientSignupScreen() {
     }
 
     router.push(
-      intent === "assign" ? `/assignment?clientId=${client.id}` : `/clientes/${client.id}`,
+      intent === "assign" ? `/assignment?clientId=${client.id}` : `/clients/${client.id}`,
     );
   };
 

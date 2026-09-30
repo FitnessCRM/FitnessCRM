@@ -27,7 +27,7 @@ export interface ClientPage {
 /** Corte por estado del seguimiento de clientes. */
 export type ClientTrackingFilter = "todos" | ClientStatus;
 
-/** Consulta paginada en servidor del seguimiento de clientes (`/clientes`). */
+/** Consulta paginada en servidor del seguimiento de clientes (`/clients`). */
 export interface ClientTrackingQuery {
   filter: ClientTrackingFilter;
   /** Texto libre sobre el nombre; sin tildes ni mayúsculas. Vacío: sin búsqueda. */

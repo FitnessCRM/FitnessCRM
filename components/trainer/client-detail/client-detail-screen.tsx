@@ -86,7 +86,7 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
     if (!(error instanceof DomainError)) throw error;
   }
   const hasNewReview = reviews.data.some((r) => r.status === "enviada");
-  const editorHref = `/clientes/${clientId}/editor`;
+  const editorHref = `/clients/${clientId}/editor`;
 
   return (
     <div className="flex flex-col gap-7">
@@ -120,7 +120,7 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
           </Button>
           {hasNewReview ? (
             <Button asChild>
-              <Link href={`/clientes/${clientId}/revision`}>{t.viewNewReview}</Link>
+              <Link href={`/clients/${clientId}/review`}>{t.viewNewReview}</Link>
             </Button>
           ) : null}
         </div>

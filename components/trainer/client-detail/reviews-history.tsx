@@ -104,7 +104,7 @@ export function ReviewsHistory({
             ) : (
               <Link
                 key={review.id}
-                href={`/clientes/${clientId}/revision?review=${review.id}`}
+                href={`/clients/${clientId}/review?review=${review.id}`}
                 className={cn(
                   base,
                   "transition-colors",
