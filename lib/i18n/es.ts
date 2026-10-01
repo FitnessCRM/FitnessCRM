@@ -158,6 +158,8 @@ export const es = {
     weight: {
       title: "Peso de la revisión",
       taken: "Tomado de tu registro del",
+      /** Hay un pesaje más reciente en la ventana: la revisión lo tomará al guardarla (I24). */
+      willUpdate: "Al guardar se usará tu registro del {date} · {kg} kg",
       missing: "Sin pesaje esta semana. Regístralo en Peso y aparecerá aquí.",
       goToWeight: "Ir a Peso",
       unit: "kg",

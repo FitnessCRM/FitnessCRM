@@ -4,6 +4,7 @@ import {
   type BodyMeasurement,
   type CivilDate,
   type Client,
+  type FrozenWeight,
   type MeasurementType,
   type Pose,
   type QuestionnaireQuestion,
@@ -84,7 +85,9 @@ export function isWeightLogInWindow(log: Pick<WeightLog, "date">, window: Review
 }
 
 /**
- * El peso de una revisión es el `WeightLog` más reciente cuya fecha cae dentro de la ventana.
+ * El pesaje que tomará la revisión cuando el cliente la guarde: el `WeightLog` más reciente cuya
+ * fecha cae dentro de la ventana. No es el peso de la revisión, que es `reviewWeight` (I24): la
+ * revisión no sigue sola al último de la ventana, cambia de pesaje cuando se vuelve a guardar.
  * Devuelve `null` si no hay ninguno: el cliente tendrá que pesarse (o enviar sin peso).
  */
 export function weightForReview(
@@ -101,6 +104,41 @@ export function weightForReview(
     if (newer) best = log;
   }
   return best;
+}
+
+/* ---------- I24 · Peso de la revisión: referencia mientras es editable, copia desde `vista` ---------- */
+
+/**
+ * El peso de la revisión. En `borrador` y `enviada`, el del pesaje al que apunta (si el cliente lo
+ * corrige, la revisión lo refleja); en `vista` y `revisada`, la copia que guardó al pasar a `vista`,
+ * aunque el pesaje se haya corregido después. Nunca el último pesaje de la ventana.
+ */
+export function reviewWeight(
+  review: Pick<Review, "status" | "weightLogId" | "frozenWeight">,
+  logs: readonly WeightLog[],
+): FrozenWeight | null {
+  if (!canClientEditReview(review)) return review.frozenWeight;
+  const log = logs.find((l) => l.id === review.weightLogId);
+  return log ? { weightKg: log.weightKg, date: log.date } : null;
+}
+
+/* ---------- I25 · Un pesaje en uso no se borra ---------- */
+
+/**
+ * Un pesaje al que apunta una revisión `enviada`, `vista` o `revisada` no se puede borrar. Si solo
+ * lo usa un borrador, sí: el borrador se queda sin peso. Rige en el uso normal de la app; el
+ * borrado a petición se lleva revisiones y pesajes a la vez y no pasa por aquí (§7, §9).
+ */
+export function assertWeightLogDeletable(
+  weightLogId: string,
+  reviews: readonly Pick<Review, "status" | "weightLogId">[],
+): void {
+  if (reviews.some((r) => r.weightLogId === weightLogId && r.status !== "borrador")) {
+    throw new DomainError(
+      "weight_log.in_review",
+      "El pesaje lo usa una revisión enviada y no se puede borrar (I25)",
+    );
+  }
 }
 
 /* ---------- Apertura: congela semana (I22) y requisitos (I5) ---------- */
@@ -141,6 +179,7 @@ export function openReview(input: OpenReviewInput): Review {
     },
     media: [],
     weightLogId: null,
+    frozenWeight: null,
     measurements: [],
     responses: [],
     feedbackVideoUrl: null,
@@ -209,10 +248,25 @@ export function submitReview(review: Review, now: string): Review {
   return { ...review, status: "enviada", submittedAt: now };
 }
 
-/** El entrenador la abre: apaga "Nueva" y cierra la edición del cliente (I17). */
-export function markReviewViewed(review: Review, now: string): Review {
+/**
+ * El entrenador la abre: apaga "Nueva" y cierra la edición del cliente (I17). Guarda copia del peso
+ * y de la fecha del pesaje al que apunta (I24); `weightLog` tiene que ser ese pesaje, o `null` si la
+ * revisión no tiene peso.
+ */
+export function markReviewViewed(review: Review, weightLog: WeightLog | null, now: string): Review {
   assertTransition(review, "vista");
-  return { ...review, status: "vista", viewedAt: now };
+  if ((weightLog?.id ?? null) !== review.weightLogId) {
+    throw new DomainError(
+      "review.weight_log_mismatch",
+      "El pesaje no es el que referencia la revisión",
+    );
+  }
+  return {
+    ...review,
+    status: "vista",
+    viewedAt: now,
+    frozenWeight: weightLog ? { weightKg: weightLog.weightKg, date: weightLog.date } : null,
+  };
 }
 
 export interface ReviewFeedback {

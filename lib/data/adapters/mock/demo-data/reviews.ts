@@ -193,6 +193,8 @@ export function buildDemoClientReviews(d: DemoDates): Review[] {
     const prefix = `rv-marta-s${w.week}`;
     const date = addCivilDays(d.martaStart, (w.week - 1) * 7);
     const done = w.week < 5;
+    // I24: las revisadas guardaron copia del peso al pasar a `vista`; sale de la misma tabla.
+    const weightKg = demoClientWeights.find(([offset]) => offset === (w.week - 1) * 7)![1];
     return {
       id: prefix,
       trainerId: TRAINER_ID,
@@ -208,6 +210,7 @@ export function buildDemoClientReviews(d: DemoDates): Review[] {
         uploadedAt: ts(date, "09:00:00"),
       })),
       weightLogId: weightId(CLIENT_IDS.marta, date),
+      frozenWeight: done ? { weightKg, date } : null,
       measurements: measurementsForWeek(prefix, w.week),
       responses: responses(prefix, w.answers),
       feedbackVideoUrl: done ? `https://youtu.be/hector-marta-s${w.week}` : null,

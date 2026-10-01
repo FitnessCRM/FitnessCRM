@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { CivilDate, Review, WeightLog } from "@/lib/domain";
+import { reviewWeight, type CivilDate, type Review, type WeightLog } from "@/lib/domain";
 import { formatDecimal, formatSignedDecimal } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
@@ -36,11 +36,13 @@ export function WeightTab({
   stacked?: boolean;
 }) {
   const sorted = useMemo(() => [...logs].sort((a, b) => a.date.localeCompare(b.date)), [logs]);
-  const ofReview = sorted.find((l) => l.id === review.weightLogId);
-  const anchor = ofReview?.date ?? sorted.at(-1)?.date ?? reviewDate(review) ?? today;
+  // El calendario es el dato continuo: pinta los pesajes. Solo el día de la revisión sale de su
+  // peso (I24), que desde `vista` es la copia.
+  const reviewDay = reviewWeight(review, logs)?.date;
+  const anchor = reviewDay ?? sorted.at(-1)?.date ?? reviewDate(review) ?? today;
 
   const [selectedDate, setSelectedDate] = useState<CivilDate | undefined>(
-    ofReview?.date ?? sorted.at(-1)?.date,
+    reviewDay ?? sorted.at(-1)?.date,
   );
   const [visible, setVisible] = useState(month(anchor));
 

@@ -7,7 +7,7 @@ import { ReviewPhotos } from "@/components/review/review-photos";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryBoundary } from "@/components/ui/query-boundary";
 import { EmptyState } from "@/components/ui/states";
-import type { CivilDate, Review, WeightLog } from "@/lib/domain";
+import { reviewWeight, type CivilDate, type Review, type WeightLog } from "@/lib/domain";
 import { useClientReviews, useSessionClientId, useTrainer, useWeightLogs } from "@/lib/data/hooks";
 import { formatDecimal, formatShortDate, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
@@ -67,8 +67,7 @@ function ViewReview({
     .sort((a, b) => b.weekNumber - a.weekNumber);
   const review = sent.find((r) => r.id === requested) ?? sent[0]!;
   const previous = sent.find((r) => r.weekNumber < review.weekNumber);
-  const weightOf = (r: Review | undefined) =>
-    logs.find((l) => l.id === r?.weightLogId)?.weightKg ?? undefined;
+  const weightOf = (r: Review | undefined) => (r ? reviewWeight(r, logs)?.weightKg : undefined);
 
   return (
     <>
@@ -144,7 +143,7 @@ function OtherReviews({
   return (
     <div className="flex flex-col gap-2.5">
       {others.map((r) => {
-        const kg = logs.find((l) => l.id === r.weightLogId)?.weightKg;
+        const kg = reviewWeight(r, logs)?.weightKg; // I24
         return (
           <Link
             key={r.id}

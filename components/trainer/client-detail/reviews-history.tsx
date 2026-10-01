@@ -3,6 +3,7 @@ import { EmptyState } from "@/components/ui/states";
 import {
   groupReviewsByWeekPair,
   isReviewComplete,
+  reviewWeight,
   type CivilDate,
   type Review,
   type WeightLog,
@@ -35,7 +36,7 @@ function subtitle(review: Review, logs: WeightLog[], today: CivilDate) {
 }
 
 function weightOf(review: Review, logs: WeightLog[]) {
-  return logs.find((l) => l.id === review.weightLogId)?.weightKg;
+  return reviewWeight(review, logs)?.weightKg; // I24
 }
 
 /** Histórico de dos en dos semanas (§8). La revisión «enviada» es la pendiente: lleva «Nueva». */

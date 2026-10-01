@@ -6,6 +6,7 @@ import {
   prescriptionSchema,
   questionnaireResponseSchema,
   responseFormatSchema,
+  reviewObjectSchema,
   reviewSchema,
   exerciseSchema,
   timeZoneSchema,
@@ -80,6 +81,7 @@ describe("review", () => {
       requirements: { measurementTypeIds: [], questionIds: [] },
       media: [{ id: "m", pose: "frente", url: "storage://x", uploadedAt: NOW }],
       weightLogId: null,
+      frozenWeight: null,
       measurements: [],
       responses: [],
       feedbackVideoUrl: null,
@@ -97,7 +99,7 @@ describe("review", () => {
   });
 
   it("feedback video must be an external http(s) link (I20)", () => {
-    const partial = reviewSchema.pick({ feedbackVideoUrl: true });
+    const partial = reviewObjectSchema.pick({ feedbackVideoUrl: true });
     expect(partial.safeParse({ feedbackVideoUrl: "https://youtu.be/abc" }).success).toBe(true);
     expect(partial.safeParse({ feedbackVideoUrl: "ftp://host/video.mp4" }).success).toBe(false);
     expect(partial.safeParse({ feedbackVideoUrl: "not a url" }).success).toBe(false);

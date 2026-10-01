@@ -174,7 +174,12 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
     },
     markReviewViewed: async (trainerId, reviewId) => {
       const review = findOwn(ctx.state.reviews, trainerId, reviewId, "Revisión");
-      return ctx.reply(replaceById(ctx.state.reviews, markReviewViewed(review, ctx.now())));
+      // I24: la copia del peso sale del pesaje al que apunta en este momento.
+      const log =
+        review.weightLogId === null
+          ? null
+          : findOwn(ctx.state.weightLogs, trainerId, review.weightLogId, "Pesaje");
+      return ctx.reply(replaceById(ctx.state.reviews, markReviewViewed(review, log, ctx.now())));
     },
     sendReviewFeedback: async (trainerId, reviewId, feedback) => {
       const review = findOwn(ctx.state.reviews, trainerId, reviewId, "Revisión");

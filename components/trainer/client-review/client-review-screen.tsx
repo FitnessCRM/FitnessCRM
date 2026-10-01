@@ -8,7 +8,13 @@ import { PageHeader } from "@/components/ui/page-header";
 import { QueryBoundary } from "@/components/ui/query-boundary";
 import { EmptyState } from "@/components/ui/states";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { CivilDate, Client, Review, WeightLog } from "@/lib/domain";
+import {
+  reviewWeight,
+  type CivilDate,
+  type Client,
+  type Review,
+  type WeightLog,
+} from "@/lib/domain";
 import {
   useClient,
   useClientReviews,
@@ -52,8 +58,9 @@ function BackLink({ clientId }: { clientId: string }) {
 
 const fullName = (c: Pick<Client, "firstName" | "lastName">) => `${c.firstName} ${c.lastName}`;
 
+/** Peso de la revisión: el pesaje enlazado mientras es editable, la copia desde `vista` (I24). */
 export const weightOf = (review: Review | undefined, logs: readonly WeightLog[]) =>
-  logs.find((l) => l.id === review?.weightLogId)?.weightKg;
+  review ? reviewWeight(review, logs)?.weightKg : undefined;
 
 /**
  * Pantalla 14 · Revisión de cliente. Solo lee lo que el cliente envió: fotos (la comparación es

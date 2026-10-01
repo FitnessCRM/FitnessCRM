@@ -48,6 +48,7 @@ export function buildOtherReviews(d: DemoDates): Review[] {
         uploadedAt: ts(d.today, "05:00:00"),
       })),
       weightLogId: weightId(CLIENT_IDS.jorge, d.today),
+      frozenWeight: null,
       measurements: measurementTypes.map((t) => ({
         id: `rv-jorge-s8-${t.id}`,
         measurementTypeId: t.id,
@@ -78,6 +79,7 @@ export function buildOtherReviews(d: DemoDates): Review[] {
         uploadedAt: ts(d.yesterday, "20:00:00"),
       })),
       weightLogId: weightId(CLIENT_IDS.sara, d.yesterday),
+      frozenWeight: null,
       measurements: [],
       responses: createCompleteAnswerSet("rv-sara-s3", 3, "Sin novedades."),
       feedbackVideoUrl: null,

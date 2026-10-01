@@ -3,6 +3,7 @@ import { EmptyState } from "@/components/ui/states";
 import {
   groupReviewsByWeekPair,
   isReviewComplete,
+  reviewWeight,
   type CivilDate,
   type Review,
   type WeightLog,
@@ -15,7 +16,7 @@ const t = es.screensProgress.reviews;
 
 function subtitle(review: Review, logs: WeightLog[], today: CivilDate) {
   const date = (review.submittedAt ?? review.createdAt).slice(0, 10);
-  const kg = logs.find((l) => l.id === review.weightLogId)?.weightKg;
+  const kg = reviewWeight(review, logs)?.weightKg; // I24
   if (review.status === "borrador") {
     return `${date === today ? t.today : formatShortDate(date, today)} · ${t.inProgress}`;
   }

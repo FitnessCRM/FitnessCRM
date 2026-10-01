@@ -1,5 +1,5 @@
 import type { WeightLogPort, WorkoutLogPort } from "@/lib/data/ports";
-import { weightLogSchema, workoutLogSchema } from "@/lib/domain";
+import { assertWeightLogDeletable, weightLogSchema, workoutLogSchema } from "@/lib/domain";
 import { findOwn, own, removeById, replaceById } from "./helpers";
 import type { MockContext } from "./store";
 
@@ -27,7 +27,9 @@ export function createWeightLogPort(ctx: MockContext): WeightLogPort {
     },
     deleteWeightLog: async (trainerId, weightLogId) => {
       findOwn(ctx.state.weightLogs, trainerId, weightLogId, "Pesaje");
+      assertWeightLogDeletable(weightLogId, own(ctx.state.reviews, trainerId)); // I25
       removeById(ctx.state.weightLogs, weightLogId);
+      // Solo puede quedar algún borrador apuntándolo: se queda sin peso.
       for (const review of ctx.state.reviews) {
         if (review.weightLogId === weightLogId) review.weightLogId = null;
       }

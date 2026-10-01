@@ -16,12 +16,14 @@ import {
   weightLogSchema,
   workoutLogSchema,
   isReviewComplete,
+  reviewWeight,
   weekNumber,
 } from "@/lib/domain";
 import { createDemoState, createMockPorts, demoToday } from "./index";
 
 const TRAINER = "t-adrian";
 const MARTA = "c-marta";
+const DAVID = "c-david";
 /** Fecha fija para que las expectativas sean deterministas; los datos se generan relativos a ella. */
 const TODAY = "2026-08-29";
 const ports = () => createMockPorts({ today: TODAY, now: () => `${TODAY}T10:00:00Z` });
@@ -321,6 +323,67 @@ describe("flows", () => {
     expect(updated.id).toBe(log.id);
     const reviews = await p.reviews.listClientReviews(TRAINER, log.clientId);
     expect(reviews.find((r) => r.id === linked.id)!.weightLogId).toBe(log.id);
+  });
+
+  it("a reviewed review keeps the weight it had when it was viewed, whatever the log says (I24, E04)", async () => {
+    const p = ports();
+    const s4 = (await p.reviews.getReview(TRAINER, "rv-marta-s4"))!;
+    expect(s4.status).toBe("revisada");
+    const logs = await p.weightLogs.listWeightLogs(TRAINER, MARTA);
+    const log = logs.find((l) => l.id === s4.weightLogId)!;
+    expect(reviewWeight(s4, logs)?.weightKg).toBe(log.weightKg);
+    // Lo que hace Peso: registrar otro valor en la misma fecha actualiza el pesaje (I23).
+    await p.weightLogs.saveWeightLog({
+      trainerId: TRAINER,
+      clientId: MARTA,
+      date: log.date,
+      weightKg: 80,
+      note: "",
+    });
+    const after = (await p.reviews.getReview(TRAINER, "rv-marta-s4"))!;
+    const newLogs = await p.weightLogs.listWeightLogs(TRAINER, MARTA);
+    expect(newLogs.find((l) => l.id === log.id)!.weightKg).toBe(80);
+    expect(reviewWeight(after, newLogs)).toEqual({ weightKg: log.weightKg, date: log.date });
+  });
+
+  it("marking a review vista through the port freezes the linked log (I24)", async () => {
+    const p = ports();
+    const s5 = (await p.reviews.getReview(TRAINER, "rv-marta-s5"))!;
+    const log = (await p.weightLogs.listWeightLogs(TRAINER, MARTA)).find(
+      (l) => l.id === s5.weightLogId,
+    )!;
+    const viewed = await p.reviews.markReviewViewed(TRAINER, s5.id);
+    expect(viewed.frozenWeight).toEqual({ weightKg: log.weightKg, date: log.date });
+    expect(reviewSchema.safeParse(viewed).success).toBe(true);
+  });
+
+  it.each(["rv-marta-s4", "rv-marta-s5"])(
+    "refuses to delete the weight log of a sent review (I25, %s)",
+    async (id) => {
+      const p = ports();
+      const review = (await p.reviews.getReview(TRAINER, id))!;
+      await expect(
+        p.weightLogs.deleteWeightLog(TRAINER, review.weightLogId!),
+      ).rejects.toMatchObject({ code: "weight_log.in_review" });
+      const again = (await p.reviews.getReview(TRAINER, id))!;
+      expect(again.weightLogId).toBe(review.weightLogId);
+      expect(isReviewComplete(again).complete).toBe(isReviewComplete(review).complete);
+    },
+  );
+
+  it("deleting a weight log used only by a draft leaves the draft without weight (I25)", async () => {
+    const p = ports();
+    const draft = await p.reviews.openCurrentReview(TRAINER, DAVID);
+    const log = await p.weightLogs.saveWeightLog({
+      trainerId: TRAINER,
+      clientId: DAVID,
+      date: TODAY,
+      weightKg: 81,
+      note: "",
+    });
+    await p.reviews.updateReviewDraft(TRAINER, draft.id, { weightLogId: log.id });
+    await p.weightLogs.deleteWeightLog(TRAINER, log.id);
+    expect((await p.reviews.getReview(TRAINER, draft.id))!.weightLogId).toBeNull();
   });
 
   it("archiving an exercise warns about usage, removes it from routines and keeps the row (I13)", async () => {
