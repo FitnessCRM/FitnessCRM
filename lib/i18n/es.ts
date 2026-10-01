@@ -201,13 +201,6 @@ export const es = {
       complete: "Completa ✓",
       partial: "Parcial",
     },
-    photos: {
-      poseLabel: "foto",
-      missing: "No disponible",
-      missingHint:
-        "Las fotos que faltan se subieron desde un navegador y todavía no se guardan fuera de él.",
-      none: "Sin foto",
-    },
     answers: {
       title: "Tus respuestas",
       none: "No respondiste el cuestionario en esta revisión.",
@@ -499,6 +492,16 @@ export const es = {
       archived: "archivado",
       empty: "Sin medidas registradas todavía.",
       noneSelected: "Elige al menos una medida.",
+    },
+  },
+  /** Vista de solo lectura de una revisión, `components/review/`: la usan las dos áreas. */
+  review: {
+    photos: {
+      poseLabel: "foto",
+      missing: "No disponible",
+      missingHint:
+        "Las fotos que faltan se subieron desde un navegador y todavía no se guardan fuera de él.",
+      none: "Sin foto",
     },
   },
   /** Componentes `components/`: literales que comparten varios componentes. */

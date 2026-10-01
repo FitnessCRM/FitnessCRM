@@ -1,22 +1,28 @@
 import { Card } from "@/components/ui/card";
 import type { Review } from "@/lib/domain";
-import { es } from "@/lib/i18n/es";
-
-const t = es.screensViewReview.answers;
 
 /**
  * Las respuestas se leen de la **copia congelada** de la revisión (enunciado y formato), nunca
  * del catálogo actual: editar una pregunta hoy no reescribe lo que se preguntó entonces (I12).
  */
-export function AnswersCard({ review }: { review: Review }) {
+export function AnswersCard({
+  review,
+  title,
+  emptyHint,
+}: {
+  review: Review;
+  /** Quien lee es el cliente o el entrenador, y el texto cambia de voz: lo pone cada pantalla. */
+  title: string;
+  emptyHint: string;
+}) {
   const scales = review.responses.filter((r) => r.format.kind === "escala");
   const texts = review.responses.filter((r) => r.format.kind === "texto" && r.value !== "");
 
   return (
     <Card className="gap-4 px-[22px] py-[22px]">
-      <h2 className="section-title">{t.title}</h2>
+      <h2 className="section-title">{title}</h2>
       {review.responses.length === 0 ? (
-        <p className="text-text-subtle text-[13px]">{t.none}</p>
+        <p className="text-text-subtle text-[13px]">{emptyHint}</p>
       ) : null}
 
       {scales.length > 0 ? (

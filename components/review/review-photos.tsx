@@ -5,7 +5,7 @@ import { POSES, type Pose, type Review } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 
-const t = es.screensViewReview.photos;
+const t = es.review.photos;
 
 const placeholder =
   "bg-[repeating-linear-gradient(45deg,var(--color-surface-raised),var(--color-surface-raised)_8px,var(--color-surface-overlay)_8px,var(--color-surface-overlay)_16px)]";

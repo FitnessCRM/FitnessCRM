@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AnswersCard } from "@/components/review/answers-card";
+import { ReviewPhotos } from "@/components/review/review-photos";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryBoundary } from "@/components/ui/query-boundary";
 import { EmptyState } from "@/components/ui/states";
@@ -10,9 +12,7 @@ import { useClientReviews, useSessionClientId, useTrainer, useWeightLogs } from 
 import { formatDecimal, formatShortDate, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
-import { AnswersCard } from "./answers-card";
 import { FeedbackCard } from "./feedback-card";
-import { ReviewPhotos } from "./review-photos";
 import { SummaryBar } from "./summary-bar";
 
 const t = es.screensViewReview;
@@ -109,7 +109,7 @@ function ViewReview({
             <ReviewPhotos review={review} />
           </div>
           <div className="max-lg:order-4">
-            <AnswersCard review={review} />
+            <AnswersCard review={review} title={t.answers.title} emptyHint={t.answers.none} />
           </div>
         </div>
 
