@@ -121,3 +121,34 @@ export function countTemplateExercises(template: RoutineTemplate): number {
 export function countTemplateDayTypes(template: MenuTemplate): number {
   return new Set(template.menus.map((m) => m.dayType)).size;
 }
+
+/** Mueve un elemento una posición arriba (`-1`) o abajo (`1`). Fuera de rango no hace nada. */
+export function moveItem<T>(items: readonly T[], index: number, delta: -1 | 1): T[] {
+  const target = index + delta;
+  if (index < 0 || index >= items.length || target < 0 || target >= items.length) {
+    return [...items];
+  }
+  const next = [...items];
+  [next[index], next[target]] = [next[target]!, next[index]!];
+  return next;
+}
+
+/** Numera los días 1..n según su orden: «Día 1, Día 2…», sin huecos ni repetidos. */
+export function renumberDays<T extends { dayNumber: number }>(days: readonly T[]): T[] {
+  return days.map((day, i) => ({ ...day, dayNumber: i + 1 }));
+}
+
+/**
+ * Marca un menú como sugerido de su tipo de día y desmarca los demás de ese tipo (§3: uno por
+ * tipo). Los de otro tipo de día no se tocan.
+ */
+export function setSuggestedMenu<T extends { id: string; dayType: string; suggested: boolean }>(
+  menus: readonly T[],
+  menuId: string,
+): T[] {
+  const chosen = menus.find((m) => m.id === menuId);
+  if (!chosen) return [...menus];
+  return menus.map((m) =>
+    m.dayType === chosen.dayType ? { ...m, suggested: m.id === menuId } : m,
+  );
+}

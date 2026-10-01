@@ -8,6 +8,9 @@ import {
   countTemplateExercises,
   duplicateMenuTemplate,
   duplicateRoutineTemplate,
+  moveItem,
+  renumberDays,
+  setSuggestedMenu,
 } from "./templates";
 
 const routineTemplate: RoutineTemplate = {
@@ -115,5 +118,29 @@ describe("duplicating a template", () => {
   it("counts exercises across days and distinct day types", () => {
     expect(countTemplateExercises(routineTemplate)).toBe(1);
     expect(countTemplateDayTypes(menuTemplate)).toBe(1);
+  });
+});
+
+describe("template editing helpers", () => {
+  it("moves an item one place and ignores out-of-range moves", () => {
+    expect(moveItem(["a", "b", "c"], 1, -1)).toEqual(["b", "a", "c"]);
+    expect(moveItem(["a", "b", "c"], 2, 1)).toEqual(["a", "b", "c"]);
+    expect(moveItem(["a", "b", "c"], 0, -1)).toEqual(["a", "b", "c"]);
+  });
+
+  it("numbers days 1..n in order, with no gaps after a removal", () => {
+    const days = [{ dayNumber: 1 }, { dayNumber: 3 }, { dayNumber: 7 }];
+    expect(renumberDays(days).map((d) => d.dayNumber)).toEqual([1, 2, 3]);
+  });
+
+  it("keeps a single suggested menu per day type", () => {
+    const menus = [
+      { id: "a", dayType: "entrenamiento", suggested: true },
+      { id: "b", dayType: "entrenamiento", suggested: false },
+      { id: "c", dayType: "descanso", suggested: true },
+    ];
+    const next = setSuggestedMenu(menus, "b");
+    expect(next.map((m) => m.suggested)).toEqual([false, true, true]);
+    expect(setSuggestedMenu(menus, "zzz")).toEqual(menus);
   });
 });

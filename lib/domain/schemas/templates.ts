@@ -34,3 +34,14 @@ export const menuTemplateSchema = z.object({
   updatedAt: isoTimestampSchema,
 });
 export type MenuTemplate = z.infer<typeof menuTemplateSchema>;
+
+/** Lo que se pide para crear una plantilla: el contenido se rellena después, al editarla. */
+export const templateKindSchema = z.enum(["routine", "menu"]);
+export type TemplateKind = z.infer<typeof templateKindSchema>;
+
+export const templateDraftSchema = z.object({
+  kind: templateKindSchema,
+  name: nonEmptyTextSchema,
+  description: optionalTextSchema,
+});
+export type TemplateDraft = z.infer<typeof templateDraftSchema>;

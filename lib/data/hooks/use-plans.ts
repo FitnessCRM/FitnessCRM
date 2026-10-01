@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DayType, Macros } from "@/lib/domain";
+import type { MenuTemplateInput, RoutineTemplateInput } from "@/lib/data/ports";
 import { usePorts } from "./ports-provider";
 import { queryKeys } from "./query-keys";
 import { useTrainerId } from "./use-session";
@@ -132,5 +133,31 @@ export function useDeleteTemplate() {
             ? queryKeys.routineTemplates(trainerId!)
             : queryKeys.menuTemplates(trainerId!),
       }),
+  });
+}
+
+/** Crea o actualiza una plantilla de rutina. Refresca la lista. */
+export function useSaveRoutineTemplate() {
+  const ports = usePorts();
+  const queryClient = useQueryClient();
+  const trainerId = useTrainerId();
+  return useMutation({
+    mutationFn: (input: Omit<RoutineTemplateInput, "trainerId"> & { id?: string }) =>
+      ports.templates.saveRoutineTemplate({ ...input, trainerId: trainerId! }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.routineTemplates(trainerId!) }),
+  });
+}
+
+/** Crea o actualiza una plantilla de menú. Refresca la lista. */
+export function useSaveMenuTemplate() {
+  const ports = usePorts();
+  const queryClient = useQueryClient();
+  const trainerId = useTrainerId();
+  return useMutation({
+    mutationFn: (input: Omit<MenuTemplateInput, "trainerId"> & { id?: string }) =>
+      ports.templates.saveMenuTemplate({ ...input, trainerId: trainerId! }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.menuTemplates(trainerId!) }),
   });
 }
