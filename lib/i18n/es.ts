@@ -283,7 +283,7 @@ export const es = {
       protein: "Proteína",
       carbs: "Carbohidratos",
       fat: "Grasas",
-      shareOfKcal: "El porcentaje es la parte de las kcal que aporta cada macro.",
+      shareOfEnergy: "El porcentaje es cómo se reparte la energía entre los tres macros.",
       otherPrefix: "En",
       otherMiddle: "tu objetivo es",
       empty: "Tu entrenador todavía no te ha marcado macros.",
