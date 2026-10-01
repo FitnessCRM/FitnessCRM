@@ -18,7 +18,7 @@ import {
 } from "@/lib/data/hooks";
 import { formatDecimal, formatShortDate, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
-import { NativeSelect } from "./native-select";
+import { NativeSelect } from "@/components/ui/native-select";
 import { FeedbackDialog } from "./feedback-dialog";
 import { PhotosTab } from "./photos-tab";
 import { QuestionnaireTab } from "./questionnaire-tab";

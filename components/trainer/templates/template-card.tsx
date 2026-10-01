@@ -1,4 +1,5 @@
 import { EllipsisIcon } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -69,18 +70,26 @@ export function TemplateCard({
   const { template } = item;
   const edited = civilDateInTimeZone(template.updatedAt, timeZone ?? "Europe/Madrid");
   return (
-    <article className="border-border-subtle bg-surface flex flex-col rounded-xl border p-5">
+    <article className="border-border-subtle bg-surface hover:border-border-emphasis relative flex flex-col rounded-xl border p-5 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <Badge variant={item.kind === "routine" ? "destructive" : "outline"}>
           {item.kind === "routine" ? t.kindRoutine : t.kindMenu}
         </Badge>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={`${t.options}: ${template.name}`}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="relative z-10"
+              aria-label={`${t.options}: ${template.name}`}
+            >
               <EllipsisIcon />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link href={`/templates/${item.kind}/${template.id}`}>{t.edit}</Link>
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={onDuplicate}>{t.duplicate}</DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onSelect={onDelete}>
               {t.delete}
@@ -88,7 +97,14 @@ export function TemplateCard({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <h2 className="font-display mt-3 text-[20px] font-bold uppercase">{template.name}</h2>
+      <h2 className="font-display mt-3 text-[20px] font-bold uppercase">
+        <Link
+          href={`/templates/${item.kind}/${template.id}`}
+          className="focus-visible:ring-ring/50 rounded-sm outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:ring-[3px]"
+        >
+          {template.name}
+        </Link>
+      </h2>
       <p className="text-text-muted mt-1 text-[13px]">{details(item)}</p>
       <p className="border-border-subtle text-text-subtle mt-4 border-t pt-3 text-xs">
         {usageLabel(template.usageCount)} · {t.edited}{" "}

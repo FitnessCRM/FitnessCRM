@@ -8,7 +8,7 @@ import { formatShortDate, formatSignedDecimal } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 import { reviewDate, weightOf } from "./client-review-screen";
-import { NativeSelect } from "./native-select";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const t = es.screensTrainerReview.photos;
 
