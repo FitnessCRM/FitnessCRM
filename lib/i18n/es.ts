@@ -678,7 +678,7 @@ export const es = {
       kg: "kg",
       versus: "vs",
       note: "Nota del cliente",
-      prevRecord: "Registro anterior",
+      prevRecord: "Anterior",
       nextRecord: "Siguiente",
       trend: "Tendencia del mes",
       noRecords: "Sin pesajes todavía.",

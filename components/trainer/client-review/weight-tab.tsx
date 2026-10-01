@@ -175,12 +175,12 @@ export function WeightTab({
                   {t.note}: «{selected.note}»
                 </p>
               ) : null}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 *:min-w-0">
                 <Button
                   variant="outline"
                   disabled={!previous}
                   onClick={() => select(previous)}
-                  className="min-h-10"
+                  className="h-auto min-h-10 px-2 py-2 leading-tight whitespace-normal"
                 >
                   ‹ {t.prevRecord}
                 </Button>
@@ -188,7 +188,7 @@ export function WeightTab({
                   variant="outline"
                   disabled={!next}
                   onClick={() => select(next)}
-                  className="min-h-10"
+                  className="h-auto min-h-10 px-2 py-2 leading-tight whitespace-normal"
                 >
                   {t.nextRecord} ›
                 </Button>
