@@ -4,7 +4,8 @@ import { cn } from "@/lib/utils";
 
 /**
  * Campo numérico con etiqueta. `value` nulo o 0 se pinta vacío; al vaciarlo, `onChange` recibe
- * `null` y quien lo usa decide si es «sin valor» (reps máx.) o «inválido» (series).
+ * `null` y quien lo usa decide si es «sin valor» (reps máx.) o «inválido» (series). Con `showZero`
+ * el 0 se pinta: en los macros de un menú, 0 g es un valor y vacío es «sin rellenar».
  */
 export function NumberField({
   label,
@@ -13,6 +14,7 @@ export function NumberField({
   min = 0,
   step,
   hint,
+  showZero = false,
   className,
 }: {
   label: string;
@@ -21,6 +23,7 @@ export function NumberField({
   min?: number;
   step?: number | "any";
   hint?: string;
+  showZero?: boolean;
   className?: string;
 }) {
   return (
@@ -31,7 +34,9 @@ export function NumberField({
         inputMode="decimal"
         min={min}
         step={step}
-        value={value ? String(value) : ""}
+        value={
+          value === null || Number.isNaN(value) || (value === 0 && !showZero) ? "" : String(value)
+        }
         title={hint}
         onChange={(event) => {
           const raw = event.target.value;

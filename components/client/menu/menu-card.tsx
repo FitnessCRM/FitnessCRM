@@ -2,14 +2,17 @@
 
 import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 import { useState } from "react";
-import { derivedKcal, type Menu } from "@/lib/domain";
+import type { Menu } from "@/lib/domain";
 import { formatInteger, formatNumber } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 
 const t = es.screensMenu.menus;
 
-/** "aporta 2.348 kcal · P 165 · C 260 · G 72", siempre con el verbo delante: no es un objetivo. */
+/**
+ * "aporta 2.348 kcal · P 165 · C 260 · G 72", siempre con el verbo delante: no es un objetivo. Las
+ * kcal son las que declaró el entrenador para el menú (§5), no una cuenta sobre los macros.
+ */
 function providesLine(menu: Menu): string {
   const { proteinG, carbsG, fatG } = menu.macros;
   const macros = [
@@ -17,7 +20,7 @@ function providesLine(menu: Menu): string {
     `C ${formatNumber(carbsG)}`,
     `G ${formatNumber(fatG)}`,
   ];
-  return `${t.provides} ${formatInteger(derivedKcal(menu.macros))} ${es.screensMenu.target.kcal} · ${macros.join(" · ")}`;
+  return `${t.provides} ${formatInteger(menu.macros.kcal)} ${es.screensMenu.target.kcal} · ${macros.join(" · ")}`;
 }
 
 /** Un menú del tipo de día elegido: comidas y alimentos con su peso. Sugerencia, no registro. */

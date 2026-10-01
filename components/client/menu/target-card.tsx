@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { KCAL_PER_GRAM, derivedKcal, type MacroTargets } from "@/lib/domain";
+import { macroEnergyShares, type MacroTargets } from "@/lib/domain";
 import { formatInteger, formatNumber } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 
@@ -7,7 +7,9 @@ const t = es.screensMenu.target;
 
 /**
  * El objetivo diario del cliente (`MacroTargets`). Es la cifra que NO hay que confundir con las
- * macros declaradas de cada menú: se titula «Tu objetivo del día» y lo dice en su subtítulo.
+ * macros declaradas de cada menú: se titula «Tu objetivo del día» y lo dice en su subtítulo. La
+ * única cifra de kcal es la que escribió el entrenador (§5); las barras reparten la energía entre
+ * los tres macros y siempre suman 100 %, sin calcular ni enseñar un total.
  */
 export function TargetCard({
   target,
@@ -26,11 +28,11 @@ export function TargetCard({
     );
   }
 
-  const kcal = derivedKcal(target.macros);
+  const shares = macroEnergyShares(target.macros);
   const rows = [
-    { label: t.protein, grams: target.macros.proteinG, kcal: KCAL_PER_GRAM.protein },
-    { label: t.carbs, grams: target.macros.carbsG, kcal: KCAL_PER_GRAM.carbs },
-    { label: t.fat, grams: target.macros.fatG, kcal: KCAL_PER_GRAM.fat },
+    { label: t.protein, grams: target.macros.proteinG, share: shares.protein },
+    { label: t.carbs, grams: target.macros.carbsG, share: shares.carbs },
+    { label: t.fat, grams: target.macros.fatG, share: shares.fat },
   ];
 
   return (
@@ -40,36 +42,30 @@ export function TargetCard({
         <p className="text-text-subtle mt-1.5 text-[13px] leading-snug">{t.hint}</p>
       </div>
       <p className="font-display leading-none font-bold">
-        <span className="text-[40px]">{formatInteger(kcal)}</span>{" "}
+        <span className="text-[40px]">{formatInteger(target.macros.kcal)}</span>{" "}
         <span className="text-text-muted text-[15px]">{t.kcal}</span>
       </p>
       <div className="flex flex-col gap-2.5">
-        {rows.map((row) => {
-          const share = kcal === 0 ? 0 : (row.grams * row.kcal) / kcal;
-          return (
-            <div key={row.label}>
-              <div className="flex items-baseline justify-between gap-3 text-[13px]">
-                <span className="text-text-primary">{row.label}</span>
-                <span className="text-text-muted">
-                  {formatNumber(row.grams)} {es.screensMenu.menus.grams}
-                  <span className="text-text-subtle"> · {Math.round(share * 100)} %</span>
-                </span>
-              </div>
-              <div className="bg-surface-overlay mt-1.5 h-1.5 overflow-hidden rounded-full">
-                <div
-                  className="bg-accent h-full rounded-full"
-                  style={{ width: `${share * 100}%` }}
-                />
-              </div>
+        {rows.map((row) => (
+          <div key={row.label}>
+            <div className="flex items-baseline justify-between gap-3 text-[13px]">
+              <span className="text-text-primary">{row.label}</span>
+              <span className="text-text-muted">
+                {formatNumber(row.grams)} {es.screensMenu.menus.grams}
+                <span className="text-text-subtle"> · {row.share} %</span>
+              </span>
             </div>
-          );
-        })}
+            <div className="bg-surface-overlay mt-1.5 h-1.5 overflow-hidden rounded-full">
+              <div className="bg-accent h-full rounded-full" style={{ width: `${row.share}%` }} />
+            </div>
+          </div>
+        ))}
       </div>
-      <p className="text-text-subtle text-xs leading-snug">{t.shareOfKcal}</p>
+      <p className="text-text-subtle text-xs leading-snug">{t.shareOfEnergy}</p>
       {other ? (
         <p className="text-text-subtle text-[13px] leading-snug">
           {t.otherPrefix} {es.status.dayTypeShort[other.dayType]} {t.otherMiddle}{" "}
-          {formatInteger(derivedKcal(other.macros))} {t.kcal}.
+          {formatInteger(other.macros.kcal)} {t.kcal}.
         </p>
       ) : null}
     </Card>

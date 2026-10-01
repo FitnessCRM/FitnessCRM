@@ -48,7 +48,7 @@ const menuTemplate: MenuTemplate = {
       name: "Menú A — Casero",
       dayType: "entrenamiento",
       suggested: true,
-      macros: { proteinG: 165, carbsG: 260, fatG: 72 },
+      macros: { kcal: 2348, proteinG: 165, carbsG: 260, fatG: 72 },
       note: "",
       meals: [
         {

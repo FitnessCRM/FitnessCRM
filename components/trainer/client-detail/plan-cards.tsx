@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { DAY_TYPES, derivedKcal, type MacroTargets, type Menu, type Routine } from "@/lib/domain";
+import { DAY_TYPES, type MacroTargets, type Menu, type Routine } from "@/lib/domain";
 import { formatInteger } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 
@@ -54,7 +54,7 @@ export function RoutineCard({ routine, editHref }: { routine: Routine | null; ed
 }
 
 /**
- * «Macros y menú»: kcal objetivo por tipo de día (derivadas, nunca almacenadas) y el resumen de
+ * «Macros y menú»: kcal objetivo por tipo de día (las que escribió el entrenador, §5) y el resumen de
  * menús activos. Los menús son sugerencia; las macros que cuentan son las del objetivo.
  */
 export function MacrosMenuCard({
@@ -68,7 +68,7 @@ export function MacrosMenuCard({
 }) {
   const kcal = DAY_TYPES.map((dayType) => targets.find((m) => m.dayType === dayType))
     .filter((m): m is MacroTargets => m !== undefined)
-    .map((m) => formatInteger(derivedKcal(m.macros)));
+    .map((m) => formatInteger(m.macros.kcal));
 
   const menuCounts = DAY_TYPES.map((dayType) => menus.filter((m) => m.dayType === dayType).length);
   const types = menuCounts.filter((n) => n > 0);

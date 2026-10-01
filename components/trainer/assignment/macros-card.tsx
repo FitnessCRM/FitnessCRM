@@ -2,26 +2,36 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { useForm, useWatch, type Control } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSetMacroTargets } from "@/lib/data/hooks";
-import { DAY_TYPES, derivedKcal, type DayType, type MacroTargets } from "@/lib/domain";
-import { formatInteger, formatNumber, parseDecimalInput } from "@/lib/format";
+import { DAY_TYPES, type DayType, type MacroTargets } from "@/lib/domain";
+import { formatNumber, parseDecimalInput, parseWholeNumberInput } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 
 const t = es.screensAssignment.macros;
 
-const FIELDS = ["proteinG", "carbsG", "fatG"] as const;
+const FIELDS = ["kcal", "proteinG", "carbsG", "fatG"] as const;
 type Field = (typeof FIELDS)[number];
 const FIELD_LABEL: Record<Field, string> = {
+  kcal: t.kcal,
   proteinG: t.protein,
   carbsG: t.carbs,
   fatG: t.fat,
 };
+
+/**
+ * Las kcal las escribe el entrenador (§5): solo dígitos, porque «2.000» no puede guardarse como 2.
+ * Vacío es válido (el tipo de día queda sin objetivo); si hay texto, un entero mayor que cero.
+ */
+const kcalField = z
+  .string()
+  .trim()
+  .refine((v) => v === "" || parseWholeNumberInput(v) > 0, es.common.kcalInvalid);
 
 /** Un campo vacío es válido (el tipo de día queda sin objetivo); si hay texto, un número ≥ 0. */
 const gramField = z
@@ -33,11 +43,11 @@ const gramField = z
     return Number.isFinite(n) && n >= 0;
   }, t.invalid);
 const dayFields = z
-  .object({ proteinG: gramField, carbsG: gramField, fatG: gramField })
+  .object({ kcal: kcalField, proteinG: gramField, carbsG: gramField, fatG: gramField })
   .superRefine((day, ctx) => {
     const filled = FIELDS.filter((f) => day[f] !== "").length;
     if (filled > 0 && filled < FIELDS.length) {
-      ctx.addIssue({ code: "custom", message: t.incomplete, path: ["proteinG"] });
+      ctx.addIssue({ code: "custom", message: t.incomplete, path: ["kcal"] });
     }
   });
 const formSchema = z.object({ entrenamiento: dayFields, descanso: dayFields });
@@ -47,6 +57,7 @@ function initialValues(targets: MacroTargets[]): FormValues {
   const day = (dayType: DayType) => {
     const macros = targets.find((m) => m.dayType === dayType)?.macros;
     return {
+      kcal: macros ? String(macros.kcal) : "",
       proteinG: macros ? formatNumber(macros.proteinG) : "",
       carbsG: macros ? formatNumber(macros.carbsG) : "",
       fatG: macros ? formatNumber(macros.fatG) : "",
@@ -55,28 +66,11 @@ function initialValues(targets: MacroTargets[]): FormValues {
   return { entrenamiento: day("entrenamiento"), descanso: day("descanso") };
 }
 
-/** Las kcal se derivan (4/4/9) de lo escrito; sin los tres macros válidos no hay cifra. */
-function KcalField({ control, dayType }: { control: Control<FormValues>; dayType: DayType }) {
-  const day = useWatch({ control, name: dayType });
-  const grams = FIELDS.map((f) => parseDecimalInput(day[f]));
-  const value = grams.every((n) => Number.isFinite(n) && n >= 0)
-    ? formatInteger(derivedKcal({ proteinG: grams[0]!, carbsG: grams[1]!, fatG: grams[2]! }))
-    : "";
-  const id = `kcal-${dayType}`;
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id} className="tracking-label text-[11px] uppercase">
-        {t.kcal}
-      </Label>
-      <Input id={id} readOnly value={value} placeholder="—" className="bg-surface" />
-    </div>
-  );
-}
-
 /**
- * Objetivo diario de macros del cliente, uno por tipo de día. Independiente del menú (I4). Las kcal
- * son de solo lectura y se recalculan al escribir. Guardar archiva el objetivo anterior de cada
- * tipo de día rellenado; un tipo de día vacío se deja como está.
+ * Objetivo diario del cliente, uno por tipo de día. Independiente del menú (I4). Kcal y macros los
+ * escribe el entrenador y se guardan tal cual: la app no deriva las kcal ni comprueba que cuadren
+ * (§5). Guardar archiva el objetivo anterior de cada tipo de día rellenado; un tipo de día vacío
+ * del todo se deja como está.
  */
 export function MacrosCard({ clientId, targets }: { clientId: string; targets: MacroTargets[] }) {
   const setTargets = useSetMacroTargets(clientId);
@@ -91,10 +85,11 @@ export function MacrosCard({ clientId, targets }: { clientId: string; targets: M
     try {
       for (const dayType of DAY_TYPES) {
         const day = values[dayType];
-        if (day.proteinG === "") continue;
+        if (day.kcal === "") continue;
         await setTargets.mutateAsync({
           dayType,
           macros: {
+            kcal: parseWholeNumberInput(day.kcal),
             proteinG: parseDecimalInput(day.proteinG),
             carbsG: parseDecimalInput(day.carbsG),
             fatG: parseDecimalInput(day.fatG),
@@ -126,7 +121,6 @@ export function MacrosCard({ clientId, targets }: { clientId: string; targets: M
               {es.status.dayType[dayType]}
             </legend>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <KcalField control={form.control} dayType={dayType} />
               {FIELDS.map((field) => {
                 const id = `${dayType}-${field}`;
                 const error = form.formState.errors[dayType]?.[field]?.message;
@@ -137,7 +131,7 @@ export function MacrosCard({ clientId, targets }: { clientId: string; targets: M
                     </Label>
                     <Input
                       id={id}
-                      inputMode="decimal"
+                      inputMode={field === "kcal" ? "numeric" : "decimal"}
                       aria-invalid={error ? true : undefined}
                       {...form.register(`${dayType}.${field}`)}
                     />

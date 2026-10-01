@@ -21,7 +21,7 @@ function homeStyleMenuBody(prefix: string): MenuBody {
     name: "Menú A — Casero",
     dayType: "entrenamiento",
     suggested: true,
-    macros: { proteinG: 165, carbsG: 260, fatG: 72 },
+    macros: { kcal: 2348, proteinG: 165, carbsG: 260, fatG: 72 },
     note: "Puedes intercambiar merluza por cualquier pescado blanco al mismo peso. La fruta de la merienda es libre hasta 150 g.",
     meals: [
       meal(prefix, "Desayuno", [
@@ -58,7 +58,7 @@ function quickTupperMenuBody(prefix: string): MenuBody {
     name: "Menú B — Rápido / Tupper",
     dayType: "entrenamiento",
     suggested: false,
-    macros: { proteinG: 150, carbsG: 230, fatG: 80 },
+    macros: { kcal: 2240, proteinG: 150, carbsG: 230, fatG: 80 },
     note: "",
     meals: [
       meal(prefix, "Desayuno", [
@@ -85,7 +85,7 @@ function restDayMenuBody(prefix: string): MenuBody {
     name: "Menú descanso",
     dayType: "descanso",
     suggested: true,
-    macros: { proteinG: 150, carbsG: 190, fatG: 65 },
+    macros: { kcal: 1945, proteinG: 150, carbsG: 190, fatG: 65 },
     note: "",
     meals: [
       meal(prefix, "Desayuno", [
@@ -101,6 +101,28 @@ function restDayMenuBody(prefix: string): MenuBody {
       meal(prefix, "Cena", [
         ["Merluza", 200],
         ["Patata cocida", 200],
+        ["Aceite de oliva", 10],
+      ]),
+    ],
+  };
+}
+
+/**
+ * Kcal que NO cuadran con 4/4/9, a propósito: 160/280/70 g darían 2.390 y el entrenador escribe
+ * 2.500 redondeando. Las kcal son suyas y la app no las corrige ni avisa (§5); este caso lo
+ * cubre el test del adaptador y se ve en el editor de plantillas.
+ */
+function roundedKcalMenuBody(prefix: string): MenuBody {
+  return {
+    name: "Mantenimiento — kcal redondeadas",
+    dayType: "entrenamiento",
+    suggested: true,
+    macros: { kcal: 2500, proteinG: 160, carbsG: 280, fatG: 70 },
+    note: "",
+    meals: [
+      meal(prefix, "Comida", [
+        ["Arroz basmati (en seco)", 100],
+        ["Pechuga de pollo", 200],
         ["Aceite de oliva", 10],
       ]),
     ],
@@ -144,10 +166,18 @@ export function buildNutrition(d: DemoDates): {
     updatedAt: ts(d.martaStart),
   });
 
-  /** Macros del "Editor de plan": 165/260/72 entrenamiento, 150/190/65 descanso. */
+  /**
+   * Macros del "Editor de plan": 165/260/72 entrenamiento, 150/190/65 descanso. Las kcal son las
+   * que la pantalla enseñaba cuando se derivaban, para que las capturas sigan cuadrando.
+   */
   const macroTargets: MacroTargets[] = [
-    targets("mt-marta-entrenamiento", "entrenamiento", { proteinG: 165, carbsG: 260, fatG: 72 }),
-    targets("mt-marta-descanso", "descanso", { proteinG: 150, carbsG: 190, fatG: 65 }),
+    targets("mt-marta-entrenamiento", "entrenamiento", {
+      kcal: 2348,
+      proteinG: 165,
+      carbsG: 260,
+      fatG: 72,
+    }),
+    targets("mt-marta-descanso", "descanso", { kcal: 1945, proteinG: 150, carbsG: 190, fatG: 65 }),
   ];
 
   const menuTemplates: MenuTemplate[] = [
@@ -175,17 +205,26 @@ export function buildNutrition(d: DemoDates): {
           id: "mnt2-a",
           ...homeStyleMenuBody("mnt2-a"),
           name: "Volumen A",
-          macros: { proteinG: 190, carbsG: 380, fatG: 90 },
+          macros: { kcal: 3090, proteinG: 190, carbsG: 380, fatG: 90 },
         },
         {
           id: "mnt2-d",
           ...restDayMenuBody("mnt2-d"),
           name: "Volumen descanso",
-          macros: { proteinG: 180, carbsG: 300, fatG: 85 },
+          macros: { kcal: 2685, proteinG: 180, carbsG: 300, fatG: 85 },
         },
       ],
       createdAt: ts(d.daysAgo(150)),
       updatedAt: ts(d.daysAgo(32)),
+    },
+    {
+      id: "mnt-mantenimiento-2500",
+      trainerId: TRAINER_ID,
+      name: "Mantenimiento 2.500",
+      description: "",
+      menus: [{ id: "mnt3-a", ...roundedKcalMenuBody("mnt3-a") }],
+      createdAt: ts(d.daysAgo(60)),
+      updatedAt: ts(d.daysAgo(20)),
     },
   ];
   return { menus, macroTargets, menuTemplates };

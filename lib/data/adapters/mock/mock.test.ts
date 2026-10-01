@@ -425,6 +425,7 @@ describe("flows", () => {
   it("setting macros keeps one active set per day type (I4)", async () => {
     const p = ports();
     await p.macroTargets.setMacroTargets(TRAINER, MARTA, "descanso", {
+      kcal: 1950,
       proteinG: 150,
       carbsG: 200,
       fatG: 60,
@@ -432,6 +433,32 @@ describe("flows", () => {
     const active = await p.macroTargets.listMacroTargets(TRAINER, MARTA);
     expect(active.filter((m) => m.dayType === "descanso")).toHaveLength(1);
     expect(active.find((m) => m.dayType === "descanso")?.macros.carbsG).toBe(200);
+  });
+
+  it("stores the kcal the trainer writes as they are, also when they do not match 4/4/9 (§5)", async () => {
+    const p = ports();
+    // 160/280/70 g darían 2.390 con 4/4/9: el entrenador escribe 2.500 y eso es lo que queda.
+    const rounded = { kcal: 2500, proteinG: 160, carbsG: 280, fatG: 70 };
+    await p.macroTargets.setMacroTargets(TRAINER, MARTA, "entrenamiento", rounded);
+    const active = await p.macroTargets.listMacroTargets(TRAINER, MARTA);
+    expect(active.find((m) => m.dayType === "entrenamiento")?.macros).toEqual(rounded);
+
+    const templates = await p.templates.listMenuTemplates(TRAINER);
+    const maintenance = templates.find((t) => t.id === "mnt-mantenimiento-2500");
+    expect(maintenance?.menus[0]?.macros).toEqual(rounded);
+    const [menu] = await p.templates.assignMenuTemplate(TRAINER, MARTA, "mnt-mantenimiento-2500");
+    expect(menu?.macros.kcal).toBe(2500);
+  });
+
+  it("rejects macros without valid kcal", async () => {
+    const p = ports();
+    const macros = { proteinG: 150, carbsG: 200, fatG: 60 };
+    await expect(
+      p.macroTargets.setMacroTargets(TRAINER, MARTA, "descanso", { ...macros, kcal: 0 }),
+    ).rejects.toThrow();
+    await expect(
+      p.macroTargets.setMacroTargets(TRAINER, MARTA, "descanso", { ...macros, kcal: 1950.5 }),
+    ).rejects.toThrow();
   });
 
   it("opens the current week's review once (I16), freezing the active catalog (I5/I22)", async () => {

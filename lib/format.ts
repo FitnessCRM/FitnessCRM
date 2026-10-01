@@ -80,6 +80,15 @@ export function parseDecimalInput(raw: string): number {
   return normalized === "" ? NaN : Number(normalized);
 }
 
+/**
+ * Entero escrito solo con dígitos ("2400" → 2400). Con punto, coma, signo o vacío da `NaN`: la app
+ * pinta las kcal con punto de millar y «2.000» no puede acabar guardado como 2.
+ */
+export function parseWholeNumberInput(raw: string): number {
+  const trimmed = raw.trim();
+  return /^\d+$/.test(trimmed) ? Number(trimmed) : NaN;
+}
+
 /** Fecha civil de hoy en la zona del entrenador (o la del navegador mientras no se conoce). */
 export function todayCivil(timeZone?: string): CivilDate {
   return civilDateInTimeZone(
