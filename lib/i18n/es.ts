@@ -74,6 +74,7 @@ export const es = {
       revisiones: "Revisiones recibidas",
       clienteNuevo: "Alta de nuevo cliente",
       clienteDetalle: "Detalle de cliente",
+      clienteEditar: "Editar cliente",
       editor: "Editor de plan",
       revisionCliente: "Revisión de cliente",
       biblioteca: "Biblioteca",
@@ -748,23 +749,21 @@ export const es = {
       emptyHint: "La primera aparecerá cuando empieces tu revisión semanal.",
     },
   },
-  screensClientSignup: {
-    eyebrow: "Clientes / Nuevo",
-    data: {
-      title: "Datos del cliente",
-      firstName: "Nombre",
-      lastName: "Apellidos",
-      email: "Email",
-      phone: "Teléfono",
-      goal: "Objetivo",
-      level: "Nivel",
-      selectPlaceholder: "Sin especificar",
-      notes: "Notas iniciales",
-      notesPlaceholder: "Lesiones, preferencias, disponibilidad…",
-      startDate: "Fecha de alta",
-      startDateHint:
-        "Es el origen de la numeración de semanas. Cambiarla después no reetiqueta las revisiones ya enviadas.",
-    },
+  /** Datos de un cliente: los comparten el alta y la edición. */
+  clientData: {
+    title: "Datos del cliente",
+    firstName: "Nombre",
+    lastName: "Apellidos",
+    email: "Email",
+    phone: "Teléfono",
+    goal: "Objetivo",
+    level: "Nivel",
+    selectPlaceholder: "Sin especificar",
+    notes: "Notas iniciales",
+    notesPlaceholder: "Lesiones, preferencias, disponibilidad…",
+    startDate: "Fecha de alta",
+    startDateHint:
+      "Es el origen de la numeración de semanas. Cambiarla después no reetiqueta las revisiones ya enviadas.",
     /** Se guardan tal cual en `goal` y `level`, que en el dominio son texto libre. */
     goals: [
       "Recomposición corporal",
@@ -774,6 +773,29 @@ export const es = {
       "Salud y bienestar",
     ],
     levels: ["Principiante", "Intermedio", "Avanzado"],
+    errors: {
+      firstNameRequired: "Escribe el nombre",
+      lastNameRequired: "Escribe los apellidos",
+      emailInvalid: "Escribe un email válido",
+      dateInvalid: "Elige una fecha",
+    },
+  },
+  screensClientEdit: {
+    eyebrow: "Clientes / Editar",
+    startDateLockedHint:
+      "No se puede cambiar: es el origen de la numeración de semanas y no reetiquetaría las revisiones ya enviadas.",
+    cadence: {
+      label: "Revisión cada (días)",
+      hint: "Orientativa: solo alimenta el aviso «te quedan X días» del cliente.",
+    },
+    actions: { cancel: "Cancelar", submit: "Guardar cambios", submitting: "Guardando…" },
+    errors: {
+      cadenceInvalid: "Escribe un número de días entero y mayor que 0",
+      saveFailed: "No se han podido guardar los cambios.",
+    },
+  },
+  screensClientSignup: {
+    eyebrow: "Clientes / Nuevo",
     membership: {
       title: "Membresía",
       type: "Tipo",
@@ -788,10 +810,6 @@ export const es = {
     },
     actions: { cancel: "Cancelar", submit: "Crear cliente e invitar", submitting: "Creando…" },
     errors: {
-      firstNameRequired: "Escribe el nombre",
-      lastNameRequired: "Escribe los apellidos",
-      emailInvalid: "Escribe un email válido",
-      dateInvalid: "Elige una fecha",
       endBeforeStart: "El fin no puede ser anterior al inicio",
       clientFailed: "No se ha podido crear el cliente.",
       membershipFailed:
