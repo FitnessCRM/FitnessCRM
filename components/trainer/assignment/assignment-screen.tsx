@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Combobox } from "@/components/ui/combobox";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import {
   useActiveMenus,
@@ -101,20 +101,25 @@ export function AssignmentScreen({ clientId: requestedId }: { clientId: string |
 
   const client = assignable.find((c) => c.id === requestedId) ?? assignable[0]!;
   const selector = (
-    <label className="flex items-center gap-3">
+    <div className="flex items-center gap-3">
       <span className="eyebrow text-text-muted max-sm:sr-only">{t.client}</span>
-      <NativeSelect
+      <Combobox
+        className="w-[60vw] max-w-[260px]"
+        inputClassName="bg-surface h-11 text-[15px]"
+        label={t.client}
+        placeholder={t.clientPlaceholder}
+        emptyLabel={t.noClientMatch}
         value={client.id}
-        onChange={(event) => router.replace(`/assignment?clientId=${event.target.value}`)}
-        className="border-border-emphasis bg-surface h-11 max-w-[60vw] truncate text-[15px] sm:max-w-[260px]"
-      >
-        {assignable.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.firstName} {c.lastName}
-          </option>
-        ))}
-      </NativeSelect>
-    </label>
+        options={assignable.map((c) => ({
+          value: c.id,
+          label: `${c.firstName} ${c.lastName}`,
+        }))}
+        // Aquí siempre hay un cliente elegido: no existe «todos», así que `null` no llega.
+        onChange={(value) => {
+          if (value !== null) router.replace(`/assignment?clientId=${value}`);
+        }}
+      />
+    </div>
   );
 
   return (

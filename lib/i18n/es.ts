@@ -450,6 +450,8 @@ export const es = {
   screensAssignment: {
     eyebrow: "Entrenos, macros y menús",
     client: "Cliente",
+    clientPlaceholder: "Buscar cliente…",
+    noClientMatch: "Ningún cliente coincide",
     noClients: {
       title: "Sin clientes a los que asignar",
       hint: "Da de alta a un cliente para poder asignarle un plan.",
