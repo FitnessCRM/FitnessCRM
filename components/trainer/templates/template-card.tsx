@@ -70,14 +70,19 @@ export function TemplateCard({
   const { template } = item;
   const edited = civilDateInTimeZone(template.updatedAt, timeZone ?? "Europe/Madrid");
   return (
-    <article className="border-border-subtle bg-surface flex flex-col rounded-xl border p-5">
+    <article className="border-border-subtle bg-surface hover:border-border-emphasis relative flex flex-col rounded-xl border p-5 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <Badge variant={item.kind === "routine" ? "destructive" : "outline"}>
           {item.kind === "routine" ? t.kindRoutine : t.kindMenu}
         </Badge>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={`${t.options}: ${template.name}`}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="relative z-10"
+              aria-label={`${t.options}: ${template.name}`}
+            >
               <EllipsisIcon />
             </Button>
           </DropdownMenuTrigger>
@@ -95,7 +100,7 @@ export function TemplateCard({
       <h2 className="font-display mt-3 text-[20px] font-bold uppercase">
         <Link
           href={`/templates/${item.kind}/${template.id}`}
-          className="focus-visible:ring-ring/50 rounded-sm outline-none focus-visible:ring-[3px]"
+          className="focus-visible:ring-ring/50 rounded-sm outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:ring-[3px]"
         >
           {template.name}
         </Link>
