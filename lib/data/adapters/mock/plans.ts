@@ -34,8 +34,32 @@ export function createRoutinePort(ctx: MockContext): RoutinePort {
     },
     updateRoutine: async (trainerId, routineId, body) => {
       const current = findOwn(ctx.state.routines, trainerId, routineId, "Rutina");
+      // §7: lo activo no se edita en sitio; solo los borradores.
+      if (current.status !== "borrador") {
+        throw new DomainError("routine.not_draft", "Solo se edita en sitio un borrador");
+      }
       const next = routineSchema.parse({ ...current, ...body, updatedAt: ctx.now() });
       return ctx.reply(replaceById(ctx.state.routines, next));
+    },
+    reviseRoutine: async (trainerId, routineId, body) => {
+      const current = findOwn(ctx.state.routines, trainerId, routineId, "Rutina");
+      if (current.status !== "activo") {
+        throw new DomainError("routine.not_active", "Solo se versiona la rutina activa");
+      }
+      const now = ctx.now();
+      // Versión nueva en borrador: misma plantilla de origen, ids de días y líneas tal como llegan.
+      const draft = routineSchema.parse({
+        ...body,
+        id: ctx.newId(),
+        trainerId,
+        clientId: current.clientId,
+        status: "borrador",
+        sourceTemplateName: current.sourceTemplateName,
+        createdAt: now,
+        updatedAt: now,
+      });
+      ctx.state.routines.push(draft);
+      return ctx.reply(draft);
     },
     activateRoutine: async (trainerId, routineId) => {
       const target = findOwn(ctx.state.routines, trainerId, routineId, "Rutina");
@@ -126,8 +150,31 @@ export function createMenuPort(ctx: MockContext): MenuPort {
     },
     updateMenu: async (trainerId, menuId, body) => {
       const current = findOwn(ctx.state.menus, trainerId, menuId, "Menú");
+      // §7: lo activo no se edita en sitio; solo los borradores.
+      if (current.status !== "borrador") {
+        throw new DomainError("menu.not_draft", "Solo se edita en sitio un borrador");
+      }
       const next = menuSchema.parse({ ...current, ...body, updatedAt: ctx.now() });
       return ctx.reply(replaceById(ctx.state.menus, next));
+    },
+    reviseMenu: async (trainerId, menuId, body) => {
+      const current = findOwn(ctx.state.menus, trainerId, menuId, "Menú");
+      if (current.status !== "activo") {
+        throw new DomainError("menu.not_active", "Solo se versiona un menú activo");
+      }
+      const now = ctx.now();
+      const draft = menuSchema.parse({
+        ...body,
+        id: ctx.newId(),
+        trainerId,
+        clientId: current.clientId,
+        status: "borrador",
+        sourceTemplateName: current.sourceTemplateName,
+        createdAt: now,
+        updatedAt: now,
+      });
+      ctx.state.menus.push(draft);
+      return ctx.reply(draft);
     },
     activateMenus: async (trainerId, clientId, dayType) => {
       const now = ctx.now();

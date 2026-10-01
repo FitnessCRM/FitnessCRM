@@ -43,6 +43,6 @@ export const queryKeys = {
   review: (trainerId: string, reviewId: string) => ["reviews", trainerId, "id", reviewId] as const,
   weightLogs: (trainerId: string, clientId: string) =>
     ["weight-logs", trainerId, clientId] as const,
-  workoutLogs: (trainerId: string, clientId: string, routineId: string) =>
-    ["workout-logs", trainerId, clientId, routineId] as const,
+  workoutLogs: (trainerId: string, clientId: string) =>
+    ["workout-logs", trainerId, clientId] as const,
 };

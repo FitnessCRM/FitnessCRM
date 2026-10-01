@@ -28,13 +28,14 @@ export function useSaveWeightLog(clientId: string | undefined) {
   });
 }
 
-export function useWorkoutLogs(clientId: string | undefined, routineId: string | undefined) {
+/** Registros del cliente de todas las versiones de su rutina: «última vez» los casa por línea (§7). */
+export function useWorkoutLogs(clientId: string | undefined) {
   const ports = usePorts();
   const trainerId = useTrainerId();
   return useQuery({
-    queryKey: queryKeys.workoutLogs(trainerId ?? "", clientId ?? "", routineId ?? ""),
-    queryFn: () => ports.workoutLogs.listWorkoutLogs(trainerId!, clientId!, routineId!),
-    enabled: trainerId !== undefined && clientId !== undefined && routineId !== undefined,
+    queryKey: queryKeys.workoutLogs(trainerId ?? "", clientId ?? ""),
+    queryFn: () => ports.workoutLogs.listWorkoutLogs(trainerId!, clientId!),
+    enabled: trainerId !== undefined && clientId !== undefined,
   });
 }
 
@@ -45,14 +46,12 @@ export function useSaveWorkoutLog(clientId: string | undefined) {
   return useMutation({
     mutationFn: (input: Omit<WorkoutLogInput, "trainerId" | "clientId">) =>
       ports.workoutLogs.saveWorkoutLog({ ...input, trainerId: trainerId!, clientId: clientId! }),
-    onSuccess: (log) =>
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.workoutLogs(trainerId!, clientId!, log.routineId),
-      }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.workoutLogs(trainerId!, clientId!) }),
   });
 }
 
-export function useDeleteWorkoutLog(clientId: string | undefined, routineId: string | undefined) {
+export function useDeleteWorkoutLog(clientId: string | undefined) {
   const ports = usePorts();
   const queryClient = useQueryClient();
   const trainerId = useTrainerId();
@@ -60,8 +59,6 @@ export function useDeleteWorkoutLog(clientId: string | undefined, routineId: str
     mutationFn: (workoutLogId: string) =>
       ports.workoutLogs.deleteWorkoutLog(trainerId!, workoutLogId),
     onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.workoutLogs(trainerId!, clientId!, routineId!),
-      }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.workoutLogs(trainerId!, clientId!) }),
   });
 }

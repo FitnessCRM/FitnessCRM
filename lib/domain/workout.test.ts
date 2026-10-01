@@ -151,3 +151,48 @@ describe("latestDayRecord", () => {
     expect(record.loggedSets).toBe(1);
   });
 });
+
+describe("line ids carry over between routine versions (§7)", () => {
+  // La versión archivada tenía dos líneas en el día 2; la nueva conserva los ids de lo que sigue
+  // (día y primera línea), quita la segunda y añade una línea nueva con id propio.
+  const archived = day(2, [4, 3]);
+  const next: RoutineDay = {
+    ...archived,
+    exercises: [
+      {
+        ...archived.exercises[0]!,
+        prescription: { ...archived.exercises[0]!.prescription, sets: 5 },
+      },
+      { id: "d2-new", exerciseId: "ex-nuevo", prescription: archived.exercises[1]!.prescription },
+    ],
+  };
+  const onArchived = (id: string, date: string, set: number) => ({
+    ...log(id, date, set),
+    routineId: "r-archived",
+  });
+  const logs = [
+    onArchived("d2-e1", "2026-09-20", 1),
+    onArchived("d2-e1", "2026-09-20", 2),
+    onArchived("d2-e2", "2026-09-20", 1),
+  ];
+
+  it("a log made on the archived version resolves to the same line of the new one", () => {
+    const record = latestDayRecord(next, logs);
+    expect(record.date).toBe("2026-09-20");
+    expect(record.logs.map((l) => l.routineDayExerciseId)).toEqual(["d2-e1", "d2-e1"]);
+    expect(record.loggedSets).toBe(2);
+    expect(defaultRoutineDay({ days: [day(1, [3]), next] }, logs)?.dayNumber).toBe(1);
+  });
+
+  it("the log of a removed line still resolves in the archived version", () => {
+    const record = latestDayRecord(archived, logs);
+    expect(record.logs.map((l) => l.routineDayExerciseId).sort()).toEqual([
+      "d2-e1",
+      "d2-e1",
+      "d2-e2",
+    ]);
+    expect(latestDayRecord(next, logs).logs.some((l) => l.routineDayExerciseId === "d2-e2")).toBe(
+      false,
+    );
+  });
+});

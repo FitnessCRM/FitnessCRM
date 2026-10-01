@@ -80,7 +80,8 @@ function RoutineLogs(props: {
   trainerName: string | undefined;
   timeZone: string | undefined;
 }) {
-  const logs = useWorkoutLogs(props.clientId, props.routine.id);
+  // Los de todas las versiones de la rutina: cada serie casa con su línea por id (§7).
+  const logs = useWorkoutLogs(props.clientId);
   const exercises = useExercisesById(
     props.routine.days.flatMap((d) => d.exercises.map((e) => e.exerciseId)),
   );
@@ -115,7 +116,7 @@ function RoutineView({
   // La apertura por defecto se decide una vez; después manda lo que elija el cliente.
   const [selectedId, setSelectedId] = useState(() => defaultRoutineDay(routine, logs)?.id);
   const saveLog = useSaveWorkoutLog(clientId);
-  const deleteLog = useDeleteWorkoutLog(clientId, routine.id);
+  const deleteLog = useDeleteWorkoutLog(clientId);
 
   // La rejilla es la de hoy; lo anterior solo se enseña como referencia.
   const today = todayCivil(timeZone);

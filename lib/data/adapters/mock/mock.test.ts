@@ -15,7 +15,9 @@ import {
   trainerSchema,
   weightLogSchema,
   workoutLogSchema,
+  dayRecordOn,
   isReviewComplete,
+  latestDayRecord,
   reviewWeight,
   weekNumber,
 } from "@/lib/domain";
@@ -415,11 +417,98 @@ describe("flows", () => {
     expect(archived.status).toBe("archivado");
     expect(ids(archived)).toContain("ex-sentadilla-trasera");
     expect(ids(active)).not.toContain("ex-sentadilla-trasera");
-    const logs = await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA, "rt-marta-hipertrofia");
+    const logs = (await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA)).filter(
+      (l) => l.routineId === "rt-marta-hipertrofia",
+    );
     expect(logs.every((l) => l.exerciseId === "ex-sentadilla-trasera")).toBe(true);
     expect((await p.exercises.getExercise(TRAINER, logs[0]!.exerciseId))?.name).toBe(
       "Sentadilla trasera",
     );
+  });
+
+  it("publishing changes to the active routine versions it and archives the old one (E27, §7)", async () => {
+    const p = ports();
+    const active = (await p.routines.getActiveRoutine(TRAINER, MARTA))!;
+    // Lo que hace el editor: quitar del día 2 la línea que Marta tiene registrada.
+    const body = {
+      name: active.name,
+      note: active.note,
+      days: active.days.map((d) => ({
+        ...d,
+        exercises: d.exercises.filter((e) => e.id !== "r-marta-d2-e1"),
+      })),
+    };
+    await expect(p.routines.updateRoutine(TRAINER, active.id, body)).rejects.toMatchObject({
+      code: "routine.not_draft",
+    });
+    const draft = await p.routines.reviseRoutine(TRAINER, active.id, body);
+    expect(draft).toMatchObject({
+      status: "borrador",
+      sourceTemplateName: active.sourceTemplateName,
+    });
+    await p.routines.activateRoutine(TRAINER, draft.id);
+    const all = await p.routines.listRoutines(TRAINER, MARTA);
+    const old = all.find((r) => r.id === active.id)!;
+    expect(old.status).toBe("archivado");
+    expect(old.days).toEqual(active.days);
+    expect(all.filter((r) => r.status === "activo").map((r) => r.id)).toEqual([draft.id]);
+    // Los registros de la línea quitada se siguen resolviendo en la versión archivada.
+    const logs = (await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA)).filter(
+      (l) => l.routineDayExerciseId === "r-marta-d2-e1",
+    );
+    expect(logs.length).toBeGreaterThan(0);
+    const oldDay = old.days.find((d) => d.exercises.some((e) => e.id === "r-marta-d2-e1"))!;
+    expect(latestDayRecord(oldDay, logs).logs.length).toBeGreaterThan(0);
+  });
+
+  it("a line that continues in the new version keeps its last-time record (§7)", async () => {
+    const p = ports();
+    const active = (await p.routines.getActiveRoutine(TRAINER, MARTA))!;
+    const body = {
+      name: active.name,
+      note: active.note,
+      days: active.days.map((d) => ({
+        ...d,
+        exercises: d.exercises.map((e) =>
+          e.id === "r-marta-d2-e1" ? { ...e, prescription: { ...e.prescription, sets: 5 } } : e,
+        ),
+      })),
+    };
+    const draft = await p.routines.reviseRoutine(TRAINER, active.id, body);
+    const now = await p.routines.activateRoutine(TRAINER, draft.id);
+    const logs = await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA);
+    expect(logs.every((l) => l.routineId === active.id)).toBe(true);
+    const day2 = now.days.find((d) => d.exercises.some((e) => e.id === "r-marta-d2-e1"))!;
+    const before = latestDayRecord(day2, logs, { before: TODAY });
+    expect(before.date).not.toBeNull();
+    expect(before.logs.map((l) => l.routineDayExerciseId)).toContain("r-marta-d2-e1");
+    expect(dayRecordOn(day2, logs, TODAY).logs.length).toBeGreaterThan(0);
+  });
+
+  it("menus: an active one is never edited in place; a new version keeps its template and the set is archived together (§7)", async () => {
+    const p = ports();
+    const active = await p.menus.listActiveMenus(TRAINER, MARTA);
+    const dayType = active[0]!.dayType;
+    const set = active.filter((m) => m.dayType === dayType);
+    const target = set[0]!;
+    const { id, trainerId, clientId, status, sourceTemplateName, createdAt, updatedAt, ...body } =
+      target;
+    void [id, trainerId, clientId, status, sourceTemplateName, createdAt, updatedAt];
+    await expect(p.menus.updateMenu(TRAINER, target.id, body)).rejects.toMatchObject({
+      code: "menu.not_draft",
+    });
+    const drafts = [];
+    for (const m of set)
+      drafts.push(await p.menus.reviseMenu(TRAINER, m.id, { ...body, name: `${m.name} v2` }));
+    expect(drafts.map((d) => d.sourceTemplateName)).toEqual(set.map((m) => m.sourceTemplateName));
+    await p.menus.activateMenus(TRAINER, MARTA, dayType);
+    const after = await p.menus.listActiveMenus(TRAINER, MARTA);
+    expect(
+      after
+        .filter((m) => m.dayType === dayType)
+        .map((m) => m.id)
+        .sort(),
+    ).toEqual(drafts.map((d) => d.id).sort());
   });
 
   it("deletes a workout log only for its own trainer", async () => {
@@ -439,7 +528,7 @@ describe("flows", () => {
       DomainError,
     );
     await p.workoutLogs.deleteWorkoutLog(TRAINER, saved.id);
-    const logs = await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA, "rt-marta-hipertrofia");
+    const logs = await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA);
     expect(logs.map((l) => l.id)).not.toContain(saved.id);
     expect(logs.filter((l) => l.date === TODAY).map((l) => l.setNumber)).toEqual([1, 2]);
     await expect(p.workoutLogs.deleteWorkoutLog(TRAINER, saved.id)).rejects.toMatchObject({

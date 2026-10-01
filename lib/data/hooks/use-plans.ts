@@ -7,8 +7,8 @@ import {
   type Macros,
   type Menu,
   type MenuTemplateEntry,
-  type Routine,
   type RoutineBody,
+  type RoutinePublishOp,
 } from "@/lib/domain";
 import type { MenuTemplateInput, RoutineTemplateInput } from "@/lib/data/ports";
 import { usePorts } from "./ports-provider";
@@ -193,28 +193,34 @@ export function useEditableMenus(clientId: string | undefined) {
 }
 
 /**
- * Guarda y publica la rutina: actualiza la que se está editando (o crea una si no había) y, si era
- * un borrador, la activa. La activa anterior pasa a archivada (I4).
+ * Guarda y publica la rutina según `routinePublishOp` (§7): crea una nueva, edita en sitio el
+ * borrador o, sobre la activa, crea una versión nueva; y la activa, con lo que la anterior pasa a
+ * archivada (I4). Lo activo nunca se edita en sitio.
  */
 export function usePublishRoutine(clientId: string | undefined) {
   const ports = usePorts();
   const queryClient = useQueryClient();
   const trainerId = useTrainerId();
   return useMutation({
-    mutationFn: async ({ target, body }: { target: Routine | null; body: RoutineBody }) => {
-      const saved = target
-        ? await ports.routines.updateRoutine(trainerId!, target.id, body)
-        : await ports.routines.createRoutine(trainerId!, clientId!, body);
-      return saved.status === "borrador"
-        ? ports.routines.activateRoutine(trainerId!, saved.id)
-        : saved;
+    mutationFn: async ({ op, body }: { op: RoutinePublishOp; body: RoutineBody }) => {
+      const r = ports.routines;
+      const draft =
+        op.type === "create"
+          ? await r.createRoutine(trainerId!, clientId!, body)
+          : op.type === "update"
+            ? await r.updateRoutine(trainerId!, op.id, body)
+            : await r.reviseRoutine(trainerId!, op.id, body);
+      return r.activateRoutine(trainerId!, draft.id);
     },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.routines(trainerId!, clientId!) }),
   });
 }
 
-/** Aplica el plan de `planMenuPublish`: guarda cada menú y publica los tipos de día con borradores. */
+/**
+ * Aplica el plan de `planMenuPublish`: archiva lo quitado, guarda borradores y versiones nuevas, y
+ * activa cada tipo de día que cambia, con lo que su conjunto activo anterior se archiva (§7).
+ */
 export function usePublishMenus(clientId: string | undefined) {
   const ports = usePorts();
   const queryClient = useQueryClient();
@@ -231,6 +237,7 @@ export function usePublishMenus(clientId: string | undefined) {
       for (const op of plan.ops) {
         if (op.type === "create") await ports.menus.createMenu(trainerId!, clientId!, op.body);
         else if (op.type === "update") await ports.menus.updateMenu(trainerId!, op.id, op.body);
+        else if (op.type === "revise") await ports.menus.reviseMenu(trainerId!, op.id, op.body);
         else await ports.menus.archiveMenu(trainerId!, op.id);
       }
       for (const dayType of plan.activate) {

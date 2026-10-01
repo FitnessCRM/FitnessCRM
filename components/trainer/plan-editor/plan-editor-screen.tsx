@@ -36,6 +36,7 @@ import {
   fromMenuDrafts,
   menuTemplateEntrySchema,
   routineBodySchema,
+  routinePublishOp,
   toMenuDrafts,
   type Client,
   type Exercise,
@@ -45,6 +46,7 @@ import {
   type MenuTemplateEntry,
   type Routine,
   type RoutineBody,
+  type RoutinePublishOp,
 } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 
@@ -112,11 +114,10 @@ export function PlanEditorScreen({ clientId }: { clientId: string }) {
     );
   }
 
-  // Se trabaja sobre el borrador más reciente; si no hay, sobre la activa; si no, se parte de cero.
-  const target =
-    routines.data?.find((r) => r.status === "borrador") ??
-    routines.data?.find((r) => r.status === "activo") ??
-    null;
+  // Se trabaja sobre el borrador si lo hay; si no, sobre la activa; si no, se parte de cero. Publicar
+  // edita en sitio el borrador y, sobre la activa, crea una versión nueva (§7).
+  const op = routinePublishOp(routines.data ?? []);
+  const target = op.type === "create" ? null : (routines.data?.find((r) => r.id === op.id) ?? null);
   // Remonta al cambiar los datos guardados: el borrador local vuelve a partir de lo guardado.
   const version = [
     target?.id,
@@ -130,6 +131,7 @@ export function PlanEditorScreen({ clientId }: { clientId: string }) {
       client={client.data}
       clientId={clientId}
       target={target}
+      op={op}
       menus={menus.data ?? []}
       library={library.data ?? []}
       targets={targets.data ?? []}
@@ -146,6 +148,7 @@ function PlanEditor({
   client,
   clientId,
   target,
+  op,
   menus,
   library,
   targets,
@@ -158,6 +161,7 @@ function PlanEditor({
   client: Client;
   clientId: string;
   target: Routine | null;
+  op: RoutinePublishOp;
   menus: Menu[];
   library: Exercise[];
   targets: MacroTargets[];
@@ -211,7 +215,7 @@ function PlanEditor({
       return;
     }
     try {
-      if (routinePending) await publishRoutine.mutateAsync({ target, body: routine });
+      if (routinePending) await publishRoutine.mutateAsync({ op, body: routine });
       if (menusPending && menuEntries)
         await publishMenus.mutateAsync({ current: menus, next: menuEntries });
       onPublished(true);

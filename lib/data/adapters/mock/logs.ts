@@ -40,12 +40,8 @@ export function createWeightLogPort(ctx: MockContext): WeightLogPort {
 
 export function createWorkoutLogPort(ctx: MockContext): WorkoutLogPort {
   return {
-    listWorkoutLogs: async (trainerId, clientId, routineId) =>
-      ctx.reply(
-        own(ctx.state.workoutLogs, trainerId).filter(
-          (l) => l.clientId === clientId && l.routineId === routineId,
-        ),
-      ),
+    listWorkoutLogs: async (trainerId, clientId) =>
+      ctx.reply(own(ctx.state.workoutLogs, trainerId).filter((l) => l.clientId === clientId)),
     saveWorkoutLog: async (input) => {
       const existing = ctx.state.workoutLogs.find(
         (l) =>
