@@ -11,12 +11,14 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="flex items-end justify-between gap-6">
+    <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
       <div>
         {eyebrow ? <p className="eyebrow text-accent">{eyebrow}</p> : null}
         <h1 className="page-title mt-0.5">{title}</h1>
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-3">{actions}</div> : null}
+      {actions ? (
+        <div className="flex max-w-full flex-wrap items-center gap-3">{actions}</div>
+      ) : null}
     </header>
   );
 }

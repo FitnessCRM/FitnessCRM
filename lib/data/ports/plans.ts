@@ -37,6 +37,8 @@ export interface MacroTargetsPort {
 export interface MenuPort {
   /** Menús activos del cliente (varios por tipo de día; uno sugerido). */
   listActiveMenus(trainerId: string, clientId: string): Promise<Menu[]>;
+  /** Menús del cliente que se pueden editar: los activos y los borradores, no los archivados. */
+  listMenus(trainerId: string, clientId: string): Promise<Menu[]>;
   createMenu(trainerId: string, clientId: string, body: MenuBody): Promise<Menu>;
   updateMenu(trainerId: string, menuId: string, body: MenuBody): Promise<Menu>;
   /** Publica los menús en borrador de un tipo de día y archiva los activos de ese tipo. */

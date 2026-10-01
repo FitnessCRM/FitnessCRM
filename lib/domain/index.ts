@@ -5,6 +5,7 @@ export * from "./macros";
 export * from "./questionnaire";
 export * from "./review";
 export * from "./templates";
+export * from "./plan-publish";
 export * from "./routine";
 export * from "./workout";
 export * from "./membership";
