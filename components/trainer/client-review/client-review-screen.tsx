@@ -36,14 +36,16 @@ export const reviewDate = (review: Review): CivilDate =>
  * el detalle del cliente, donde está el histórico de sus revisiones.
  */
 function BackLink({ clientId }: { clientId: string }) {
-  const fromDashboard = useSearchParams().get("from") === "dashboard";
+  const from = useSearchParams().get("from");
+  const href =
+    from === "dashboard" ? "/dashboard" : from === "reviews" ? "/reviews" : `/clients/${clientId}`;
   return (
     <Link
-      href={fromDashboard ? "/dashboard" : `/clients/${clientId}`}
+      href={href}
       className="text-text-muted hover:text-text-primary focus-visible:ring-ring/50 -mb-3 inline-flex min-h-8 w-fit items-center gap-1.5 rounded-md text-[13px] outline-none focus-visible:ring-[3px]"
     >
       <ArrowLeftIcon aria-hidden className="size-4" />
-      {fromDashboard ? t.backToDashboard : t.back}
+      {from === "dashboard" ? t.backToDashboard : from === "reviews" ? t.backToReviews : t.back}
     </Link>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ReviewDraftChanges } from "@/lib/data/ports";
+import type { ReviewDraftChanges, ReviewTrackingQuery } from "@/lib/data/ports";
 import type { Pose, ReviewFeedback } from "@/lib/domain";
 import { usePorts } from "./ports-provider";
 import { queryKeys } from "./query-keys";
@@ -59,6 +59,18 @@ export function useSubmittedReviewsPage(page: number, pageSize: number) {
   return useQuery({
     queryKey: [...queryKeys.submittedReviews(trainerId ?? ""), "paginated", page, pageSize],
     queryFn: () => ports.reviews.listSubmittedReviewsPage(trainerId!, { page, pageSize }),
+    enabled: trainerId !== undefined,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Todas las revisiones recibidas con su cliente, paginadas en servidor (`/reviews`). */
+export function useReviewsTracking(query: ReviewTrackingQuery) {
+  const ports = usePorts();
+  const trainerId = useTrainerId();
+  return useQuery({
+    queryKey: queryKeys.reviewsTracking(trainerId ?? "", query),
+    queryFn: () => ports.reviews.listReviewsTracking(trainerId!, query),
     enabled: trainerId !== undefined,
     placeholderData: keepPreviousData,
   });

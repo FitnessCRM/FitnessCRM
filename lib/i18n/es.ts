@@ -25,6 +25,7 @@ export const es = {
     trainer: {
       dashboard: "Dashboard",
       clientes: "Clientes",
+      revisiones: "Revisiones",
       biblioteca: "Biblioteca",
       plantillas: "Plantillas",
       cuestionario: "Cuestionario",
@@ -70,6 +71,7 @@ export const es = {
     trainer: {
       dashboard: "Panel de control",
       clientes: "Clientes",
+      revisiones: "Revisiones recibidas",
       clienteNuevo: "Alta de nuevo cliente",
       clienteDetalle: "Detalle de cliente",
       editor: "Editor de plan",
@@ -835,8 +837,43 @@ export const es = {
       hint: "Prueba con otro nombre o cambia el filtro.",
     },
   },
+  screensReviews: {
+    eyebrow: "Seguimiento",
+    search: { label: "Buscar revisión por cliente", placeholder: "Buscar por cliente…" },
+    filters: {
+      label: "Filtrar por estado",
+      todas: "Todas",
+      enviada: "Nuevas",
+      vista: "Vistas",
+      revisada: "Revisadas",
+    },
+    columns: {
+      client: "Cliente",
+      week: "Semana",
+      sent: "Enviada",
+      status: "Estado",
+      content: "Contenido",
+    },
+    weekShort: "S",
+    pagination: {
+      label: "Paginación de revisiones",
+      summary: "Página {page} de {pages} · {total} revisiones",
+      previous: "Anterior",
+      next: "Siguiente",
+    },
+    openReview: "Abrir revisión de",
+    empty: {
+      title: "Aún no has recibido revisiones",
+      hint: "Cuando un cliente envíe su revisión semanal aparecerá aquí.",
+    },
+    noMatches: {
+      title: "Ninguna revisión coincide",
+      hint: "Prueba con otro nombre o cambia el filtro.",
+    },
+  },
   screensTrainerReview: {
     breadcrumb: "Clientes",
+    backToReviews: "Volver a revisiones",
     back: "Volver al cliente",
     backToDashboard: "Volver al dashboard",
     title: "Revisión",

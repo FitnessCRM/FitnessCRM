@@ -16,6 +16,7 @@ const nav = es.nav.trainer;
 const items: { href: string; label: string }[] = [
   { href: "/dashboard", label: nav.dashboard },
   { href: "/clients", label: nav.clientes },
+  { href: "/reviews", label: nav.revisiones },
   { href: "/library", label: nav.biblioteca },
   { href: "/templates", label: nav.plantillas },
   { href: "/questionnaire", label: nav.cuestionario },

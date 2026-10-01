@@ -1,4 +1,4 @@
-import type { ReviewPort } from "@/lib/data/ports";
+import type { ReviewPort, ReviewTrackingFilter } from "@/lib/data/ports";
 import {
   DomainError,
   answerQuestion,
@@ -58,6 +58,39 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
       const rows = all.slice(start, start + query.pageSize);
 
       return ctx.reply({ rows, total });
+    },
+    listReviewsTracking: async (trainerId, query) => {
+      const fold = (text: string) =>
+        text
+          .normalize("NFD")
+          .replace(/\p{Diacritic}/gu, "")
+          .toLowerCase();
+      const needle = fold(query.search.trim());
+      const clients = own(ctx.state.clients, trainerId);
+      // Los borradores los rellena el cliente: el entrenador solo ve lo que se le ha enviado.
+      const named = own(ctx.state.reviews, trainerId).flatMap((review) => {
+        const client = clients.find((c) => c.id === review.clientId);
+        return review.status !== "borrador" &&
+          client &&
+          fold(`${client.firstName} ${client.lastName}`).includes(needle)
+          ? [{ review, client }]
+          : [];
+      });
+      const counts: Record<ReviewTrackingFilter, number> = {
+        todas: named.length,
+        enviada: named.filter((r) => r.review.status === "enviada").length,
+        vista: named.filter((r) => r.review.status === "vista").length,
+        revisada: named.filter((r) => r.review.status === "revisada").length,
+      };
+      const rows = named
+        .filter((r) => query.filter === "todas" || r.review.status === query.filter)
+        .sort(
+          (a, b) =>
+            Number(b.review.status === "enviada") - Number(a.review.status === "enviada") ||
+            bySubmittedDesc(a.review, b.review),
+        )
+        .slice(query.page * query.pageSize, (query.page + 1) * query.pageSize);
+      return ctx.reply({ rows, counts });
     },
     getReviewStats: async (trainerId) => {
       const all = own(ctx.state.reviews, trainerId);
