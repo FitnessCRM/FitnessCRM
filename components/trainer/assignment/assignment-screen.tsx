@@ -105,7 +105,6 @@ export function AssignmentScreen({ clientId: requestedId }: { clientId: string |
       <span className="eyebrow text-text-muted max-sm:sr-only">{t.client}</span>
       <Combobox
         className="w-[60vw] max-w-[260px]"
-        inputClassName="bg-surface h-11 text-[15px]"
         label={t.client}
         placeholder={t.clientPlaceholder}
         emptyLabel={t.noClientMatch}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export interface ComboboxOption {
@@ -25,7 +26,6 @@ export function Combobox({
   placeholder,
   emptyLabel,
   className,
-  inputClassName,
 }: {
   options: ComboboxOption[];
   /** `null` = ninguna elegida. */
@@ -36,8 +36,6 @@ export function Combobox({
   placeholder: string;
   emptyLabel: string;
   className?: string;
-  /** Clases del campo de texto (la altura, por ejemplo); `className` es del contenedor. */
-  inputClassName?: string;
 }) {
   const id = useId();
   const listId = `${id}-list`;
@@ -80,7 +78,7 @@ export function Combobox({
 
   return (
     <div className={cn("relative", className)}>
-      <input
+      <Input
         type="text"
         role="combobox"
         aria-label={label}
@@ -102,11 +100,9 @@ export function Combobox({
           setOpen(true);
         }}
         onKeyDown={onKeyDown}
-        className={cn(
-          "border-border-emphasis bg-background font-ui text-text-primary placeholder:text-text-muted h-9 w-full rounded-md border px-3.5 text-[14px] transition-[color,box-shadow] outline-none",
-          "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-          inputClassName,
-        )}
+        // El campo es el `Input` de la app, a 40 px como el buscador de Clientes. Con una opción
+        // elegida el placeholder es su nombre, así que va en el color del texto y no en el tenue.
+        className={cn("h-10", selected && "placeholder:text-text-muted")}
       />
       {open ? (
         <ul
