@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Combobox } from "@/components/ui/combobox";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import {
   useActiveMenus,
@@ -15,6 +14,7 @@ import {
 import type { MenuTemplateSummary, RoutineTemplateSummary } from "@/lib/data/ports";
 import { countTemplateExercises } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
+import { ClientPicker } from "../client-picker";
 import { MacrosCard } from "./macros-card";
 import { TemplatePicker, type PickerOption } from "./template-picker";
 
@@ -103,16 +103,10 @@ export function AssignmentScreen({ clientId: requestedId }: { clientId: string |
   const selector = (
     <div className="flex items-center gap-3">
       <span className="eyebrow text-text-muted max-sm:sr-only">{t.client}</span>
-      <Combobox
-        className="w-[60vw] max-w-[260px]"
-        label={t.client}
-        placeholder={t.clientPlaceholder}
-        emptyLabel={t.noClientMatch}
+      <ClientPicker
+        className="w-[60vw] max-w-[280px]"
+        clients={assignable}
         value={client.id}
-        options={assignable.map((c) => ({
-          value: c.id,
-          label: `${c.firstName} ${c.lastName}`,
-        }))}
         // Aquí siempre hay un cliente elegido: no existe «todos», así que `null` no llega.
         onChange={(value) => {
           if (value !== null) router.replace(`/assignment?clientId=${value}`);

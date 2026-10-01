@@ -120,7 +120,7 @@ describe("demo data", () => {
 });
 
 describe("client tracking (server-side)", () => {
-  const query = { filter: "todos", search: "", today: TODAY, page: 0, pageSize: 2 } as const;
+  const query = { filter: "todos", today: TODAY, page: 0, pageSize: 2 } as const;
 
   it("paginates, puts new reviews first and counts without paginating", async () => {
     const p = ports();
@@ -135,7 +135,7 @@ describe("client tracking (server-side)", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("filters by status and searches by name ignoring accents", async () => {
+  it("filters by status and by a single client", async () => {
     const p = ports();
     const active = await p.clients.listClientsTracking(TRAINER, {
       ...query,
@@ -143,14 +143,17 @@ describe("client tracking (server-side)", () => {
       pageSize: 50,
     });
     expect(active.rows.every((r) => r.client.status === "activo")).toBe(true);
-    const marta = await p.clients.listClientsTracking(TRAINER, { ...query, search: "  MARTA " });
+    const marta = await p.clients.listClientsTracking(TRAINER, { ...query, clientId: "c-marta" });
     expect(marta.rows.map((r) => r.client.id)).toEqual(["c-marta"]);
     expect(marta.counts.todos).toBe(1);
   });
 
   it("returns the active routine name as the plan", async () => {
     const p = ports();
-    const { rows } = await p.clients.listClientsTracking(TRAINER, { ...query, search: "marta" });
+    const { rows } = await p.clients.listClientsTracking(TRAINER, {
+      ...query,
+      clientId: "c-marta",
+    });
     const routine = await p.routines.getActiveRoutine(TRAINER, "c-marta");
     expect(rows[0]!.routineName).toBe(routine?.name ?? null);
     expect(rows[0]!.routineName).not.toBeNull();

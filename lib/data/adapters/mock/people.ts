@@ -71,12 +71,6 @@ export function createClientPort(ctx: MockContext): ClientPort {
       return ctx.reply({ rows, counts });
     },
     listClientsTracking: async (trainerId, query) => {
-      const fold = (text: string) =>
-        text
-          .normalize("NFD")
-          .replace(/\p{Diacritic}/gu, "")
-          .toLowerCase();
-      const needle = fold(query.search.trim());
       const memberships = own(ctx.state.memberships, trainerId);
       const routines = own(ctx.state.routines, trainerId).filter((r) => r.status === "activo");
       const newReviewWeek = new Map<string, number>();
@@ -84,8 +78,8 @@ export function createClientPort(ctx: MockContext): ClientPort {
         if (r.status === "enviada") newReviewWeek.set(r.clientId, r.weekNumber);
       }
 
-      const named = own(ctx.state.clients, trainerId).filter((c) =>
-        fold(`${c.firstName} ${c.lastName}`).includes(needle),
+      const named = own(ctx.state.clients, trainerId).filter(
+        (c) => query.clientId === undefined || c.id === query.clientId,
       );
       const counts: Record<ClientTrackingFilter, number> = {
         todos: named.length,
