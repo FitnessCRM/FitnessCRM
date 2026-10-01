@@ -4,6 +4,23 @@ Tarjeta 30. Informe de búsqueda: documenta, no arregla. Ningún archivo del rep
 salvo este. Las sondas y mutaciones que se usaron para verificar se ejecutaron en local y se
 retiraron antes del commit (`git status` limpio tras cada una).
 
+## Decisiones tomadas (01-10-2026)
+
+Dani cerró seis decisiones a partir de los huecos de este informe. Están escritas en
+`docs/dominio.md`; como son dominio, las aprueba Miguel al revisar el PR. Cierran el hueco de
+dominio, no los hallazgos: los arreglos van en la tarjeta 60.
+
+| Decisión | Cierra | Hallazgos | En `dominio.md` |
+|---|---|---|---|
+| D1 · Peso de una revisión | H1, H10 | E04, E09 | I24, I25; §2 e I9 precisados |
+| D2 · Unidad de un tipo de medida | H4, H8 | E05 | I26; I12 precisada; §2 y §7 |
+| D3 · Editar un plan activo | H12 | E27 | §7 (sustituye la decisión de la tarjeta 10) |
+| D4 · «Inactivo» no existe | H2 | E13, E24 | §7 |
+| D5 · Fechas de un pesaje y alta futura | H3 | E08, E14 | I27; §8 |
+| D6 · I4 y los menús | H11 | — | I4 |
+
+H5, H6, H7 y H9 siguen abiertos en la tarjeta 61.
+
 ## Comprobación contra `764699d` (01-10-2026)
 
 El informe de abajo es una foto de `88fba36`. Esta sección lo comprueba contra
