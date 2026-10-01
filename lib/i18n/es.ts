@@ -447,6 +447,13 @@ export const es = {
     notFound: { title: "Plantilla no encontrada", hint: "Puede que se haya eliminado." },
     sections: { details: "Datos", content: "Contenido" },
   },
+  /** Selector de cliente del panel (`components/trainer/client-picker.tsx`): lo usan Clientes, Membresías y Asignación. */
+  clientPicker: {
+    label: "Cliente",
+    placeholder: "Buscar cliente…",
+    all: "Todos los clientes",
+    noMatch: "Ningún cliente coincide",
+  },
   screensAssignment: {
     eyebrow: "Entrenos, macros y menús",
     client: "Cliente",
@@ -655,10 +662,6 @@ export const es = {
       expiring: "Caducan pronto",
       /** `{days}` lo rellena la pantalla con `EXPIRING_SOON_DAYS`. */
       expiringHint: "Vigentes que acaban en los próximos {days} días",
-      client: "Cliente",
-      clientPlaceholder: "Buscar cliente…",
-      allClients: "Todos los clientes",
-      noClients: "Ningún cliente coincide",
     },
     pagination: {
       label: "Paginación",
@@ -818,7 +821,6 @@ export const es = {
   },
   screensClients: {
     eyebrow: "Tu cartera",
-    search: { label: "Buscar cliente", placeholder: "Buscar por nombre…" },
     filters: {
       label: "Filtrar por estado",
       todos: "Todos",

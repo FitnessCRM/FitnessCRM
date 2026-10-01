@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Combobox } from "@/components/ui/combobox";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,6 +16,7 @@ import {
 import { todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
+import { ClientPicker } from "../client-picker";
 import { MembershipRow } from "./membership-row";
 
 const t = es.screensTrainerMemberships;
@@ -104,17 +104,11 @@ export function MembershipsScreen({ initialClientId }: { initialClientId?: strin
         <EmptyState title={t.empty.title} description={t.empty.hint} />
       ) : (
         <>
-          <Combobox
+          <ClientPicker
             className="w-full max-w-[280px]"
-            label={t.filters.client}
-            placeholder={t.filters.clientPlaceholder}
-            allLabel={t.filters.allClients}
-            emptyLabel={t.filters.noClients}
+            clients={clients.data ?? []}
             value={clientId}
-            options={(clients.data ?? []).map((c) => ({
-              value: c.id,
-              label: `${c.firstName} ${c.lastName}`,
-            }))}
+            allowAll
             onChange={(value) => change(() => setClientId(value))}
           />
 

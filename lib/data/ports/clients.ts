@@ -30,8 +30,8 @@ export type ClientTrackingFilter = "todos" | ClientStatus;
 /** Consulta paginada en servidor del seguimiento de clientes (`/clients`). */
 export interface ClientTrackingQuery {
   filter: ClientTrackingFilter;
-  /** Texto libre sobre el nombre; sin tildes ni mayúsculas. Vacío: sin búsqueda. */
-  search: string;
+  /** Solo este cliente; sin él, toda la cartera. Como en la tabla de Membresías. */
+  clientId?: string;
   /** Fecha civil de hoy en la zona del entrenador: «membresía vigente» depende de ella. */
   today: CivilDate;
   /** Página, desde 0. */

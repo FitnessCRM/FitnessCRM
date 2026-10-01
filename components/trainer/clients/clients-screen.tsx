@@ -4,14 +4,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import type { ClientTrackingFilter } from "@/lib/data/ports";
-import { useClientsTracking, useTrainer } from "@/lib/data/hooks";
+import { useClients, useClientsTracking, useTrainer } from "@/lib/data/hooks";
 import { todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
+import { ClientPicker } from "../client-picker";
 import { ClientRow, ROW_GRID } from "./client-row";
 
 const t = es.screensClients;
@@ -23,18 +23,20 @@ const PAGE_SIZE = 10;
 
 /**
  * Seguimiento de clientes (`/clients`): la cartera del entrenador de un vistazo. Cada fila lleva
- * al detalle del cliente y el botón de la cabecera al alta. Filtra, busca y pagina el servidor:
- * la pantalla solo pide la página que enseña. Las revisiones nuevas van primero.
+ * al detalle del cliente y el botón de la cabecera al alta. Se acota por estado y por cliente
+ * (el mismo selector que Membresías y Asignación) y pagina el servidor: la pantalla solo pide la
+ * página que enseña. Las revisiones nuevas van primero.
  */
 export function ClientsScreen() {
   const trainer = useTrainer();
   const [filter, setFilter] = useState<ClientTrackingFilter>("todos");
-  const [search, setSearch] = useState("");
+  const [clientId, setClientId] = useState<string | null>(null);
+  const clients = useClients();
   const [page, setPage] = useState(0);
 
   const tracking = useClientsTracking({
     filter,
-    search,
+    clientId: clientId ?? undefined,
     today: todayCivil(trainer.data?.timeZone),
     page,
     pageSize: PAGE_SIZE,
@@ -50,7 +52,7 @@ export function ClientsScreen() {
 
   const total = data?.counts[filter] ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const neverAny = data !== undefined && data.counts.todos === 0 && search.trim() === "";
+  const neverAny = data !== undefined && data.counts.todos === 0 && clientId === null;
 
   let body;
   if (tracking.isError || trainer.isError) {
@@ -98,13 +100,12 @@ export function ClientsScreen() {
               </button>
             ))}
           </div>
-          <Input
-            type="search"
-            aria-label={t.search.label}
-            placeholder={t.search.placeholder}
-            value={search}
-            onChange={(e) => change(() => setSearch(e.target.value))}
-            className="h-10 sm:max-w-[260px]"
+          <ClientPicker
+            className="w-full sm:max-w-[280px]"
+            clients={clients.data ?? []}
+            value={clientId}
+            allowAll
+            onChange={(value) => change(() => setClientId(value))}
           />
         </div>
 

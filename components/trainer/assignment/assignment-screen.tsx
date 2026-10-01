@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { NativeSelect } from "@/components/ui/native-select";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import {
   useActiveMenus,
@@ -15,6 +14,7 @@ import {
 import type { MenuTemplateSummary, RoutineTemplateSummary } from "@/lib/data/ports";
 import { countTemplateExercises } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
+import { ClientPicker } from "../client-picker";
 import { MacrosCard } from "./macros-card";
 import { TemplatePicker, type PickerOption } from "./template-picker";
 
@@ -101,20 +101,18 @@ export function AssignmentScreen({ clientId: requestedId }: { clientId: string |
 
   const client = assignable.find((c) => c.id === requestedId) ?? assignable[0]!;
   const selector = (
-    <label className="flex items-center gap-3">
+    <div className="flex items-center gap-3">
       <span className="eyebrow text-text-muted max-sm:sr-only">{t.client}</span>
-      <NativeSelect
+      <ClientPicker
+        className="w-[60vw] max-w-[280px]"
+        clients={assignable}
         value={client.id}
-        onChange={(event) => router.replace(`/assignment?clientId=${event.target.value}`)}
-        className="border-border-emphasis bg-surface h-11 max-w-[60vw] truncate text-[15px] sm:max-w-[260px]"
-      >
-        {assignable.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.firstName} {c.lastName}
-          </option>
-        ))}
-      </NativeSelect>
-    </label>
+        // Aquí siempre hay un cliente elegido: no existe «todos», así que `null` no llega.
+        onChange={(value) => {
+          if (value !== null) router.replace(`/assignment?clientId=${value}`);
+        }}
+      />
+    </div>
   );
 
   return (

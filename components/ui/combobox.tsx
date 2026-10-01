@@ -13,7 +13,8 @@ const fold = (text: string) => text.normalize("NFD").replace(/\p{M}/gu, "").toLo
 
 /**
  * Autocompletado de una sola elección: un campo de texto que filtra la lista mientras se
- * escribe (patrón ARIA «combobox» con lista). La primera opción, `allLabel`, deshace la elección.
+ * escribe (patrón ARIA «combobox» con lista). Con `allLabel`, la primera opción deshace la
+ * elección; sin él siempre hay una elegida y no existe esa opción.
  */
 export function Combobox({
   options,
@@ -29,7 +30,7 @@ export function Combobox({
   /** `null` = ninguna elegida. */
   value: string | null;
   onChange: (value: string | null) => void;
-  allLabel: string;
+  allLabel?: string;
   label: string;
   placeholder: string;
   emptyLabel: string;
@@ -49,7 +50,9 @@ export function Combobox({
   );
   // La opción «todos» va siempre primera y solo cuando no se está buscando.
   const items: { value: string | null; label: string }[] =
-    needle === "" ? [{ value: null, label: allLabel }, ...matches] : matches;
+    needle === "" && allLabel !== undefined
+      ? [{ value: null, label: allLabel }, ...matches]
+      : matches;
 
   const choose = (item: { value: string | null }) => {
     onChange(item.value);
@@ -86,6 +89,8 @@ export function Combobox({
         placeholder={selected ? selected.label : placeholder}
         value={open ? text : (selected?.label ?? "")}
         onFocus={() => setOpen(true)}
+        // Tras elegir sigue con el foco: un clic en el campo tiene que volver a abrir la lista.
+        onClick={() => setOpen(true)}
         onBlur={() => {
           setOpen(false);
           setText("");
