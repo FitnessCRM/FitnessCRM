@@ -191,8 +191,8 @@ componentes; el contenedor lateral es un `div`, no un `aside`, porque `contents`
 pierde su semántica en algunos navegadores.
 
 **Unidades.** El peso corporal siempre en kg (I18). Cada tipo de medida declara su unidad y el
-valor se guarda en ella, sin conversiones silenciosas. Las kcal se derivan de los macros (4/4/9)
-y no se almacenan.
+valor se guarda en ella, sin conversiones silenciosas. Las kcal las fija el entrenador y se
+guardan junto a los macros: no se derivan con 4/4/9.
 
 **Validación.** Un esquema zod por concepto en `lib/domain/schemas`, y es la única fuente de
 verdad. El formulario valida contra él y el futuro backend también.
