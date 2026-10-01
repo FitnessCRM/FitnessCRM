@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MacrosCard } from "@/components/trainer/assignment/macros-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,6 +26,7 @@ import {
   useClientRoutines,
   useEditableMenus,
   useExercises,
+  useMacroTargets,
   useMenuTemplates,
   usePublishMenus,
   usePublishRoutine,
@@ -35,6 +37,7 @@ import {
   routineBodySchema,
   type Client,
   type Exercise,
+  type MacroTargets,
   type Menu,
   type MenuTemplateEntry,
   type Routine,
@@ -61,17 +64,18 @@ function toEntry(menu: Menu): MenuTemplateEntry {
 /**
  * Pantalla 12 · Editor de plan. Rutina y menú del cliente, con los mismos editores que las
  * plantillas. Se edita sobre un borrador local y «Publicar cambios» guarda y activa lo que toque
- * (I4: lo activo anterior pasa a archivado). Las macros se fijan en Asignación.
+ * (I4: lo activo anterior pasa a archivado). Las macros del cliente van sobre el editor de menú.
  */
 export function PlanEditorScreen({ clientId }: { clientId: string }) {
   const client = useClient(clientId);
   const routines = useClientRoutines(clientId);
   const menus = useEditableMenus(clientId);
   const library = useExercises();
+  const targets = useMacroTargets(clientId);
   const [tab, setTab] = useState<Tab>("routine");
   const [published, setPublished] = useState(false);
 
-  const queries = [client, routines, menus, library];
+  const queries = [client, routines, menus, library, targets];
   const back = (
     <Link
       href={`/clients/${clientId}`}
@@ -125,6 +129,7 @@ export function PlanEditorScreen({ clientId }: { clientId: string }) {
       target={target}
       menus={menus.data ?? []}
       library={library.data ?? []}
+      targets={targets.data ?? []}
       tab={tab}
       onTab={setTab}
       published={published}
@@ -140,6 +145,7 @@ function PlanEditor({
   target,
   menus,
   library,
+  targets,
   tab,
   onTab,
   published,
@@ -151,6 +157,7 @@ function PlanEditor({
   target: Routine | null;
   menus: Menu[];
   library: Exercise[];
+  targets: MacroTargets[];
   tab: Tab;
   onTab: (tab: Tab) => void;
   published: boolean;
@@ -302,12 +309,7 @@ function PlanEditor({
         </TabsContent>
 
         <TabsContent value="menu" className="flex flex-col gap-4">
-          <Link
-            href={`/assignment?clientId=${clientId}`}
-            className="text-accent-hover hover:text-accent-emphasis w-fit text-[13px]"
-          >
-            {t.macrosLink}
-          </Link>
+          <MacrosCard clientId={clientId} targets={targets} />
           <MenusEditor menus={menuDraft} onChange={editMenus} />
         </TabsContent>
       </Tabs>

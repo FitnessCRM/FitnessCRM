@@ -508,7 +508,6 @@ export const es = {
     invalid: "Revisa lo que has escrito: falta algún nombre o hay números fuera de rango.",
     saveError: "No se han podido publicar los cambios.",
     draftBadge: "Borrador",
-    macrosLink: "Las macros del cliente se establecen en Asignación →",
     notFound: { title: "Cliente no encontrado", hint: "Puede que se haya eliminado." },
     defaultRoutineName: "Rutina de {name}",
   },
