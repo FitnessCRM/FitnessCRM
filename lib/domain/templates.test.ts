@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { NOW, idFactory } from "./__tests__/fixtures";
 import type { MenuTemplate, RoutineTemplate } from "./schemas";
-import { cloneMenuTemplate, cloneRoutineTemplate } from "./templates";
+import {
+  cloneMenuTemplate,
+  cloneRoutineTemplate,
+  countTemplateDayTypes,
+  countTemplateExercises,
+  duplicateMenuTemplate,
+  duplicateRoutineTemplate,
+} from "./templates";
 
 const routineTemplate: RoutineTemplate = {
   id: "rt-1",
@@ -81,5 +88,32 @@ describe("templates are cloned, never linked (§4)", () => {
     expect(menus[0]?.meals[0]?.items[0]?.name).toBe("Copos de avena");
     menuTemplate.menus[0]!.meals[0]!.items[0]!.grams = 1;
     expect(menus[0]?.meals[0]?.items[0]?.grams).toBe(80);
+  });
+});
+
+describe("duplicating a template", () => {
+  const dup = { newId: idFactory("dup"), now: NOW, name: "Hiper 5d v3 (copia)" };
+
+  it("makes an independent template with fresh ids and the given name", () => {
+    const copy = duplicateRoutineTemplate(routineTemplate, dup);
+    expect(copy.id).not.toBe(routineTemplate.id);
+    expect(copy.name).toBe("Hiper 5d v3 (copia)");
+    expect(copy.days[0]?.id).not.toBe(routineTemplate.days[0]?.id);
+    expect(copy.days[0]?.exercises[0]?.exerciseId).toBe("ex-press");
+    routineTemplate.days[0]!.exercises[0]!.prescription.sets = 7;
+    expect(copy.days[0]?.exercises[0]?.prescription.sets).not.toBe(7);
+  });
+
+  it("copies every menu, meal and food of a menu template with fresh ids", () => {
+    const copy = duplicateMenuTemplate(menuTemplate, { ...dup, newId: idFactory("dm") });
+    expect(copy.menus).toHaveLength(menuTemplate.menus.length);
+    expect(copy.menus[0]?.id).not.toBe(menuTemplate.menus[0]?.id);
+    expect(copy.menus[0]?.meals[0]?.items[0]?.id).not.toBe("f-1");
+    expect(copy.menus[0]?.meals[0]?.items[0]?.name).toBe("Copos de avena");
+  });
+
+  it("counts exercises across days and distinct day types", () => {
+    expect(countTemplateExercises(routineTemplate)).toBe(1);
+    expect(countTemplateDayTypes(menuTemplate)).toBe(1);
   });
 });

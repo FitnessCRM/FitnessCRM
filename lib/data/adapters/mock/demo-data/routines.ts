@@ -72,7 +72,7 @@ export function buildRoutines(d: DemoDates): {
       ...templateBase,
       id: "rt-hiper-5d-v3",
       name: "Hiper 5d v3",
-      description: "5 días · torso/pierna",
+      description: "torso/pierna",
       days: hyper5dDays("rt1"),
       updatedAt: ts(d.daysAgo(17)),
     },
@@ -80,7 +80,7 @@ export function buildRoutines(d: DemoDates): {
       ...templateBase,
       id: "rt-fuerza-basicos-3d",
       name: "Fuerza básicos 3d",
-      description: "3 días · SBD",
+      description: "SBD",
       days: [
         day("rt2", 1, "Sentadilla", [
           [EX.squat, 5, 5, null, "1", "4 min"],
@@ -101,7 +101,7 @@ export function buildRoutines(d: DemoDates): {
       ...templateBase,
       id: "rt-full-body-2d",
       name: "Full body 2d",
-      description: "2 días · principiantes",
+      description: "principiantes",
       days: [
         day("rt3", 1, "A", [
           [EX.squat, 3, 8, 10, "3"],
