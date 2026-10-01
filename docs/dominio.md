@@ -185,12 +185,12 @@ marcan y no se reutiliza su número.
 | I22 | `weekNumber` se congela al crear la revisión y no se recalcula nunca | Escritura única |
 | I23 | Como máximo un `WeightLog` por cliente y fecha civil. Registrar un peso en una fecha que ya tiene pesaje **lo actualiza** en lugar de crear otro: conserva su identidad y su fecha de creación (la revisión que lo referencia, I9, no se rompe) y sustituye el peso. La nota se sustituye solo si llega una; si llega vacía, se conserva la anterior | Lógica de dominio + backend (índice único `(clientId, date)` o id determinista `clientId_fecha`) |
 | I24 | Mientras una revisión está en `borrador` o `enviada`, su peso es el del pesaje al que apunta (`weightLogId`): si el cliente corrige ese pesaje, la revisión lo refleja. La revisión no cambia sola de pesaje —no sigue al último de la ventana—: cambia cuando el cliente la vuelve a guardar. Al pasar a `vista` guarda copia del peso en kg y de la fecha del pesaje, y desde entonces se lee de la copia aunque el pesaje se corrija | Lógica de dominio + escritura única de la copia |
-| I25 | Un pesaje al que apunta una revisión `enviada`, `vista` o `revisada` no se puede borrar | Lógica de dominio + backend |
+| I25 | Un pesaje al que apunta una revisión `enviada`, `vista` o `revisada` no se puede borrar. Rige en el uso normal de la app: el borrado a petición (§7, §9) se lleva a la vez las revisiones y los pesajes del cliente, e I25 no lo impide | Lógica de dominio + backend |
 | I26 | La unidad de un tipo de medida es inmutable desde la primera medida registrada de ese tipo. Para cambiarla se archiva el tipo y se crea otro. La etiqueta es editable siempre | Lógica de dominio + backend |
 | I27 | Un pesaje no admite una fecha posterior a hoy, en la zona del entrenador, ni anterior a la fecha de alta del cliente | Lógica de dominio (recibe «hoy» y la fecha de alta) + backend |
 
-I5, I9, I12, I15, I17, I22 e I23 concentran casi toda la lógica de negocio real. Se cubren con
-tests desde el primer día.
+I5, I9, I12, I15, I17, I22, I23, I24, I25, I26 e I27 concentran casi toda la lógica de negocio
+real. Se cubren con tests desde el primer día.
 
 Cómo se implementan I5 e I9: la revisión guarda al crearse su **ventana** (las fechas entre las
 que vale un pesaje) y sus **requisitos congelados** (qué tipos de medida y qué preguntas se le
@@ -221,18 +221,22 @@ Son los tres únicos estados: **«inactivo» no existe**. Cualquier agrupación 
 usa estos tres, con sus etiquetas «Invitación pendiente», «En activo» y «Baja» (decidido el
 01-10-2026).
 La baja conserva el histórico completo, fotos incluidas, sin caducidad. Aparte existe una
-operación de **borrado a petición** que anonimiza el histórico y borra los datos del cliente.
+operación de **borrado a petición** que anonimiza el histórico y borra los datos del cliente. Se
+lleva a la vez sus revisiones y sus pesajes, y por eso I25 no la impide.
 **Esa operación no alcanza a las imágenes**: viven en el Drive del entrenador y las borra él a
 mano (I14, §9). Son dos actos distintos y hay que contarlos como tales, porque el segundo puede
 no ocurrir.
 
 **Rutina / Macros / Menú** — `borrador` → `activo` → `archivado`
 Asignar una rutina nueva archiva la anterior, y lo mismo unos macros nuevos para un tipo de día.
-De los menús puede haber varios activos por tipo de día (I4). El histórico se conserva para poder
-leer un `WorkoutLog` antiguo en su contexto.
+Los menús activos de un tipo de día forman un **conjunto** (I4): activar un conjunto nuevo para
+ese tipo de día, sea al asignar una plantilla o al publicar desde el editor, archiva todos los que
+estaban activos en él. El histórico se conserva para poder leer un `WorkoutLog` antiguo en su
+contexto.
 **Una rutina o un menú activo no se edita en sitio**: publicar cambios sobre él crea una versión
-nueva y archiva la anterior. Un borrador sí se edita en sitio. Decidido el 01-10-2026; sustituye
-la decisión de la tarjeta 10, que editaba la rutina activa en sitio.
+nueva y archiva la anterior; en los menús, la versión nueva es el conjunto de su tipo de día. Un
+borrador sí se edita en sitio. Decidido el 01-10-2026; sustituye la decisión de la tarjeta 10, que
+editaba la rutina activa en sitio.
 
 **Ejercicio** — `activo` → `archivado`
 El entrenador puede "eliminar" un ejercicio de su biblioteca. El sistema le avisa antes de qué
@@ -306,7 +310,9 @@ De ahí salen cuatro cosas, y las cuatro son del dominio, no de la interfaz:
 2. **El borrado del resto de los datos del cliente sigue siendo de la app**, con su operación
    explícita por cliente: revisiones, medidas, respuestas, pesajes, registros de entreno. Son dos
    actos separados y hay que contarlos separados. Dar por hecho que el primero arrastra al segundo
-   es exactamente el error que esta sección existe para evitar.
+   es exactamente el error que esta sección existe para evitar. Dentro de esa operación,
+   revisiones y pesajes se van a la vez, así que I25 —que rige en el uso normal de la app— no la
+   impide.
 3. **El texto de consentimiento del alta deja de ser una nota y pasa a ser obligatorio.** Ya no
    basta con declarar finalidad y plazo: tiene que decir **dónde viven las fotos** (el Drive del
    entrenador), **quién las custodia** (el entrenador, no la app) y **a quién se le pide el

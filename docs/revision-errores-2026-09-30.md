@@ -19,6 +19,16 @@ dominio, no los hallazgos: los arreglos van en la tarjeta 60.
 | D5 · Fechas de un pesaje y alta futura | H3 | E08, E14 | I27; §8 |
 | D6 · I4 y los menús | H11 | — | I4 |
 
+Al escribirlas salieron dos huecos más, también cerrados el 01-10-2026:
+
+- **Menús al asignar o publicar.** Los menús activos de un tipo de día forman un conjunto.
+  Activar uno nuevo para ese tipo de día, sea desde una plantilla o desde el editor, archiva todos
+  los que estaban activos en él, que es lo que ya hace `activateMenus`. Completa D3 y D6. Está en
+  §7.
+- **I25 y el borrado a petición.** I25 rige en el uso normal de la app. El borrado a petición se
+  lleva a la vez las revisiones y los pesajes del cliente, e I25 no lo impide. Está en I25, §7
+  y §9.
+
 H5, H6, H7 y H9 siguen abiertos en la tarjeta 61.
 
 ## Comprobación contra `764699d` (01-10-2026)
