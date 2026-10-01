@@ -197,8 +197,8 @@ guardan junto a los macros: no se derivan con 4/4/9.
 **Validación.** Un esquema zod por concepto en `lib/domain/schemas`, y es la única fuente de
 verdad. El formulario valida contra él y el futuro backend también.
 
-**Tests.** Vitest sobre el dominio. Antes de darse por terminadas, I5, I9, I12, I15, I17, I22
-e I23 tienen test. Los componentes no se testean todavía.
+**Tests.** Vitest sobre el dominio. Antes de darse por terminadas, I5, I9, I12, I15, I17, I22,
+I23, I24, I25, I26 e I27 tienen test. Los componentes no se testean todavía.
 
 **Verificar el entorno antes de concluir.** Antes de dar por buena una comprobación, confirma que
 el entorno mide lo que crees. Ya ha mentido tres veces: la emulación de viewport del panel que no

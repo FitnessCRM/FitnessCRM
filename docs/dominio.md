@@ -38,13 +38,16 @@ misma tabla que `WorkoutLog` (lo que hace el cliente). El registro es opcional y
 El menú no tiene registro: es sugerencia pura.
 
 **Dato continuo vs. dato de corte.** `WeightLog` es libre y alimenta las gráficas; `Review` es un
-corte y alimenta la comparación. **El peso no vive dentro de la revisión**: la revisión referencia
-el `WeightLog` de su ventana. Una sola fuente de verdad para la gráfica.
+corte y alimenta la comparación. **Mientras la revisión es editable, el peso no vive dentro de
+ella**: referencia el `WeightLog` de su ventana. Una sola fuente de verdad para la gráfica. Al
+pasar a `vista` la revisión guarda copia del peso y de su fecha, y desde entonces se lee de la
+copia (I24); la gráfica sigue leyendo los pesajes.
 
 **Catálogo vivo vs. copia congelada.** `QuestionnaireQuestion` → `QuestionnaireResponse`,
 `MeasurementType` → `BodyMeasurement`. La FK al catálogo se mantiene (permite comparar entre
 revisiones por identidad); el enunciado, formato, etiqueta y unidad se copian congelados al
-crear la respuesta (permite leer el pasado tal y como se preguntó).
+registrar el valor, y de nuevo solo si el valor cambia (I12) (permite leer el pasado tal y como
+se preguntó).
 
 **Sugerencia vs. obligación.** Nada es obligatorio para el cliente salvo enviar la revisión, y
 ni eso se impone: la cadencia es orientativa.
@@ -161,15 +164,15 @@ marcan y no se reutiliza su número.
 | I1 | Todo registro pertenece a un único entrenador y solo él lo lee o escribe | Backend (RLS o reglas) |
 | I2 | Un cliente pertenece a exactamente un entrenador | FK + backend |
 | I3 | Una rutina solo usa ejercicios de la biblioteca de su mismo entrenador | Validación de dominio + backend |
-| I4 | Un cliente tiene como máximo una rutina activa, un juego de macros por tipo de día y un menú activo por tipo de día | Lógica de dominio |
+| I4 | Un cliente tiene como máximo una rutina activa y un juego de macros por tipo de día. De los menús puede haber varios activos por tipo de día, uno de ellos sugerido (§3) | Lógica de dominio |
 | I5 | Una revisión está **completa** ⟺ 3 fotos (frente, perfil, espalda) + peso en ventana + un valor por cada tipo de medida exigido al abrirla + todas las preguntas exigidas al abrirla. **La completitud no bloquea el envío**: se avisa y el cliente decide. Es una **foto del momento del envío**: si una imagen desaparece después, la revisión ni se reabre ni pasa a incompleta | `lib/domain/review` |
 | ~~I6~~ | ~~La periodicidad la fija el entrenador y el cliente no la escribe~~ | **Derogada** (§1.3). La cadencia sigue siendo del entrenador, pero es orientativa |
 | ~~I7~~ | ~~Una revisión pertenece a exactamente un periodo~~ | **Derogada**: el periodo ya no existe |
 | I8 | Los tipos de medida provienen del catálogo **del entrenador**, cerrado para el cliente | FK + backend |
-| I9 | El peso de una revisión es un `WeightLog` con fecha dentro de la ventana de la revisión | Lógica de dominio |
+| I9 | El peso de una revisión sale de un `WeightLog` con fecha dentro de la ventana de la revisión: mientras es editable lo referencia, y desde `vista` guarda su copia (I24) | Lógica de dominio |
 | I10 | La comparación de fotos es una acción explícita del entrenador, nunca un estado derivado | Ausencia de automatismo |
 | I11 | El cliente lee su rutina, macros y menú; nunca los escribe | Backend |
-| I12 | Toda respuesta y toda medida conservan enunciado/etiqueta, formato y unidad vigentes en su creación. Editar el catálogo no altera el histórico. Lo único que puede faltar de una revisión antigua es la **imagen**, que vive fuera de la app (§9) | Columnas congeladas + escritura única |
+| I12 | Toda respuesta y toda medida conservan enunciado/etiqueta, formato y unidad vigentes cuando se registró su valor. La copia congelada se escribe al registrar el valor por primera vez o al cambiarlo: volver a guardar una revisión no recongela lo que no ha cambiado. Editar el catálogo no altera el histórico. Lo único que puede faltar de una revisión antigua es la **imagen**, que vive fuera de la app (§9) | Columnas congeladas, escritas solo al registrar o cambiar el valor |
 | I13 | Nada de lo que cuelgue histórico se borra: preguntas, tipos de medida y ejercicios se archivan | Soft delete |
 | I14 | Las imágenes viven en el Drive del entrenador y **la app no puede borrarlas**: el borrado de las fotos lo hace el entrenador a mano, en su Drive. La app sí borra el resto de los datos del cliente, con una operación explícita por cliente | Fuera de la app (Drive) para las imágenes · lógica de dominio para lo demás |
 | I15 | El formato de una pregunta —tipo y límites de la escala— es inmutable desde que existe la primera respuesta. El enunciado es editable siempre | Lógica de dominio + backend |
@@ -181,9 +184,13 @@ marcan y no se reutiliza su número.
 | I21 | Una membresía registra estado de pago, nunca importes cobrados ni datos de pago | Modelo de datos |
 | I22 | `weekNumber` se congela al crear la revisión y no se recalcula nunca | Escritura única |
 | I23 | Como máximo un `WeightLog` por cliente y fecha civil. Registrar un peso en una fecha que ya tiene pesaje **lo actualiza** en lugar de crear otro: conserva su identidad y su fecha de creación (la revisión que lo referencia, I9, no se rompe) y sustituye el peso. La nota se sustituye solo si llega una; si llega vacía, se conserva la anterior | Lógica de dominio + backend (índice único `(clientId, date)` o id determinista `clientId_fecha`) |
+| I24 | Mientras una revisión está en `borrador` o `enviada`, su peso es el del pesaje al que apunta (`weightLogId`): si el cliente corrige ese pesaje, la revisión lo refleja. La revisión no cambia sola de pesaje —no sigue al último de la ventana—: cambia cuando el cliente la vuelve a guardar. Al pasar a `vista` guarda copia del peso en kg y de la fecha del pesaje, y desde entonces se lee de la copia aunque el pesaje se corrija | Lógica de dominio + escritura única de la copia |
+| I25 | Un pesaje al que apunta una revisión `enviada`, `vista` o `revisada` no se puede borrar. Rige en el uso normal de la app: el borrado a petición (§7, §9) se lleva a la vez las revisiones y los pesajes del cliente, e I25 no lo impide | Lógica de dominio + backend |
+| I26 | La unidad de un tipo de medida es inmutable desde la primera medida registrada de ese tipo. Para cambiarla se archiva el tipo y se crea otro. La etiqueta es editable siempre | Lógica de dominio + backend |
+| I27 | Un pesaje no admite una fecha posterior a hoy, en la zona del entrenador, ni anterior a la fecha de alta del cliente | Lógica de dominio (recibe «hoy» y la fecha de alta) + backend |
 
-I5, I9, I12, I15, I17, I22 e I23 concentran casi toda la lógica de negocio real. Se cubren con
-tests desde el primer día.
+I5, I9, I12, I15, I17, I22, I23, I24, I25, I26 e I27 concentran casi toda la lógica de negocio
+real. Se cubren con tests desde el primer día.
 
 Cómo se implementan I5 e I9: la revisión guarda al crearse su **ventana** (las fechas entre las
 que vale un pesaje) y sus **requisitos congelados** (qué tipos de medida y qué preguntas se le
@@ -210,15 +217,26 @@ Es aceptable: el entrenador recibe aviso de revisión nueva y el flujo real es q
 ## 7. Ciclos de vida
 
 **Cliente** — `invitado` → `activo` → `dado_de_baja`
+Son los tres únicos estados: **«inactivo» no existe**. Cualquier agrupación o cifra en pantalla
+usa estos tres, con sus etiquetas «Invitación pendiente», «En activo» y «Baja» (decidido el
+01-10-2026).
 La baja conserva el histórico completo, fotos incluidas, sin caducidad. Aparte existe una
-operación de **borrado a petición** que anonimiza el histórico y borra los datos del cliente.
+operación de **borrado a petición** que anonimiza el histórico y borra los datos del cliente. Se
+lleva a la vez sus revisiones y sus pesajes, y por eso I25 no la impide.
 **Esa operación no alcanza a las imágenes**: viven en el Drive del entrenador y las borra él a
 mano (I14, §9). Son dos actos distintos y hay que contarlos como tales, porque el segundo puede
 no ocurrir.
 
 **Rutina / Macros / Menú** — `borrador` → `activo` → `archivado`
-Asignar uno nuevo archiva el anterior. El histórico se conserva para poder leer un `WorkoutLog`
-antiguo en su contexto.
+Asignar una rutina nueva archiva la anterior, y lo mismo unos macros nuevos para un tipo de día.
+Los menús activos de un tipo de día forman un **conjunto** (I4): activar un conjunto nuevo para
+ese tipo de día, sea al asignar una plantilla o al publicar desde el editor, archiva todos los que
+estaban activos en él. El histórico se conserva para poder leer un `WorkoutLog` antiguo en su
+contexto.
+**Una rutina o un menú activo no se edita en sitio**: publicar cambios sobre él crea una versión
+nueva y archiva la anterior; en los menús, la versión nueva es el conjunto de su tipo de día. Un
+borrador sí se edita en sitio. Decidido el 01-10-2026; sustituye la decisión de la tarjeta 10, que
+editaba la rutina activa en sitio.
 
 **Ejercicio** — `activo` → `archivado`
 El entrenador puede "eliminar" un ejercicio de su biblioteca. El sistema le avisa antes de qué
@@ -231,6 +249,8 @@ en vez de borrarse.
 Nunca se borra: hay histórico colgando. Archivar la saca de las revisiones futuras y de la
 comprobación de completitud (I5), pero no toca las pasadas. La UI ya lo advierte: "los cambios
 aplican a partir de la próxima revisión".
+La unidad de un tipo de medida no se edita desde su primera medida registrada (I26): para
+cambiarla se archiva el tipo y se crea otro. La etiqueta se edita siempre.
 
 **Revisión** — `borrador` → `enviada` → `vista` → `revisada`
 
@@ -258,6 +278,8 @@ weekNumber(client, date) = floor((date - client.startDate) / 7 días) + 1
 ```
 
 - Se calcula en la zona horaria del entrenador, que es un campo de su configuración.
+- Antes de la fecha de alta no hay semana. Un cliente cuya fecha de alta todavía no ha llegado no
+  tiene `weekNumber`, y en pantalla se pinta «—», no «Semana 1».
 - Se **congela** en la revisión al crearla (I22). Cambiar `startDate` después no reetiqueta el
   histórico.
 - El histórico se agrupa de dos en dos para la UI: "Semana 1-2", "Semana 3-4". Es presentación
@@ -288,7 +310,9 @@ De ahí salen cuatro cosas, y las cuatro son del dominio, no de la interfaz:
 2. **El borrado del resto de los datos del cliente sigue siendo de la app**, con su operación
    explícita por cliente: revisiones, medidas, respuestas, pesajes, registros de entreno. Son dos
    actos separados y hay que contarlos separados. Dar por hecho que el primero arrastra al segundo
-   es exactamente el error que esta sección existe para evitar.
+   es exactamente el error que esta sección existe para evitar. Dentro de esa operación,
+   revisiones y pesajes se van a la vez, así que I25 —que rige en el uso normal de la app— no la
+   impide.
 3. **El texto de consentimiento del alta deja de ser una nota y pasa a ser obligatorio.** Ya no
    basta con declarar finalidad y plazo: tiene que decir **dónde viven las fotos** (el Drive del
    entrenador), **quién las custodia** (el entrenador, no la app) y **a quién se le pide el
