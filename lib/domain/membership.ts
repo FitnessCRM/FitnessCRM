@@ -111,3 +111,28 @@ export function matchesMembershipFilter(
   if (filter === "expiring") return isExpiringSoon(membership, today);
   return true;
 }
+
+/**
+ * Inicio que se propone para una renovación: el día siguiente al fin de la última membresía del
+ * cliente, o hoy si ya venció o no tiene ninguna. Solo propone: el entrenador puede cambiarlo.
+ */
+export function suggestedRenewalStart(
+  memberships: readonly Membership[],
+  today: CivilDate,
+): CivilDate {
+  const lastEnd = memberships.reduce<CivilDate | null>(
+    (latest, m) => (latest === null || m.endDate > latest ? m.endDate : latest),
+    null,
+  );
+  if (lastEnd === null) return today;
+  const next = addCivilDays(lastEnd, 1);
+  return next > today ? next : today;
+}
+
+/** Si un periodo se pisa con alguna de las membresías (extremos incluidos, como en el solape). */
+export function overlapsAnyMembership(
+  memberships: readonly Membership[],
+  period: { startDate: CivilDate; endDate: CivilDate },
+): boolean {
+  return memberships.some((m) => period.startDate <= m.endDate && m.startDate <= period.endDate);
+}

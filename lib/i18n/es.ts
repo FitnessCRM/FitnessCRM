@@ -1019,6 +1019,37 @@ export const es = {
     },
     notFoundTitle: "Cliente no encontrado",
     notFoundHint: "No existe o no pertenece a tu cartera.",
+    membership: {
+      title: "Membresía",
+      manage: "Gestionar",
+      renew: "Renovar",
+      /** `{days}` lo rellena la pantalla. */
+      daysLeft: { zero: "acaba hoy", one: "queda {days} día", other: "quedan {days} días" },
+      none: "Sin membresía vigente",
+      noneAtAll: "Sin membresías todavía",
+      /** `{start}` lo rellena la pantalla con la fecha de inicio. */
+      upcoming: "Próxima: empieza el {start}",
+      overlapHint:
+        "Hay membresías de este cliente que se solapan. El cliente ve la que empezó más tarde: corrígelo en Gestionar.",
+      renewDialog: {
+        title: "Renovar membresía",
+        hint: "Crea una membresía nueva; la anterior se conserva en el historial.",
+        type: "Tipo",
+        start: "Fecha inicio",
+        end: "Fecha fin",
+        payment: "Estado del pago",
+        overlapWarning:
+          "Estas fechas se solapan con otra membresía del cliente. Puedes guardarla, pero el cliente verá la que empiece más tarde.",
+        errors: {
+          dateInvalid: "Elige una fecha",
+          endBeforeStart: "El fin no puede ser anterior al inicio",
+          saveFailed: "No se ha podido crear la renovación.",
+        },
+        cancel: "Cancelar",
+        submit: "Crear renovación",
+        submitting: "Creando…",
+      },
+    },
   },
   status: {
     /** Califican a una persona: invariables en género (ver «Idioma» en CLAUDE.md). */

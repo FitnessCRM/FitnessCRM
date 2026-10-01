@@ -29,13 +29,13 @@ const PAGE_SIZE = 50;
  * acotable por cliente y por estado, con edición en línea de tipo, fechas y estado de pago (I21).
  * Filtra y pagina el servidor: la pantalla solo pide la página que enseña.
  */
-export function MembershipsScreen() {
+export function MembershipsScreen({ initialClientId }: { initialClientId?: string }) {
   const trainer = useTrainer();
   const today = todayCivil(trainer.data?.timeZone);
   const clients = useClients();
   const save = useSaveMembership();
   const [filter, setFilter] = useState<MembershipStatusFilter>("all");
-  const [clientId, setClientId] = useState<string | null>(null);
+  const [clientId, setClientId] = useState<string | null>(initialClientId ?? null);
   const [page, setPage] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
 

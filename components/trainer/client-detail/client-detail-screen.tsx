@@ -9,6 +9,7 @@ import {
   useActiveMenus,
   useActiveRoutine,
   useClient,
+  useClientMemberships,
   useClientReviews,
   useMacroTargets,
   useMeasurementTypes,
@@ -25,6 +26,7 @@ import {
 import { todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn, initialsOf } from "@/lib/utils";
+import { MembershipCard } from "./membership-card";
 import { MacrosMenuCard, RoutineCard } from "./plan-cards";
 import { ReviewsHistory } from "./reviews-history";
 
@@ -56,7 +58,8 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
   const logs = useWeightLogs(clientId);
   const reviews = useClientReviews(clientId);
   const types = useMeasurementTypes();
-  const queries = [trainer, client, routine, targets, menus, logs, reviews, types];
+  const memberships = useClientMemberships(clientId);
+  const queries = [trainer, client, routine, targets, menus, logs, reviews, types, memberships];
 
   if (queries.some((q) => q.isError)) {
     return <ErrorState onRetry={() => queries.forEach((q) => void q.refetch())} />;
@@ -72,7 +75,8 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
     !menus.data ||
     !logs.data ||
     !reviews.data ||
-    !types.data
+    !types.data ||
+    !memberships.data
   ) {
     return <LoadingState />;
   }
@@ -131,6 +135,7 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px]">
         <div className="flex flex-col gap-5">
+          <MembershipCard clientId={clientId} memberships={memberships.data} today={today} />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <RoutineCard routine={routine.data} editHref={editorHref} />
             <MacrosMenuCard targets={targets.data} menus={menus.data} editHref={editorHref} />
