@@ -7,6 +7,7 @@ import { Brand } from "@/components/ui/brand";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { OfflineBanner } from "@/components/ui/offline-banner";
+import { SheetClose } from "@/components/ui/sheet";
 import { useClient, useSessionClientId } from "@/lib/data/hooks";
 import { es } from "@/lib/i18n/es";
 import { cn, initialsOf, shortNameOf } from "@/lib/utils";
@@ -28,6 +29,7 @@ export function ClientShell({ children }: { children: ReactNode }) {
   const client = useClient(useSessionClientId());
   const isActive = (item: (typeof items)[number]) =>
     [item.href, ...(item.also ?? [])].some((h) => pathname === h || pathname.startsWith(`${h}/`));
+  const onProfile = pathname === "/profile";
   const initials = client.data ? initialsOf(client.data.firstName, client.data.lastName) : "";
   const shortName = client.data ? shortNameOf(client.data.firstName, client.data.lastName) : " ";
 
@@ -41,10 +43,17 @@ export function ClientShell({ children }: { children: ReactNode }) {
           items={items.map((item) => ({ ...item, active: isActive(item) }))}
           header={<Brand />}
           footer={
-            <div className="flex items-center gap-2.5">
-              <InitialsAvatar initials={initials} />
-              <p className="truncate text-[14px] font-semibold">{shortName}</p>
-            </div>
+            <SheetClose asChild>
+              <Link
+                href="/profile"
+                aria-label={es.screensClientProfile.link}
+                aria-current={onProfile ? "page" : undefined}
+                className="hover:bg-surface-raised -mx-2 flex items-center gap-2.5 rounded-sm px-2 py-1.5 transition-colors"
+              >
+                <InitialsAvatar initials={initials} />
+                <p className="truncate text-[14px] font-semibold">{shortName}</p>
+              </Link>
+            </SheetClose>
           }
         />
         <Brand className="shrink-0 max-lg:hidden" />
@@ -66,14 +75,15 @@ export function ClientShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="flex shrink-0 items-center gap-3 max-lg:hidden">
-          <span className="text-text-muted text-sm max-sm:hidden">
-            {client.data ? shortNameOf(client.data.firstName, client.data.lastName) : " "}
-          </span>
-          <InitialsAvatar
-            initials={client.data ? initialsOf(client.data.firstName, client.data.lastName) : ""}
-          />
-        </div>
+        <Link
+          href="/profile"
+          aria-label={es.screensClientProfile.link}
+          aria-current={onProfile ? "page" : undefined}
+          className="hover:bg-surface-raised flex shrink-0 items-center gap-3 rounded-sm px-2 py-1 transition-colors max-lg:hidden"
+        >
+          <span className="text-text-muted text-sm max-sm:hidden">{shortName}</span>
+          <InitialsAvatar initials={initials} />
+        </Link>
       </header>
       <OfflineBanner />
       <main className="flex flex-1 flex-col gap-7 px-10 py-9 max-sm:px-4 max-sm:py-6">

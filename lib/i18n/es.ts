@@ -139,6 +139,7 @@ export const es = {
       progreso: "Tu progreso",
       membresia: "Membresía",
       verRevision: "Ver revisión",
+      perfil: "Tu perfil",
     },
   },
   screens: {
@@ -856,6 +857,40 @@ export const es = {
       lastNameRequired: "Escribe los apellidos",
       emailInvalid: "Escribe un email válido",
       dateInvalid: "Elige una fecha",
+    },
+  },
+  screensClientProfile: {
+    eyebrow: "Tu cuenta",
+    /** Nombre accesible del enlace del avatar que lleva al perfil. */
+    link: "Ver tu perfil",
+    data: {
+      title: "Tus datos",
+      name: "Nombre",
+      email: "Email",
+      phone: "Teléfono",
+      goal: "Objetivo",
+      level: "Nivel",
+      unspecified: "Sin especificar",
+      changeHint: "Para cambiar un dato, díselo a tu entrenador.",
+    },
+    tracking: {
+      title: "Tu seguimiento",
+      since: "Alta",
+      week: "Semana",
+      cadence: "Revisión",
+      /** `{days}` lo rellena la pantalla. */
+      cadenceEvery: { one: "cada día", other: "cada {days} días" },
+      trainer: "Tu entrenador",
+    },
+    session: {
+      title: "Sesión",
+      logout: "Cerrar sesión",
+      loggingOut: "Saliendo…",
+      failed: "No se ha podido cerrar la sesión.",
+    },
+    notFound: {
+      title: "No encontramos tu perfil",
+      hint: "Prueba a volver a entrar.",
     },
   },
   screensClientEdit: {
