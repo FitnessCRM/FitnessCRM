@@ -1,9 +1,19 @@
 import { z } from "zod";
 import { dayTypeSchema, planStatusSchema } from "./plan-status";
-import { gramsSchema, idSchema, isoTimestampSchema, tenantFields } from "./primitives";
+import {
+  gramsSchema,
+  idSchema,
+  isoTimestampSchema,
+  positiveIntSchema,
+  tenantFields,
+} from "./primitives";
 
-/** Macros en gramos. Las kcal se derivan (4/4/9) con `derivedKcal` y no se almacenan (§5). */
+/**
+ * Kcal y macros en gramos. Los cuatro valores los escribe el entrenador y se guardan (§5): las
+ * kcal no se derivan de los macros, y la app no comprueba si cuadran con 4/4/9.
+ */
 export const macrosSchema = z.object({
+  kcal: positiveIntSchema,
   proteinG: gramsSchema,
   carbsG: gramsSchema,
   fatG: gramsSchema,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  macrosSchema,
   membershipEditSchema,
   membershipSchema,
   prescriptionSchema,
@@ -170,5 +171,28 @@ describe("misc invariants", () => {
   it("time zone must be a valid IANA name", () => {
     expect(timeZoneSchema.safeParse("Europe/Madrid").success).toBe(true);
     expect(timeZoneSchema.safeParse("Mars/Olympus").success).toBe(false);
+  });
+});
+
+describe("macros (§5): kcal written by the trainer and stored", () => {
+  const macros = { kcal: 2400, proteinG: 165, carbsG: 260, fatG: 72 };
+
+  it("requires kcal", () => {
+    const { kcal, ...withoutKcal } = macros;
+    void kcal;
+    expect(macrosSchema.safeParse(macros).success).toBe(true);
+    expect(macrosSchema.safeParse(withoutKcal).success).toBe(false);
+  });
+
+  it("kcal is an integer greater than zero", () => {
+    expect(macrosSchema.safeParse({ ...macros, kcal: 0 }).success).toBe(false);
+    expect(macrosSchema.safeParse({ ...macros, kcal: -100 }).success).toBe(false);
+    expect(macrosSchema.safeParse({ ...macros, kcal: 2400.5 }).success).toBe(false);
+  });
+
+  it("does not check kcal against 4/4/9: 2500 with 160/280/70 is valid", () => {
+    expect(
+      macrosSchema.safeParse({ kcal: 2500, proteinG: 160, carbsG: 280, fatG: 70 }).success,
+    ).toBe(true);
   });
 });

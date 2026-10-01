@@ -10,7 +10,7 @@ const menu = (id: string, over: Partial<Menu> = {}): Menu => ({
   name: id,
   dayType: "entrenamiento",
   suggested: false,
-  macros: { proteinG: 1, carbsG: 1, fatG: 1 },
+  macros: { kcal: 25, proteinG: 1, carbsG: 1, fatG: 1 },
   meals: [],
   note: "",
   status: "activo",
