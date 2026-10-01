@@ -31,15 +31,19 @@ const t = es.screensTrainerReview;
 export const reviewDate = (review: Review): CivilDate =>
   (review.submittedAt ?? review.createdAt).slice(0, 10);
 
-/** Vuelta al detalle del cliente, donde está el histórico de sus revisiones. */
+/**
+ * Vuelta a la pantalla de origen: el dashboard si se llegó de ahí (`?from=dashboard`) y, si no,
+ * el detalle del cliente, donde está el histórico de sus revisiones.
+ */
 function BackLink({ clientId }: { clientId: string }) {
+  const fromDashboard = useSearchParams().get("from") === "dashboard";
   return (
     <Link
-      href={`/clients/${clientId}`}
+      href={fromDashboard ? "/dashboard" : `/clients/${clientId}`}
       className="text-text-muted hover:text-text-primary focus-visible:ring-ring/50 -mb-3 inline-flex min-h-8 w-fit items-center gap-1.5 rounded-md text-[13px] outline-none focus-visible:ring-[3px]"
     >
       <ArrowLeftIcon aria-hidden className="size-4" />
-      {t.back}
+      {fromDashboard ? t.backToDashboard : t.back}
     </Link>
   );
 }
@@ -101,7 +105,9 @@ function ClientReview({
   today: CivilDate;
 }) {
   const router = useRouter();
-  const requested = useSearchParams().get("review");
+  const searchParams = useSearchParams();
+  const requested = searchParams.get("review");
+  const from = searchParams.get("from");
   const mutation = useReviewMutation();
 
   // Los borradores los rellena el cliente: el entrenador solo ve lo enviado.
@@ -139,7 +145,9 @@ function ClientReview({
             <NativeSelect
               value={review.id}
               onChange={(event) =>
-                router.replace(`/clients/${client.id}/review?review=${event.target.value}`)
+                router.replace(
+                  `/clients/${client.id}/review?review=${event.target.value}${from ? `&from=${from}` : ""}`,
+                )
               }
               className="border-accent-outline bg-surface h-11 text-[14px]"
             >

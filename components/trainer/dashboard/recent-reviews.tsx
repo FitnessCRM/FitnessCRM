@@ -43,7 +43,10 @@ function ReviewRow({ review }: { review: ReviewWithClient }) {
   const lastName = nameParts.slice(1).join(" ") || "";
 
   return (
-    <div className="border-border-emphasis bg-surface-raised flex items-center gap-3 rounded-md border p-3">
+    <Link
+      href={`/clients/${review.clientId}/review?review=${review.id}&from=dashboard`}
+      className="border-border-emphasis bg-surface-raised hover:border-accent-outline focus-visible:ring-ring/50 flex items-center gap-3 rounded-md border p-3 transition-colors outline-none focus-visible:ring-[3px]"
+    >
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <InitialsAvatar initials={initialsOf(firstName, lastName)} />
@@ -55,7 +58,7 @@ function ReviewRow({ review }: { review: ReviewWithClient }) {
       </div>
 
       <ReviewBadge type={badgeType} />
-    </div>
+    </Link>
   );
 }
 
