@@ -721,3 +721,277 @@ describe("flows", () => {
     ]);
   });
 });
+
+describe("writes are tenant-scoped (I1, I2): one cross-tenant case per method (E01, E02)", () => {
+  type Ports = ReturnType<typeof ports>;
+  const OTHER = "t-otro";
+  const GHOST = "c-no-existe";
+  const routineBody = {
+    name: "Rutina",
+    note: "",
+    days: [
+      {
+        id: "d1",
+        dayNumber: 1,
+        label: "",
+        exercises: [
+          {
+            id: "d1-e1",
+            exerciseId: "ex-sentadilla-trasera",
+            prescription: { sets: 3, repsMin: 8, repsMax: 10, rir: "2", rest: "", note: "" },
+          },
+        ],
+      },
+    ],
+  };
+  const menuBody = {
+    name: "Menú",
+    dayType: "entrenamiento" as const,
+    suggested: false,
+    macros: { kcal: 2000, proteinG: 150, carbsG: 200, fatG: 60 },
+    meals: [],
+    note: "",
+  };
+
+  /** Escrituras que reciben un `clientId`: (puertos, entrenador, cliente) => escritura. */
+  const byClient: [string, (p: Ports, trainerId: string, clientId: string) => Promise<unknown>][] =
+    [
+      ["routines.createRoutine", (p, t, c) => p.routines.createRoutine(t, c, routineBody)],
+      [
+        "macroTargets.setMacroTargets",
+        (p, t, c) => p.macroTargets.setMacroTargets(t, c, "entrenamiento", menuBody.macros),
+      ],
+      ["menus.createMenu", (p, t, c) => p.menus.createMenu(t, c, menuBody)],
+      ["menus.activateMenus", (p, t, c) => p.menus.activateMenus(t, c, "entrenamiento")],
+      [
+        "memberships.createMembership",
+        (p, t, c) =>
+          p.memberships.createMembership({
+            trainerId: t,
+            clientId: c,
+            type: "mensual",
+            startDate: TODAY,
+            endDate: "2026-09-28",
+            paymentStatus: "pagada",
+          }),
+      ],
+      [
+        "weightLogs.saveWeightLog",
+        (p, t, c) =>
+          p.weightLogs.saveWeightLog({
+            trainerId: t,
+            clientId: c,
+            date: TODAY,
+            weightKg: 70,
+            note: "",
+          }),
+      ],
+      [
+        "workoutLogs.saveWorkoutLog",
+        (p, t, c) =>
+          p.workoutLogs.saveWorkoutLog({
+            trainerId: t,
+            clientId: c,
+            exerciseId: "ex-sentadilla-trasera",
+            routineId: "rt-marta-hipertrofia",
+            routineDayExerciseId: "r-marta-d2-e1",
+            date: TODAY,
+            setNumber: 4,
+            weightKg: 80,
+            reps: 6,
+          }),
+      ],
+      ["reviews.openCurrentReview", (p, t, c) => p.reviews.openCurrentReview(t, c)],
+      [
+        "templates.assignRoutineTemplate",
+        (p, t, c) => p.templates.assignRoutineTemplate(t, c, "rt-full-body-2d"),
+      ],
+      [
+        "templates.assignMenuTemplate",
+        (p, t, c) => p.templates.assignMenuTemplate(t, c, p.state.menuTemplates[0]!.id),
+      ],
+    ];
+
+  it.each(byClient)("%s rejects another trainer's client and writes nothing", async (_, write) => {
+    const p = ports();
+    const before = JSON.stringify(p.state);
+    await expect(write(p, OTHER, MARTA)).rejects.toMatchObject({ code: "not_found" });
+    expect(JSON.stringify(p.state)).toBe(before);
+  });
+
+  it.each(byClient)("%s rejects a client that does not exist", async (_, write) => {
+    const p = ports();
+    const before = JSON.stringify(p.state);
+    await expect(write(p, TRAINER, GHOST)).rejects.toMatchObject({ code: "not_found" });
+    expect(JSON.stringify(p.state)).toBe(before);
+  });
+
+  /** El resto de escrituras reciben el id de lo que tocan: ninguna alcanza lo de otro entrenador. */
+  const byId: [string, (p: Ports) => Promise<unknown>][] = [
+    ["clients.updateClient", (p) => p.clients.updateClient(OTHER, MARTA, { goal: "x" })],
+    [
+      "routines.updateRoutine",
+      (p) => p.routines.updateRoutine(OTHER, "rt-marta-hipertrofia", routineBody),
+    ],
+    [
+      "routines.reviseRoutine",
+      (p) => p.routines.reviseRoutine(OTHER, "rt-marta-hipertrofia", routineBody),
+    ],
+    ["routines.activateRoutine", (p) => p.routines.activateRoutine(OTHER, "rt-marta-hipertrofia")],
+    ["menus.updateMenu", (p) => p.menus.updateMenu(OTHER, p.state.menus[0]!.id, menuBody)],
+    ["menus.reviseMenu", (p) => p.menus.reviseMenu(OTHER, p.state.menus[0]!.id, menuBody)],
+    ["menus.archiveMenu", (p) => p.menus.archiveMenu(OTHER, p.state.menus[0]!.id)],
+    [
+      "memberships.updateMembership",
+      (p) => p.memberships.updateMembership(OTHER, p.state.memberships[0]!.id, { type: "anual" }),
+    ],
+    [
+      "weightLogs.deleteWeightLog",
+      (p) => p.weightLogs.deleteWeightLog(OTHER, p.state.weightLogs[0]!.id),
+    ],
+    [
+      "workoutLogs.deleteWorkoutLog",
+      (p) => p.workoutLogs.deleteWorkoutLog(OTHER, p.state.workoutLogs[0]!.id),
+    ],
+    ["reviews.updateReviewDraft", (p) => p.reviews.updateReviewDraft(OTHER, "rv-marta-s5", {})],
+    [
+      "reviews.attachReviewMedia",
+      (p) => p.reviews.attachReviewMedia(OTHER, "rv-marta-s5", "frente", "x"),
+    ],
+    ["reviews.submitReview", (p) => p.reviews.submitReview(OTHER, "rv-marta-s5")],
+    ["reviews.markReviewViewed", (p) => p.reviews.markReviewViewed(OTHER, "rv-marta-s5")],
+    [
+      "reviews.sendReviewFeedback",
+      (p) => p.reviews.sendReviewFeedback(OTHER, "rv-marta-s4", { videoUrl: null, note: "" }),
+    ],
+  ];
+
+  it.each(byId)("%s refuses another trainer's record and writes nothing", async (_, write) => {
+    const p = ports();
+    const before = JSON.stringify(p.state);
+    await expect(write(p)).rejects.toMatchObject({ code: "not_found" });
+    expect(JSON.stringify(p.state)).toBe(before);
+  });
+
+  it("activating a routine only archives routines of the same trainer (E01)", async () => {
+    const p = ports();
+    // Una fila ajena que apunta al cliente de otro: el puerto ya no deja crearla, pero el archivado
+    // tampoco puede alcanzar la rutina activa de Marta aunque exista.
+    p.state.routines.push({
+      ...routineBody,
+      id: "rt-ajena",
+      trainerId: OTHER,
+      clientId: MARTA,
+      status: "borrador",
+      sourceTemplateName: null,
+      createdAt: `${TODAY}T08:00:00Z`,
+      updatedAt: `${TODAY}T08:00:00Z`,
+    });
+    await p.routines.activateRoutine(OTHER, "rt-ajena");
+    expect((await p.routines.getActiveRoutine(TRAINER, MARTA))?.id).toBe("rt-marta-hipertrofia");
+  });
+
+  it("a workout set is logged on a routine of that client and trainer", async () => {
+    const p = ports();
+    await expect(
+      p.workoutLogs.saveWorkoutLog({
+        trainerId: TRAINER,
+        clientId: "c-jorge",
+        exerciseId: "ex-sentadilla-trasera",
+        routineId: "rt-marta-hipertrofia",
+        routineDayExerciseId: "r-marta-d2-e1",
+        date: TODAY,
+        setNumber: 1,
+        weightKg: 80,
+        reps: 6,
+      }),
+    ).rejects.toMatchObject({ code: "not_found" });
+  });
+
+  it("an edit never changes who a record belongs to", async () => {
+    const p = ports();
+    const membership = p.state.memberships.find((m) => m.clientId === MARTA)!;
+    const edited = await p.memberships.updateMembership(TRAINER, membership.id, {
+      type: "anual",
+      clientId: "c-jorge",
+      trainerId: OTHER,
+    } as never);
+    expect(edited).toMatchObject({ clientId: MARTA, trainerId: TRAINER, type: "anual" });
+    const draft = await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-full-body-2d");
+    const updated = await p.routines.updateRoutine(TRAINER, draft.id, {
+      ...routineBody,
+      clientId: "c-jorge",
+      trainerId: OTHER,
+    } as never);
+    expect(updated).toMatchObject({ clientId: MARTA, trainerId: TRAINER });
+  });
+});
+
+describe("I3 on every routine write (E03)", () => {
+  const withExercise = (exerciseId: string) => ({
+    name: "Rutina",
+    note: "",
+    days: [
+      {
+        id: "d1",
+        dayNumber: 1,
+        label: "",
+        exercises: [
+          {
+            id: "d1-e1",
+            exerciseId,
+            prescription: { sets: 3, repsMin: 8, repsMax: 10, rir: "2", rest: "", note: "" },
+          },
+        ],
+      },
+    ],
+  });
+  const code = { code: "routine.exercise_not_in_library" };
+
+  it("rejects an exercise that is not in the trainer's library", async () => {
+    const p = ports();
+    const bad = withExercise("ex-que-no-existe");
+    await expect(p.routines.createRoutine(TRAINER, MARTA, bad)).rejects.toMatchObject(code);
+    await expect(
+      p.routines.reviseRoutine(TRAINER, "rt-marta-hipertrofia", bad),
+    ).rejects.toMatchObject(code);
+    const draft = await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-full-body-2d");
+    await expect(p.routines.updateRoutine(TRAINER, draft.id, bad)).rejects.toMatchObject(code);
+    await expect(
+      p.templates.saveRoutineTemplate({ trainerId: TRAINER, description: "", ...bad }),
+    ).rejects.toMatchObject(code);
+  });
+
+  it("rejects an archived exercise, which left the library (section 7)", async () => {
+    const p = ports();
+    await p.exercises.archiveExercise(TRAINER, "ex-sentadilla-trasera");
+    await expect(
+      p.routines.createRoutine(TRAINER, MARTA, withExercise("ex-sentadilla-trasera")),
+    ).rejects.toMatchObject(code);
+  });
+
+  it("accepts the trainer's active exercises", async () => {
+    const p = ports();
+    const created = await p.routines.createRoutine(TRAINER, MARTA, withExercise("ex-press-banca"));
+    expect(created.status).toBe("borrador");
+  });
+});
+
+describe("I20 on the feedback write (E06)", () => {
+  it("rejects a video that is not an http(s) link and keeps the review as it was", async () => {
+    const p = ports();
+    await p.reviews.markReviewViewed(TRAINER, "rv-marta-s5");
+    await expect(
+      p.reviews.sendReviewFeedback(TRAINER, "rv-marta-s5", {
+        videoUrl: "ftp://host/video.mp4",
+        note: "",
+      }),
+    ).rejects.toMatchObject({ code: "review.feedback_invalid_url" });
+    expect((await p.reviews.getReview(TRAINER, "rv-marta-s5"))?.status).toBe("vista");
+    const done = await p.reviews.sendReviewFeedback(TRAINER, "rv-marta-s5", {
+      videoUrl: "https://youtu.be/x",
+      note: "",
+    });
+    expect(done.status).toBe("revisada");
+  });
+});

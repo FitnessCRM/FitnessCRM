@@ -1,6 +1,11 @@
 import type { WeightLogPort, WorkoutLogPort } from "@/lib/data/ports";
-import { assertWeightLogDeletable, weightLogSchema, workoutLogSchema } from "@/lib/domain";
-import { findOwn, own, removeById, replaceById } from "./helpers";
+import {
+  DomainError,
+  assertWeightLogDeletable,
+  weightLogSchema,
+  workoutLogSchema,
+} from "@/lib/domain";
+import { findOwn, own, ownClient, removeById, replaceById } from "./helpers";
 import type { MockContext } from "./store";
 
 export function createWeightLogPort(ctx: MockContext): WeightLogPort {
@@ -12,6 +17,7 @@ export function createWeightLogPort(ctx: MockContext): WeightLogPort {
           .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt)),
       ),
     saveWeightLog: async (input) => {
+      ownClient(ctx.state, input.trainerId, input.clientId);
       const existing = ctx.state.weightLogs.find(
         (w) =>
           w.trainerId === input.trainerId && w.clientId === input.clientId && w.date === input.date,
@@ -43,6 +49,12 @@ export function createWorkoutLogPort(ctx: MockContext): WorkoutLogPort {
     listWorkoutLogs: async (trainerId, clientId) =>
       ctx.reply(own(ctx.state.workoutLogs, trainerId).filter((l) => l.clientId === clientId)),
     saveWorkoutLog: async (input) => {
+      ownClient(ctx.state, input.trainerId, input.clientId);
+      // La serie se registra sobre una rutina de ese cliente y de ese entrenador.
+      const routine = findOwn(ctx.state.routines, input.trainerId, input.routineId, "Rutina");
+      if (routine.clientId !== input.clientId) {
+        throw new DomainError("not_found", `Rutina ${input.routineId} no existe`);
+      }
       const existing = ctx.state.workoutLogs.find(
         (l) =>
           l.trainerId === input.trainerId &&

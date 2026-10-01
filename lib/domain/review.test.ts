@@ -378,3 +378,26 @@ describe("I25 · a weight log used by a sent review cannot be deleted", () => {
     ).not.toThrow();
   });
 });
+
+describe("I20 · the feedback video is an external http(s) link", () => {
+  const viewed = () => markReviewViewed(submitReview(review(), NOW), null, NOW);
+
+  it("accepts an http(s) link or no video", () => {
+    const withVideo = sendReviewFeedback(
+      viewed(),
+      { videoUrl: "https://youtu.be/x", note: "" },
+      NOW,
+    );
+    expect(withVideo.status).toBe("revisada");
+    expect(sendReviewFeedback(viewed(), { videoUrl: null, note: "Bien" }, NOW).status).toBe(
+      "revisada",
+    );
+  });
+
+  it.each(["ftp://host/video.mp4", "not a url", "javascript:alert(1)"])(
+    "rejects %s",
+    (videoUrl) => {
+      expect(() => sendReviewFeedback(viewed(), { videoUrl, note: "" }, NOW)).toThrow(DomainError);
+    },
+  );
+});

@@ -13,7 +13,7 @@ import {
   overlappingMembershipIds,
   type MembershipStatusFilter,
 } from "@/lib/domain";
-import { findOwn, own, replaceById } from "./helpers";
+import { findOwn, own, ownClient, replaceById } from "./helpers";
 import type { MockContext } from "./store";
 
 export function createSessionPort(ctx: MockContext): SessionPort {
@@ -174,6 +174,7 @@ export function createMembershipPort(ctx: MockContext): MembershipPort {
           .sort(byStartDesc),
       ),
     createMembership: async (input) => {
+      ownClient(ctx.state, input.trainerId, input.clientId);
       const membership = membershipSchema.parse({
         ...input,
         id: ctx.newId(),
@@ -184,7 +185,14 @@ export function createMembershipPort(ctx: MockContext): MembershipPort {
     },
     updateMembership: async (trainerId, membershipId, changes) => {
       const current = findOwn(ctx.state.memberships, trainerId, membershipId, "Membresía");
-      const next = membershipSchema.parse({ ...current, ...changes });
+      // La identidad no cambia nunca, aunque llegue en `changes`: ni de entrenador ni de cliente.
+      const next = membershipSchema.parse({
+        ...current,
+        ...changes,
+        id: current.id,
+        trainerId: current.trainerId,
+        clientId: current.clientId,
+      });
       return ctx.reply(replaceById(ctx.state.memberships, next));
     },
   };

@@ -1,6 +1,7 @@
 import { DomainError } from "./errors";
 import {
   POSES,
+  externalUrlSchema,
   type BodyMeasurement,
   type CivilDate,
   type Client,
@@ -274,9 +275,15 @@ export interface ReviewFeedback {
   note: string;
 }
 
-/** El entrenador envía feedback: la revisión pasa a `revisada`. */
+/** El entrenador envía feedback: la revisión pasa a `revisada`. El vídeo, enlace http(s) (I20). */
 export function sendReviewFeedback(review: Review, feedback: ReviewFeedback, now: string): Review {
   assertTransition(review, "revisada");
+  if (feedback.videoUrl !== null && !externalUrlSchema.safeParse(feedback.videoUrl).success) {
+    throw new DomainError(
+      "review.feedback_invalid_url",
+      "El vídeo del feedback tiene que ser un enlace http(s) (I20)",
+    );
+  }
   return {
     ...review,
     status: "revisada",
