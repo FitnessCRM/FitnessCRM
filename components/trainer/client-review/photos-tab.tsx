@@ -145,8 +145,10 @@ function Panel({
       </div>
       <figure
         className={cn(
-          "relative mx-auto flex aspect-[3/4] w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-lg border px-1.5 lg:w-auto lg:max-w-full",
-          large ? "max-lg:max-w-[460px] lg:h-[min(80vh,860px)]" : "lg:h-[min(72vh,720px)]",
+          "relative mx-auto flex aspect-[3/4] w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-lg border px-1.5 lg:max-w-full",
+          large
+            ? "max-lg:max-w-[460px] lg:w-[min(100%,calc(min(80vh,860px)*0.75))]"
+            : "lg:w-[min(100%,calc(min(72vh,720px)*0.75))]",
           current ? "border-accent-outline" : "border-border-subtle",
           !showImage && placeholder,
         )}

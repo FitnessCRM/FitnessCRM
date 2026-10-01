@@ -137,26 +137,32 @@ function ClientReview({
         </label>
       </div>
 
-      <Tabs defaultValue="photos" className="gap-5">
+      <Tabs defaultValue="evolution" className="gap-5">
         <TabsList aria-label={t.tabs.label} className="max-w-full">
-          <TabsTrigger value="photos" className="max-sm:px-2.5! max-sm:text-[13px]!">
-            {t.tabs.photos}
-          </TabsTrigger>
-          <TabsTrigger value="questionnaire" className="max-sm:px-2.5! max-sm:text-[13px]!">
-            {t.tabs.questionnaire}
-          </TabsTrigger>
-          <TabsTrigger value="weight" className="max-sm:px-2.5! max-sm:text-[13px]!">
-            {t.tabs.weight}
-          </TabsTrigger>
+          <TabsTrigger value="evolution">{t.tabs.evolution}</TabsTrigger>
+          <TabsTrigger value="questionnaire">{t.tabs.questionnaire}</TabsTrigger>
         </TabsList>
-        <TabsContent value="photos" className="flex flex-col gap-4">
-          <PhotosTab key={review.id} review={review} others={others} logs={logs} today={today} />
+        {/* Fotos y peso juntos: es lo que el entrenador cruza al analizar una revisión. En ancho
+            (xl) el peso va a la derecha de las fotos; por debajo, debajo. */}
+        <TabsContent value="evolution" className="flex flex-col gap-4">
+          <div className="flex flex-col gap-6 xl:grid xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+            <div className="flex min-w-0 flex-col gap-4">
+              <PhotosTab
+                key={review.id}
+                review={review}
+                others={others}
+                logs={logs}
+                today={today}
+              />
+            </div>
+            <div className="flex min-w-0 flex-col gap-4">
+              <h2 className="section-title">{t.tabs.weight}</h2>
+              <WeightTab key={review.id} review={review} logs={logs} today={today} stacked />
+            </div>
+          </div>
         </TabsContent>
         <TabsContent value="questionnaire">
           <QuestionnaireTab review={review} />
-        </TabsContent>
-        <TabsContent value="weight">
-          <WeightTab key={review.id} review={review} logs={logs} today={today} />
         </TabsContent>
       </Tabs>
     </>

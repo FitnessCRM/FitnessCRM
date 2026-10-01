@@ -634,7 +634,7 @@ export const es = {
     today: "hoy",
     tabs: {
       label: "Secciones de la revisión",
-      photos: "Fotos",
+      evolution: "Fotos y peso",
       questionnaire: "Cuestionario",
       weight: "Peso corporal",
     },

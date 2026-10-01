@@ -27,10 +27,13 @@ export function WeightTab({
   review,
   logs,
   today,
+  stacked = false,
 }: {
   review: Review;
   logs: WeightLog[];
   today: CivilDate;
+  /** En una columna estrecha, calendario, detalle y tendencia van uno sobre otro. */
+  stacked?: boolean;
 }) {
   const sorted = useMemo(() => [...logs].sort((a, b) => a.date.localeCompare(b.date)), [logs]);
   const ofReview = sorted.find((l) => l.id === review.weightLogId);
@@ -62,7 +65,7 @@ export function WeightTab({
   const offset = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_340px] lg:items-start">
+    <div className={cn("grid gap-4", !stacked && "lg:grid-cols-[1fr_340px] lg:items-start")}>
       <Card className="gap-4 px-[22px] py-[22px]">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1">
