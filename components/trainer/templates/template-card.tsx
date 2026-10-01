@@ -1,4 +1,5 @@
 import { EllipsisIcon } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -81,6 +82,9 @@ export function TemplateCard({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link href={`/templates/${item.kind}/${template.id}`}>{t.edit}</Link>
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={onDuplicate}>{t.duplicate}</DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onSelect={onDelete}>
               {t.delete}
@@ -88,7 +92,14 @@ export function TemplateCard({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <h2 className="font-display mt-3 text-[20px] font-bold uppercase">{template.name}</h2>
+      <h2 className="font-display mt-3 text-[20px] font-bold uppercase">
+        <Link
+          href={`/templates/${item.kind}/${template.id}`}
+          className="focus-visible:ring-ring/50 rounded-sm outline-none focus-visible:ring-[3px]"
+        >
+          {template.name}
+        </Link>
+      </h2>
       <p className="text-text-muted mt-1 text-[13px]">{details(item)}</p>
       <p className="border-border-subtle text-text-subtle mt-4 border-t pt-3 text-xs">
         {usageLabel(template.usageCount)} · {t.edited}{" "}

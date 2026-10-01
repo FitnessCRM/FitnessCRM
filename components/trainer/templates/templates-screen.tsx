@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import {
@@ -33,7 +35,16 @@ export function TemplatesScreen() {
   const [filter, setFilter] = useState<Filter>("all");
   const [deleting, setDeleting] = useState<TemplateItem | null>(null);
 
-  const header = <PageHeader title={es.pages.trainer.plantillas} />;
+  const header = (
+    <PageHeader
+      title={es.pages.trainer.plantillas}
+      actions={
+        <Button asChild>
+          <Link href="/templates/new">{t.newTemplate}</Link>
+        </Button>
+      }
+    />
+  );
   if (routines.isPending || menus.isPending) {
     return (
       <div className="flex flex-col gap-6">
