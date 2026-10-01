@@ -1,4 +1,4 @@
-import type { Pose, Review, ReviewDraft, ReviewFeedback } from "@/lib/domain";
+import type { Client, Pose, Review, ReviewDraft, ReviewFeedback } from "@/lib/domain";
 
 /** Lo que el cliente puede rellenar mientras la revisión sigue editable (I17). */
 export type ReviewDraftChanges = ReviewDraft;
@@ -23,6 +23,31 @@ export interface ReviewStats {
   thisWeek: number;
 }
 
+/** Corte por estado de las revisiones recibidas (`/reviews`). Los borradores no se reciben. */
+export type ReviewTrackingFilter = "todas" | "enviada" | "vista" | "revisada";
+
+/** Consulta paginada en servidor de todas las revisiones recibidas. */
+export interface ReviewTrackingQuery {
+  filter: ReviewTrackingFilter;
+  /** Texto libre sobre el nombre del cliente; sin tildes ni mayúsculas. Vacío: sin búsqueda. */
+  search: string;
+  /** Página, desde 0. */
+  page: number;
+  pageSize: number;
+}
+
+export interface ReviewTrackingRow {
+  review: Review;
+  client: Client;
+}
+
+export interface ReviewTrackingPage {
+  /** Solo la página pedida. Orden: las nuevas primero y luego las más recientes. */
+  rows: ReviewTrackingRow[];
+  /** Cuántas hay por estado dentro de la búsqueda, sin paginar: los contadores de los chips. */
+  counts: Record<ReviewTrackingFilter, number>;
+}
+
 export interface ReviewPort {
   listClientReviews(trainerId: string, clientId: string): Promise<Review[]>;
   getReview(trainerId: string, reviewId: string): Promise<Review | null>;
@@ -33,6 +58,8 @@ export interface ReviewPort {
     trainerId: string,
     query: SubmittedReviewsQuery,
   ): Promise<SubmittedReviewsPage>;
+  /** Todas las revisiones recibidas (no borradores): filtra, busca, ordena y pagina en servidor. */
+  listReviewsTracking(trainerId: string, query: ReviewTrackingQuery): Promise<ReviewTrackingPage>;
   /** Contadores de la cartera entera, calculados donde están los datos y no sobre una página. */
   getReviewStats(trainerId: string): Promise<ReviewStats>;
   /** La revisión de la semana actual del cliente si existe. Solo lectura: nunca crea nada. */
