@@ -12,6 +12,8 @@ export const es = {
     loading: "Cargando…",
     error: "Algo ha fallado",
     retry: "Reintentar",
+    /** Lo usan la tarjeta de macros (Asignación, Editor de plan) y el editor de menús. */
+    kcalInvalid: "Escribe las kcal sin puntos ni decimales, por ejemplo 2400",
     coachTag: "Coach",
     trainerNote: { title: "Nota del entrenador" },
   },
@@ -401,7 +403,8 @@ export const es = {
       dayType: "Tipo de día",
       dayTypes: { entrenamiento: "Día de entrenamiento", descanso: "Día de descanso" },
       suggested: "Sugerido para este tipo de día",
-      macros: "Macros declaradas del menú",
+      macros: "Kcal y macros declaradas del menú",
+      macrosIncomplete: "Rellena las kcal y los tres macros para poder guardar",
       protein: "Proteína (g)",
       carbs: "Carbos (g)",
       fat: "Grasas (g)",
@@ -440,7 +443,7 @@ export const es = {
     saved: "Guardado",
     saveError: "No se ha podido guardar la plantilla.",
     invalid:
-      "Revisa la plantilla: cada ejercicio necesita series y repeticiones, y cada alimento un nombre.",
+      "Revisa la plantilla: cada ejercicio necesita series y repeticiones, cada alimento un nombre y cada menú sus kcal y sus tres macros.",
     unsaved: "Hay cambios sin guardar. Si sales de la pantalla, se pierden.",
     copiedNote:
       "La plantilla se copia al cliente al asignarla: editarla no cambia planes ya asignados.",
@@ -504,7 +507,7 @@ export const es = {
       saved: "Macros guardadas.",
       saveError: "No se han podido guardar las macros.",
       invalid: "Escribe un número en gramos",
-      incomplete: "Rellena los tres macros o déjalos todos vacíos",
+      incomplete: "Rellena las kcal y los tres macros, o deja los cuatro vacíos",
     },
   },
   screensPlanEditor: {
@@ -523,7 +526,8 @@ export const es = {
     routineName: "Nombre de la rutina",
     routineNote: "Nota para el cliente",
     nameRequired: "Ponle un nombre",
-    invalid: "Revisa lo que has escrito: falta algún nombre o hay números fuera de rango.",
+    invalid:
+      "Revisa lo que has escrito: falta algún nombre, alguna cifra de kcal o de macros, o hay números fuera de rango.",
     saveError: "No se han podido publicar los cambios.",
     draftBadge: "Borrador",
     notFound: { title: "Cliente no encontrado", hint: "Puede que se haya eliminado." },

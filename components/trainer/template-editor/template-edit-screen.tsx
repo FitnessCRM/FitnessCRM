@@ -19,8 +19,11 @@ import {
   useSaveRoutineTemplate,
 } from "@/lib/data/hooks";
 import {
+  fromMenuDrafts,
   menuTemplateSchema,
   routineTemplateSchema,
+  toMenuDrafts,
+  type MenuEntryDraft,
   type MenuTemplate,
   type RoutineTemplate,
   type TemplateKind,
@@ -241,30 +244,41 @@ function RoutineEditor({ template }: { template: RoutineTemplate }) {
   );
 }
 
+/** La plantilla mientras se edita: sus menús pueden tener kcal o macros sin rellenar. */
+type MenuTemplateDraft = Omit<MenuTemplate, "menus"> & { menus: MenuEntryDraft[] };
+
+const toTemplateDraft = (template: MenuTemplate): MenuTemplateDraft => ({
+  ...template,
+  menus: toMenuDrafts(template.menus),
+});
+
 function MenuEditor({ template }: { template: MenuTemplate }) {
   const save = useSaveMenuTemplate();
-  const [saved, setSaved] = useState(template);
-  const [draft, setDraft] = useState(template);
+  const [saved, setSaved] = useState(() => toTemplateDraft(template));
+  const [draft, setDraft] = useState(() => toTemplateDraft(template));
   const [invalid, setInvalid] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   useUnsavedGuard(dirty);
 
-  const update = (change: Partial<MenuTemplate>) => {
+  const update = (change: Partial<MenuTemplateDraft>) => {
     setDraft((d) => ({ ...d, ...change }));
     setInvalid(false);
     setJustSaved(false);
   };
 
   const onSave = async () => {
-    if (!menuTemplateSchema.safeParse(draft).success) {
+    // Un menú sin sus cuatro cifras no se guarda (§5): `fromMenuDrafts` devuelve null.
+    const menus = fromMenuDrafts(draft.menus);
+    const complete = menus ? { ...draft, menus } : null;
+    if (!complete || !menuTemplateSchema.safeParse(complete).success) {
       setInvalid(true);
       return;
     }
-    const result = await save.mutateAsync(draft).catch(() => null);
+    const result = await save.mutateAsync(complete).catch(() => null);
     if (result) {
-      setSaved(result);
-      setDraft(result);
+      setSaved(toTemplateDraft(result));
+      setDraft(toTemplateDraft(result));
       setJustSaved(true);
     }
   };

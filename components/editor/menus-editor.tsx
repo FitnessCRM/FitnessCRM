@@ -10,14 +10,16 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   DAY_TYPES,
-  derivedKcal,
+  emptyMacrosDraft,
+  macrosFromDraft,
   setSuggestedMenu,
   type DayType,
+  type MacrosDraft,
   type Meal,
-  type MenuTemplateEntry,
+  type MenuEntryDraft,
 } from "@/lib/domain";
-import { formatInteger } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
+import { KcalField } from "./kcal-field";
 import { NumberField } from "./number-field";
 
 const t = es.editor.menu;
@@ -42,18 +44,20 @@ function RemoveButton({ label, onClick }: { label: string; onClick: () => void }
 }
 
 /**
- * Menús de una plantilla: varios por tipo de día, uno sugerido por tipo, con sus macros
+ * Menús de una plantilla: varios por tipo de día, uno sugerido por tipo, con sus kcal y macros
  * declaradas y su jerarquía comida → alimento. Controlado y sin datos, como el de rutina: el
- * editor del plan de un cliente puede montarlo igual.
+ * editor del plan de un cliente puede montarlo igual. Trabaja con borradores: un menú nuevo nace
+ * sin kcal ni macros y quien lo monta no puede guardarlo hasta que `fromMenuDrafts` lo dé por
+ * completo (§5).
  */
 export function MenusEditor({
   menus,
   onChange,
 }: {
-  menus: MenuTemplateEntry[];
-  onChange: (menus: MenuTemplateEntry[]) => void;
+  menus: MenuEntryDraft[];
+  onChange: (menus: MenuEntryDraft[]) => void;
 }) {
-  const update = (menuId: string, change: (menu: MenuTemplateEntry) => MenuTemplateEntry) =>
+  const update = (menuId: string, change: (menu: MenuEntryDraft) => MenuEntryDraft) =>
     onChange(menus.map((menu) => (menu.id === menuId ? change(menu) : menu)));
 
   const addMenu = () => {
@@ -66,7 +70,7 @@ export function MenusEditor({
         name: "",
         dayType,
         suggested: !hasSuggested,
-        macros: { proteinG: 0, carbsG: 0, fatG: 0 },
+        macros: emptyMacrosDraft(),
         meals: [],
         note: "",
       },
@@ -105,13 +109,19 @@ function MenuCard({
   onSuggest,
   onRemove,
 }: {
-  menu: MenuTemplateEntry;
-  onChange: (menu: MenuTemplateEntry) => void;
+  menu: MenuEntryDraft;
+  onChange: (menu: MenuEntryDraft) => void;
   onSuggest: () => void;
   onRemove: () => void;
 }) {
   const setMeal = (mealId: string, change: (meal: Meal) => Meal) =>
     onChange({ ...menu, meals: menu.meals.map((m) => (m.id === mealId ? change(m) : m)) });
+  const setMacros = (change: Partial<MacrosDraft>) =>
+    onChange({ ...menu, macros: { ...menu.macros, ...change } });
+  // Escrito pero no válido («2.000», «0»): se dice qué pasa; vacío solo cuenta como incompleto.
+  const kcal = menu.macros.kcal;
+  const kcalInvalid = kcal !== null && !(Number.isInteger(kcal) && kcal > 0);
+  const incomplete = macrosFromDraft(menu.macros) === null;
 
   return (
     <section
@@ -158,31 +168,42 @@ function MenuCard({
       <div>
         <p className="text-text-subtle tracking-label mb-2 text-[11px] uppercase">{t.macros}</p>
         <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-4">
+          <KcalField
+            id={`kcal-${menu.id}`}
+            label={t.kcal}
+            value={menu.macros.kcal}
+            invalid={kcalInvalid}
+            onChange={(kcal) => setMacros({ kcal })}
+          />
           <NumberField
             label={t.protein}
             step="any"
+            showZero
             value={menu.macros.proteinG}
-            onChange={(v) => onChange({ ...menu, macros: { ...menu.macros, proteinG: v ?? 0 } })}
+            onChange={(proteinG) => setMacros({ proteinG })}
           />
           <NumberField
             label={t.carbs}
             step="any"
+            showZero
             value={menu.macros.carbsG}
-            onChange={(v) => onChange({ ...menu, macros: { ...menu.macros, carbsG: v ?? 0 } })}
+            onChange={(carbsG) => setMacros({ carbsG })}
           />
           <NumberField
             label={t.fat}
             step="any"
+            showZero
             value={menu.macros.fatG}
-            onChange={(v) => onChange({ ...menu, macros: { ...menu.macros, fatG: v ?? 0 } })}
+            onChange={(fatG) => setMacros({ fatG })}
           />
-          <p className="text-text-muted pb-2 text-[13px]">
-            <span className="text-text-primary font-semibold">
-              {formatInteger(derivedKcal(menu.macros))}
-            </span>{" "}
-            {t.kcal}
-          </p>
         </div>
+        {kcalInvalid ? (
+          <p role="alert" className="text-danger mt-2 text-xs">
+            {es.common.kcalInvalid}
+          </p>
+        ) : incomplete ? (
+          <p className="text-text-subtle mt-2 text-xs">{t.macrosIncomplete}</p>
+        ) : null}
       </div>
 
       {menu.meals.length === 0 ? (

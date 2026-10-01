@@ -33,12 +33,15 @@ import {
   useRoutineTemplates,
 } from "@/lib/data/hooks";
 import {
+  fromMenuDrafts,
   menuTemplateEntrySchema,
   routineBodySchema,
+  toMenuDrafts,
   type Client,
   type Exercise,
   type MacroTargets,
   type Menu,
+  type MenuEntryDraft,
   type MenuTemplateEntry,
   type Routine,
   type RoutineBody,
@@ -167,7 +170,7 @@ function PlanEditor({
   const initialRoutine: RoutineBody = target
     ? { name: target.name, note: target.note, days: target.days }
     : { name: t.defaultRoutineName.replace("{name}", client.firstName), note: "", days: [] };
-  const initialMenus = menus.map(toEntry);
+  const initialMenus = toMenuDrafts(menus.map(toEntry));
   const [routine, setRoutine] = useState(initialRoutine);
   const [menuDraft, setMenuDraft] = useState(initialMenus);
   const [invalid, setInvalid] = useState(false);
@@ -190,23 +193,27 @@ function PlanEditor({
     setInvalid(false);
     onPublished(false);
   };
-  const editMenus = (next: MenuTemplateEntry[]) => {
+  const editMenus = (next: MenuEntryDraft[]) => {
     setMenuDraft(next);
     setInvalid(false);
     onPublished(false);
   };
 
   const onPublish = async () => {
+    // Un menú sin sus cuatro cifras no se publica (§5): `fromMenuDrafts` devuelve null.
+    const menuEntries = fromMenuDrafts(menuDraft);
     const valid =
       (!routinePending || routineBodySchema.safeParse(routine).success) &&
-      (!menusPending || menuTemplateEntrySchema.array().safeParse(menuDraft).success);
+      (!menusPending ||
+        (menuEntries !== null && menuTemplateEntrySchema.array().safeParse(menuEntries).success));
     if (!valid) {
       setInvalid(true);
       return;
     }
     try {
       if (routinePending) await publishRoutine.mutateAsync({ target, body: routine });
-      if (menusPending) await publishMenus.mutateAsync({ current: menus, next: menuDraft });
+      if (menusPending && menuEntries)
+        await publishMenus.mutateAsync({ current: menus, next: menuEntries });
       onPublished(true);
     } catch {
       // El error se pinta desde el estado de las mutaciones.
