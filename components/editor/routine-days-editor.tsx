@@ -4,7 +4,6 @@ import { ChevronDownIcon, ChevronUpIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
 import { EmptyState } from "@/components/ui/states";
 import {
   moveItem,
@@ -14,6 +13,7 @@ import {
   type RoutineDayExercise,
 } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
+import { ExercisePicker } from "./exercise-picker";
 import { NumberField } from "./number-field";
 
 const t = es.editor.routine;
@@ -166,12 +166,10 @@ export function RoutineDaysEditor({
                 </ul>
               )}
 
-              <NativeSelect
-                aria-label={`${t.addExercise} (${t.day} ${day.dayNumber})`}
-                value=""
-                onChange={(event) => {
-                  const exerciseId = event.target.value;
-                  if (exerciseId === "") return;
+              <ExercisePicker
+                library={library}
+                label={`${t.addExercise} (${t.day} ${day.dayNumber})`}
+                onPick={(exerciseId) =>
                   updateDay(day.id, (d) => ({
                     ...d,
                     exercises: [
@@ -189,17 +187,9 @@ export function RoutineDaysEditor({
                         },
                       },
                     ],
-                  }));
-                }}
-                className="border-border-emphasis text-text-muted h-10 w-full border-dashed text-[13px]"
-              >
-                <option value="">{t.addExercise}</option>
-                {library.map((exercise) => (
-                  <option key={exercise.id} value={exercise.id}>
-                    {exercise.name}
-                  </option>
-                ))}
-              </NativeSelect>
+                  }))
+                }
+              />
             </section>
           ))}
         </div>
