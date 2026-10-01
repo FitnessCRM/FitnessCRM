@@ -5,7 +5,9 @@ import {
   matchesMembershipFilter,
   membershipHistory,
   membershipStanding,
+  overlapsAnyMembership,
   overlappingMembershipIds,
+  suggestedRenewalStart,
 } from "./membership";
 import type { Membership } from "./schemas";
 import { addCivilDays } from "./week";
@@ -165,5 +167,42 @@ describe("membershipEndDate", () => {
     expect(membershipEndDate("mensual", "2026-01-31")).toBe("2026-02-27");
     expect(membershipEndDate("anual", "2028-02-29")).toBe("2029-02-27");
     expect(membershipEndDate("trimestral", "2026-11-15")).toBe("2027-02-14");
+  });
+});
+
+describe("suggestedRenewalStart", () => {
+  it("starts the day after the last one ends when it is still running or upcoming", () => {
+    const current = membership("2026-07-01", "2026-09-30");
+    const older = membership("2026-01-01", "2026-03-31");
+    expect(suggestedRenewalStart([older, current], "2026-09-20")).toBe("2026-10-01");
+  });
+
+  it("starts today when the last one already ended, or there is none", () => {
+    expect(suggestedRenewalStart([membership("2026-01-01", "2026-03-31")], "2026-09-20")).toBe(
+      "2026-09-20",
+    );
+    expect(suggestedRenewalStart([], "2026-09-20")).toBe("2026-09-20");
+  });
+
+  it("starts today when the day after the end is today", () => {
+    expect(suggestedRenewalStart([membership("2026-07-01", "2026-09-19")], "2026-09-20")).toBe(
+      "2026-09-20",
+    );
+  });
+});
+
+describe("overlapsAnyMembership", () => {
+  const existing = [membership("2026-07-01", "2026-09-30")];
+
+  it("counts sharing the boundary day as overlapping", () => {
+    expect(
+      overlapsAnyMembership(existing, { startDate: "2026-09-30", endDate: "2026-12-30" }),
+    ).toBe(true);
+  });
+
+  it("does not overlap when it starts the day after", () => {
+    expect(
+      overlapsAnyMembership(existing, { startDate: "2026-10-01", endDate: "2026-12-31" }),
+    ).toBe(false);
   });
 });
