@@ -114,7 +114,10 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
             {[c.goal, `${t.weekLabel} ${currentWeek}`].filter(Boolean).join(" · ")}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="outline" asChild>
+            <Link href={`/clients/${clientId}/edit`}>{t.edit}</Link>
+          </Button>
           <Button variant="outline" asChild>
             <Link href={editorHref}>{t.editPlan}</Link>
           </Button>
