@@ -66,12 +66,7 @@ export function PhotosTab({
 
       {others.length === 0 ? <p className="text-text-subtle text-[13px]">{t.noOther}</p> : null}
 
-      <div
-        className={cn(
-          "grid gap-4",
-          comparing ? "lg:grid-cols-2" : "mx-auto w-full max-w-[420px] lg:mx-0",
-        )}
-      >
+      <div className="flex gap-4 max-sm:gap-2">
         {comparing ? (
           <Panel
             review={other}
@@ -103,6 +98,7 @@ export function PhotosTab({
           pose={pose}
           today={today}
           current
+          large={!comparing}
           header={
             <p className="text-accent tracking-label font-display text-[13px] uppercase">
               {t.current}
@@ -122,12 +118,15 @@ function Panel({
   today,
   header,
   current = false,
+  large = false,
 }: {
   review: Review;
   pose: Pose;
   today: CivilDate;
   header: ReactNode;
   current?: boolean;
+  /** Sola en pantalla, la foto puede crecer más que cuando comparte la fila con otra. */
+  large?: boolean;
 }) {
   const url = review.media.find((m) => m.pose === pose)?.url;
   const [broken, setBroken] = useState<string | null>(null);
@@ -136,7 +135,7 @@ function Panel({
   const date = reviewDate(review);
 
   return (
-    <div className="flex min-w-0 flex-col gap-2">
+    <div className="flex min-w-0 flex-1 flex-col gap-2">
       <div className="flex min-h-9 flex-wrap items-center justify-between gap-2">
         {header}
         <p className="text-text-muted text-xs">
@@ -146,7 +145,8 @@ function Panel({
       </div>
       <figure
         className={cn(
-          "relative flex aspect-[3/4] flex-col items-center justify-center gap-2 overflow-hidden rounded-lg border px-1.5",
+          "relative mx-auto flex aspect-[3/4] w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-lg border px-1.5 lg:w-auto lg:max-w-full",
+          large ? "max-lg:max-w-[460px] lg:h-[min(80vh,860px)]" : "lg:h-[min(72vh,720px)]",
           current ? "border-accent-outline" : "border-border-subtle",
           !showImage && placeholder,
         )}
