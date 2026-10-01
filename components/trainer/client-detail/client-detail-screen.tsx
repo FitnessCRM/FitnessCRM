@@ -26,6 +26,7 @@ import {
 import { todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn, initialsOf } from "@/lib/utils";
+import { ClientStatusAction } from "./client-status-action";
 import { MembershipCard } from "./membership-card";
 import { MacrosMenuCard, RoutineCard } from "./plan-cards";
 import { ReviewsHistory } from "./reviews-history";
@@ -160,6 +161,8 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
           />
         </div>
       </div>
+
+      <ClientStatusAction client={c} />
     </div>
   );
 }

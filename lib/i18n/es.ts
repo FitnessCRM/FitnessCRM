@@ -1019,6 +1019,32 @@ export const es = {
     },
     notFoundTitle: "Cliente no encontrado",
     notFoundHint: "No existe o no pertenece a tu cartera.",
+    /** Dar de baja y reactivar. `{name}` lo rellena la pantalla. */
+    lifecycle: {
+      deactivate: {
+        action: "Dar de baja",
+        cardTitle: "Baja del cliente",
+        cardHint:
+          "Lo saca de tu cartera en activo y conserva todo su histórico. Puedes reactivarlo cuando quieras.",
+        title: "Dar de baja a {name}",
+        body: "Pasa a «Baja». Se conserva todo su histórico —revisiones, fotos, pesajes y medidas— y no se toca su plan ni su membresía. Deja de aparecer entre los clientes «En activo» y no se le puede asignar un plan nuevo. Puedes reactivarlo cuando quieras.",
+        note: "Esto no borra datos. Si el cliente pide que se borren, es otra operación.",
+        confirm: "Dar de baja",
+        failed: "No se ha podido dar de baja.",
+      },
+      reactivate: {
+        action: "Reactivar",
+        cardTitle: "Cliente de baja",
+        cardHint:
+          "Está fuera de tu cartera en activo. Su histórico, su plan y su membresía se conservan.",
+        title: "Reactivar a {name}",
+        body: "Vuelve a «En activo» y recupera su sitio en tu cartera. Su plan y su membresía siguen como estaban.",
+        confirm: "Reactivar",
+        failed: "No se ha podido reactivar.",
+      },
+      cancel: "Cancelar",
+      saving: "Guardando…",
+    },
     membership: {
       title: "Membresía",
       manage: "Gestionar",
