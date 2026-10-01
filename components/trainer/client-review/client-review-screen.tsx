@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeftIcon } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryBoundary } from "@/components/ui/query-boundary";
 import { EmptyState } from "@/components/ui/states";
@@ -16,8 +18,11 @@ import {
 } from "@/lib/data/hooks";
 import { formatDecimal, formatShortDate, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
+import { NativeSelect } from "./native-select";
+import { FeedbackDialog } from "./feedback-dialog";
 import { PhotosTab } from "./photos-tab";
 import { QuestionnaireTab } from "./questionnaire-tab";
+import { SentFeedback } from "./sent-feedback";
 import { WeightTab } from "./weight-tab";
 
 const t = es.screensTrainerReview;
@@ -25,6 +30,19 @@ const t = es.screensTrainerReview;
 /** Cuándo se envió la revisión (si no, cuándo se abrió): es la fecha con la que se la identifica. */
 export const reviewDate = (review: Review): CivilDate =>
   (review.submittedAt ?? review.createdAt).slice(0, 10);
+
+/** Vuelta al detalle del cliente, donde está el histórico de sus revisiones. */
+function BackLink({ clientId }: { clientId: string }) {
+  return (
+    <Link
+      href={`/clients/${clientId}`}
+      className="text-text-muted hover:text-text-primary focus-visible:ring-ring/50 -mb-3 inline-flex min-h-8 w-fit items-center gap-1.5 rounded-md text-[13px] outline-none focus-visible:ring-[3px]"
+    >
+      <ArrowLeftIcon aria-hidden className="size-4" />
+      {t.back}
+    </Link>
+  );
+}
 
 const fullName = (c: Pick<Client, "firstName" | "lastName">) => `${c.firstName} ${c.lastName}`;
 
@@ -55,6 +73,7 @@ export function ClientReviewScreen({ clientId }: { clientId: string }) {
             isEmpty={(data) => (data ?? []).every((r) => r.status === "borrador")}
             empty={
               <>
+                <BackLink clientId={c.id} />
                 <PageHeader eyebrow={`${t.breadcrumb} / ${fullName(c)}`} title={t.title} />
                 <EmptyState title={t.empty.title} description={t.empty.hint} />
               </>
@@ -106,36 +125,42 @@ function ClientReview({
 
   return (
     <>
+      <BackLink clientId={client.id} />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <PageHeader
           eyebrow={`${t.breadcrumb} / ${fullName(client)}`}
           title={`${t.title} — ${es.screensReview.week} ${review.weekNumber}`}
         />
-        <label className="flex flex-col gap-1.5">
-          <span className="text-text-subtle tracking-label text-[11px] uppercase">
-            {t.pickerLabel}
-          </span>
-          <select
-            value={review.id}
-            onChange={(event) =>
-              router.replace(`/clients/${client.id}/review?review=${event.target.value}`)
-            }
-            className="border-accent-outline bg-surface text-text-primary focus-visible:ring-ring/50 h-11 rounded-md border px-3.5 text-[14px] outline-none focus-visible:ring-[3px]"
-          >
-            {sent.map((r) => {
-              const date = reviewDate(r);
-              const kg = weightOf(r, logs);
-              return (
-                <option key={r.id} value={r.id}>
-                  {es.screensReview.week} {r.weekNumber} ·{" "}
-                  {date === today ? t.today : formatShortDate(date, today)}
-                  {kg !== undefined ? ` · ${formatDecimal(kg)} kg` : ""}
-                </option>
-              );
-            })}
-          </select>
-        </label>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-text-subtle tracking-label text-[11px] uppercase">
+              {t.pickerLabel}
+            </span>
+            <NativeSelect
+              value={review.id}
+              onChange={(event) =>
+                router.replace(`/clients/${client.id}/review?review=${event.target.value}`)
+              }
+              className="border-accent-outline bg-surface h-11 text-[14px]"
+            >
+              {sent.map((r) => {
+                const date = reviewDate(r);
+                const kg = weightOf(r, logs);
+                return (
+                  <option key={r.id} value={r.id}>
+                    {es.screensReview.week} {r.weekNumber} ·{" "}
+                    {date === today ? t.today : formatShortDate(date, today)}
+                    {kg !== undefined ? ` · ${formatDecimal(kg)} kg` : ""}
+                  </option>
+                );
+              })}
+            </NativeSelect>
+          </label>
+          {review.status === "revisada" ? null : <FeedbackDialog review={review} />}
+        </div>
       </div>
+
+      {review.status === "revisada" ? <SentFeedback review={review} today={today} /> : null}
 
       <Tabs defaultValue="evolution" className="gap-5">
         <TabsList aria-label={t.tabs.label} className="max-w-full">

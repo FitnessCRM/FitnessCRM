@@ -629,6 +629,7 @@ export const es = {
   },
   screensTrainerReview: {
     breadcrumb: "Clientes",
+    back: "Volver al cliente",
     title: "Revisión",
     pickerLabel: "Elegir revisión",
     today: "hoy",
@@ -637,6 +638,28 @@ export const es = {
       evolution: "Fotos y peso",
       questionnaire: "Cuestionario",
       weight: "Peso corporal",
+    },
+    feedback: {
+      action: "Enviar feedback",
+      title: "Enviar feedback",
+      description:
+        "Pega el enlace del vídeo y, si quieres, añade una nota. El cliente lo verá en su revisión y esta pasará a revisada.",
+      videoLabel: "Enlace del vídeo",
+      videoHint:
+        "Puede ser de YouTube o de cualquier sitio. La app no aloja vídeo: el cliente lo abre en una pestaña nueva.",
+      videoRequired: "Pega el enlace del vídeo.",
+      videoInvalid: "Escribe una dirección completa, por ejemplo https://…",
+      noteLabel: "Nota (opcional)",
+      notePlaceholder: "Lo que quieras decirle sobre esta revisión",
+      cancel: "Cancelar",
+      confirm: "Enviar al cliente",
+      sending: "Enviando…",
+      error: "No se pudo enviar el feedback. Inténtalo de nuevo.",
+      sentTitle: "Feedback enviado",
+      sentOn: "el",
+      watch: "Abrir el vídeo",
+      external: "Enlace externo:",
+      waiting: "Se activa al abrir la revisión.",
     },
     notFound: {
       title: "Revisión no encontrada",

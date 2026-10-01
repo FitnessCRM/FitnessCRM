@@ -8,6 +8,7 @@ import { formatShortDate, formatSignedDecimal } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 import { reviewDate, weightOf } from "./client-review-screen";
+import { NativeSelect } from "./native-select";
 
 const t = es.screensTrainerReview.photos;
 
@@ -77,10 +78,10 @@ export function PhotosTab({
                 <span className="text-text-subtle tracking-label font-display text-[13px] uppercase">
                   {t.compareWith}
                 </span>
-                <select
+                <NativeSelect
                   value={other.id}
                   onChange={(event) => setOtherId(event.target.value)}
-                  className="border-border-strong bg-surface text-text-primary focus-visible:ring-ring/50 h-9 rounded-md border px-3 text-[13px] outline-none focus-visible:ring-[3px]"
+                  className="border-border-strong bg-surface h-9 text-[13px]"
                 >
                   {others.map((r) => (
                     <option key={r.id} value={r.id}>
@@ -88,7 +89,7 @@ export function PhotosTab({
                       {formatShortDate(reviewDate(r), today)}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
             }
           />
