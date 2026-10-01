@@ -77,7 +77,10 @@ export function useMenuTemplates() {
   });
 }
 
-/** Clona una plantilla al cliente. Invalida sus rutinas o menús. */
+/**
+ * Clona una plantilla al cliente. Invalida sus rutinas o menús, el seguimiento (que enseña el plan)
+ * y la lista de plantillas de ese tipo (que cuenta en cuántos clientes se usa).
+ */
 export function useAssignTemplate(clientId: string | undefined) {
   const ports = usePorts();
   const queryClient = useQueryClient();
@@ -90,13 +93,20 @@ export function useAssignTemplate(clientId: string | undefined) {
       input.kind === "routine"
         ? ports.templates.assignRoutineTemplate(trainerId!, clientId!, input.templateId)
         : ports.templates.assignMenuTemplate(trainerId!, clientId!, input.templateId),
-    onSuccess: (_, input) =>
-      queryClient.invalidateQueries({
-        queryKey:
-          input.kind === "routine"
-            ? queryKeys.routines(trainerId!, clientId!)
-            : queryKeys.menus(trainerId!, clientId!),
-      }),
+    onSuccess: (_, input) => {
+      const routine = input.kind === "routine";
+      void queryClient.invalidateQueries({
+        queryKey: routine
+          ? queryKeys.routines(trainerId!, clientId!)
+          : queryKeys.menus(trainerId!, clientId!),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: routine
+          ? queryKeys.routineTemplates(trainerId!)
+          : queryKeys.menuTemplates(trainerId!),
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clientsTrackingAll(trainerId!) });
+    },
   });
 }
 
@@ -212,8 +222,11 @@ export function usePublishRoutine(clientId: string | undefined) {
             : await r.reviseRoutine(trainerId!, op.id, body);
       return r.activateRoutine(trainerId!, draft.id);
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.routines(trainerId!, clientId!) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.routines(trainerId!, clientId!) });
+      // El seguimiento enseña el nombre de la rutina activa.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clientsTrackingAll(trainerId!) });
+    },
   });
 }
 
@@ -244,7 +257,9 @@ export function usePublishMenus(clientId: string | undefined) {
         await ports.menus.activateMenus(trainerId!, clientId!, dayType);
       }
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.menus(trainerId!, clientId!) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.menus(trainerId!, clientId!) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clientsTrackingAll(trainerId!) });
+    },
   });
 }

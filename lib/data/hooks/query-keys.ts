@@ -5,6 +5,8 @@ export const queryKeys = {
   session: ["session"] as const,
   trainer: (trainerId: string) => ["trainer", trainerId] as const,
   clients: (trainerId: string) => ["clients", trainerId] as const,
+  /** Prefijo de todas las páginas del seguimiento: lo que se invalida cuando cambia su contenido. */
+  clientsTrackingAll: (trainerId: string) => ["clients", trainerId, "tracking"] as const,
   clientsTracking: (trainerId: string, query: ClientTrackingQuery) =>
     ["clients", trainerId, "tracking", query] as const,
   client: (trainerId: string, clientId: string) => ["clients", trainerId, clientId] as const,
