@@ -4,6 +4,162 @@ Tarjeta 30. Informe de búsqueda: documenta, no arregla. Ningún archivo del rep
 salvo este. Las sondas y mutaciones que se usaron para verificar se ejecutaron en local y se
 retiraron antes del commit (`git status` limpio tras cada una).
 
+## Comprobación contra `764699d` (01-10-2026)
+
+El informe de abajo es una foto de `88fba36`. Esta sección lo comprueba contra
+`764699dc6d554f31fa60a860ade6df6e359b799c` (`main` tras el PR #38), con los PR #27 a #38 dentro.
+Cada hallazgo verificado se ha vuelto a reproducir; ninguno hereda el «verificado» de la primera
+pasada.
+
+| Comando | Resultado |
+|---|---|
+| `pnpm lint` | Verde: 0 errores, 1 aviso (el mismo de `people.ts:61`). |
+| `pnpm typecheck` | Verde a la primera: esta vez el `.next` no tenía rutas antiguas. Verde también tras el build. |
+| `pnpm test` | Verde: 15 archivos, **162 tests**. |
+| `pnpm build` | Verde: 26 páginas. |
+
+**Node:** las cuatro corrieron con Node 24.18. Node 22 no está instalado en esta máquina (nvm solo
+tiene la 24) y no lo instalé: `nvm use` cambia el Node global del equipo. No había ningún servidor
+de desarrollo arrancado al construir. Lo del navegador se comprobó en producción (entrada `prod`).
+
+**Resumen:** de los 26 hallazgos, **26 siguen** (14 igual y 12 con cambios de ruta, línea o
+alcance), **ninguno está arreglado** y ninguno ha dejado de aplicar. Hay **4 nuevos** (E27–E30).
+Total: **30**, que son 9 de invariante, 12 de corrección, 3 de arquitectura y 6 de interfaz.
+
+### Estado de E01 a E26
+
+| ID | Estado | Comprobación |
+|---|---|---|
+| E01 | Sigue igual | Reproducido con sonda: `rt-marta-hipertrofia` queda `archivado`. **Desde la interfaz no se llega**, ni siquiera con el editor de plan (PR #32): la pantalla solo se pinta si `getClient` devuelve el cliente, y `getClient` filtra por entrenador (`plan-editor-screen.tsx:103`). El agujero sigue en el puerto, que es lo que copiará Firebase. |
+| E02 | Sigue igual | Reproducido: membresía y pesaje con un cliente ajeno, y membresía con un cliente inexistente. La renovación nueva (PR #36) escribe por `createMembership` con el cliente del detalle, así que desde la interfaz no se llega. |
+| E03 | Sigue, con otro alcance | Reproducido: rutina y plantilla aceptan `ex-que-no-existe`. Ahora hay escrituras desde la interfaz (editor de plan y de plantillas), pero el selector solo ofrece la biblioteca activa del entrenador (`plan-editor-screen.tsx:73`, `routine-days-editor.tsx:59-68`): la interfaz respeta I3 y el puerto sigue sin comprobarla. |
+| E04 | Sigue igual | Reproducido en producción: el pesaje del 24-09 (S4, `revisada`) pasa de 63,9 a 80,0 kg y Ver revisión lo enseña. Por el puerto, borrar el pesaje sigue dejando la S4 incompleta. |
+| E05 | Sigue, con otro alcance | Reproducido con sonda (serie en mm con valores en cm; `rv-marta-s5` recongelada en mm). La pantalla nueva de Revisión de cliente no resta medidas de unidad distinta al comparar (`photos-tab.tsx:192-194`): ese camino está bien, pero la serie y el recongelado siguen igual. |
+| E06 | Sigue, con otro alcance | Reproducido: el puerto acepta `ftp://`. La interfaz nueva sí valida con `externalUrlSchema` (`feedback-dialog.tsx:30-37`): desde la pantalla no se cuela; por el puerto, sí. |
+| E07 | Sigue igual | Repetidas las 16 mutaciones: 10 cazadas y 6 que sobreviven, las mismas. |
+| E08 | Sigue igual | Reproducido: 70 kg con fecha 06-10-2026. |
+| E09 | Sigue igual | Reproducido: Revisión dice «Tomado de tu registro del 06-10-2026 · 70,0 kg» y Ver revisión, 63,4 kg. |
+| E10 | Sigue, con otro alcance | Las cuatro líneas siguen y hay tres sitios nuevos que cortan el timestamp en UTC: `components/trainer/client-review/client-review-screen.tsx:31-32` (`reviewDate`, lo usan también `photos-tab.tsx` y `weight-tab.tsx`), `components/trainer/client-review/sent-feedback.tsx:22` y `components/trainer/reviews/review-row.tsx:28`. |
+| E11 | Sigue igual (sospecha) | El HTML del build de hoy trae `max="2026-10-01"`; el de ayer traía `2026-09-30`. La falta de corrección al hidratar sigue sin reproducirse. |
+| E12 | Sigue igual (sospecha) | `store.ts` y `reviews.ts` no han cambiado en lo citado. |
+| E13 | Sigue igual | Reproducido: tras un alta, «2 Clientes inactivos» y la pestaña «Inactivos 2» con Lucía (Baja) y la nueva (Invitación pendiente). |
+| E14 | Sigue, cambia la línea | Reproducido: alta con fecha 15-10-2026 → «Semana 1». Ahora en `client-detail-screen.tsx:87-92`. |
+| E15 | Sigue igual | `dashboard-content.tsx` no ha cambiado. Comprobado por lectura. |
+| E16 | Sigue, con otro alcance | Reproducido con sonda. **Ahora se llega desde la interfaz:** publicar en el editor un plan nuevo archiva la rutina anterior, y Biblioteca → Eliminar sigue nombrando al cliente por la rutina archivada. |
+| E17 | Sigue, con otro alcance | **Ahora se llega desde la interfaz y está verificado:** abrir la S5 de Marta la marca vista (el panel baja de 3 a 2 sin revisar), pero `/clients` sigue diciendo «Nueva · S5». Mismo hueco en `usePublishRoutine` y `usePublishMenus` (`use-plans.ts:213` y `:241`), que no invalidan el plan del seguimiento, y en `useAssignTemplate`, que no invalida el «Usada en N clientes» de Plantillas. |
+| E18 | Sigue, cambia la línea | Sospecha. Ahora en `memberships-screen.tsx:72-73`, `:115` y `:147`. |
+| E19 | Sigue igual | Reproducido: «Completa todos los campos» sin estilo de error; mismo código. |
+| E20 | Sigue, con otro alcance | «Semana» del panel pasa a `recent-reviews.tsx:55`. Nuevos literales sueltos en la Revisión de cliente: «kg» en `client-review-screen.tsx:163`, `photos-tab.tsx:189` y `weight-tab.tsx:127`; «S» en `photos-tab.tsx:202`. |
+| E21 | Sigue, con otro alcance | El esquema propio se movió a `components/trainer/clients/client-data-card.tsx:21-37` y ahora lo comparten alta y edición (`client-signup-form.tsx:29-42`, `client-edit-form.tsx:17`). La renovación añade otro que repite el «fin no anterior al inicio» (`renew-membership-dialog.tsx:37-50`). |
+| E22 | Sigue igual | Reproducido: tarjeta sin fondo, subtítulo, enlace y botón en `#F2EFE9`, error sin color; el enlace mide 19 px a 390 y a 768 px. |
+| E23 | Sigue, cambia la línea | `lib/i18n/es.ts:172`, `:633` y `:651`. |
+| E24 | Sigue, cambia la línea | Reproducido en el panel. `lib/i18n/es.ts:724`, `:727`, `:731` y `:732`. |
+| E25 | Sigue, con otro alcance | Reproducido con Lucía (Baja): siguen «Editar plan» y los dos «Editar», y ahora también «Editar» (datos) y «Renovar». «Reactivar» sí es una acción decidida (tarjeta 44). Botones en `client-detail-screen.tsx:122-133`. Lo grave ahora es E29. |
+| E26 | Sigue, con otro alcance | Reproducido: aspa de 15 × 15 px con nombre «Close». Ahora también en los diálogos de feedback, renovación y baja. |
+
+### Hallazgos nuevos
+
+#### E27 · El editor de plan edita en sitio la rutina activa y se pierde la versión anterior
+
+- **Categoría:** invariante (I13; ciclo de vida de §7).
+- **Dónde:** `lib/data/hooks/use-plans.ts:199-215` (`usePublishRoutine`) y
+  `components/trainer/plan-editor/plan-editor-screen.tsx:113-116` (elige el borrador o, si no
+  hay, la rutina activa).
+- **Qué incumple:** §7, «Rutina — `borrador` → `activo` → `archivado`. Asignar uno nuevo
+  archiva el anterior. El histórico se conserva para poder leer un `WorkoutLog` antiguo en su
+  contexto», e I13, «Nada de lo que cuelgue histórico se borra». Si no hay borrador, «Publicar
+  cambios» hace `updateRoutine` sobre la activa: no se crea versión ni se archiva nada. Quitar un
+  ejercicio o cambiar una prescripción reescribe el contexto de los registros de entreno ya
+  hechos, y si se quita un ejercicio con registros, ese ejercicio ya no existe en ninguna versión
+  de la rutina.
+- **Cómo reproducirlo:** `/clients/c-marta/editor`, quitar del día 2 el ejercicio que Marta tiene
+  registrado y «Publicar cambios». Sus series registradas dejan de aparecer en Rutina.
+- **Estado:** verificado con sonda contra el adaptador por el mismo camino que usa la pantalla:
+  tras `updateRoutine` la rutina sigue `activo`, sigue habiendo una sola versión, y los 5
+  registros del ejercicio quitado no tienen ejercicio en ninguna versión. El paso por la interfaz
+  no se repitió. La tarjeta 10 lo recoge como decisión («la rutina activa en sitio»), no como
+  deuda, y choca con §7. Ver H12.
+- **Terreno común:** dominio (decisión de ciclo de vida) y hooks.
+- **Qué decidir:** si editar un plan activo crea siempre un borrador nuevo que archiva el anterior
+  al publicarse, o si se permite en sitio y §7 cambia.
+
+#### E28 · La Revisión de cliente pinta las escalas desde 1 y no desde el mínimo congelado
+
+- **Categoría:** invariante (I12).
+- **Dónde:** `components/trainer/client-review/questionnaire-tab.tsx:26` y `:38`.
+- **Qué incumple:** I12, «Toda respuesta … conserva … formato vigente en su creación». La pantalla
+  toma el `max` de la copia congelada, pero dibuja siempre de 1 a `max`, sin mirar el `min`. Una
+  escala 0–10 pierde el 0 (si la respuesta es 0, no se marca nada) y una 3–7 enseña 1 y 2 como
+  opciones posibles.
+- **Cómo reproducirlo:** una pregunta de escala con mínimo distinto de 1 respondida en una
+  revisión, y abrirla en `/clients/[id]/review` → Cuestionario.
+- **Estado:** verificado por lectura. Los datos de demo solo tienen escalas que empiezan en 1, así
+  que no se ve en pantalla.
+- **Terreno común:** no.
+- **Qué decidir:** nada.
+
+#### E29 · A un cliente de baja se le publica un plan nuevo desde el editor
+
+- **Categoría:** corrección.
+- **Dónde:** `components/trainer/plan-editor/plan-editor-screen.tsx` (no mira el estado del
+  cliente); el detalle lo enlaza en `client-detail-screen.tsx:126-128`.
+- **Qué incumple:** la decisión de la tarjeta 44, escrita en la propia pantalla
+  (`lib/i18n/es.ts:1032`): «no se le puede asignar un plan nuevo». Asignación sí la cumple
+  (`assignment-screen.tsx:91-92`); el editor, no.
+- **Cómo reproducirlo:** `/clients/c-lucia` → «Editar plan» → «Partir de plantilla» → «Full body
+  2d» → «Publicar cambios» → volver: «Rutina asignada · Full body 2d».
+- **Estado:** verificado en producción.
+- **Terreno común:** no.
+- **Qué decidir:** si un cliente de baja tiene editor de solo lectura o no tiene editor.
+
+#### E30 · La foto que falta en la Revisión de cliente no dice por qué
+
+- **Categoría:** interfaz.
+- **Dónde:** `components/trainer/client-review/photos-tab.tsx:166-173`.
+- **Qué incumple:** §9.4: «un marcador en el sitio de la foto y un aviso único explicando por qué
+  falta». La pantalla pone el marcador y «No disponible», pero no dice por qué. Ver revisión del
+  cliente sí lo hace («Las fotos que faltan se subieron desde un navegador…»).
+- **Cómo reproducirlo:** `/clients/c-marta/review?review=rv-marta-s4`: «foto frente · semana 4 · No
+  disponible», sin más texto.
+- **Estado:** verificado en producción.
+- **Terreno común:** no; el literal, `es.ts`.
+- **Qué decidir:** nada.
+
+### Huecos del dominio nuevos
+
+- **H11 · I4 frente a §3 en los menús.** I4 dice «un menú activo por tipo de día», pero §3 dice
+  que puede haber varios, uno sugerido, y así trabajan el adaptador, la demo, Plantillas y el
+  editor. Uno de los dos textos está mal.
+- **H12 · Editar un plan activo.** ¿Editar la rutina activa crea versión (borrador → activo,
+  archivando la anterior) o se edita en sitio? La tarjeta 10 decidió en sitio sin pasar por
+  `dominio.md` (E27). Lo mismo para los menús: `planMenuPublish` actualiza en sitio los activos
+  de un tipo de día sin borradores.
+
+### Invariantes del código nuevo comprobadas sin hallazgos
+
+- **I10:** la comparación de fotos arranca en «solo actual» y comparar es una pestaña que elige el
+  entrenador (`photos-tab.tsx:36`).
+- **I17:** `markReviewViewed` se llama una sola vez, solo sobre la revisión que se está
+  enseñando y solo si está `enviada` (`client-review-screen.tsx:122-130`). El feedback solo se
+  puede enviar sobre una `vista`.
+- **I12:** enunciados y formato de las respuestas salen de la copia congelada (con la excepción
+  de E28). La comparación no resta unidades distintas.
+- **I20 en la interfaz:** el vídeo se valida con `externalUrlSchema` (el puerto, no: E06).
+- **I3 en la interfaz:** editores de plan y de plantillas solo ofrecen la biblioteca activa del
+  entrenador (el puerto, no: E03).
+- **I4 en rutinas:** publicar un borrador archiva la activa anterior. Dos borradores de la misma
+  plantilla son deuda anotada (tarjetas 9 y 10).
+- **Plantillas:** se clonan con ids nuevos (`cloneRoutineTemplate`, `cloneMenuTemplate`,
+  `duplicate*`) y el plan guarda `sourceTemplateName` congelado; «Usada en N» se cuenta por ese
+  nombre (deuda anotada en la tarjeta 8).
+- **I13 en plantillas y menús:** borrar una plantilla la borra de verdad, pero una plantilla no
+  cuelga histórico (es copia); los menús quitados del editor se archivan, no se borran.
+- **I1/I2 en escrituras nuevas del adaptador:** `duplicateRoutineTemplate`,
+  `duplicateMenuTemplate`, `listMenus` y `listReviewsTracking` filtran o comprueban con `own` y
+  `findOwn`.
+- **I22:** editar el cliente no escribe `startDate` (campo de solo lectura y fuera del envío).
+- **I21:** la renovación y la tarjeta de membresía no tienen importes ni datos de pago.
+
 ## Foto revisada y resultado de los comandos
 
 - **Commit revisado:** `88fba36daf7da536fa141b5d0d0f2c061f936d43` (`main` tras el PR #26).
@@ -322,7 +478,7 @@ que lo aprueben los dos.
 #### E14 · Un alta con fecha futura se pinta como «Semana 1»
 
 - **Categoría:** corrección.
-- **Dónde:** `components/trainer/client-detail/client-detail-screen.tsx:82-87`; el mismo
+- **Dónde:** `components/trainer/client-detail/client-detail-screen.tsx:87-92`; el mismo
   recurso en `components/client/progress/progress-screen.tsx:61-66`.
 - **Qué incumple:** §8, la semana es `floor((date - startDate) / 7) + 1`; antes del alta no hay
   semana (`week.before_start`). Las dos pantallas capturan el error y ponen 1, mientras Clientes
@@ -380,7 +536,7 @@ que lo aprueben los dos.
 #### E18 · Membresías puede quedarse en una página vacía tras editar
 
 - **Categoría:** corrección (paginación).
-- **Dónde:** `components/trainer/memberships/memberships-screen.tsx:72-73`, `:121` y `:152-155`.
+- **Dónde:** `components/trainer/memberships/memberships-screen.tsx:72-73`, `:115` y `:147`.
 - **Qué incumple:** si en «No pagadas» se marca como pagada la única fila de la última página,
   la fila sale del corte, `page` no se reajusta y se pinta «Ninguna membresía coincide» sin
   navegación, aunque haya filas en las páginas anteriores.
@@ -416,7 +572,7 @@ que lo aprueben los dos.
 
 - **Categoría:** arquitectura.
 - **Dónde:**
-  - «Semana» en `components/trainer/dashboard/recent-reviews.tsx:52` (la lista de la tarjeta 4
+  - «Semana» en `components/trainer/dashboard/recent-reviews.tsx:55` (la lista de la tarjeta 4
     y de la 52 no la incluye).
   - «kg» en `components/client/progress/reviews-list.tsx:22`,
     `components/client/view-review/summary-bar.tsx:37` y `:45`,
@@ -441,7 +597,7 @@ que lo aprueben los dos.
 #### E21 · Alta valida con un esquema propio que duplica los del dominio
 
 - **Categoría:** arquitectura.
-- **Dónde:** `components/trainer/clients/client-signup-form.tsx:36-62`.
+- **Dónde:** `components/trainer/clients/client-data-card.tsx:21-37` y `components/trainer/clients/client-signup-form.tsx:29-42`.
 - **Qué incumple:** `CLAUDE.md`, «Validación»: «Un esquema zod por concepto en
   `lib/domain/schemas`, y es la única fuente de verdad. El formulario valida contra él». El alta
   reescribe nombre, apellidos, email y el «fin no anterior al inicio» de `membershipSchema`; el
@@ -481,9 +637,9 @@ que lo aprueben los dos.
 #### E23 · Vocabulario prohibido no anotado: «bloques» y «periodos»
 
 - **Categoría:** interfaz.
-- **Dónde:** `lib/i18n/es.ts:169` («x de 4 bloques completos», barra de envío de `/review`),
-  `:422` («Tu entrenador registra aquí los periodos que contratas», vacío de `/membership`) y
-  `:440` («Aquí verás cada periodo que contrates»).
+- **Dónde:** `lib/i18n/es.ts:172` («x de 4 bloques completos», barra de envío de `/review`),
+  `:633` («Tu entrenador registra aquí los periodos que contratas», vacío de `/membership`) y
+  `:651` («Aquí verás cada periodo que contrates»).
 - **Qué incumple:** `CLAUDE.md`, «Vocabulario»: **bloque** y **periodo** están prohibidos. La
   tarjeta 39 solo recoge los del login y la 52 la columna «Bloque».
 - **Cómo reproducirlo:** `/review` (el contador sale siempre); `/membership` sin membresías.
@@ -494,7 +650,7 @@ que lo aprueben los dos.
 #### E24 · Etiquetas con género en el panel: «Activos», «Inactivos»
 
 - **Categoría:** interfaz.
-- **Dónde:** `lib/i18n/es.ts:507`, `:510`, `:514` y `:515`, usadas en
+- **Dónde:** `lib/i18n/es.ts:724`, `:727`, `:731` y `:732`, usadas en
   `components/trainer/dashboard/dashboard-stats.tsx` y `clients-table.tsx:43-46`.
 - **Qué incumple:** `CLAUDE.md`, «Ninguna etiqueta sobre una persona lleva género … no como
   adjetivo concordado —«Activo», «Invitado»—». Las pestañas «Activos» / «Inactivos» y las cifras
@@ -508,7 +664,7 @@ que lo aprueben los dos.
 #### E25 · Detalle de un cliente dado de baja con acciones y vacíos sin enlace a Asignación
 
 - **Categoría:** interfaz.
-- **Dónde:** `components/trainer/client-detail/client-detail-screen.tsx:117-126`,
+- **Dónde:** `components/trainer/client-detail/client-detail-screen.tsx:122-133`,
   `components/trainer/client-detail/plan-cards.tsx:26-28`,
   `components/trainer/client-detail/reviews-history.tsx:54`.
 - **Qué incumple:** dos de las ocho decisiones aprobadas en el reconocimiento de la tarjeta 5
