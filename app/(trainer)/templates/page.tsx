@@ -1,10 +1,8 @@
-import { PageHeader } from "@/components/ui/page-header";
+import { TemplatesScreen } from "@/components/trainer/templates/templates-screen";
 import { es } from "@/lib/i18n/es";
 
-const title = es.pages.trainer.plantillas;
-
-export const metadata = { title };
+export const metadata = { title: es.pages.trainer.plantillas };
 
 export default function Page() {
-  return <PageHeader title={title} />;
+  return <TemplatesScreen />;
 }
