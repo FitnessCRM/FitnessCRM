@@ -1,7 +1,15 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { DayType, Macros } from "@/lib/domain";
+import {
+  planMenuPublish,
+  type DayType,
+  type Macros,
+  type Menu,
+  type MenuTemplateEntry,
+  type Routine,
+  type RoutineBody,
+} from "@/lib/domain";
 import type { MenuTemplateInput, RoutineTemplateInput } from "@/lib/data/ports";
 import { usePorts } from "./ports-provider";
 import { queryKeys } from "./query-keys";
@@ -159,5 +167,77 @@ export function useSaveMenuTemplate() {
       ports.templates.saveMenuTemplate({ ...input, trainerId: trainerId! }),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.menuTemplates(trainerId!) }),
+  });
+}
+
+/** Todas las rutinas del cliente (activa, borradores y archivadas), la más reciente primero. */
+export function useClientRoutines(clientId: string | undefined) {
+  const ports = usePorts();
+  const trainerId = useTrainerId();
+  return useQuery({
+    queryKey: queryKeys.routines(trainerId ?? "", clientId ?? ""),
+    queryFn: () => ports.routines.listRoutines(trainerId!, clientId!),
+    enabled: trainerId !== undefined && clientId !== undefined,
+  });
+}
+
+/** Menús activos y en borrador del cliente: lo que se edita en el editor de plan. */
+export function useEditableMenus(clientId: string | undefined) {
+  const ports = usePorts();
+  const trainerId = useTrainerId();
+  return useQuery({
+    queryKey: queryKeys.editableMenus(trainerId ?? "", clientId ?? ""),
+    queryFn: () => ports.menus.listMenus(trainerId!, clientId!),
+    enabled: trainerId !== undefined && clientId !== undefined,
+  });
+}
+
+/**
+ * Guarda y publica la rutina: actualiza la que se está editando (o crea una si no había) y, si era
+ * un borrador, la activa. La activa anterior pasa a archivada (I4).
+ */
+export function usePublishRoutine(clientId: string | undefined) {
+  const ports = usePorts();
+  const queryClient = useQueryClient();
+  const trainerId = useTrainerId();
+  return useMutation({
+    mutationFn: async ({ target, body }: { target: Routine | null; body: RoutineBody }) => {
+      const saved = target
+        ? await ports.routines.updateRoutine(trainerId!, target.id, body)
+        : await ports.routines.createRoutine(trainerId!, clientId!, body);
+      return saved.status === "borrador"
+        ? ports.routines.activateRoutine(trainerId!, saved.id)
+        : saved;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.routines(trainerId!, clientId!) }),
+  });
+}
+
+/** Aplica el plan de `planMenuPublish`: guarda cada menú y publica los tipos de día con borradores. */
+export function usePublishMenus(clientId: string | undefined) {
+  const ports = usePorts();
+  const queryClient = useQueryClient();
+  const trainerId = useTrainerId();
+  return useMutation({
+    mutationFn: async ({
+      current,
+      next,
+    }: {
+      current: readonly Menu[];
+      next: readonly MenuTemplateEntry[];
+    }) => {
+      const plan = planMenuPublish(current, next);
+      for (const op of plan.ops) {
+        if (op.type === "create") await ports.menus.createMenu(trainerId!, clientId!, op.body);
+        else if (op.type === "update") await ports.menus.updateMenu(trainerId!, op.id, op.body);
+        else await ports.menus.archiveMenu(trainerId!, op.id);
+      }
+      for (const dayType of plan.activate) {
+        await ports.menus.activateMenus(trainerId!, clientId!, dayType);
+      }
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.menus(trainerId!, clientId!) }),
   });
 }

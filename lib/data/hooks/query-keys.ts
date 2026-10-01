@@ -24,6 +24,8 @@ export const queryKeys = {
   macroTargets: (trainerId: string, clientId: string) =>
     ["macro-targets", trainerId, clientId] as const,
   menus: (trainerId: string, clientId: string) => ["menus", trainerId, clientId] as const,
+  editableMenus: (trainerId: string, clientId: string) =>
+    ["menus", trainerId, clientId, "editable"] as const,
   routineTemplates: (trainerId: string) => ["routine-templates", trainerId] as const,
   menuTemplates: (trainerId: string) => ["menu-templates", trainerId] as const,
   measurementTypes: (trainerId: string) => ["measurement-types", trainerId] as const,
