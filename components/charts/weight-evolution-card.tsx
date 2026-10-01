@@ -16,10 +16,13 @@ export function WeightEvolutionCard({
   points,
   changeSinceStart,
   title = t.title,
+  emptyAction,
 }: {
   points: WeeklyWeightPoint[];
   changeSinceStart: number | null;
   title?: string;
+  /** Lo que se ofrece bajo el vacío; cada área pone el suyo (el panel, el camino a Asignación). */
+  emptyAction?: React.ReactNode;
 }) {
   const hasData = points.some((p) => p.weightKg !== null);
   return (
@@ -41,7 +44,10 @@ export function WeightEvolutionCard({
             data={points.map((p) => ({ label: `S${p.week}`, kg: p.weightKg }))}
           />
         ) : (
-          <p className="text-text-subtle py-8 text-center text-sm">{t.empty}</p>
+          <div className="flex flex-col items-center gap-2 py-8 text-center text-sm">
+            <p className="text-text-subtle">{t.empty}</p>
+            {emptyAction}
+          </div>
         )}
       </CardContent>
     </Card>

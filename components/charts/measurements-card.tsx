@@ -19,9 +19,12 @@ const DEFAULT_VISIBLE = 3;
 export function MeasurementsCard({
   series,
   title = t.title,
+  emptyAction,
 }: {
   series: MeasurementSeries[];
   title?: string;
+  /** Lo que se ofrece bajo el vacío; cada área pone el suyo (el panel, el camino a Asignación). */
+  emptyAction?: React.ReactNode;
 }) {
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(series.slice(0, DEFAULT_VISIBLE).map((s) => s.typeId)),
@@ -85,7 +88,10 @@ export function MeasurementsCard({
       </CardHeader>
       <CardContent className="p-0">
         {series.length === 0 ? (
-          <p className="text-text-subtle py-8 text-center text-sm">{t.empty}</p>
+          <div className="flex flex-col items-center gap-2 py-8 text-center text-sm">
+            <p className="text-text-subtle">{t.empty}</p>
+            {emptyAction}
+          </div>
         ) : visible.length === 0 ? (
           <p className="text-text-subtle py-8 text-center text-sm">{t.noneSelected}</p>
         ) : (

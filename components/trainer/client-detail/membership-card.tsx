@@ -27,10 +27,13 @@ export function MembershipCard({
   clientId,
   memberships,
   today,
+  readOnly = false,
 }: {
   clientId: string;
   memberships: Membership[];
   today: string;
+  /** Cliente de baja: la ficha es de solo lectura, sin gestionar ni renovar (tarjeta 5, n.º 8). */
+  readOnly?: boolean;
 }) {
   const [renewing, setRenewing] = useState(false);
   const { current, next, daysLeft } = membershipStanding(memberships, today);
@@ -40,14 +43,16 @@ export function MembershipCard({
     <Card className="gap-3 px-5 py-4">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <h2 className="section-title">{t.title}</h2>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" asChild>
-            <Link href={`/memberships?clientId=${clientId}`}>{t.manage}</Link>
-          </Button>
-          <Button size="sm" onClick={() => setRenewing(true)}>
-            {t.renew}
-          </Button>
-        </div>
+        {readOnly ? null : (
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" asChild>
+              <Link href={`/memberships?clientId=${clientId}`}>{t.manage}</Link>
+            </Button>
+            <Button size="sm" onClick={() => setRenewing(true)}>
+              {t.renew}
+            </Button>
+          </div>
+        )}
       </div>
 
       {current ? (

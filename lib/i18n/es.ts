@@ -533,6 +533,11 @@ export const es = {
     saveError: "No se han podido publicar los cambios.",
     draftBadge: "Borrador",
     notFound: { title: "Cliente no encontrado", hint: "Puede que se haya eliminado." },
+    /** Cliente de baja: no se le edita ni se le publica un plan (tarjeta 44), como en Asignación. */
+    inactive: {
+      title: "Cliente de baja",
+      hint: "No se le puede editar ni publicar un plan. Si vuelve, reactívalo desde su ficha.",
+    },
     defaultRoutineName: "Rutina de {name}",
   },
   screensTemplates: {
@@ -1011,6 +1016,10 @@ export const es = {
       menusPerType: { one: "menú por tipo", other: "menús por tipo" },
       menus: { one: "menú", other: "menús" },
       noMenus: "sin menús",
+      /** Enlace de los vacíos a Asignación, para un cliente que no está de baja. */
+      assign: "Ir a Asignación",
+      /** Bajo las gráficas vacías de un cliente que aún no tiene ningún plan. */
+      noPlanHint: "Todavía no tiene plan: asígnale uno para empezar el seguimiento.",
     },
     weightTitle: "Peso · Histórico completo",
     reviews: {
@@ -1024,6 +1033,8 @@ export const es = {
       partial: "parcial",
       emptyTitle: "Sin revisiones todavía",
       emptyHint: "La primera aparecerá cuando el cliente empiece su revisión semanal.",
+      /** Cliente de baja: no se le prometen revisiones. */
+      emptyHintInactive: "Está de baja: no enviará revisiones mientras no se reactive.",
     },
     notFoundTitle: "Cliente no encontrado",
     notFoundHint: "No existe o no pertenece a tu cartera.",

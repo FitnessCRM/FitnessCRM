@@ -45,14 +45,19 @@ export function ReviewsHistory({
   reviews,
   logs,
   today,
+  inactive = false,
 }: {
   clientId: string;
   reviews: Review[];
   logs: WeightLog[];
   today: CivilDate;
+  /** Cliente de baja: el vacío no le promete revisiones. */
+  inactive?: boolean;
 }) {
   if (reviews.length === 0) {
-    return <EmptyState title={t.emptyTitle} description={t.emptyHint} />;
+    return (
+      <EmptyState title={t.emptyTitle} description={inactive ? t.emptyHintInactive : t.emptyHint} />
+    );
   }
   const groups = groupReviewsByWeekPair(reviews);
   const newest = groups[0]?.from;

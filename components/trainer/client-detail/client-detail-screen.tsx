@@ -91,7 +91,26 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
     if (!(error instanceof DomainError)) throw error;
   }
   const hasNewReview = reviews.data.some((r) => r.status === "enviada");
-  const editorHref = `/clients/${clientId}/editor`;
+  // De baja: ficha de solo lectura, salvo «Reactivar» (tarjeta 5, n.º 8), y sin planes nuevos
+  // (tarjeta 44). Ver la revisión nueva y el histórico siguen: son de lectura.
+  const inactive = c.status === "dado_de_baja";
+  const editorHref = inactive ? null : `/clients/${clientId}/editor`;
+  const assignHref = inactive ? null : `/assignment?clientId=${clientId}`;
+  const hasPlan = routine.data !== null || targets.data.length > 0 || menus.data.length > 0;
+  // Las gráficas vacías de un cliente sin ningún plan llevan también el camino a Asignación.
+  const chartAction =
+    assignHref && !hasPlan ? (
+      <p className="text-text-subtle">
+        {t.plan.noPlanHint}{" "}
+        <Link
+          href={assignHref}
+          // 32 px de alto como todo control pequeño (también en táctil).
+          className="text-accent-hover hover:text-accent-emphasis inline-flex min-h-8 items-center"
+        >
+          {t.plan.assign}
+        </Link>
+      </p>
+    ) : undefined;
 
   return (
     <div className="flex flex-col gap-7">
@@ -120,12 +139,16 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" asChild>
-            <Link href={`/clients/${clientId}/edit`}>{t.edit}</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href={editorHref}>{t.editPlan}</Link>
-          </Button>
+          {editorHref ? (
+            <>
+              <Button variant="outline" asChild>
+                <Link href={`/clients/${clientId}/edit`}>{t.edit}</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href={editorHref}>{t.editPlan}</Link>
+              </Button>
+            </>
+          ) : null}
           {hasNewReview ? (
             <Button asChild>
               <Link href={`/clients/${clientId}/review`}>{t.viewNewReview}</Link>
@@ -136,19 +159,31 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px]">
         <div className="flex flex-col gap-5">
-          <MembershipCard clientId={clientId} memberships={memberships.data} today={today} />
+          <MembershipCard
+            clientId={clientId}
+            memberships={memberships.data}
+            today={today}
+            readOnly={inactive}
+          />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <RoutineCard routine={routine.data} editHref={editorHref} />
-            <MacrosMenuCard targets={targets.data} menus={menus.data} editHref={editorHref} />
+            <RoutineCard routine={routine.data} editHref={editorHref} assignHref={assignHref} />
+            <MacrosMenuCard
+              targets={targets.data}
+              menus={menus.data}
+              editHref={editorHref}
+              assignHref={assignHref}
+            />
           </div>
           <WeightEvolutionCard
             title={t.weightTitle}
             points={weeklyWeights(logs.data, c.startDate, 1, currentWeek)}
             changeSinceStart={changeSinceStart(logs.data)}
+            emptyAction={chartAction}
           />
           <MeasurementsCard
             key={types.data.length}
             series={measurementSeries(reviews.data, types.data, 1, currentWeek)}
+            emptyAction={chartAction}
           />
         </div>
         <div className="flex flex-col gap-[18px]">
@@ -158,6 +193,7 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
             reviews={reviews.data}
             logs={logs.data}
             today={today}
+            inactive={inactive}
           />
         </div>
       </div>

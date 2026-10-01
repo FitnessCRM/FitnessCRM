@@ -113,6 +113,16 @@ export function PlanEditorScreen({ clientId }: { clientId: string }) {
       </div>
     );
   }
+  // Un cliente de baja no recibe planes nuevos (tarjeta 44): ni se edita ni se publica, igual que
+  // en Asignación. También si se llega por la URL.
+  if (client.data.status === "dado_de_baja") {
+    return (
+      <div className="flex flex-col gap-6">
+        {back}
+        <EmptyState title={t.inactive.title} description={t.inactive.hint} />
+      </div>
+    );
+  }
 
   // Se trabaja sobre el borrador si lo hay; si no, sobre la activa; si no, se parte de cero. Publicar
   // edita en sitio el borrador y, sobre la activa, crea una versión nueva (§7).

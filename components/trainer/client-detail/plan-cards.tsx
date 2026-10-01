@@ -10,30 +10,66 @@ function plural(n: number, forms: { one: string; other: string }) {
   return `${n} ${n === 1 ? forms.one : forms.other}`;
 }
 
+/**
+ * `editHref` y `assignHref` son nulos para un cliente de baja: su ficha es de solo lectura (tarjeta
+ * 5, n.º 8) y no recibe planes nuevos (tarjeta 44).
+ */
+interface PlanLinks {
+  editHref: string | null;
+  assignHref: string | null;
+}
+
 function PlanCard({
   title,
   editHref,
   children,
 }: {
   title: string;
-  editHref: string;
+  editHref: string | null;
   children: React.ReactNode;
 }) {
   return (
     <Card className="gap-1.5 px-5 py-4">
       <div className="flex items-center justify-between">
         <h2 className="section-title">{title}</h2>
-        <Link href={editHref} className="text-accent-hover hover:text-accent-emphasis text-xs">
-          {t.edit}
-        </Link>
+        {editHref ? (
+          <Link href={editHref} className="text-accent-hover hover:text-accent-emphasis text-xs">
+            {t.edit}
+          </Link>
+        ) : null}
       </div>
       {children}
     </Card>
   );
 }
 
+/** Vacío de una tarjeta: qué falta y, si el cliente puede recibir planes, el camino a Asignación. */
+function EmptyPlan({ text, assignHref }: { text: string; assignHref: string | null }) {
+  return (
+    <p className="text-text-subtle text-sm">
+      {text}
+      {assignHref ? (
+        <>
+          {" · "}
+          <Link
+            href={assignHref}
+            // 32 px de alto como todo control pequeño (también en táctil).
+            className="text-accent-hover hover:text-accent-emphasis inline-flex min-h-8 items-center"
+          >
+            {t.plan.assign}
+          </Link>
+        </>
+      ) : null}
+    </p>
+  );
+}
+
 /** «Rutina asignada»: la activa del cliente y la plantilla de la que salió (copia, no enlace). */
-export function RoutineCard({ routine, editHref }: { routine: Routine | null; editHref: string }) {
+export function RoutineCard({
+  routine,
+  editHref,
+  assignHref,
+}: { routine: Routine | null } & PlanLinks) {
   return (
     <PlanCard title={t.plan.routineTitle} editHref={editHref}>
       {routine ? (
@@ -47,7 +83,7 @@ export function RoutineCard({ routine, editHref }: { routine: Routine | null; ed
           </p>
         </>
       ) : (
-        <p className="text-text-subtle text-sm">{t.plan.noRoutine}</p>
+        <EmptyPlan text={t.plan.noRoutine} assignHref={assignHref} />
       )}
     </PlanCard>
   );
@@ -61,11 +97,11 @@ export function MacrosMenuCard({
   targets,
   menus,
   editHref,
+  assignHref,
 }: {
   targets: MacroTargets[];
   menus: Menu[];
-  editHref: string;
-}) {
+} & PlanLinks) {
   const kcal = DAY_TYPES.map((dayType) => targets.find((m) => m.dayType === dayType))
     .filter((m): m is MacroTargets => m !== undefined)
     .map((m) => formatInteger(m.macros.kcal));
@@ -87,7 +123,7 @@ export function MacrosMenuCard({
       {kcal.length ? (
         <p className="text-[15px] font-semibold">{kcal.join(" / ")} kcal</p>
       ) : (
-        <p className="text-text-subtle text-sm">{t.plan.noMacros}</p>
+        <EmptyPlan text={t.plan.noMacros} assignHref={assignHref} />
       )}
       <p className="text-text-muted text-xs">{menusSummary}</p>
     </PlanCard>
