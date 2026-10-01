@@ -155,7 +155,7 @@ export function buildNutrition(d: DemoDates): {
       id: "mnt-definicion-2400",
       trainerId: TRAINER_ID,
       name: "Definición 2.400",
-      description: "2 tipos de día · 2 menús por tipo",
+      description: "",
       menus: [
         { id: "mnt1-a", ...homeStyleMenuBody("mnt1-a") },
         { id: "mnt1-b", ...quickTupperMenuBody("mnt1-b") },
@@ -169,7 +169,7 @@ export function buildNutrition(d: DemoDates): {
       id: "mnt-volumen-3000",
       trainerId: TRAINER_ID,
       name: "Volumen 3.000",
-      description: "2 tipos de día · 3 menús por tipo",
+      description: "",
       menus: [
         {
           id: "mnt2-a",

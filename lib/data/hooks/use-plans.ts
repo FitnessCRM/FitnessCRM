@@ -90,3 +90,47 @@ export function useAssignTemplate(clientId: string | undefined) {
       }),
   });
 }
+
+/** Copia una plantilla con otro nombre. Refresca la lista de su tipo. */
+export function useDuplicateTemplate() {
+  const ports = usePorts();
+  const queryClient = useQueryClient();
+  const trainerId = useTrainerId();
+  return useMutation({
+    mutationFn: async (input: {
+      kind: "routine" | "menu";
+      templateId: string;
+      name: string;
+    }): Promise<unknown> =>
+      input.kind === "routine"
+        ? ports.templates.duplicateRoutineTemplate(trainerId!, input.templateId, input.name)
+        : ports.templates.duplicateMenuTemplate(trainerId!, input.templateId, input.name),
+    onSuccess: (_, input) =>
+      queryClient.invalidateQueries({
+        queryKey:
+          input.kind === "routine"
+            ? queryKeys.routineTemplates(trainerId!)
+            : queryKeys.menuTemplates(trainerId!),
+      }),
+  });
+}
+
+/** Borra una plantilla. Los planes ya asignados no se tocan: son copias (§4). */
+export function useDeleteTemplate() {
+  const ports = usePorts();
+  const queryClient = useQueryClient();
+  const trainerId = useTrainerId();
+  return useMutation({
+    mutationFn: async (input: { kind: "routine" | "menu"; templateId: string }): Promise<void> =>
+      input.kind === "routine"
+        ? ports.templates.deleteRoutineTemplate(trainerId!, input.templateId)
+        : ports.templates.deleteMenuTemplate(trainerId!, input.templateId),
+    onSuccess: (_, input) =>
+      queryClient.invalidateQueries({
+        queryKey:
+          input.kind === "routine"
+            ? queryKeys.routineTemplates(trainerId!)
+            : queryKeys.menuTemplates(trainerId!),
+      }),
+  });
+}

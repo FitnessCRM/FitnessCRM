@@ -381,6 +381,33 @@ describe("flows", () => {
     });
   });
 
+  it("template lists carry how many clients received a copy, counted by frozen name", async () => {
+    const p = ports();
+    const before = await p.templates.listRoutineTemplates(TRAINER);
+    const hiper = before.find((t) => t.id === "rt-hiper-5d-v3")!;
+    expect(hiper.usageCount).toBe(1); // la rutina de Marta salió de «Hiper 5d v3»
+    expect(before.find((t) => t.id === "rt-full-body-2d")!.usageCount).toBe(0);
+    await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-hiper-5d-v3"); // mismo cliente
+    await p.templates.assignRoutineTemplate(TRAINER, "c-jorge", "rt-hiper-5d-v3");
+    const after = await p.templates.listRoutineTemplates(TRAINER);
+    expect(after.find((t) => t.id === "rt-hiper-5d-v3")!.usageCount).toBe(2);
+  });
+
+  it("duplicating a template stores an independent copy with no usage, and deleting it leaves plans alone", async () => {
+    const p = ports();
+    const copy = await p.templates.duplicateRoutineTemplate(
+      TRAINER,
+      "rt-hiper-5d-v3",
+      "Hiper (copia)",
+    );
+    const list = await p.templates.listRoutineTemplates(TRAINER);
+    expect(list.find((t) => t.id === copy.id)?.usageCount).toBe(0);
+    await p.templates.deleteRoutineTemplate(TRAINER, "rt-hiper-5d-v3");
+    const routines = await p.routines.listRoutines(TRAINER, MARTA);
+    expect(routines.some((r) => r.id === "rt-marta-hipertrofia")).toBe(true);
+    await expect(p.templates.duplicateRoutineTemplate("t-otro", copy.id, "x")).rejects.toThrow();
+  });
+
   it("assigning a template clones it and activating archives the previous routine (I4)", async () => {
     const p = ports();
     const draft = await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-fuerza-basicos-3d");

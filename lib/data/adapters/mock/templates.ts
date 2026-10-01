@@ -2,26 +2,58 @@ import type { TemplatePort } from "@/lib/data/ports";
 import {
   cloneMenuTemplate,
   cloneRoutineTemplate,
+  duplicateMenuTemplate,
+  duplicateRoutineTemplate,
   menuTemplateSchema,
   routineTemplateSchema,
 } from "@/lib/domain";
 import { findOwn, own, removeById, replaceById } from "./helpers";
 import type { MockContext } from "./store";
 
+/** Clientes distintos con algún plan copiado de una plantilla con ese nombre congelado. */
+function usageByName(plans: { clientId: string; sourceTemplateName: string | null }[]) {
+  const clientsByName = new Map<string, Set<string>>();
+  for (const plan of plans) {
+    if (plan.sourceTemplateName === null) continue;
+    const clients = clientsByName.get(plan.sourceTemplateName) ?? new Set<string>();
+    clients.add(plan.clientId);
+    clientsByName.set(plan.sourceTemplateName, clients);
+  }
+  return (name: string) => clientsByName.get(name)?.size ?? 0;
+}
+
 export function createTemplatePort(ctx: MockContext): TemplatePort {
   return {
-    listRoutineTemplates: async (trainerId) =>
-      ctx.reply(
-        own(ctx.state.routineTemplates, trainerId).sort((a, b) =>
-          b.updatedAt.localeCompare(a.updatedAt),
-        ),
-      ),
-    listMenuTemplates: async (trainerId) =>
-      ctx.reply(
-        own(ctx.state.menuTemplates, trainerId).sort((a, b) =>
-          b.updatedAt.localeCompare(a.updatedAt),
-        ),
-      ),
+    listRoutineTemplates: async (trainerId) => {
+      const usage = usageByName(own(ctx.state.routines, trainerId));
+      return ctx.reply(
+        own(ctx.state.routineTemplates, trainerId)
+          .map((t) => ({ ...t, usageCount: usage(t.name) }))
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+      );
+    },
+    listMenuTemplates: async (trainerId) => {
+      const usage = usageByName(own(ctx.state.menus, trainerId));
+      return ctx.reply(
+        own(ctx.state.menuTemplates, trainerId)
+          .map((t) => ({ ...t, usageCount: usage(t.name) }))
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+      );
+    },
+    duplicateRoutineTemplate: async (trainerId, templateId, name) => {
+      const template = findOwn(ctx.state.routineTemplates, trainerId, templateId, "Plantilla");
+      const copy = routineTemplateSchema.parse(
+        duplicateRoutineTemplate(template, { newId: ctx.newId, now: ctx.now(), name }),
+      );
+      return ctx.reply(replaceById(ctx.state.routineTemplates, copy));
+    },
+    duplicateMenuTemplate: async (trainerId, templateId, name) => {
+      const template = findOwn(ctx.state.menuTemplates, trainerId, templateId, "Plantilla");
+      const copy = menuTemplateSchema.parse(
+        duplicateMenuTemplate(template, { newId: ctx.newId, now: ctx.now(), name }),
+      );
+      return ctx.reply(replaceById(ctx.state.menuTemplates, copy));
+    },
     saveRoutineTemplate: async (input) => {
       const now = ctx.now();
       const existing = input.id
