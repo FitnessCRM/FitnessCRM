@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,7 @@ import {
 import { useUpdateClient } from "@/lib/data/hooks";
 import type { Client } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
+import { cn } from "@/lib/utils";
 
 const t = es.screensClientDetail.lifecycle;
 
@@ -53,9 +55,31 @@ export function ClientStatusAction({ client }: { client: Client }) {
 
   return (
     <>
-      <Button variant="ghost" size="sm" onClick={openDialog}>
-        {copy.action}
-      </Button>
+      <Card
+        className={cn(
+          "flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6",
+          reactivating ? "border-success/35" : "border-danger/35",
+        )}
+      >
+        <div className="flex flex-col gap-1">
+          <h2 className={cn("section-title", reactivating ? "text-success" : "text-danger")}>
+            {copy.cardTitle}
+          </h2>
+          <p className="text-text-muted text-sm">{copy.cardHint}</p>
+        </div>
+        <Button
+          type="button"
+          variant={reactivating ? "outline" : "destructive"}
+          onClick={openDialog}
+          className={cn(
+            "max-sm:w-full",
+            reactivating &&
+              "border-success/55 bg-success-soft text-success hover:border-success hover:bg-success/25 hover:text-success",
+          )}
+        >
+          {copy.action}
+        </Button>
+      </Card>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>

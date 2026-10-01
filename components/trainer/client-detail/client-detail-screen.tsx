@@ -131,7 +131,6 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
               <Link href={`/clients/${clientId}/review`}>{t.viewNewReview}</Link>
             </Button>
           ) : null}
-          <ClientStatusAction client={c} />
         </div>
       </header>
 
@@ -162,6 +161,8 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
           />
         </div>
       </div>
+
+      <ClientStatusAction client={c} />
     </div>
   );
 }
