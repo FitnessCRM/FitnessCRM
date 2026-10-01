@@ -25,7 +25,10 @@ export interface RoutinePort {
 export interface MacroTargetsPort {
   /** Objetivos activos del cliente, uno por tipo de día como máximo. */
   listMacroTargets(trainerId: string, clientId: string): Promise<MacroTargets[]>;
-  /** Fija los macros de un tipo de día: archiva los anteriores de ese tipo y activa los nuevos. */
+  /**
+   * Fija kcal y macros de un tipo de día tal como los escribe el entrenador: las kcal se guardan,
+   * no se derivan ni se comprueban con 4/4/9 (§5). Archiva los anteriores de ese tipo y activa los nuevos.
+   */
   setMacroTargets(
     trainerId: string,
     clientId: string,
