@@ -838,6 +838,7 @@ export const es = {
   screensTrainerReview: {
     breadcrumb: "Clientes",
     back: "Volver al cliente",
+    backToDashboard: "Volver al dashboard",
     title: "Revisión",
     pickerLabel: "Elegir revisión",
     today: "hoy",
