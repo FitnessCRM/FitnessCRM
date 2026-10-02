@@ -61,10 +61,10 @@ export const es = {
       hero: {
         tagline: "El progreso no se adivina. Se mide.",
         headline: { lead: ["El progreso", "no se adivina."], accent: "Se mide." },
-        description: "Rutina, dieta y revisiones en un solo sitio, entre tú y tu entrenador.",
+        description: "Rutina, menú y revisiones en un solo sitio, entre tú y tu entrenador.",
       },
       stats: {
-        weeks: { number: "12", label: "Semanas de bloque" },
+        weeks: { number: "12", label: "Semanas" },
         reviews: { number: "6", label: "Revisiones" },
         ratio: { number: "1:1", label: "Seguimiento" },
       },
@@ -73,6 +73,7 @@ export const es = {
         emailPlaceholder: "tu@email.com",
         password: "Contraseña",
         passwordPlaceholder: "••••••••",
+        required: "Completa todos los campos",
         submit: "Continuar",
         submitting: "Entrando…",
         forgotPassword: "He olvidado mi contraseña",

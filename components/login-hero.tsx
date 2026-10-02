@@ -5,7 +5,7 @@ function Stat({ number, label }: { number: string; label: string }) {
   return (
     <div>
       <div className="font-display text-[28px] font-semibold">{number}</div>
-      <div className="text-text-tertiary text-xs tracking-[1px] uppercase">{label}</div>
+      <div className="text-text-subtle text-xs tracking-[1px] uppercase">{label}</div>
     </div>
   );
 }
@@ -26,7 +26,7 @@ export function LoginHero() {
           ))}
           <span className="text-accent block">{hero.headline.accent}</span>
         </h2>
-        <p className="text-text-secondary max-w-[400px] text-[17px] leading-normal">
+        <p className="text-text-muted max-w-[400px] text-[17px] leading-normal">
           {hero.description}
         </p>
       </div>

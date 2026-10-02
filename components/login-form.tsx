@@ -21,7 +21,7 @@ export function LoginForm() {
     setError(null);
 
     if (!email || !password) {
-      setError("Completa todos los campos");
+      setError(es.pages.login.form.required);
       return;
     }
 
@@ -52,9 +52,9 @@ export function LoginForm() {
 
   return (
     <div className="w-full max-w-[360px]">
-      <div className="bg-surface-elevated border-border-subtle rounded-xl border p-8">
+      <div className="bg-surface-raised border-border-subtle rounded-xl border p-8">
         <h1 className="font-display text-display-sm font-bold uppercase">{es.pages.login.title}</h1>
-        <p className="text-text-secondary mt-2 text-sm">{es.pages.login.subtitle}</p>
+        <p className="text-text-muted mt-2 text-sm">{es.pages.login.subtitle}</p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <div className="space-y-2">
@@ -81,12 +81,14 @@ export function LoginForm() {
             />
           </div>
 
-          {error && <div className="bg-error/14 text-error rounded-lg p-3 text-sm">{error}</div>}
+          {error && (
+            <div className="bg-danger-soft text-danger rounded-lg p-3 text-sm">{error}</div>
+          )}
 
           <Button
             type="submit"
             disabled={isPending}
-            className="bg-accent text-text-on-accent hover:bg-accent-hover w-full"
+            className="bg-accent text-on-accent hover:bg-accent-hover w-full"
           >
             {isPending ? es.pages.login.form.submitting : es.pages.login.form.submit}
           </Button>
@@ -94,7 +96,7 @@ export function LoginForm() {
 
         <Link
           href="#"
-          className="text-accent-muted hover:text-accent-focus mt-4 block text-center text-sm"
+          className="text-accent hover:text-accent-hover mt-4 flex min-h-8 items-center justify-center text-sm"
         >
           {es.pages.login.form.forgotPassword}
         </Link>
