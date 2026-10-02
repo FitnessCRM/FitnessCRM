@@ -7,8 +7,8 @@ import {
   type Macros,
   type Menu,
   type MenuTemplateEntry,
-  type Routine,
   type RoutineBody,
+  type RoutinePublishOp,
 } from "@/lib/domain";
 import type { MenuTemplateInput, RoutineTemplateInput } from "@/lib/data/ports";
 import { usePorts } from "./ports-provider";
@@ -77,7 +77,10 @@ export function useMenuTemplates() {
   });
 }
 
-/** Clona una plantilla al cliente. Invalida sus rutinas o menús. */
+/**
+ * Clona una plantilla al cliente. Invalida sus rutinas o menús, el seguimiento (que enseña el plan)
+ * y la lista de plantillas de ese tipo (que cuenta en cuántos clientes se usa).
+ */
 export function useAssignTemplate(clientId: string | undefined) {
   const ports = usePorts();
   const queryClient = useQueryClient();
@@ -90,13 +93,31 @@ export function useAssignTemplate(clientId: string | undefined) {
       input.kind === "routine"
         ? ports.templates.assignRoutineTemplate(trainerId!, clientId!, input.templateId)
         : ports.templates.assignMenuTemplate(trainerId!, clientId!, input.templateId),
-    onSuccess: (_, input) =>
-      queryClient.invalidateQueries({
-        queryKey:
-          input.kind === "routine"
-            ? queryKeys.routines(trainerId!, clientId!)
-            : queryKeys.menus(trainerId!, clientId!),
-      }),
+    onSuccess: (_, input) => {
+      const routine = input.kind === "routine";
+      void queryClient.invalidateQueries({
+        queryKey: routine
+          ? queryKeys.routines(trainerId!, clientId!)
+          : queryKeys.menus(trainerId!, clientId!),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: routine
+          ? queryKeys.routineTemplates(trainerId!)
+          : queryKeys.menuTemplates(trainerId!),
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clientsTrackingAll(trainerId!) });
+      if (routine) invalidateExerciseUsage(queryClient);
+    },
+  });
+}
+
+/**
+ * El aviso de archivado de Biblioteca dice quién tiene cada ejercicio en una rutina activa o en
+ * borrador: asignar o publicar una rutina lo cambia.
+ */
+function invalidateExerciseUsage(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({
+    predicate: (query) => query.queryKey[0] === "exercises" && query.queryKey[3] === "usage",
   });
 }
 
@@ -193,28 +214,38 @@ export function useEditableMenus(clientId: string | undefined) {
 }
 
 /**
- * Guarda y publica la rutina: actualiza la que se está editando (o crea una si no había) y, si era
- * un borrador, la activa. La activa anterior pasa a archivada (I4).
+ * Guarda y publica la rutina según `routinePublishOp` (§7): crea una nueva, edita en sitio el
+ * borrador o, sobre la activa, crea una versión nueva; y la activa, con lo que la anterior pasa a
+ * archivada (I4). Lo activo nunca se edita en sitio.
  */
 export function usePublishRoutine(clientId: string | undefined) {
   const ports = usePorts();
   const queryClient = useQueryClient();
   const trainerId = useTrainerId();
   return useMutation({
-    mutationFn: async ({ target, body }: { target: Routine | null; body: RoutineBody }) => {
-      const saved = target
-        ? await ports.routines.updateRoutine(trainerId!, target.id, body)
-        : await ports.routines.createRoutine(trainerId!, clientId!, body);
-      return saved.status === "borrador"
-        ? ports.routines.activateRoutine(trainerId!, saved.id)
-        : saved;
+    mutationFn: async ({ op, body }: { op: RoutinePublishOp; body: RoutineBody }) => {
+      const r = ports.routines;
+      const draft =
+        op.type === "create"
+          ? await r.createRoutine(trainerId!, clientId!, body)
+          : op.type === "update"
+            ? await r.updateRoutine(trainerId!, op.id, body)
+            : await r.reviseRoutine(trainerId!, op.id, body);
+      return r.activateRoutine(trainerId!, draft.id);
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.routines(trainerId!, clientId!) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.routines(trainerId!, clientId!) });
+      // El seguimiento enseña el nombre de la rutina activa.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clientsTrackingAll(trainerId!) });
+      invalidateExerciseUsage(queryClient);
+    },
   });
 }
 
-/** Aplica el plan de `planMenuPublish`: guarda cada menú y publica los tipos de día con borradores. */
+/**
+ * Aplica el plan de `planMenuPublish`: archiva lo quitado, guarda borradores y versiones nuevas, y
+ * activa cada tipo de día que cambia, con lo que su conjunto activo anterior se archiva (§7).
+ */
 export function usePublishMenus(clientId: string | undefined) {
   const ports = usePorts();
   const queryClient = useQueryClient();
@@ -231,13 +262,16 @@ export function usePublishMenus(clientId: string | undefined) {
       for (const op of plan.ops) {
         if (op.type === "create") await ports.menus.createMenu(trainerId!, clientId!, op.body);
         else if (op.type === "update") await ports.menus.updateMenu(trainerId!, op.id, op.body);
+        else if (op.type === "revise") await ports.menus.reviseMenu(trainerId!, op.id, op.body);
         else await ports.menus.archiveMenu(trainerId!, op.id);
       }
       for (const dayType of plan.activate) {
         await ports.menus.activateMenus(trainerId!, clientId!, dayType);
       }
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.menus(trainerId!, clientId!) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.menus(trainerId!, clientId!) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clientsTrackingAll(trainerId!) });
+    },
   });
 }

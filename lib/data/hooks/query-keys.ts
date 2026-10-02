@@ -5,6 +5,8 @@ export const queryKeys = {
   session: ["session"] as const,
   trainer: (trainerId: string) => ["trainer", trainerId] as const,
   clients: (trainerId: string) => ["clients", trainerId] as const,
+  /** Prefijo de todas las páginas del seguimiento: lo que se invalida cuando cambia su contenido. */
+  clientsTrackingAll: (trainerId: string) => ["clients", trainerId, "tracking"] as const,
   clientsTracking: (trainerId: string, query: ClientTrackingQuery) =>
     ["clients", trainerId, "tracking", query] as const,
   client: (trainerId: string, clientId: string) => ["clients", trainerId, clientId] as const,
@@ -30,6 +32,8 @@ export const queryKeys = {
   menuTemplates: (trainerId: string) => ["menu-templates", trainerId] as const,
   measurementTypes: (trainerId: string) => ["measurement-types", trainerId] as const,
   questions: (trainerId: string) => ["questions", trainerId] as const,
+  measurementTypesWithMeasurements: (trainerId: string, typeIds: readonly string[]) =>
+    ["measurement-types", trainerId, "with-measurements", ...typeIds] as const,
   questionsWithResponses: (trainerId: string, questionIds: readonly string[]) =>
     ["questions", trainerId, "with-responses", ...questionIds] as const,
   reviews: (trainerId: string) => ["reviews", trainerId] as const,
@@ -43,6 +47,6 @@ export const queryKeys = {
   review: (trainerId: string, reviewId: string) => ["reviews", trainerId, "id", reviewId] as const,
   weightLogs: (trainerId: string, clientId: string) =>
     ["weight-logs", trainerId, clientId] as const,
-  workoutLogs: (trainerId: string, clientId: string, routineId: string) =>
-    ["workout-logs", trainerId, clientId, routineId] as const,
+  workoutLogs: (trainerId: string, clientId: string) =>
+    ["workout-logs", trainerId, clientId] as const,
 };

@@ -8,6 +8,7 @@ import {
   positiveIntSchema,
   externalUrlSchema,
   tenantFields,
+  weightKgSchema,
 } from "./primitives";
 import { scaleFormatSchema, textFormatSchema } from "./questionnaire";
 
@@ -78,11 +79,16 @@ export const reviewRequirementsSchema = z.object({
 });
 export type ReviewRequirements = z.infer<typeof reviewRequirementsSchema>;
 
+/** Copia del peso que la revisión guarda al pasar a `vista` (I24): kg y fecha del pesaje. */
+export const frozenWeightSchema = z.object({ weightKg: weightKgSchema, date: civilDateSchema });
+export type FrozenWeight = z.infer<typeof frozenWeightSchema>;
+
 /**
- * Corte semanal. El peso NO vive aquí: se referencia el `WeightLog` de la ventana (§2, I9).
- * `weekNumber` se congela al crearla y no se recalcula (I22).
+ * Corte semanal. Mientras es editable, el peso no vive aquí: se referencia el `WeightLog` de la
+ * ventana (§2, I9). Al pasar a `vista` guarda copia en `frozenWeight` y desde entonces se lee de
+ * ella (I24). `weekNumber` se congela al crearla y no se recalcula (I22).
  */
-export const reviewSchema = z.object({
+export const reviewObjectSchema = z.object({
   ...tenantFields,
   clientId: idSchema,
   weekNumber: positiveIntSchema,
@@ -91,6 +97,8 @@ export const reviewSchema = z.object({
   requirements: reviewRequirementsSchema,
   media: z.array(reviewMediaSchema),
   weightLogId: idSchema.nullable(),
+  /** Nula mientras la revisión es editable; en `vista` y `revisada`, la copia de I24. */
+  frozenWeight: frozenWeightSchema.nullable(),
   measurements: z.array(bodyMeasurementSchema),
   responses: z.array(questionnaireResponseSchema),
   /** Feedback del entrenador. El vídeo es enlace externo (I20). */
@@ -100,5 +108,23 @@ export const reviewSchema = z.object({
   submittedAt: isoTimestampSchema.nullable(),
   viewedAt: isoTimestampSchema.nullable(),
   reviewedAt: isoTimestampSchema.nullable(),
+});
+
+/**
+ * I24: editable ⇒ sin copia; `vista` o `revisada` ⇒ copia si y solo si la revisión tenía pesaje.
+ * La regla vive aparte del objeto para que `reviewObjectSchema` se pueda seguir recortando.
+ */
+export const reviewSchema = reviewObjectSchema.superRefine((review, ctx) => {
+  const editable = review.status === "borrador" || review.status === "enviada";
+  const expected = editable ? false : review.weightLogId !== null;
+  if ((review.frozenWeight !== null) !== expected) {
+    ctx.addIssue({
+      code: "custom",
+      message: editable
+        ? "Una revisión editable no guarda copia del peso"
+        : "Una revisión vista guarda copia del peso si y solo si tenía pesaje",
+      path: ["frozenWeight"],
+    });
+  }
 });
 export type Review = z.infer<typeof reviewSchema>;

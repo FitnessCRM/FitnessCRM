@@ -3,6 +3,7 @@ export * from "./errors";
 export * from "./week";
 export * from "./macros";
 export * from "./questionnaire";
+export * from "./measurement-type";
 export * from "./review";
 export * from "./templates";
 export * from "./plan-publish";

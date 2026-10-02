@@ -6,10 +6,10 @@ import { AnswersCard } from "@/components/review/answers-card";
 import { ReviewPhotos } from "@/components/review/review-photos";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryBoundary } from "@/components/ui/query-boundary";
-import { EmptyState } from "@/components/ui/states";
-import type { CivilDate, Review, WeightLog } from "@/lib/domain";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { reviewWeight, type CivilDate, type Review, type WeightLog } from "@/lib/domain";
 import { useClientReviews, useSessionClientId, useTrainer, useWeightLogs } from "@/lib/data/hooks";
-import { formatDecimal, formatShortDate, todayCivil } from "@/lib/format";
+import { civilDateOf, formatDecimal, formatShortDate, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 import { FeedbackCard } from "./feedback-card";
@@ -18,7 +18,9 @@ import { SummaryBar } from "./summary-bar";
 const t = es.screensViewReview;
 
 /** Fecha con la que se identifica una revisión enviada: cuándo se envió (si no, cuándo se abrió). */
-const dateOf = (review: Review): CivilDate => (review.submittedAt ?? review.createdAt).slice(0, 10);
+/** Día del envío en la zona del entrenador, no en UTC. */
+const dateOf = (review: Review, timeZone: string): CivilDate =>
+  civilDateOf(review.submittedAt ?? review.createdAt, timeZone);
 
 /**
  * Pantalla 08 · Ver revisión. Solo lectura de una revisión ya enviada: cifras, fotos, respuestas
@@ -43,7 +45,21 @@ export function ViewReviewScreen() {
           </>
         }
       >
-        {(data) => <ViewReview reviews={data} logs={logs.data ?? []} today={today} />}
+        {(data) =>
+          // Las fechas se cuentan en la zona del entrenador: hasta tenerla no se pinta nada.
+          trainer.data ? (
+            <ViewReview
+              reviews={data}
+              logs={logs.data ?? []}
+              today={today}
+              timeZone={trainer.data.timeZone}
+            />
+          ) : trainer.isError ? (
+            <ErrorState onRetry={() => void trainer.refetch()} />
+          ) : (
+            <LoadingState />
+          )
+        }
       </QueryBoundary>
     </div>
   );
@@ -53,10 +69,12 @@ function ViewReview({
   reviews,
   logs,
   today,
+  timeZone,
 }: {
   reviews: Review[];
   logs: WeightLog[];
   today: CivilDate;
+  timeZone: string;
 }) {
   const router = useRouter();
   const requested = useSearchParams().get("review");
@@ -67,8 +85,7 @@ function ViewReview({
     .sort((a, b) => b.weekNumber - a.weekNumber);
   const review = sent.find((r) => r.id === requested) ?? sent[0]!;
   const previous = sent.find((r) => r.weekNumber < review.weekNumber);
-  const weightOf = (r: Review | undefined) =>
-    logs.find((l) => l.id === r?.weightLogId)?.weightKg ?? undefined;
+  const weightOf = (r: Review | undefined) => (r ? reviewWeight(r, logs)?.weightKg : undefined);
 
   return (
     <>
@@ -85,7 +102,8 @@ function ViewReview({
           >
             {sent.map((r, index) => (
               <option key={r.id} value={r.id}>
-                {es.screensReview.week} {r.weekNumber} · {formatShortDate(dateOf(r), today)}
+                {es.screensReview.week} {r.weekNumber} ·{" "}
+                {formatShortDate(dateOf(r, timeZone), today)}
                 {index === 0 ? ` · ${t.picker.latest}` : ""}
               </option>
             ))}
@@ -119,7 +137,13 @@ function ViewReview({
           </div>
           <div className="flex flex-col gap-4 max-lg:order-5">
             <h2 className="section-title mt-1">{t.others.title}</h2>
-            <OtherReviews reviews={sent} currentId={review.id} logs={logs} today={today} />
+            <OtherReviews
+              reviews={sent}
+              currentId={review.id}
+              logs={logs}
+              today={today}
+              timeZone={timeZone}
+            />
           </div>
         </div>
       </div>
@@ -132,11 +156,13 @@ function OtherReviews({
   currentId,
   logs,
   today,
+  timeZone,
 }: {
   reviews: Review[];
   currentId: string;
   logs: WeightLog[];
   today: CivilDate;
+  timeZone: string;
 }) {
   const others = reviews.filter((r) => r.id !== currentId);
   if (others.length === 0) return <p className="text-text-subtle text-[13px]">{t.others.none}</p>;
@@ -144,7 +170,7 @@ function OtherReviews({
   return (
     <div className="flex flex-col gap-2.5">
       {others.map((r) => {
-        const kg = logs.find((l) => l.id === r.weightLogId)?.weightKg;
+        const kg = reviewWeight(r, logs)?.weightKg; // I24
         return (
           <Link
             key={r.id}
@@ -155,10 +181,12 @@ function OtherReviews({
           >
             <p className="text-[15px] font-semibold">
               {es.screensReview.week} {r.weekNumber} ·{" "}
-              <time dateTime={dateOf(r)}>{formatShortDate(dateOf(r), today)}</time>
+              <time dateTime={dateOf(r, timeZone)}>
+                {formatShortDate(dateOf(r, timeZone), today)}
+              </time>
             </p>
             <p className="text-text-muted text-xs">
-              {kg !== undefined ? `${formatDecimal(kg)} kg` : t.summary.noWeight}
+              {kg !== undefined ? `${formatDecimal(kg)} ${es.common.kg}` : t.summary.noWeight}
               {r.feedbackVideoUrl ? ` · ${t.others.withVideo}` : ""}
             </p>
           </Link>

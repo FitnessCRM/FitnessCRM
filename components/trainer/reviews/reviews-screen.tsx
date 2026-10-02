@@ -110,7 +110,7 @@ export function ReviewsScreen() {
             </div>
             <ul>
               {data.rows.map((row) => (
-                <ReviewRow key={row.review.id} row={row} today={today} />
+                <ReviewRow key={row.review.id} row={row} today={today} timeZone={timeZone} />
               ))}
             </ul>
           </Card>

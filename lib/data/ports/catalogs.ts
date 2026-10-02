@@ -20,6 +20,12 @@ export interface MeasurementTypePort {
    * por tanto la serie de esa medida se parte en dos en las gráficas.
    */
   unarchiveMeasurementType(trainerId: string, typeId: string): Promise<void>;
+  /**
+   * Si el tipo tiene alguna medida registrada, en cualquier revisión, borradores incluidos. Desde
+   * entonces su unidad no se puede cambiar (I26): `updateMeasurementType` lanza
+   * `measurement_type.unit_locked`.
+   */
+  measurementTypeHasMeasurements(trainerId: string, typeId: string): Promise<boolean>;
 }
 
 export interface QuestionnairePort {

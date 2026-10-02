@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { CivilDate, Review, WeightLog } from "@/lib/domain";
+import { reviewWeight, type CivilDate, type Review, type WeightLog } from "@/lib/domain";
 import { formatDecimal, formatSignedDecimal } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
@@ -27,20 +27,25 @@ export function WeightTab({
   review,
   logs,
   today,
+  timeZone,
   stacked = false,
 }: {
   review: Review;
   logs: WeightLog[];
   today: CivilDate;
+  /** Zona del entrenador: el día de la revisión se cuenta en ella, no en UTC. */
+  timeZone: string;
   /** En una columna estrecha, calendario, detalle y tendencia van uno sobre otro. */
   stacked?: boolean;
 }) {
   const sorted = useMemo(() => [...logs].sort((a, b) => a.date.localeCompare(b.date)), [logs]);
-  const ofReview = sorted.find((l) => l.id === review.weightLogId);
-  const anchor = ofReview?.date ?? sorted.at(-1)?.date ?? reviewDate(review) ?? today;
+  // El calendario es el dato continuo: pinta los pesajes. Solo el día de la revisión sale de su
+  // peso (I24), que desde `vista` es la copia.
+  const reviewDay = reviewWeight(review, logs)?.date;
+  const anchor = reviewDay ?? sorted.at(-1)?.date ?? reviewDate(review, timeZone) ?? today;
 
   const [selectedDate, setSelectedDate] = useState<CivilDate | undefined>(
-    ofReview?.date ?? sorted.at(-1)?.date,
+    reviewDay ?? sorted.at(-1)?.date,
   );
   const [visible, setVisible] = useState(month(anchor));
 
@@ -124,7 +129,7 @@ export function WeightTab({
                 type="button"
                 onClick={() => select(log)}
                 aria-pressed={isSelected}
-                aria-label={`${day} ${t.months[m - 1]}: ${formatDecimal(log.weightKg)} kg`}
+                aria-label={`${day} ${t.months[m - 1]}: ${formatDecimal(log.weightKg)} ${es.common.kg}`}
                 className={cn(
                   base,
                   "focus-visible:ring-ring/50 cursor-pointer outline-none focus-visible:ring-[3px]",
@@ -209,7 +214,7 @@ export function WeightTab({
           ) : (
             <TrendChart
               height={140}
-              unit="kg"
+              unit={es.common.kg}
               series={[{ key: "kg", label: es.charts.weight.series }]}
               data={monthLogs.map((l) => ({
                 label: String(Number(l.date.slice(8))),

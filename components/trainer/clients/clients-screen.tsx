@@ -123,6 +123,7 @@ export function ClientsScreen() {
               <span>{t.columns.plan}</span>
               <span>{t.columns.week}</span>
               <span>{t.columns.review}</span>
+              <span>{t.columns.lastReview}</span>
               <span>{t.columns.membership}</span>
               <span>{t.columns.status}</span>
             </div>

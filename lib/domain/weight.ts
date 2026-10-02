@@ -1,5 +1,38 @@
+import { DomainError } from "./errors";
 import type { CivilDate, Review, WeightLog } from "./schemas";
 import { addCivilDays, reviewWindowForWeek } from "./week";
+
+/** Por qué una fecha no vale para un pesaje (I27), o `null` si vale. */
+export type WeightLogDateIssue = "future" | "before_start";
+
+/**
+ * I27: un pesaje no admite una fecha posterior a hoy, en la zona del entrenador, ni anterior a la
+ * fecha de alta del cliente. `today` lo calcula quien llama, en esa zona: el dominio no lee relojes.
+ */
+export function weightLogDateIssue(
+  date: CivilDate,
+  bounds: { today: CivilDate; startDate: CivilDate },
+): WeightLogDateIssue | null {
+  if (date > bounds.today) return "future";
+  if (date < bounds.startDate) return "before_start";
+  return null;
+}
+
+export function assertWeightLogDate(
+  date: CivilDate,
+  bounds: { today: CivilDate; startDate: CivilDate },
+): void {
+  const issue = weightLogDateIssue(date, bounds);
+  if (issue === "future") {
+    throw new DomainError("weight_log.future_date", `El pesaje no puede ser posterior a hoy (I27)`);
+  }
+  if (issue === "before_start") {
+    throw new DomainError(
+      "weight_log.before_start",
+      `El pesaje no puede ser anterior al alta ${bounds.startDate} (I27)`,
+    );
+  }
+}
 
 /** Los kg se enseñan con un decimal; las cifras derivadas se redondean aquí, no en la UI. */
 export const round1 = (n: number): number => Math.round(n * 10) / 10;

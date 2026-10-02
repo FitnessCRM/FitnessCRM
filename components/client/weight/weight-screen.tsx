@@ -3,11 +3,11 @@
 import dynamic from "next/dynamic";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryBoundary } from "@/components/ui/query-boundary";
-import { EmptyState } from "@/components/ui/states";
+import { Card } from "@/components/ui/card";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import {
-  DomainError,
   lastWeeksRange,
-  weekNumber,
+  weekNumberOrNull,
   weeklyWeights,
   weightSummary,
   type Client,
@@ -21,7 +21,7 @@ import {
   useTrainer,
   useWeightLogs,
 } from "@/lib/data/hooks";
-import { todayCivil } from "@/lib/format";
+import { formatCivilDate, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { WeightForm } from "./weight-form";
 import { WeightHistory } from "./weight-history";
@@ -43,14 +43,12 @@ function trendPoints(
   today: string,
   tz?: string,
 ) {
-  if (!client) return [];
-  try {
-    const { from, to } = lastWeeksRange(weekNumber(client.startDate, today, tz ?? "UTC"));
-    return weeklyWeights(logs, client.startDate, from, to);
-  } catch (error) {
-    if (error instanceof DomainError) return [];
-    throw error;
-  }
+  if (!client || !tz) return [];
+  // Antes del alta no hay semanas que pintar (§8).
+  const week = weekNumberOrNull(client.startDate, today, tz);
+  if (week === null) return [];
+  const { from, to } = lastWeeksRange(week);
+  return weeklyWeights(logs, client.startDate, from, to);
 }
 
 /** Pantalla 04 · Registro de peso. Formulario a la izquierda, gráfica e historial a la derecha. */
@@ -71,12 +69,31 @@ export function WeightScreen() {
           <PageHeader eyebrow={t.eyebrow} title={es.pages.client.peso} />
           <p className="text-text-muted mt-2 max-w-md text-[14px] leading-relaxed">{t.intro}</p>
         </div>
-        <WeightForm
-          today={today}
-          isSaving={saveWeightLog.isPending}
-          saveError={saveWeightLog.isError}
-          onSubmit={(values) => saveWeightLog.mutateAsync(values)}
-        />
+        {trainer.isError || client.isError ? (
+          <ErrorState
+            onRetry={() => {
+              void trainer.refetch();
+              void client.refetch();
+            }}
+          />
+        ) : !trainer.data || !client.data ? (
+          // Hasta tener la zona del entrenador y el alta no hay «hoy» ni límites fiables (I27).
+          <LoadingState />
+        ) : today < client.data.startDate ? (
+          <Card className="p-7 py-7">
+            <p className="text-text-muted text-[14px] leading-relaxed">
+              {t.notStarted.replace("{date}", formatCivilDate(client.data.startDate))}
+            </p>
+          </Card>
+        ) : (
+          <WeightForm
+            today={today}
+            startDate={client.data.startDate}
+            isSaving={saveWeightLog.isPending}
+            saveError={saveWeightLog.isError}
+            onSubmit={(values) => saveWeightLog.mutateAsync(values)}
+          />
+        )}
         <QueryBoundary query={logs} isEmpty={() => false} empty={null}>
           {(data) => <WeightSummaryCard summary={weightSummary(data)} />}
         </QueryBoundary>

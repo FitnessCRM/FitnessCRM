@@ -7,19 +7,20 @@ export function DashboardStats({
   activeClients,
   unviewedReviews,
   thisWeekReviews,
-  inactiveClients,
+  pendingInvitations,
 }: {
   activeClients: number;
   unviewedReviews: number;
   thisWeekReviews: number;
-  inactiveClients: number;
+  /** Clientes `invitado`: «inactivo» no existe (§7); la cuarta cifra son las invitaciones. */
+  pendingInvitations: number;
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <Stat label={t.activeClients} value={activeClients} highlight={false} />
       <Stat label={t.unviewedReviews} value={unviewedReviews} highlight={unviewedReviews > 0} />
       <Stat label={t.thisWeekReviews} value={thisWeekReviews} highlight={false} />
-      <Stat label={t.inactiveClients} value={inactiveClients} highlight={false} />
+      <Stat label={t.pendingInvitations} value={pendingInvitations} highlight={false} />
     </div>
   );
 }

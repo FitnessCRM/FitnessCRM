@@ -53,6 +53,19 @@ export function weekNumber(
   return Math.floor(days / 7) + 1;
 }
 
+/**
+ * La semana en que cae `date`, o `null` si es anterior al alta: un cliente que todavía no ha
+ * empezado no tiene semana (§8), y la pantalla pinta «—» en su lugar, nunca «Semana 1».
+ */
+export function weekNumberOrNull(
+  startDate: CivilDate,
+  date: CivilDate | Date,
+  timeZone: TimeZone,
+): number | null {
+  const civil = typeof date === "string" ? date : civilDateInTimeZone(date, timeZone);
+  return civilDaysBetween(startDate, civil) < 0 ? null : weekNumber(startDate, civil, timeZone);
+}
+
 /** Ventana civil de una semana dada: los 7 días que empiezan en `startDate + 7·(n−1)`. */
 export function reviewWindowForWeek(startDate: CivilDate, week: number): ReviewWindow {
   if (!Number.isInteger(week) || week < 1) {

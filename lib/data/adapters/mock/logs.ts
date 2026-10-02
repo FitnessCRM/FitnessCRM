@@ -1,6 +1,13 @@
 import type { WeightLogPort, WorkoutLogPort } from "@/lib/data/ports";
-import { weightLogSchema, workoutLogSchema } from "@/lib/domain";
-import { findOwn, own, removeById, replaceById } from "./helpers";
+import {
+  DomainError,
+  assertWeightLogDate,
+  assertWeightLogDeletable,
+  civilDateInTimeZone,
+  weightLogSchema,
+  workoutLogSchema,
+} from "@/lib/domain";
+import { findOwn, findOwnTrainer, own, ownClient, removeById, replaceById } from "./helpers";
 import type { MockContext } from "./store";
 
 export function createWeightLogPort(ctx: MockContext): WeightLogPort {
@@ -12,6 +19,13 @@ export function createWeightLogPort(ctx: MockContext): WeightLogPort {
           .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt)),
       ),
     saveWeightLog: async (input) => {
+      const client = ownClient(ctx.state, input.trainerId, input.clientId);
+      // I27: ni futuro, en la zona del entrenador y con el reloj de esta llamada, ni antes del alta.
+      const trainer = findOwnTrainer(ctx.state, input.trainerId);
+      assertWeightLogDate(input.date, {
+        today: civilDateInTimeZone(ctx.now(), trainer.timeZone),
+        startDate: client.startDate,
+      });
       const existing = ctx.state.weightLogs.find(
         (w) =>
           w.trainerId === input.trainerId && w.clientId === input.clientId && w.date === input.date,
@@ -27,7 +41,9 @@ export function createWeightLogPort(ctx: MockContext): WeightLogPort {
     },
     deleteWeightLog: async (trainerId, weightLogId) => {
       findOwn(ctx.state.weightLogs, trainerId, weightLogId, "Pesaje");
+      assertWeightLogDeletable(weightLogId, own(ctx.state.reviews, trainerId)); // I25
       removeById(ctx.state.weightLogs, weightLogId);
+      // Solo puede quedar algún borrador apuntándolo: se queda sin peso.
       for (const review of ctx.state.reviews) {
         if (review.weightLogId === weightLogId) review.weightLogId = null;
       }
@@ -38,13 +54,15 @@ export function createWeightLogPort(ctx: MockContext): WeightLogPort {
 
 export function createWorkoutLogPort(ctx: MockContext): WorkoutLogPort {
   return {
-    listWorkoutLogs: async (trainerId, clientId, routineId) =>
-      ctx.reply(
-        own(ctx.state.workoutLogs, trainerId).filter(
-          (l) => l.clientId === clientId && l.routineId === routineId,
-        ),
-      ),
+    listWorkoutLogs: async (trainerId, clientId) =>
+      ctx.reply(own(ctx.state.workoutLogs, trainerId).filter((l) => l.clientId === clientId)),
     saveWorkoutLog: async (input) => {
+      ownClient(ctx.state, input.trainerId, input.clientId);
+      // La serie se registra sobre una rutina de ese cliente y de ese entrenador.
+      const routine = findOwn(ctx.state.routines, input.trainerId, input.routineId, "Rutina");
+      if (routine.clientId !== input.clientId) {
+        throw new DomainError("not_found", `Rutina ${input.routineId} no existe`);
+      }
       const existing = ctx.state.workoutLogs.find(
         (l) =>
           l.trainerId === input.trainerId &&

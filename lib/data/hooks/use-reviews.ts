@@ -52,18 +52,6 @@ export function useSubmittedReviews() {
   });
 }
 
-/** Página de revisiones `enviada` para el dashboard, con paginación en servidor. */
-export function useSubmittedReviewsPage(page: number, pageSize: number) {
-  const ports = usePorts();
-  const trainerId = useTrainerId();
-  return useQuery({
-    queryKey: [...queryKeys.submittedReviews(trainerId ?? ""), "paginated", page, pageSize],
-    queryFn: () => ports.reviews.listSubmittedReviewsPage(trainerId!, { page, pageSize }),
-    enabled: trainerId !== undefined,
-    placeholderData: keepPreviousData,
-  });
-}
-
 /** Todas las revisiones recibidas con su cliente, paginadas en servidor (`/reviews`). */
 export function useReviewsTracking(query: ReviewTrackingQuery) {
   const ports = usePorts();
@@ -95,7 +83,10 @@ type ReviewMutation =
   | { reviewId: string; markViewed: true }
   | { reviewId: string; feedback: ReviewFeedback };
 
-/** Todas las escrituras sobre revisiones; invalida cualquier consulta de revisiones del entrenador. */
+/**
+ * Todas las escrituras sobre revisiones; invalida cualquier consulta de revisiones del entrenador.
+ * Enviar, marcar vista y mandar feedback cambian además la «Revisión nueva» del seguimiento.
+ */
 export function useReviewMutation() {
   const ports = usePorts();
   const queryClient = useQueryClient();
@@ -111,6 +102,11 @@ export function useReviewMutation() {
       if ("markViewed" in input) return r.markReviewViewed(trainerId!, input.reviewId);
       return r.sendReviewFeedback(trainerId!, input.reviewId, input.feedback);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.reviews(trainerId!) }),
+    onSuccess: (_, input) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.reviews(trainerId!) });
+      if ("submit" in input || "markViewed" in input || "feedback" in input) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.clientsTrackingAll(trainerId!) });
+      }
+    },
   });
 }

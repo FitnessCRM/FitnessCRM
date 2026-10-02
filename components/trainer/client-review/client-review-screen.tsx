@@ -6,9 +6,15 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryBoundary } from "@/components/ui/query-boundary";
-import { EmptyState } from "@/components/ui/states";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { CivilDate, Client, Review, WeightLog } from "@/lib/domain";
+import {
+  reviewWeight,
+  type CivilDate,
+  type Client,
+  type Review,
+  type WeightLog,
+} from "@/lib/domain";
 import {
   useClient,
   useClientReviews,
@@ -16,7 +22,7 @@ import {
   useTrainer,
   useWeightLogs,
 } from "@/lib/data/hooks";
-import { formatDecimal, formatShortDate, todayCivil } from "@/lib/format";
+import { civilDateOf, formatDecimal, formatShortDate, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { NativeSelect } from "@/components/ui/native-select";
 import { FeedbackDialog } from "./feedback-dialog";
@@ -28,8 +34,8 @@ import { WeightTab } from "./weight-tab";
 const t = es.screensTrainerReview;
 
 /** Cuándo se envió la revisión (si no, cuándo se abrió): es la fecha con la que se la identifica. */
-export const reviewDate = (review: Review): CivilDate =>
-  (review.submittedAt ?? review.createdAt).slice(0, 10);
+export const reviewDate = (review: Review, timeZone: string): CivilDate =>
+  civilDateOf(review.submittedAt ?? review.createdAt, timeZone);
 
 /**
  * Vuelta a la pantalla de origen: el dashboard si se llegó de ahí (`?from=dashboard`) y, si no,
@@ -52,8 +58,9 @@ function BackLink({ clientId }: { clientId: string }) {
 
 const fullName = (c: Pick<Client, "firstName" | "lastName">) => `${c.firstName} ${c.lastName}`;
 
+/** Peso de la revisión: el pesaje enlazado mientras es editable, la copia desde `vista` (I24). */
 export const weightOf = (review: Review | undefined, logs: readonly WeightLog[]) =>
-  logs.find((l) => l.id === review?.weightLogId)?.weightKg;
+  review ? reviewWeight(review, logs)?.weightKg : undefined;
 
 /**
  * Pantalla 14 · Revisión de cliente. Solo lee lo que el cliente envió: fotos (la comparación es
@@ -85,9 +92,22 @@ export function ClientReviewScreen({ clientId }: { clientId: string }) {
               </>
             }
           >
-            {(data) => (
-              <ClientReview client={c} reviews={data} logs={logs.data ?? []} today={today} />
-            )}
+            {(data) =>
+              // Las fechas se cuentan en la zona del entrenador: hasta tenerla no se pinta nada.
+              trainer.data ? (
+                <ClientReview
+                  client={c}
+                  reviews={data}
+                  logs={logs.data ?? []}
+                  today={today}
+                  timeZone={trainer.data.timeZone}
+                />
+              ) : trainer.isError ? (
+                <ErrorState onRetry={() => void trainer.refetch()} />
+              ) : (
+                <LoadingState />
+              )
+            }
           </QueryBoundary>
         )}
       </QueryBoundary>
@@ -100,11 +120,13 @@ function ClientReview({
   reviews,
   logs,
   today,
+  timeZone,
 }: {
   client: Client;
   reviews: Review[];
   logs: WeightLog[];
   today: CivilDate;
+  timeZone: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -154,13 +176,13 @@ function ClientReview({
               className="border-accent-outline bg-surface h-11 text-[14px]"
             >
               {sent.map((r) => {
-                const date = reviewDate(r);
+                const date = reviewDate(r, timeZone);
                 const kg = weightOf(r, logs);
                 return (
                   <option key={r.id} value={r.id}>
                     {es.screensReview.week} {r.weekNumber} ·{" "}
                     {date === today ? t.today : formatShortDate(date, today)}
-                    {kg !== undefined ? ` · ${formatDecimal(kg)} kg` : ""}
+                    {kg !== undefined ? ` · ${formatDecimal(kg)} ${es.common.kg}` : ""}
                   </option>
                 );
               })}
@@ -170,7 +192,9 @@ function ClientReview({
         </div>
       </div>
 
-      {review.status === "revisada" ? <SentFeedback review={review} today={today} /> : null}
+      {review.status === "revisada" ? (
+        <SentFeedback review={review} today={today} timeZone={timeZone} />
+      ) : null}
 
       <Tabs defaultValue="evolution" className="gap-5">
         <TabsList aria-label={t.tabs.label} className="max-w-full">
@@ -188,11 +212,19 @@ function ClientReview({
                 others={others}
                 logs={logs}
                 today={today}
+                timeZone={timeZone}
               />
             </div>
             <div className="flex min-w-0 flex-col gap-4">
               <h2 className="section-title">{t.tabs.weight}</h2>
-              <WeightTab key={review.id} review={review} logs={logs} today={today} stacked />
+              <WeightTab
+                key={review.id}
+                review={review}
+                logs={logs}
+                today={today}
+                timeZone={timeZone}
+                stacked
+              />
             </div>
           </div>
         </TabsContent>

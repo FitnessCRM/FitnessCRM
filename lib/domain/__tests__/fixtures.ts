@@ -86,6 +86,7 @@ export function review(over: Partial<Review> = {}): Review {
     requirements: { measurementTypeIds: ["mt-cintura"], questionIds: ["q-energia"] },
     media: [],
     weightLogId: null,
+    frozenWeight: null,
     measurements: [],
     responses: [],
     feedbackVideoUrl: null,

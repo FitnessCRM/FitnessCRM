@@ -5,7 +5,11 @@ import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryBoundary } from "@/components/ui/query-boundary";
 import { canonicalText, type MeasurementType } from "@/lib/domain";
-import { useMeasurementTypes, useSaveMeasurementType } from "@/lib/data/hooks";
+import {
+  useMeasurementTypes,
+  useMeasurementTypesWithMeasurements,
+  useSaveMeasurementType,
+} from "@/lib/data/hooks";
 import { es } from "@/lib/i18n/es";
 import { CatalogList } from "./catalog-list";
 
@@ -22,7 +26,8 @@ const sameDraft = (a: Draft, b: Draft) => a.label === b.label && a.unit === b.un
 /**
  * Pantalla sin maqueta (`docs/dominio.md` §11.1): el catálogo de tipos de medida del entrenador,
  * con la misma mecánica que Cuestionario. Cada medida registrada guarda etiqueta y unidad
- * congeladas (I12), así que editar aquí no toca el histórico.
+ * congeladas (I12), así que editar aquí no toca el histórico. Desde la primera medida registrada
+ * la unidad ya no se cambia (I26), igual que el formato de una pregunta con respuestas (I15).
  */
 export function MeasurementsScreen() {
   const types = useMeasurementTypes();
@@ -41,6 +46,7 @@ function Measurements({ types }: { types: MeasurementType[] }) {
   const save = useSaveMeasurementType();
   const active = types.filter((m) => m.status === "activa");
   const archived = types.filter((m) => m.status === "archivada");
+  const locked = useMeasurementTypesWithMeasurements(active.map((m) => m.id));
   const units = [...new Set(types.map((m) => m.unit).filter(Boolean))].sort((a, b) =>
     a.localeCompare(b),
   );
@@ -73,7 +79,9 @@ function Measurements({ types }: { types: MeasurementType[] }) {
       if (!draft || sameDraft(draft, draftOf(type))) continue;
       const next = clean(draft);
       if (next.label === "" || next.unit === "") continue;
-      await save.mutateAsync({ typeId: type.id, changes: next });
+      // I26: la unidad solo viaja si este tipo todavía puede cambiarla.
+      const changes = locked.data?.has(type.id) ? { label: next.label } : next;
+      await save.mutateAsync({ typeId: type.id, changes });
     }
     for (const row of added) {
       const next = clean(row.draft);
@@ -132,6 +140,8 @@ function Measurements({ types }: { types: MeasurementType[] }) {
         <MeasurementRow
           draft={drafts[type.id] ?? draftOf(type)}
           units={units}
+          // Mientras no se sabe, bloqueada: mejor que dejar escribir algo que luego se rechaza.
+          unitLocked={locked.data?.has(type.id) ?? locked.isPending}
           onChange={(changes) => edit(type.id, changes)}
         />
       )}
@@ -148,10 +158,12 @@ function Measurements({ types }: { types: MeasurementType[] }) {
 function MeasurementRow({
   draft,
   units,
+  unitLocked = false,
   onChange,
 }: {
   draft: Draft;
   units: string[];
+  unitLocked?: boolean;
   onChange: (changes: Partial<Draft>) => void;
 }) {
   return (
@@ -170,6 +182,7 @@ function MeasurementRow({
           list="measurement-units"
           placeholder={t.unitPlaceholder}
           value={draft.unit}
+          disabled={unitLocked}
           onChange={(event) => onChange({ unit: event.target.value })}
           aria-invalid={draft.unit.trim() === "" || undefined}
           className="h-10 w-24 text-[14px]"
@@ -180,6 +193,7 @@ function MeasurementRow({
           ))}
         </datalist>
       </div>
+      {unitLocked ? <p className="text-text-subtle text-xs">{t.unitLocked}</p> : null}
       {draft.label.trim() === "" ? <p className="text-danger text-xs">{t.labelRequired}</p> : null}
       {draft.unit.trim() === "" ? <p className="text-danger text-xs">{t.unitRequired}</p> : null}
     </div>

@@ -10,5 +10,9 @@ export interface WeightLogPort {
    * conservando su `id` y `createdAt`; una nota vacía conserva la anterior.
    */
   saveWeightLog(input: WeightLogInput): Promise<WeightLog>;
+  /**
+   * Borra un pesaje. Lanza `weight_log.in_review` si lo usa una revisión `enviada`, `vista` o
+   * `revisada` (I25); si solo lo usa un borrador, el borrador se queda sin peso.
+   */
   deleteWeightLog(trainerId: string, weightLogId: string): Promise<void>;
 }

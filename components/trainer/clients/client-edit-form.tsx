@@ -7,18 +7,23 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Client } from "@/lib/domain";
+import { cadenceSchema, clientDataSchema, type Client } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
-import { ClientDataCard, FieldError, clientDataSchema } from "./client-data-card";
+import { ClientDataCard, FieldError } from "./client-data-card";
 
 const t = es.screensClientEdit;
 
-/** La cadencia se edita como texto y se convierte a número al guardar. */
+/**
+ * Los datos del cliente validan con el esquema del dominio (E21). La cadencia se edita como texto,
+ * solo dígitos, y el número que sale tiene que valer para `cadenceSchema`.
+ */
 const formSchema = clientDataSchema.extend({
   reviewEveryDays: z
     .string()
     .trim()
-    .refine((v) => /^\d+$/.test(v) && Number(v) > 0, { message: t.errors.cadenceInvalid }),
+    .refine((v) => /^\d+$/.test(v) && cadenceSchema.shape.everyDays.safeParse(Number(v)).success, {
+      message: t.errors.cadenceInvalid,
+    }),
 });
 
 export type EditValues = z.output<typeof formSchema>;
@@ -38,7 +43,7 @@ export function ClientEditForm({
   error: string | null;
   onSubmit: (values: EditValues) => Promise<unknown>;
 }) {
-  const form = useForm<EditValues>({
+  const form = useForm<z.input<typeof formSchema>, unknown, EditValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       firstName: client.firstName,

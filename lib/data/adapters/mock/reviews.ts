@@ -1,15 +1,17 @@
 import type { ReviewPort, ReviewTrackingFilter } from "@/lib/data/ports";
 import {
   DomainError,
-  answerQuestion,
   canClientEditReview,
+  civilDateInTimeZone,
+  freezeMeasurements,
+  freezeResponses,
   isWeightLogInWindow,
   markReviewViewed,
   openReview,
-  recordMeasurement,
   sendReviewFeedback,
   submitReview,
   weekNumber,
+  weekNumberOrNull,
 } from "@/lib/domain";
 import { findOwn, own, replaceById } from "./helpers";
 import type { MockContext } from "./store";
@@ -23,6 +25,8 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
     if (!trainer) throw new DomainError("not_found", `Entrenador ${trainerId} no existe`);
     return trainer;
   };
+  /** «Hoy» en la zona del entrenador, con el reloj de esta llamada: no se fija al arrancar (E12). */
+  const todayOf = (timeZone: string) => civilDateInTimeZone(ctx.now(), timeZone);
   const editable = (trainerId: string, reviewId: string) => {
     const review = findOwn(ctx.state.reviews, trainerId, reviewId, "Revisión");
     if (!canClientEditReview(review)) {
@@ -48,17 +52,6 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
           .filter((r) => r.status === "enviada")
           .sort(bySubmittedDesc),
       ),
-    listSubmittedReviewsPage: async (trainerId, query) => {
-      const all = own(ctx.state.reviews, trainerId)
-        .filter((r) => r.status === "enviada")
-        .sort(bySubmittedDesc);
-
-      const total = all.length;
-      const start = query.page * query.pageSize;
-      const rows = all.slice(start, start + query.pageSize);
-
-      return ctx.reply({ rows, total });
-    },
     listReviewsTracking: async (trainerId, query) => {
       const fold = (text: string) =>
         text
@@ -103,7 +96,10 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
     },
     getCurrentReview: async (trainerId, clientId) => {
       const client = findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
-      const week = weekNumber(client.startDate, ctx.state.today, trainerOf(trainerId).timeZone);
+      // Antes del alta no hay semana, así que tampoco revisión de esta semana (§8).
+      const { timeZone } = trainerOf(trainerId);
+      const week = weekNumberOrNull(client.startDate, todayOf(timeZone), timeZone);
+      if (week === null) return ctx.reply(null);
       return ctx.reply(
         ctx.state.reviews.find((r) => r.clientId === clientId && r.weekNumber === week) ?? null,
       );
@@ -111,7 +107,8 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
     openCurrentReview: async (trainerId, clientId) => {
       const client = findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
       const trainer = trainerOf(trainerId);
-      const week = weekNumber(client.startDate, ctx.state.today, trainer.timeZone);
+      const today = todayOf(trainer.timeZone);
+      const week = weekNumber(client.startDate, today, trainer.timeZone);
       // I16: como máximo una revisión por cliente y semana.
       const existing = ctx.state.reviews.find(
         (r) => r.clientId === clientId && r.weekNumber === week,
@@ -120,7 +117,7 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
       const review = openReview({
         client,
         timeZone: trainer.timeZone,
-        at: ctx.state.today,
+        at: today,
         measurementTypes: own(ctx.state.measurementTypes, trainerId),
         questions: own(ctx.state.questions, trainerId),
         newId: ctx.newId,
@@ -141,22 +138,22 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
         }
         review.weightLogId = changes.weightLogId;
       }
+      // I12: solo se recongela lo nuevo o lo que cambia de valor.
       if (changes.measurements) {
-        review.measurements = changes.measurements.map(({ measurementTypeId, value }) => {
-          const type = findOwn(
-            ctx.state.measurementTypes,
-            trainerId,
-            measurementTypeId,
-            "Tipo de medida",
-          );
-          return recordMeasurement(type, value, ctx.newId);
-        });
+        review.measurements = freezeMeasurements(
+          review.measurements,
+          changes.measurements,
+          (id) => findOwn(ctx.state.measurementTypes, trainerId, id, "Tipo de medida"),
+          ctx.newId,
+        );
       }
       if (changes.responses) {
-        review.responses = changes.responses.map(({ questionId, value }) => {
-          const question = findOwn(ctx.state.questions, trainerId, questionId, "Pregunta");
-          return answerQuestion(question, value, ctx.newId);
-        });
+        review.responses = freezeResponses(
+          review.responses,
+          changes.responses,
+          (id) => findOwn(ctx.state.questions, trainerId, id, "Pregunta"),
+          ctx.newId,
+        );
       }
       return ctx.reply(review);
     },
@@ -174,7 +171,12 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
     },
     markReviewViewed: async (trainerId, reviewId) => {
       const review = findOwn(ctx.state.reviews, trainerId, reviewId, "Revisión");
-      return ctx.reply(replaceById(ctx.state.reviews, markReviewViewed(review, ctx.now())));
+      // I24: la copia del peso sale del pesaje al que apunta en este momento.
+      const log =
+        review.weightLogId === null
+          ? null
+          : findOwn(ctx.state.weightLogs, trainerId, review.weightLogId, "Pesaje");
+      return ctx.reply(replaceById(ctx.state.reviews, markReviewViewed(review, log, ctx.now())));
     },
     sendReviewFeedback: async (trainerId, reviewId, feedback) => {
       const review = findOwn(ctx.state.reviews, trainerId, reviewId, "Revisión");

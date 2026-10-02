@@ -10,8 +10,9 @@ import {
 /**
  * Serie realmente ejecutada por el cliente. Opcional, suelta, nunca bloquea nada (§2).
  * Lleva `exerciseId` propio: es la fila que sobrevive archivada (I13) y la que dice qué se hizo
- * aunque el ejercicio se retire de la rutina. `routineId` y `routineDayExerciseId` dan el
- * contexto (la prescripción) y solo se leen en rutinas archivadas, que no se tocan.
+ * aunque el ejercicio se retire de la rutina. `routineId` dice en qué versión de la rutina se
+ * hizo, que no se toca al archivarse; `routineDayExerciseId` dice en qué línea, y como las líneas
+ * conservan su id entre versiones (§7), es lo que casa la serie con la versión activa.
  */
 export const workoutLogSchema = z.object({
   ...tenantFields,

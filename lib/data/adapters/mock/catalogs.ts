@@ -1,6 +1,7 @@
 import type { MeasurementTypePort, QuestionnairePort } from "@/lib/data/ports";
 import {
   DomainError,
+  canUpdateMeasurementType,
   canUpdateQuestion,
   measurementTypeSchema,
   questionnaireQuestionSchema,
@@ -20,6 +21,11 @@ function reorder<T extends { id: string; order: number }>(items: T[], orderedIds
 
 export function createMeasurementTypePort(ctx: MockContext): MeasurementTypePort {
   const mine = (trainerId: string) => own(ctx.state.measurementTypes, trainerId).sort(byOrder);
+  // Mismo criterio que I15: cualquier revisión con una medida de ese tipo, borradores incluidos.
+  const hasMeasurements = (trainerId: string, typeId: string) =>
+    own(ctx.state.reviews, trainerId).some((r) =>
+      r.measurements.some((m) => m.measurementTypeId === typeId),
+    );
   return {
     listMeasurementTypes: async (trainerId) => ctx.reply(mine(trainerId)),
     createMeasurementType: async (trainerId, input) => {
@@ -36,7 +42,15 @@ export function createMeasurementTypePort(ctx: MockContext): MeasurementTypePort
     },
     updateMeasurementType: async (trainerId, typeId, changes) => {
       const type = findOwn(ctx.state.measurementTypes, trainerId, typeId, "Tipo de medida");
-      Object.assign(type, measurementTypeSchema.parse({ ...type, ...changes }));
+      const next = { label: changes.label ?? type.label, unit: changes.unit ?? type.unit };
+      // I26: la unidad es inmutable desde la primera medida registrada; la etiqueta, editable siempre.
+      if (!canUpdateMeasurementType(type, next, hasMeasurements(trainerId, typeId))) {
+        throw new DomainError(
+          "measurement_type.unit_locked",
+          "El tipo ya tiene medidas registradas: su unidad no se puede cambiar",
+        );
+      }
+      Object.assign(type, measurementTypeSchema.parse({ ...type, ...next }));
       return ctx.reply(type);
     },
     reorderMeasurementTypes: async (trainerId, orderedIds) =>
@@ -51,6 +65,8 @@ export function createMeasurementTypePort(ctx: MockContext): MeasurementTypePort
       findOwn(ctx.state.measurementTypes, trainerId, typeId, "Tipo de medida").status = "activa";
       return ctx.reply(undefined);
     },
+    measurementTypeHasMeasurements: async (trainerId, typeId) =>
+      ctx.reply(hasMeasurements(trainerId, typeId)),
   };
 }
 

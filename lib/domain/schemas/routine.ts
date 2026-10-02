@@ -28,7 +28,16 @@ export const prescriptionSchema = z
   });
 export type Prescription = z.infer<typeof prescriptionSchema>;
 
-/** Ejercicio prescrito dentro de un día. Nunca en la misma tabla que `WorkoutLog` (§2). */
+/**
+ * Ejercicio prescrito dentro de un día: una línea de la rutina. Nunca en la misma tabla que
+ * `WorkoutLog` (§2).
+ *
+ * Ids entre versiones (§7): una rutina activa no se edita en sitio, se versiona; la versión nueva
+ * conserva los ids de los días y de las líneas que continúan, y solo lo nuevo recibe id nuevo. Es lo
+ * que da continuidad a cada línea: un registro hecho sobre una versión archivada se resuelve en la
+ * misma línea de la versión nueva, y el de una línea quitada se sigue resolviendo en la archivada.
+ * Por eso estos ids son únicos dentro de su rutina, no entre rutinas del mismo cliente.
+ */
 export const routineDayExerciseSchema = z.object({
   id: idSchema,
   exerciseId: idSchema,

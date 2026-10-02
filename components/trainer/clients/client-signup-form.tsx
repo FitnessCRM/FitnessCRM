@@ -11,13 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   civilDateSchema,
+  clientSignupSchema,
   membershipEndDate,
   membershipTypeSchema,
   paymentStatusSchema,
 } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
-import { ClientDataCard, FieldError, clientDataSchema, dateField } from "./client-data-card";
+import { ClientDataCard, FieldError } from "./client-data-card";
 
 const t = es.screensClientSignup;
 
@@ -26,22 +27,11 @@ export const SIGNUP_FORM_ID = "client-signup";
 /** Qué botón de envío se ha pulsado: `assign` sigue hacia la asignación de plan. */
 export type SignupIntent = "invite" | "assign";
 
-const formSchema = clientDataSchema
-  .extend({
-    membershipType: membershipTypeSchema,
-    membershipStart: dateField,
-    membershipEnd: dateField,
-    paymentStatus: paymentStatusSchema,
-  })
-  .refine(
-    (v) =>
-      !civilDateSchema.safeParse(v.membershipStart).success ||
-      !civilDateSchema.safeParse(v.membershipEnd).success ||
-      v.membershipEnd >= v.membershipStart,
-    { message: t.errors.endBeforeStart, path: ["membershipEnd"] },
-  );
-
-export type SignupValues = z.output<typeof formSchema>;
+/**
+ * Valida con el esquema de alta del dominio (E21): los datos del cliente y la membresía inicial,
+ * con las mismas reglas que una membresía de Membresías. Los mensajes se eligen aquí por campo.
+ */
+export type SignupValues = z.output<typeof clientSignupSchema>;
 
 /**
  * Formulario del alta. La fecha de inicio de la membresía sigue a la fecha de alta y el fin sigue
@@ -58,8 +48,8 @@ export function ClientSignupForm({
   error: string | null;
   onSubmit: (values: SignupValues, intent: SignupIntent) => Promise<unknown>;
 }) {
-  const form = useForm<SignupValues>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.input<typeof clientSignupSchema>, unknown, SignupValues>({
+    resolver: zodResolver(clientSignupSchema),
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -69,32 +59,40 @@ export function ClientSignupForm({
       level: "",
       initialNotes: "",
       startDate: today,
-      membershipType: "trimestral",
-      membershipStart: today,
-      membershipEnd: membershipEndDate("trimestral", today),
-      paymentStatus: "pagada",
+      membership: {
+        type: "trimestral",
+        startDate: today,
+        endDate: membershipEndDate("trimestral", today),
+        paymentStatus: "pagada",
+      },
     },
   });
   const { errors, dirtyFields } = form.formState;
+  // El fin solo puede fallar por fecha inválida o por ser anterior al inicio, como en Membresías.
+  const endError = errors.membership?.endDate
+    ? civilDateSchema.safeParse(form.getValues("membership.endDate")).success
+      ? t.errors.endBeforeStart
+      : es.clientData.errors.dateInvalid
+    : undefined;
   const intent = useRef<SignupIntent>("invite");
 
   const startDate = form.watch("startDate");
-  const membershipType = form.watch("membershipType");
-  const membershipStart = form.watch("membershipStart");
+  const membershipType = form.watch("membership.type");
+  const membershipStart = form.watch("membership.startDate");
 
   // Sigue a la fecha de alta hasta que se edite a mano.
   useEffect(() => {
-    if (!dirtyFields.membershipStart && civilDateSchema.safeParse(startDate).success) {
-      form.setValue("membershipStart", startDate);
+    if (!dirtyFields.membership?.startDate && civilDateSchema.safeParse(startDate).success) {
+      form.setValue("membership.startDate", startDate);
     }
-  }, [startDate, dirtyFields.membershipStart, form]);
+  }, [startDate, dirtyFields.membership?.startDate, form]);
 
   // Sigue al tipo y al inicio hasta que se edite a mano.
   useEffect(() => {
-    if (!dirtyFields.membershipEnd && civilDateSchema.safeParse(membershipStart).success) {
-      form.setValue("membershipEnd", membershipEndDate(membershipType, membershipStart));
+    if (!dirtyFields.membership?.endDate && civilDateSchema.safeParse(membershipStart).success) {
+      form.setValue("membership.endDate", membershipEndDate(membershipType, membershipStart));
     }
-  }, [membershipType, membershipStart, dirtyFields.membershipEnd, form]);
+  }, [membershipType, membershipStart, dirtyFields.membership?.endDate, form]);
 
   const choose = (next: SignupIntent) => () => {
     intent.current = next;
@@ -146,7 +144,7 @@ export function ClientSignupForm({
                 </span>
                 <Controller
                   control={form.control}
-                  name="membershipType"
+                  name="membership.type"
                   render={({ field }) => (
                     <div
                       role="radiogroup"
@@ -173,10 +171,14 @@ export function ClientSignupForm({
                     id="su-m-start"
                     type="date"
                     className="scheme-dark"
-                    aria-invalid={!!errors.membershipStart}
-                    {...form.register("membershipStart")}
+                    aria-invalid={!!errors.membership?.startDate}
+                    {...form.register("membership.startDate")}
                   />
-                  <FieldError message={errors.membershipStart?.message} />
+                  <FieldError
+                    message={
+                      errors.membership?.startDate ? es.clientData.errors.dateInvalid : undefined
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="su-m-end">{t.membership.end}</Label>
@@ -184,10 +186,10 @@ export function ClientSignupForm({
                     id="su-m-end"
                     type="date"
                     className="scheme-dark"
-                    aria-invalid={!!errors.membershipEnd}
-                    {...form.register("membershipEnd")}
+                    aria-invalid={!!errors.membership?.endDate}
+                    {...form.register("membership.endDate")}
                   />
-                  <FieldError message={errors.membershipEnd?.message} />
+                  <FieldError message={endError} />
                 </div>
               </div>
               <div className="flex flex-col gap-2">
@@ -199,7 +201,7 @@ export function ClientSignupForm({
                 </span>
                 <Controller
                   control={form.control}
-                  name="paymentStatus"
+                  name="membership.paymentStatus"
                   render={({ field }) => (
                     <div
                       role="radiogroup"

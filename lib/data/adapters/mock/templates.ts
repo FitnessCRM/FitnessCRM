@@ -1,5 +1,6 @@
 import type { TemplatePort } from "@/lib/data/ports";
 import {
+  assertExercisesInLibrary,
   cloneMenuTemplate,
   cloneRoutineTemplate,
   duplicateMenuTemplate,
@@ -65,6 +66,8 @@ export function createTemplatePort(ctx: MockContext): TemplatePort {
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       });
+      // I3: una plantilla también prescribe solo ejercicios de la biblioteca del entrenador.
+      assertExercisesInLibrary(template, own(ctx.state.exercises, input.trainerId));
       return ctx.reply(replaceById(ctx.state.routineTemplates, template));
     },
     saveMenuTemplate: async (input) => {

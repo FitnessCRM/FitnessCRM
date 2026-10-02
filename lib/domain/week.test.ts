@@ -7,6 +7,7 @@ import {
   daysUntilNextReview,
   reviewWindowForWeek,
   weekNumber,
+  weekNumberOrNull,
 } from "./week";
 
 const TZ = "Europe/Madrid";
@@ -83,5 +84,13 @@ describe("civil date helpers", () => {
   it("computes days until next review from the cadence", () => {
     expect(daysUntilNextReview("2026-08-22", "2026-08-01", 7, "2026-08-27")).toBe(2);
     expect(daysUntilNextReview(null, "2026-08-01", 7, "2026-08-10")).toBe(-2);
+  });
+});
+
+describe("weekNumberOrNull (section 8): no week before the start date", () => {
+  it("is null before the start date and the week from it on", () => {
+    expect(weekNumberOrNull("2026-10-15", "2026-10-02", "Europe/Madrid")).toBeNull();
+    expect(weekNumberOrNull("2026-10-15", "2026-10-15", "Europe/Madrid")).toBe(1);
+    expect(weekNumberOrNull("2026-10-15", "2026-10-22", "Europe/Madrid")).toBe(2);
   });
 });

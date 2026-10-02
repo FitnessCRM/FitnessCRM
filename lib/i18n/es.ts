@@ -16,6 +16,16 @@ export const es = {
     kcalInvalid: "Escribe las kcal sin puntos ni decimales, por ejemplo 2400",
     coachTag: "Coach",
     trainerNote: { title: "Nota del entrenador" },
+    /** Lo que se pinta en lugar de un dato que no hay, p. ej. la semana antes del alta (§8). */
+    none: "—",
+    /** Unidades y abreviaturas que comparten varias pantallas de las dos áreas. */
+    kg: "kg",
+    kcal: "kcal",
+    week: "Semana",
+    /** «S5»: semana abreviada en ejes y celdas estrechas. */
+    weekShort: "S",
+    /** Nombre accesible y texto del botón que cierra un diálogo. */
+    close: "Cerrar",
   },
   roles: {
     trainer: "Entrenador",
@@ -51,10 +61,10 @@ export const es = {
       hero: {
         tagline: "El progreso no se adivina. Se mide.",
         headline: { lead: ["El progreso", "no se adivina."], accent: "Se mide." },
-        description: "Rutina, dieta y revisiones en un solo sitio, entre tú y tu entrenador.",
+        description: "Rutina, menú y revisiones en un solo sitio, entre tú y tu entrenador.",
       },
       stats: {
-        weeks: { number: "12", label: "Semanas de bloque" },
+        weeks: { number: "12", label: "Semanas" },
         reviews: { number: "6", label: "Revisiones" },
         ratio: { number: "1:1", label: "Seguimiento" },
       },
@@ -63,6 +73,7 @@ export const es = {
         emailPlaceholder: "tu@email.com",
         password: "Contraseña",
         passwordPlaceholder: "••••••••",
+        required: "Completa todos los campos",
         submit: "Continuar",
         submitting: "Entrando…",
         forgotPassword: "He olvidado mi contraseña",
@@ -99,6 +110,8 @@ export const es = {
   screens: {
     weight: {
       eyebrow: "Cuando tú quieras",
+      /** Antes del alta no hay ninguna fecha válida (I27): en vez del formulario, desde cuándo. */
+      notStarted: "Podrás registrar tu peso a partir del {date}, cuando empiece tu seguimiento.",
       intro:
         "Entrada libre y opcional. No hace falta pesarse a diario: puedes apuntarlo cuando quieras o dejarlo para el día de la revisión.",
       form: {
@@ -112,6 +125,9 @@ export const es = {
         weightRequired: "Escribe tu peso",
         weightInvalid: "El peso debe ser un número en kg, por ejemplo 63,4",
         dateInvalid: "Elige una fecha",
+        /** I27: ni futuro ni antes del alta. `{date}` es la fecha de alta. */
+        dateFuture: "La fecha no puede ser posterior a hoy",
+        dateBeforeStart: "La fecha no puede ser anterior a tu alta, el {date}",
         saveError: "No se ha podido guardar el pesaje.",
       },
       summary: {
@@ -139,6 +155,8 @@ export const es = {
   },
   screensReview: {
     week: "Semana",
+    /** Antes del alta no hay semana ni revisión (§8). */
+    notStarted: "Tu seguimiento empieza el {date}",
     blocks: {
       photos: "Fotos",
       weight: "Peso",
@@ -158,6 +176,8 @@ export const es = {
     weight: {
       title: "Peso de la revisión",
       taken: "Tomado de tu registro del",
+      /** Hay un pesaje más reciente en la ventana: la revisión lo tomará al guardarla (I24). */
+      willUpdate: "Al guardar se usará tu registro del {date} · {kg} kg",
       missing: "Sin pesaje esta semana. Regístralo en Peso y aparecerá aquí.",
       goToWeight: "Ir a Peso",
       unit: "kg",
@@ -171,7 +191,7 @@ export const es = {
       title: "Cuestionario de sensaciones",
       textPlaceholder: "Escribe libremente…",
     },
-    progress: { of: "de", blocks: "bloques completos" },
+    progress: { of: "de", blocks: "apartados completos" },
     actions: {
       saveDraft: "Guardar borrador",
       submit: "Enviar revisión",
@@ -350,6 +370,9 @@ export const es = {
     unit: "Unidad",
     unitRequired: "La unidad no puede quedar vacía",
     unitPlaceholder: "cm",
+    /** I26: la unidad no se cambia desde la primera medida registrada. */
+    unitLocked:
+      "Unidad bloqueada: ya hay medidas registradas. Para cambiarla, archiva la medida y crea otra.",
     add: "+ Añadir medida",
     empty: {
       title: "Sin tipos de medida",
@@ -531,6 +554,11 @@ export const es = {
     saveError: "No se han podido publicar los cambios.",
     draftBadge: "Borrador",
     notFound: { title: "Cliente no encontrado", hint: "Puede que se haya eliminado." },
+    /** Cliente de baja: no se le edita ni se le publica un plan (tarjeta 44), como en Asignación. */
+    inactive: {
+      title: "Cliente de baja",
+      hint: "No se le puede editar ni publicar un plan. Si vuelve, reactívalo desde su ficha.",
+    },
     defaultRoutineName: "Rutina de {name}",
   },
   screensTemplates: {
@@ -615,12 +643,16 @@ export const es = {
       intro: "El ejercicio sale de la biblioteca y de los planes vivos. No se borra el histórico:",
       keepsHistory:
         "las rutinas archivadas se quedan como están, así que un entreno registrado sigue diciendo qué ejercicio fue.",
-      clients: "Lo tienen prescrito ahora:",
+      /** Activas y borradores: las dos que modifica el archivado. Las archivadas no cuentan. */
+      clients: "Lo tienen en su rutina, activa o en borrador:",
       templates: "Plantillas de rutina afectadas:",
       noUse: "Ningún cliente ni plantilla lo usa ahora mismo.",
       confirm: "Eliminar de la biblioteca",
       cancel: "Cancelar",
       error: "No se ha podido eliminar el ejercicio.",
+      /** Sin saber a quién afecta no se deja confirmar. */
+      usageError:
+        "No se ha podido comprobar quién usa este ejercicio. Vuelve a intentarlo antes de eliminarlo.",
       working: "Eliminando…",
     },
   },
@@ -634,7 +666,7 @@ export const es = {
       lastDay: "último día",
       none: {
         title: "Sin membresía en curso",
-        hint: "Tu entrenador registra aquí los periodos que contratas.",
+        hint: "Tu entrenador registra aquí las membresías que contratas.",
       },
     },
     next: {
@@ -652,7 +684,7 @@ export const es = {
       nextTag: "próxima",
       empty: {
         title: "Sin renovaciones todavía",
-        hint: "Aquí verás cada periodo que contrates.",
+        hint: "Aquí verás cada membresía que contrates.",
       },
     },
     footer: "Si tienes dudas sobre un pago, escribe a tu entrenador.",
@@ -724,21 +756,29 @@ export const es = {
   },
   /** Componentes `components/`: literales que comparten varios componentes. */
   components: {
+    /**
+     * Panel de control. Se aparta de la captura 09 a propósito: «inactivo» no existe (§7, D4), así
+     * que cifras y pestañas usan los tres estados del cliente con sus etiquetas de `status.client`.
+     */
     dashboard: {
-      activeClients: "CLIENTES ACTIVOS",
-      unviewedReviews: "REVISIONES SIN REVISAR",
-      thisWeekReviews: "REVISIONES ESTA SEMANA",
-      inactiveClients: "CLIENTES INACTIVOS",
+      activeClients: "Clientes en activo",
+      unviewedReviews: "Revisiones sin revisar",
+      thisWeekReviews: "Revisiones esta semana",
+      pendingInvitations: "Invitaciones pendientes",
       recentReviews: "REVISIONES RECIBIDAS",
       noReviews: "Sin revisiones aún.",
       seeAll: "Ver todas →",
-      activeTabLabel: "Activos",
-      inactiveTabLabel: "Inactivos",
+      clientsTitle: "Clientes",
+      tabsLabel: "Clientes por estado",
       clientCol: "CLIENTE",
-      blockCol: "BLOQUE",
       lastReviewCol: "ÚLTIMA REVISIÓN",
       statusCol: "ESTADO",
       noClients: "Sin clientes.",
+      pagination: {
+        summary: "Página {page} de {pages}",
+        previous: "Anterior",
+        next: "Siguiente",
+      },
     },
   },
   screensProgress: {
@@ -837,6 +877,7 @@ export const es = {
       week: "Semana",
       plan: "Plan",
       review: "Revisión",
+      lastReview: "Última revisión",
       membership: "Membresía",
       status: "Estado",
     },
@@ -998,6 +1039,8 @@ export const es = {
     editPlan: "Editar plan",
     viewNewReview: "Ver revisión nueva",
     weekLabel: "Semana",
+    /** En la cabecera, en lugar de la semana, si el alta todavía no ha llegado (§8). */
+    startsOn: "Empieza el {date}",
     plan: {
       routineTitle: "Rutina asignada",
       macrosTitle: "Macros y menú",
@@ -1009,6 +1052,10 @@ export const es = {
       menusPerType: { one: "menú por tipo", other: "menús por tipo" },
       menus: { one: "menú", other: "menús" },
       noMenus: "sin menús",
+      /** Enlace de los vacíos a Asignación, para un cliente que no está de baja. */
+      assign: "Ir a Asignación",
+      /** Bajo las gráficas vacías de un cliente que aún no tiene ningún plan. */
+      noPlanHint: "Todavía no tiene plan: asígnale uno para empezar el seguimiento.",
     },
     weightTitle: "Peso · Histórico completo",
     reviews: {
@@ -1022,6 +1069,8 @@ export const es = {
       partial: "parcial",
       emptyTitle: "Sin revisiones todavía",
       emptyHint: "La primera aparecerá cuando el cliente empiece su revisión semanal.",
+      /** Cliente de baja: no se le prometen revisiones. */
+      emptyHintInactive: "Está de baja: no enviará revisiones mientras no se reactive.",
     },
     notFoundTitle: "Cliente no encontrado",
     notFoundHint: "No existe o no pertenece a tu cartera.",

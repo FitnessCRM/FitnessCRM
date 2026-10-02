@@ -5,11 +5,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { QueryBoundary } from "@/components/ui/query-boundary";
 import { EmptyState } from "@/components/ui/states";
 import {
-  DomainError,
   dayRecordOn,
   defaultRoutineDay,
   latestDayRecord,
-  weekNumber,
+  weekNumberOrNull,
   type Exercise,
   type Routine,
   type WorkoutLog,
@@ -42,12 +41,10 @@ export function RoutineScreen() {
 
   let eyebrow: string | undefined;
   if (trainer.data && client.data) {
-    try {
-      const today = todayCivil(trainer.data.timeZone);
-      eyebrow = `${t.week} ${weekNumber(client.data.startDate, today, trainer.data.timeZone)}`;
-    } catch (error) {
-      if (!(error instanceof DomainError)) throw error;
-    }
+    const today = todayCivil(trainer.data.timeZone);
+    // Antes del alta no hay semana (§8): «—», nunca «Semana 1».
+    const week = weekNumberOrNull(client.data.startDate, today, trainer.data.timeZone);
+    eyebrow = `${t.week} ${week ?? es.common.none}`;
   }
 
   return (
@@ -80,7 +77,8 @@ function RoutineLogs(props: {
   trainerName: string | undefined;
   timeZone: string | undefined;
 }) {
-  const logs = useWorkoutLogs(props.clientId, props.routine.id);
+  // Los de todas las versiones de la rutina: cada serie casa con su línea por id (§7).
+  const logs = useWorkoutLogs(props.clientId);
   const exercises = useExercisesById(
     props.routine.days.flatMap((d) => d.exercises.map((e) => e.exerciseId)),
   );
@@ -115,7 +113,7 @@ function RoutineView({
   // La apertura por defecto se decide una vez; después manda lo que elija el cliente.
   const [selectedId, setSelectedId] = useState(() => defaultRoutineDay(routine, logs)?.id);
   const saveLog = useSaveWorkoutLog(clientId);
-  const deleteLog = useDeleteWorkoutLog(clientId, routine.id);
+  const deleteLog = useDeleteWorkoutLog(clientId);
 
   // La rejilla es la de hoy; lo anterior solo se enseña como referencia.
   const today = todayCivil(timeZone);

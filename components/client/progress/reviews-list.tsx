@@ -3,23 +3,24 @@ import { EmptyState } from "@/components/ui/states";
 import {
   groupReviewsByWeekPair,
   isReviewComplete,
+  reviewWeight,
   type CivilDate,
   type Review,
   type WeightLog,
 } from "@/lib/domain";
-import { formatDecimal, formatShortDate } from "@/lib/format";
+import { civilDateOf, formatDecimal, formatShortDate } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 
 const t = es.screensProgress.reviews;
 
-function subtitle(review: Review, logs: WeightLog[], today: CivilDate) {
-  const date = (review.submittedAt ?? review.createdAt).slice(0, 10);
-  const kg = logs.find((l) => l.id === review.weightLogId)?.weightKg;
+function subtitle(review: Review, logs: WeightLog[], today: CivilDate, timeZone: string) {
+  const date = civilDateOf(review.submittedAt ?? review.createdAt, timeZone);
+  const kg = reviewWeight(review, logs)?.weightKg; // I24
   if (review.status === "borrador") {
     return `${date === today ? t.today : formatShortDate(date, today)} · ${t.inProgress}`;
   }
-  return `${formatShortDate(date, today)}${kg !== undefined ? ` · ${formatDecimal(kg)} kg` : ""}`;
+  return `${formatShortDate(date, today)}${kg !== undefined ? ` · ${formatDecimal(kg)} ${es.common.kg}` : ""}`;
 }
 
 /** Histórico agrupado de dos en dos semanas (§8). Una semana saltada no tiene fila. */
@@ -27,10 +28,13 @@ export function ReviewsList({
   reviews,
   logs,
   today,
+  timeZone,
 }: {
   reviews: Review[];
   logs: WeightLog[];
   today: CivilDate;
+  /** Zona del entrenador: el día de un envío se cuenta en ella, no en UTC. */
+  timeZone: string;
 }) {
   if (reviews.length === 0) {
     return <EmptyState title={t.emptyTitle} description={t.emptyHint} />;
@@ -75,7 +79,9 @@ export function ReviewsList({
                       </span>
                     ) : null}
                   </p>
-                  <p className="text-text-muted text-xs">{subtitle(review, logs, today)}</p>
+                  <p className="text-text-muted text-xs">
+                    {subtitle(review, logs, today, timeZone)}
+                  </p>
                 </div>
                 {draft ? (
                   <span className="text-accent-bright border-accent-outline tracking-label rounded-full border px-2.5 py-1 text-[11px] uppercase">

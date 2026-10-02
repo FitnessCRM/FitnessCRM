@@ -1,9 +1,24 @@
 import type { MacroTargetsPort, MenuPort, RoutinePort } from "@/lib/data/ports";
-import { DomainError, macroTargetsSchema, menuSchema, routineSchema } from "@/lib/domain";
-import { findOwn, own, replaceById } from "./helpers";
+import {
+  DomainError,
+  assertExercisesInLibrary,
+  macroTargetsSchema,
+  menuBodySchema,
+  menuSchema,
+  routineBodySchema,
+  routineSchema,
+  type RoutineBody,
+} from "@/lib/domain";
+import { findOwn, own, ownClient, replaceById } from "./helpers";
 import type { MockContext } from "./store";
 
 export function createRoutinePort(ctx: MockContext): RoutinePort {
+  /** El cuerpo, validado y sin campos de identidad, con solo ejercicios de la biblioteca (I3). */
+  const checkedBody = (trainerId: string, body: RoutineBody) => {
+    const parsed = routineBodySchema.parse(body);
+    assertExercisesInLibrary(parsed, own(ctx.state.exercises, trainerId));
+    return parsed;
+  };
   return {
     getActiveRoutine: async (trainerId, clientId) =>
       ctx.reply(
@@ -18,9 +33,10 @@ export function createRoutinePort(ctx: MockContext): RoutinePort {
           .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
       ),
     createRoutine: async (trainerId, clientId, body) => {
+      ownClient(ctx.state, trainerId, clientId);
       const now = ctx.now();
       const routine = routineSchema.parse({
-        ...body,
+        ...checkedBody(trainerId, body),
         id: ctx.newId(),
         trainerId,
         clientId,
@@ -34,8 +50,36 @@ export function createRoutinePort(ctx: MockContext): RoutinePort {
     },
     updateRoutine: async (trainerId, routineId, body) => {
       const current = findOwn(ctx.state.routines, trainerId, routineId, "Rutina");
-      const next = routineSchema.parse({ ...current, ...body, updatedAt: ctx.now() });
+      // §7: lo activo no se edita en sitio; solo los borradores.
+      if (current.status !== "borrador") {
+        throw new DomainError("routine.not_draft", "Solo se edita en sitio un borrador");
+      }
+      const next = routineSchema.parse({
+        ...current,
+        ...checkedBody(trainerId, body),
+        updatedAt: ctx.now(),
+      });
       return ctx.reply(replaceById(ctx.state.routines, next));
+    },
+    reviseRoutine: async (trainerId, routineId, body) => {
+      const current = findOwn(ctx.state.routines, trainerId, routineId, "Rutina");
+      if (current.status !== "activo") {
+        throw new DomainError("routine.not_active", "Solo se versiona la rutina activa");
+      }
+      const now = ctx.now();
+      // Versión nueva en borrador: misma plantilla de origen, ids de días y líneas tal como llegan.
+      const draft = routineSchema.parse({
+        ...checkedBody(trainerId, body),
+        id: ctx.newId(),
+        trainerId,
+        clientId: current.clientId,
+        status: "borrador",
+        sourceTemplateName: current.sourceTemplateName,
+        createdAt: now,
+        updatedAt: now,
+      });
+      ctx.state.routines.push(draft);
+      return ctx.reply(draft);
     },
     activateRoutine: async (trainerId, routineId) => {
       const target = findOwn(ctx.state.routines, trainerId, routineId, "Rutina");
@@ -43,8 +87,8 @@ export function createRoutinePort(ctx: MockContext): RoutinePort {
         throw new DomainError("routine.archived", "Una rutina archivada no se reactiva");
       }
       const now = ctx.now();
-      // I4: como máximo una rutina activa por cliente.
-      for (const r of ctx.state.routines) {
+      // I4: como máximo una rutina activa por cliente. Solo las de este entrenador (I1).
+      for (const r of own(ctx.state.routines, trainerId)) {
         if (r.clientId === target.clientId && r.id !== routineId && r.status === "activo") {
           r.status = "archivado";
           r.updatedAt = now;
@@ -66,6 +110,7 @@ export function createMacroTargetsPort(ctx: MockContext): MacroTargetsPort {
         ),
       ),
     setMacroTargets: async (trainerId, clientId, dayType, macros) => {
+      ownClient(ctx.state, trainerId, clientId);
       const now = ctx.now();
       // I4: un juego de macros activo por tipo de día.
       for (const m of ctx.state.macroTargets) {
@@ -110,9 +155,10 @@ export function createMenuPort(ctx: MockContext): MenuPort {
         ),
       ),
     createMenu: async (trainerId, clientId, body) => {
+      ownClient(ctx.state, trainerId, clientId);
       const now = ctx.now();
       const menu = menuSchema.parse({
-        ...body,
+        ...menuBodySchema.parse(body),
         id: ctx.newId(),
         trainerId,
         clientId,
@@ -126,10 +172,38 @@ export function createMenuPort(ctx: MockContext): MenuPort {
     },
     updateMenu: async (trainerId, menuId, body) => {
       const current = findOwn(ctx.state.menus, trainerId, menuId, "Menú");
-      const next = menuSchema.parse({ ...current, ...body, updatedAt: ctx.now() });
+      // §7: lo activo no se edita en sitio; solo los borradores.
+      if (current.status !== "borrador") {
+        throw new DomainError("menu.not_draft", "Solo se edita en sitio un borrador");
+      }
+      const next = menuSchema.parse({
+        ...current,
+        ...menuBodySchema.parse(body),
+        updatedAt: ctx.now(),
+      });
       return ctx.reply(replaceById(ctx.state.menus, next));
     },
+    reviseMenu: async (trainerId, menuId, body) => {
+      const current = findOwn(ctx.state.menus, trainerId, menuId, "Menú");
+      if (current.status !== "activo") {
+        throw new DomainError("menu.not_active", "Solo se versiona un menú activo");
+      }
+      const now = ctx.now();
+      const draft = menuSchema.parse({
+        ...menuBodySchema.parse(body),
+        id: ctx.newId(),
+        trainerId,
+        clientId: current.clientId,
+        status: "borrador",
+        sourceTemplateName: current.sourceTemplateName,
+        createdAt: now,
+        updatedAt: now,
+      });
+      ctx.state.menus.push(draft);
+      return ctx.reply(draft);
+    },
     activateMenus: async (trainerId, clientId, dayType) => {
+      ownClient(ctx.state, trainerId, clientId);
       const now = ctx.now();
       const mine = own(ctx.state.menus, trainerId).filter(
         (m) => m.clientId === clientId && m.dayType === dayType,

@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
-import { ErrorState, LoadingState } from "@/components/ui/states";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import {
   applyReviewDraft,
   canClientEditReview,
   isReviewComplete,
   openReview,
+  reviewWeight,
+  weekNumberOrNull,
   weightForReview,
   type Client,
   type MeasurementType,
@@ -28,7 +30,7 @@ import {
   useTrainer,
   useWeightLogs,
 } from "@/lib/data/hooks";
-import { parseDecimalInput, todayCivil } from "@/lib/format";
+import { formatCivilDate, parseDecimalInput, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { CompletenessStrip } from "./completeness-strip";
 import { MeasurementsBlock, type MeasurementField } from "./measurements-block";
@@ -53,7 +55,21 @@ interface EditorProps {
 function ReviewEditor({ review, persisted, clientId, types, questions, logs }: EditorProps) {
   const mutation = useReviewMutation();
   const editable = canClientEditReview(review); // I17
-  const weightLog = weightForReview(logs, review.window); // I9
+  // I9: el pesaje que tomará la revisión al guardarla es el más reciente de la ventana.
+  const weightLog = weightForReview(logs, review.window);
+  // I24: lo que se enseña es el peso que la revisión tiene ahora. Un borrador que aún no se ha
+  // guardado no apunta a nada: se enseña el que tomará. Si ya apunta a uno y hay otro más
+  // reciente, se avisa de que el cambio llega al guardar; en `vista` y `revisada`, solo la copia.
+  const linked = persisted ? reviewWeight(review, logs) : null;
+  const shown =
+    linked ??
+    (editable && weightLog && (!persisted || review.weightLogId === null)
+      ? { weightKg: weightLog.weightKg, date: weightLog.date }
+      : null);
+  const next =
+    editable && linked && weightLog && weightLog.id !== review.weightLogId
+      ? { weightKg: weightLog.weightKg, date: weightLog.date }
+      : null;
 
   const [measurements, setMeasurements] = useState<Record<string, string>>(() =>
     Object.fromEntries(
@@ -155,7 +171,7 @@ function ReviewEditor({ review, persisted, clientId, types, questions, logs }: E
             editable={editable}
             onPick={(pose, file) => void pickPhoto(pose, file)}
           />
-          <WeightBlock log={weightLog} />
+          <WeightBlock weight={shown} next={next} />
           <MeasurementsBlock
             fields={measurementFields}
             editable={editable}
@@ -231,6 +247,22 @@ export function ReviewScreen() {
     !logs.data
   ) {
     return <LoadingState />;
+  }
+
+  // Antes del alta no hay semana ni revisión que abrir (§8): se dice cuándo empieza.
+  const tz = trainer.data.timeZone;
+  if (
+    review.data === null &&
+    weekNumberOrNull(client.data.startDate, todayCivil(tz), tz) === null
+  ) {
+    return (
+      <>
+        <PageHeader title={es.pages.client.revision} />
+        <EmptyState
+          title={t.notStarted.replace("{date}", formatCivilDate(client.data.startDate))}
+        />
+      </>
+    );
   }
 
   const current = review.data ?? draftFor(client.data, trainer.data, types.data, questions.data);

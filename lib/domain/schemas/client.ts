@@ -20,7 +20,8 @@ export const clientSchema = z.object({
   ...tenantFields,
   firstName: nonEmptyTextSchema,
   lastName: nonEmptyTextSchema,
-  email: z.email(),
+  /** Sin espacios alrededor: lo que se escribe en el alta llega recortado. */
+  email: z.string().trim().pipe(z.email()),
   phone: optionalTextSchema,
   /** Objetivo y nivel salen de la pantalla de alta; el dominio no cierra la lista. */
   goal: optionalTextSchema,
@@ -33,3 +34,20 @@ export const clientSchema = z.object({
   createdAt: isoTimestampSchema,
 });
 export type Client = z.infer<typeof clientSchema>;
+
+/**
+ * Los datos del cliente que escribe el entrenador, en el alta y al editarlo: el resto (id,
+ * entrenador, estado, cadencia, fechas técnicas) no sale de ese formulario. Es un recorte de
+ * `clientSchema`, así que las reglas son las mismas que valida el adaptador.
+ */
+export const clientDataSchema = clientSchema.pick({
+  firstName: true,
+  lastName: true,
+  email: true,
+  phone: true,
+  goal: true,
+  level: true,
+  initialNotes: true,
+  startDate: true,
+});
+export type ClientData = z.infer<typeof clientDataSchema>;

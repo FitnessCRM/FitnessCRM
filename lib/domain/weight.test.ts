@@ -1,3 +1,4 @@
+import { DomainError } from "./errors";
 import { describe, expect, it } from "vitest";
 import { review, weightLog } from "./__tests__/fixtures";
 import {
@@ -8,6 +9,8 @@ import {
   sevenDayAverage,
   weeklyWeights,
   weightSummary,
+  assertWeightLogDate,
+  weightLogDateIssue,
 } from "./weight";
 
 const log = (id: string, date: string, weightKg: number, createdAt = `${date}T07:00:00Z`) =>
@@ -123,5 +126,24 @@ describe("reviewUsingWeightLog", () => {
     const reviews = [review({ weightLogId: "m" })];
     expect(reviewUsingWeightLog(log("m", "2026-08-29", 63.4), reviews)?.id).toBe("r-1");
     expect(reviewUsingWeightLog(log("l", "2026-08-26", 63.8), reviews)).toBeNull();
+  });
+});
+
+describe("I27 · a weight log date is between the start date and today", () => {
+  const bounds = { today: "2026-10-02", startDate: "2026-09-01" };
+
+  it("accepts today, the start date and anything between", () => {
+    expect(weightLogDateIssue("2026-10-02", bounds)).toBeNull();
+    expect(weightLogDateIssue("2026-09-01", bounds)).toBeNull();
+    expect(weightLogDateIssue("2026-09-15", bounds)).toBeNull();
+  });
+
+  it("rejects a future date and one before the start date, saying which", () => {
+    expect(weightLogDateIssue("2026-10-03", bounds)).toBe("future");
+    expect(weightLogDateIssue("2026-08-31", bounds)).toBe("before_start");
+    expect(() => assertWeightLogDate("2026-10-03", bounds)).toThrow(DomainError);
+    expect(() => assertWeightLogDate("2026-08-31", bounds)).toThrow(
+      expect.objectContaining({ code: "weight_log.before_start" }),
+    );
   });
 });

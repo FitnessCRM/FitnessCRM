@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DomainError,
+  addCivilDays,
   clientSchema,
   exerciseSchema,
   macroTargetsSchema,
@@ -15,13 +16,17 @@ import {
   trainerSchema,
   weightLogSchema,
   workoutLogSchema,
+  dayRecordOn,
   isReviewComplete,
+  latestDayRecord,
+  reviewWeight,
   weekNumber,
 } from "@/lib/domain";
 import { createDemoState, createMockPorts, demoToday } from "./index";
 
 const TRAINER = "t-adrian";
 const MARTA = "c-marta";
+const DAVID = "c-david";
 /** Fecha fija para que las expectativas sean deterministas; los datos se generan relativos a ella. */
 const TODAY = "2026-08-29";
 const ports = () => createMockPorts({ today: TODAY, now: () => `${TODAY}T10:00:00Z` });
@@ -287,7 +292,7 @@ describe("flows", () => {
   it("registering a weight on a day that already has one updates it in place (I23)", async () => {
     const p = ports();
     const before = await p.weightLogs.listWeightLogs(TRAINER, MARTA);
-    const date = "2026-08-30"; // sin pesaje en la demo
+    const date = "2026-08-28"; // sin pesaje en la demo
     const base = { trainerId: TRAINER, clientId: MARTA, date };
     const first = await p.weightLogs.saveWeightLog({ ...base, weightKg: 63.0, note: "En ayunas" });
     const second = await p.weightLogs.saveWeightLog({ ...base, weightKg: 62.8, note: "" });
@@ -323,6 +328,67 @@ describe("flows", () => {
     expect(reviews.find((r) => r.id === linked.id)!.weightLogId).toBe(log.id);
   });
 
+  it("a reviewed review keeps the weight it had when it was viewed, whatever the log says (I24, E04)", async () => {
+    const p = ports();
+    const s4 = (await p.reviews.getReview(TRAINER, "rv-marta-s4"))!;
+    expect(s4.status).toBe("revisada");
+    const logs = await p.weightLogs.listWeightLogs(TRAINER, MARTA);
+    const log = logs.find((l) => l.id === s4.weightLogId)!;
+    expect(reviewWeight(s4, logs)?.weightKg).toBe(log.weightKg);
+    // Lo que hace Peso: registrar otro valor en la misma fecha actualiza el pesaje (I23).
+    await p.weightLogs.saveWeightLog({
+      trainerId: TRAINER,
+      clientId: MARTA,
+      date: log.date,
+      weightKg: 80,
+      note: "",
+    });
+    const after = (await p.reviews.getReview(TRAINER, "rv-marta-s4"))!;
+    const newLogs = await p.weightLogs.listWeightLogs(TRAINER, MARTA);
+    expect(newLogs.find((l) => l.id === log.id)!.weightKg).toBe(80);
+    expect(reviewWeight(after, newLogs)).toEqual({ weightKg: log.weightKg, date: log.date });
+  });
+
+  it("marking a review vista through the port freezes the linked log (I24)", async () => {
+    const p = ports();
+    const s5 = (await p.reviews.getReview(TRAINER, "rv-marta-s5"))!;
+    const log = (await p.weightLogs.listWeightLogs(TRAINER, MARTA)).find(
+      (l) => l.id === s5.weightLogId,
+    )!;
+    const viewed = await p.reviews.markReviewViewed(TRAINER, s5.id);
+    expect(viewed.frozenWeight).toEqual({ weightKg: log.weightKg, date: log.date });
+    expect(reviewSchema.safeParse(viewed).success).toBe(true);
+  });
+
+  it.each(["rv-marta-s4", "rv-marta-s5"])(
+    "refuses to delete the weight log of a sent review (I25, %s)",
+    async (id) => {
+      const p = ports();
+      const review = (await p.reviews.getReview(TRAINER, id))!;
+      await expect(
+        p.weightLogs.deleteWeightLog(TRAINER, review.weightLogId!),
+      ).rejects.toMatchObject({ code: "weight_log.in_review" });
+      const again = (await p.reviews.getReview(TRAINER, id))!;
+      expect(again.weightLogId).toBe(review.weightLogId);
+      expect(isReviewComplete(again).complete).toBe(isReviewComplete(review).complete);
+    },
+  );
+
+  it("deleting a weight log used only by a draft leaves the draft without weight (I25)", async () => {
+    const p = ports();
+    const draft = await p.reviews.openCurrentReview(TRAINER, DAVID);
+    const log = await p.weightLogs.saveWeightLog({
+      trainerId: TRAINER,
+      clientId: DAVID,
+      date: TODAY,
+      weightKg: 81,
+      note: "",
+    });
+    await p.reviews.updateReviewDraft(TRAINER, draft.id, { weightLogId: log.id });
+    await p.weightLogs.deleteWeightLog(TRAINER, log.id);
+    expect((await p.reviews.getReview(TRAINER, draft.id))!.weightLogId).toBeNull();
+  });
+
   it("archiving an exercise warns about usage, removes it from routines and keeps the row (I13)", async () => {
     const p = ports();
     const usage = await p.exercises.getExerciseUsage(TRAINER, "ex-press-banca");
@@ -352,11 +418,98 @@ describe("flows", () => {
     expect(archived.status).toBe("archivado");
     expect(ids(archived)).toContain("ex-sentadilla-trasera");
     expect(ids(active)).not.toContain("ex-sentadilla-trasera");
-    const logs = await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA, "rt-marta-hipertrofia");
+    const logs = (await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA)).filter(
+      (l) => l.routineId === "rt-marta-hipertrofia",
+    );
     expect(logs.every((l) => l.exerciseId === "ex-sentadilla-trasera")).toBe(true);
     expect((await p.exercises.getExercise(TRAINER, logs[0]!.exerciseId))?.name).toBe(
       "Sentadilla trasera",
     );
+  });
+
+  it("publishing changes to the active routine versions it and archives the old one (E27, §7)", async () => {
+    const p = ports();
+    const active = (await p.routines.getActiveRoutine(TRAINER, MARTA))!;
+    // Lo que hace el editor: quitar del día 2 la línea que Marta tiene registrada.
+    const body = {
+      name: active.name,
+      note: active.note,
+      days: active.days.map((d) => ({
+        ...d,
+        exercises: d.exercises.filter((e) => e.id !== "r-marta-d2-e1"),
+      })),
+    };
+    await expect(p.routines.updateRoutine(TRAINER, active.id, body)).rejects.toMatchObject({
+      code: "routine.not_draft",
+    });
+    const draft = await p.routines.reviseRoutine(TRAINER, active.id, body);
+    expect(draft).toMatchObject({
+      status: "borrador",
+      sourceTemplateName: active.sourceTemplateName,
+    });
+    await p.routines.activateRoutine(TRAINER, draft.id);
+    const all = await p.routines.listRoutines(TRAINER, MARTA);
+    const old = all.find((r) => r.id === active.id)!;
+    expect(old.status).toBe("archivado");
+    expect(old.days).toEqual(active.days);
+    expect(all.filter((r) => r.status === "activo").map((r) => r.id)).toEqual([draft.id]);
+    // Los registros de la línea quitada se siguen resolviendo en la versión archivada.
+    const logs = (await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA)).filter(
+      (l) => l.routineDayExerciseId === "r-marta-d2-e1",
+    );
+    expect(logs.length).toBeGreaterThan(0);
+    const oldDay = old.days.find((d) => d.exercises.some((e) => e.id === "r-marta-d2-e1"))!;
+    expect(latestDayRecord(oldDay, logs).logs.length).toBeGreaterThan(0);
+  });
+
+  it("a line that continues in the new version keeps its last-time record (§7)", async () => {
+    const p = ports();
+    const active = (await p.routines.getActiveRoutine(TRAINER, MARTA))!;
+    const body = {
+      name: active.name,
+      note: active.note,
+      days: active.days.map((d) => ({
+        ...d,
+        exercises: d.exercises.map((e) =>
+          e.id === "r-marta-d2-e1" ? { ...e, prescription: { ...e.prescription, sets: 5 } } : e,
+        ),
+      })),
+    };
+    const draft = await p.routines.reviseRoutine(TRAINER, active.id, body);
+    const now = await p.routines.activateRoutine(TRAINER, draft.id);
+    const logs = await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA);
+    expect(logs.every((l) => l.routineId === active.id)).toBe(true);
+    const day2 = now.days.find((d) => d.exercises.some((e) => e.id === "r-marta-d2-e1"))!;
+    const before = latestDayRecord(day2, logs, { before: TODAY });
+    expect(before.date).not.toBeNull();
+    expect(before.logs.map((l) => l.routineDayExerciseId)).toContain("r-marta-d2-e1");
+    expect(dayRecordOn(day2, logs, TODAY).logs.length).toBeGreaterThan(0);
+  });
+
+  it("menus: an active one is never edited in place; a new version keeps its template and the set is archived together (§7)", async () => {
+    const p = ports();
+    const active = await p.menus.listActiveMenus(TRAINER, MARTA);
+    const dayType = active[0]!.dayType;
+    const set = active.filter((m) => m.dayType === dayType);
+    const target = set[0]!;
+    const { id, trainerId, clientId, status, sourceTemplateName, createdAt, updatedAt, ...body } =
+      target;
+    void [id, trainerId, clientId, status, sourceTemplateName, createdAt, updatedAt];
+    await expect(p.menus.updateMenu(TRAINER, target.id, body)).rejects.toMatchObject({
+      code: "menu.not_draft",
+    });
+    const drafts = [];
+    for (const m of set)
+      drafts.push(await p.menus.reviseMenu(TRAINER, m.id, { ...body, name: `${m.name} v2` }));
+    expect(drafts.map((d) => d.sourceTemplateName)).toEqual(set.map((m) => m.sourceTemplateName));
+    await p.menus.activateMenus(TRAINER, MARTA, dayType);
+    const after = await p.menus.listActiveMenus(TRAINER, MARTA);
+    expect(
+      after
+        .filter((m) => m.dayType === dayType)
+        .map((m) => m.id)
+        .sort(),
+    ).toEqual(drafts.map((d) => d.id).sort());
   });
 
   it("deletes a workout log only for its own trainer", async () => {
@@ -376,7 +529,7 @@ describe("flows", () => {
       DomainError,
     );
     await p.workoutLogs.deleteWorkoutLog(TRAINER, saved.id);
-    const logs = await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA, "rt-marta-hipertrofia");
+    const logs = await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA);
     expect(logs.map((l) => l.id)).not.toContain(saved.id);
     expect(logs.filter((l) => l.date === TODAY).map((l) => l.setNumber)).toEqual([1, 2]);
     await expect(p.workoutLogs.deleteWorkoutLog(TRAINER, saved.id)).rejects.toMatchObject({
@@ -566,6 +719,563 @@ describe("flows", () => {
     expect((await p.reviews.listSubmittedReviews(TRAINER)).map((r) => r.id)).toEqual([
       "rv-jorge-s8",
       "rv-sara-s3",
+    ]);
+  });
+});
+
+describe("writes are tenant-scoped (I1, I2): one cross-tenant case per method (E01, E02)", () => {
+  type Ports = ReturnType<typeof ports>;
+  const OTHER = "t-otro";
+  const GHOST = "c-no-existe";
+  const routineBody = {
+    name: "Rutina",
+    note: "",
+    days: [
+      {
+        id: "d1",
+        dayNumber: 1,
+        label: "",
+        exercises: [
+          {
+            id: "d1-e1",
+            exerciseId: "ex-sentadilla-trasera",
+            prescription: { sets: 3, repsMin: 8, repsMax: 10, rir: "2", rest: "", note: "" },
+          },
+        ],
+      },
+    ],
+  };
+  const menuBody = {
+    name: "Menú",
+    dayType: "entrenamiento" as const,
+    suggested: false,
+    macros: { kcal: 2000, proteinG: 150, carbsG: 200, fatG: 60 },
+    meals: [],
+    note: "",
+  };
+
+  /** Escrituras que reciben un `clientId`: (puertos, entrenador, cliente) => escritura. */
+  const byClient: [string, (p: Ports, trainerId: string, clientId: string) => Promise<unknown>][] =
+    [
+      ["routines.createRoutine", (p, t, c) => p.routines.createRoutine(t, c, routineBody)],
+      [
+        "macroTargets.setMacroTargets",
+        (p, t, c) => p.macroTargets.setMacroTargets(t, c, "entrenamiento", menuBody.macros),
+      ],
+      ["menus.createMenu", (p, t, c) => p.menus.createMenu(t, c, menuBody)],
+      ["menus.activateMenus", (p, t, c) => p.menus.activateMenus(t, c, "entrenamiento")],
+      [
+        "memberships.createMembership",
+        (p, t, c) =>
+          p.memberships.createMembership({
+            trainerId: t,
+            clientId: c,
+            type: "mensual",
+            startDate: TODAY,
+            endDate: "2026-09-28",
+            paymentStatus: "pagada",
+          }),
+      ],
+      [
+        "weightLogs.saveWeightLog",
+        (p, t, c) =>
+          p.weightLogs.saveWeightLog({
+            trainerId: t,
+            clientId: c,
+            date: TODAY,
+            weightKg: 70,
+            note: "",
+          }),
+      ],
+      [
+        "workoutLogs.saveWorkoutLog",
+        (p, t, c) =>
+          p.workoutLogs.saveWorkoutLog({
+            trainerId: t,
+            clientId: c,
+            exerciseId: "ex-sentadilla-trasera",
+            routineId: "rt-marta-hipertrofia",
+            routineDayExerciseId: "r-marta-d2-e1",
+            date: TODAY,
+            setNumber: 4,
+            weightKg: 80,
+            reps: 6,
+          }),
+      ],
+      ["reviews.openCurrentReview", (p, t, c) => p.reviews.openCurrentReview(t, c)],
+      [
+        "templates.assignRoutineTemplate",
+        (p, t, c) => p.templates.assignRoutineTemplate(t, c, "rt-full-body-2d"),
+      ],
+      [
+        "templates.assignMenuTemplate",
+        (p, t, c) => p.templates.assignMenuTemplate(t, c, p.state.menuTemplates[0]!.id),
+      ],
+    ];
+
+  it.each(byClient)("%s rejects another trainer's client and writes nothing", async (_, write) => {
+    const p = ports();
+    const before = JSON.stringify(p.state);
+    await expect(write(p, OTHER, MARTA)).rejects.toMatchObject({ code: "not_found" });
+    expect(JSON.stringify(p.state)).toBe(before);
+  });
+
+  it.each(byClient)("%s rejects a client that does not exist", async (_, write) => {
+    const p = ports();
+    const before = JSON.stringify(p.state);
+    await expect(write(p, TRAINER, GHOST)).rejects.toMatchObject({ code: "not_found" });
+    expect(JSON.stringify(p.state)).toBe(before);
+  });
+
+  /** El resto de escrituras reciben el id de lo que tocan: ninguna alcanza lo de otro entrenador. */
+  const byId: [string, (p: Ports) => Promise<unknown>][] = [
+    ["clients.updateClient", (p) => p.clients.updateClient(OTHER, MARTA, { goal: "x" })],
+    [
+      "routines.updateRoutine",
+      (p) => p.routines.updateRoutine(OTHER, "rt-marta-hipertrofia", routineBody),
+    ],
+    [
+      "routines.reviseRoutine",
+      (p) => p.routines.reviseRoutine(OTHER, "rt-marta-hipertrofia", routineBody),
+    ],
+    ["routines.activateRoutine", (p) => p.routines.activateRoutine(OTHER, "rt-marta-hipertrofia")],
+    ["menus.updateMenu", (p) => p.menus.updateMenu(OTHER, p.state.menus[0]!.id, menuBody)],
+    ["menus.reviseMenu", (p) => p.menus.reviseMenu(OTHER, p.state.menus[0]!.id, menuBody)],
+    ["menus.archiveMenu", (p) => p.menus.archiveMenu(OTHER, p.state.menus[0]!.id)],
+    [
+      "memberships.updateMembership",
+      (p) => p.memberships.updateMembership(OTHER, p.state.memberships[0]!.id, { type: "anual" }),
+    ],
+    [
+      "weightLogs.deleteWeightLog",
+      (p) => p.weightLogs.deleteWeightLog(OTHER, p.state.weightLogs[0]!.id),
+    ],
+    [
+      "workoutLogs.deleteWorkoutLog",
+      (p) => p.workoutLogs.deleteWorkoutLog(OTHER, p.state.workoutLogs[0]!.id),
+    ],
+    ["reviews.updateReviewDraft", (p) => p.reviews.updateReviewDraft(OTHER, "rv-marta-s5", {})],
+    [
+      "reviews.attachReviewMedia",
+      (p) => p.reviews.attachReviewMedia(OTHER, "rv-marta-s5", "frente", "x"),
+    ],
+    ["reviews.submitReview", (p) => p.reviews.submitReview(OTHER, "rv-marta-s5")],
+    ["reviews.markReviewViewed", (p) => p.reviews.markReviewViewed(OTHER, "rv-marta-s5")],
+    [
+      "reviews.sendReviewFeedback",
+      (p) => p.reviews.sendReviewFeedback(OTHER, "rv-marta-s4", { videoUrl: null, note: "" }),
+    ],
+  ];
+
+  it.each(byId)("%s refuses another trainer's record and writes nothing", async (_, write) => {
+    const p = ports();
+    const before = JSON.stringify(p.state);
+    await expect(write(p)).rejects.toMatchObject({ code: "not_found" });
+    expect(JSON.stringify(p.state)).toBe(before);
+  });
+
+  it("activating a routine only archives routines of the same trainer (E01)", async () => {
+    const p = ports();
+    // Una fila ajena que apunta al cliente de otro: el puerto ya no deja crearla, pero el archivado
+    // tampoco puede alcanzar la rutina activa de Marta aunque exista.
+    p.state.routines.push({
+      ...routineBody,
+      id: "rt-ajena",
+      trainerId: OTHER,
+      clientId: MARTA,
+      status: "borrador",
+      sourceTemplateName: null,
+      createdAt: `${TODAY}T08:00:00Z`,
+      updatedAt: `${TODAY}T08:00:00Z`,
+    });
+    await p.routines.activateRoutine(OTHER, "rt-ajena");
+    expect((await p.routines.getActiveRoutine(TRAINER, MARTA))?.id).toBe("rt-marta-hipertrofia");
+  });
+
+  it("a workout set is logged on a routine of that client and trainer", async () => {
+    const p = ports();
+    await expect(
+      p.workoutLogs.saveWorkoutLog({
+        trainerId: TRAINER,
+        clientId: "c-jorge",
+        exerciseId: "ex-sentadilla-trasera",
+        routineId: "rt-marta-hipertrofia",
+        routineDayExerciseId: "r-marta-d2-e1",
+        date: TODAY,
+        setNumber: 1,
+        weightKg: 80,
+        reps: 6,
+      }),
+    ).rejects.toMatchObject({ code: "not_found" });
+  });
+
+  it("an edit never changes who a record belongs to", async () => {
+    const p = ports();
+    const membership = p.state.memberships.find((m) => m.clientId === MARTA)!;
+    const edited = await p.memberships.updateMembership(TRAINER, membership.id, {
+      type: "anual",
+      clientId: "c-jorge",
+      trainerId: OTHER,
+    } as never);
+    expect(edited).toMatchObject({ clientId: MARTA, trainerId: TRAINER, type: "anual" });
+    const draft = await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-full-body-2d");
+    const updated = await p.routines.updateRoutine(TRAINER, draft.id, {
+      ...routineBody,
+      clientId: "c-jorge",
+      trainerId: OTHER,
+    } as never);
+    expect(updated).toMatchObject({ clientId: MARTA, trainerId: TRAINER });
+  });
+});
+
+describe("I3 on every routine write (E03)", () => {
+  const withExercise = (exerciseId: string) => ({
+    name: "Rutina",
+    note: "",
+    days: [
+      {
+        id: "d1",
+        dayNumber: 1,
+        label: "",
+        exercises: [
+          {
+            id: "d1-e1",
+            exerciseId,
+            prescription: { sets: 3, repsMin: 8, repsMax: 10, rir: "2", rest: "", note: "" },
+          },
+        ],
+      },
+    ],
+  });
+  const code = { code: "routine.exercise_not_in_library" };
+
+  it("rejects an exercise that is not in the trainer's library", async () => {
+    const p = ports();
+    const bad = withExercise("ex-que-no-existe");
+    await expect(p.routines.createRoutine(TRAINER, MARTA, bad)).rejects.toMatchObject(code);
+    await expect(
+      p.routines.reviseRoutine(TRAINER, "rt-marta-hipertrofia", bad),
+    ).rejects.toMatchObject(code);
+    const draft = await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-full-body-2d");
+    await expect(p.routines.updateRoutine(TRAINER, draft.id, bad)).rejects.toMatchObject(code);
+    await expect(
+      p.templates.saveRoutineTemplate({ trainerId: TRAINER, description: "", ...bad }),
+    ).rejects.toMatchObject(code);
+  });
+
+  it("rejects an archived exercise, which left the library (section 7)", async () => {
+    const p = ports();
+    await p.exercises.archiveExercise(TRAINER, "ex-sentadilla-trasera");
+    await expect(
+      p.routines.createRoutine(TRAINER, MARTA, withExercise("ex-sentadilla-trasera")),
+    ).rejects.toMatchObject(code);
+  });
+
+  it("accepts the trainer's active exercises", async () => {
+    const p = ports();
+    const created = await p.routines.createRoutine(TRAINER, MARTA, withExercise("ex-press-banca"));
+    expect(created.status).toBe("borrador");
+  });
+});
+
+describe("I20 on the feedback write (E06)", () => {
+  it("rejects a video that is not an http(s) link and keeps the review as it was", async () => {
+    const p = ports();
+    await p.reviews.markReviewViewed(TRAINER, "rv-marta-s5");
+    await expect(
+      p.reviews.sendReviewFeedback(TRAINER, "rv-marta-s5", {
+        videoUrl: "ftp://host/video.mp4",
+        note: "",
+      }),
+    ).rejects.toMatchObject({ code: "review.feedback_invalid_url" });
+    expect((await p.reviews.getReview(TRAINER, "rv-marta-s5"))?.status).toBe("vista");
+    const done = await p.reviews.sendReviewFeedback(TRAINER, "rv-marta-s5", {
+      videoUrl: "https://youtu.be/x",
+      note: "",
+    });
+    expect(done.status).toBe("revisada");
+  });
+});
+
+describe("invariants the adapter keeps on writes the old tests did not cover (E07)", () => {
+  it("I12: editing a measurement type's label leaves registered measurements as they were", async () => {
+    const p = ports();
+    const before = await p.reviews.listClientReviews(TRAINER, MARTA);
+    const frozen = before.flatMap((r) =>
+      r.measurements.filter((m) => m.measurementTypeId === "mt-cuello"),
+    );
+    expect(frozen.length).toBeGreaterThan(0);
+    await p.measurementTypes.updateMeasurementType(TRAINER, "mt-cuello", {
+      label: "Cuello (nuevo)",
+    });
+    const after = await p.reviews.listClientReviews(TRAINER, MARTA);
+    expect(
+      after.flatMap((r) => r.measurements.filter((m) => m.measurementTypeId === "mt-cuello")),
+    ).toEqual(frozen);
+  });
+
+  it("I12: editing a question's prompt leaves the answers already given as they were", async () => {
+    const p = ports();
+    const before = await p.reviews.listClientReviews(TRAINER, MARTA);
+    const answered = before.flatMap((r) => r.responses).find(() => true)!;
+    const frozen = before.flatMap((r) =>
+      r.responses.filter((x) => x.questionId === answered.questionId),
+    );
+    await p.questionnaire.updateQuestion(TRAINER, answered.questionId, {
+      prompt: "Otro enunciado",
+    });
+    const after = await p.reviews.listClientReviews(TRAINER, MARTA);
+    expect(
+      after.flatMap((r) => r.responses.filter((x) => x.questionId === answered.questionId)),
+    ).toEqual(frozen);
+  });
+
+  it("I17: a photo cannot be attached once the review is vista", async () => {
+    const p = ports();
+    await p.reviews.markReviewViewed(TRAINER, "rv-marta-s5");
+    await expect(
+      p.reviews.attachReviewMedia(TRAINER, "rv-marta-s5", "frente", "storage://otra.jpg"),
+    ).rejects.toMatchObject({ code: "review.locked" });
+    await expect(
+      p.reviews.attachReviewMedia(TRAINER, "rv-marta-s4", "perfil", "storage://otra.jpg"),
+    ).rejects.toMatchObject({ code: "review.locked" });
+  });
+
+  it("I22: changing a client's start date does not renumber their reviews", async () => {
+    const p = ports();
+    const weeks = async () =>
+      (await p.reviews.listClientReviews(TRAINER, MARTA)).map((r) => [r.id, r.weekNumber]);
+    const before = await weeks();
+    const client = (await p.clients.getClient(TRAINER, MARTA))!;
+    await p.clients.updateClient(TRAINER, MARTA, {
+      startDate: addCivilDays(client.startDate, -14),
+    });
+    expect(await weeks()).toEqual(before);
+  });
+
+  it("I23: updating a day's weight keeps its creation time even when the clock has moved", async () => {
+    let tick = 0;
+    const p = createMockPorts({
+      today: TODAY,
+      now: () => new Date(Date.UTC(2026, 7, 29, 10, 0, tick++)).toISOString(),
+    });
+    const base = { trainerId: TRAINER, clientId: MARTA, date: "2026-08-28" };
+    const first = await p.weightLogs.saveWeightLog({ ...base, weightKg: 63, note: "" });
+    const second = await p.weightLogs.saveWeightLog({ ...base, weightKg: 62.8, note: "" });
+    expect(second.id).toBe(first.id);
+    expect(second.createdAt).toBe(first.createdAt);
+  });
+});
+
+describe("I26 and I12: a measurement's unit and frozen copies (E05)", () => {
+  it("locks the unit of a type with measurements but keeps its label editable", async () => {
+    const p = ports();
+    expect(await p.measurementTypes.measurementTypeHasMeasurements(TRAINER, "mt-cuello")).toBe(
+      true,
+    );
+    await expect(
+      p.measurementTypes.updateMeasurementType(TRAINER, "mt-cuello", { unit: "mm" }),
+    ).rejects.toMatchObject({ code: "measurement_type.unit_locked" });
+    const renamed = await p.measurementTypes.updateMeasurementType(TRAINER, "mt-cuello", {
+      label: "Cuello (contorno)",
+    });
+    expect(renamed).toMatchObject({ label: "Cuello (contorno)", unit: "cm" });
+  });
+
+  it("lets a type without measurements change unit, and counts drafts as measured (same rule as I15)", async () => {
+    const p = ports();
+    const fresh = await p.measurementTypes.createMeasurementType(TRAINER, {
+      label: "Muñeca",
+      unit: "cm",
+    });
+    expect(await p.measurementTypes.measurementTypeHasMeasurements(TRAINER, fresh.id)).toBe(false);
+    await p.measurementTypes.updateMeasurementType(TRAINER, fresh.id, { unit: "mm" });
+    const draft = await p.reviews.openCurrentReview(TRAINER, DAVID);
+    expect(draft.status).toBe("borrador");
+    await p.reviews.updateReviewDraft(TRAINER, draft.id, {
+      measurements: [{ measurementTypeId: fresh.id, value: 160 }],
+    });
+    expect(await p.measurementTypes.measurementTypeHasMeasurements(TRAINER, fresh.id)).toBe(true);
+    await expect(
+      p.measurementTypes.updateMeasurementType(TRAINER, fresh.id, { unit: "cm" }),
+    ).rejects.toMatchObject({ code: "measurement_type.unit_locked" });
+  });
+
+  it("saving a sent review again keeps the frozen copies of what did not change (E05 step 3)", async () => {
+    const p = ports();
+    const s5 = (await p.reviews.getReview(TRAINER, "rv-marta-s5"))!;
+    expect(s5.status).toBe("enviada");
+    await p.measurementTypes.updateMeasurementType(TRAINER, "mt-cuello", {
+      label: "Cuello (contorno)",
+    });
+    const same = s5.measurements.map((m) => ({
+      measurementTypeId: m.measurementTypeId,
+      value: m.value,
+    }));
+    const saved = await p.reviews.updateReviewDraft(TRAINER, s5.id, {
+      measurements: same,
+      responses: s5.responses.map((r) => ({ questionId: r.questionId, value: r.value })),
+    });
+    expect(saved.measurements).toEqual(s5.measurements);
+    expect(saved.responses).toEqual(s5.responses);
+    const changed = await p.reviews.updateReviewDraft(TRAINER, s5.id, {
+      measurements: same.map((m) =>
+        m.measurementTypeId === "mt-cuello" ? { ...m, value: m.value + 0.5 } : m,
+      ),
+    });
+    const cuello = changed.measurements.find((m) => m.measurementTypeId === "mt-cuello")!;
+    expect(cuello).toMatchObject({ label: "Cuello (contorno)", unit: "cm" });
+  });
+});
+
+describe("I27 and section 8 on the port (E08, E14)", () => {
+  // `ports()` tiene el reloj a las 10:00Z de TODAY: en Madrid, el mismo día.
+  const log = (date: string) => ({
+    trainerId: TRAINER,
+    clientId: MARTA,
+    date,
+    weightKg: 70,
+    note: "",
+  });
+
+  it("rejects a weight log in the future, in the trainer's time zone (E08)", async () => {
+    const p = ports();
+    await expect(p.weightLogs.saveWeightLog(log("2026-08-30"))).rejects.toMatchObject({
+      code: "weight_log.future_date",
+    });
+    expect((await p.weightLogs.saveWeightLog(log(TODAY))).date).toBe(TODAY);
+  });
+
+  it("rejects a weight log before the client's start date", async () => {
+    const p = ports();
+    const client = (await p.clients.getClient(TRAINER, MARTA))!;
+    await expect(
+      p.weightLogs.saveWeightLog(log(addCivilDays(client.startDate, -1))),
+    ).rejects.toMatchObject({ code: "weight_log.before_start" });
+    expect((await p.weightLogs.saveWeightLog(log(client.startDate))).date).toBe(client.startDate);
+  });
+
+  it("a client whose start date has not come has no current review (E14)", async () => {
+    const p = ports();
+    const marta = p.state.clients.find((c) => c.id === MARTA)!;
+    p.state.clients.push({ ...marta, id: "c-futuro", startDate: addCivilDays(TODAY, 10) });
+    expect(await p.reviews.getCurrentReview(TRAINER, "c-futuro")).toBeNull();
+    await expect(p.reviews.openCurrentReview(TRAINER, "c-futuro")).rejects.toMatchObject({
+      code: "week.before_start",
+    });
+  });
+});
+
+describe("the port's today follows its clock in the trainer's time zone (E12)", () => {
+  it("after a day change, the current review is the new week's, as the screen computes it", async () => {
+    // Datos de demo de TODAY (Marta en S5), pero el reloj ya va una semana por delante: S6.
+    let now = `${TODAY}T10:00:00Z`;
+    const p = createMockPorts({ today: TODAY, now: () => now });
+    expect((await p.reviews.getCurrentReview(TRAINER, MARTA))?.weekNumber).toBe(5);
+    now = `${addCivilDays(TODAY, 7)}T10:00:00Z`;
+    expect(await p.reviews.getCurrentReview(TRAINER, MARTA)).toBeNull();
+    const opened = await p.reviews.openCurrentReview(TRAINER, MARTA);
+    expect(opened.weekNumber).toBe(6);
+  });
+
+  it("uses the trainer's time zone, not a constant one, at the edge of a day", async () => {
+    // 22:30Z del día anterior a S6 son las 00:30 del primer día de S6 en Madrid.
+    const now = `${addCivilDays(TODAY, 6)}T22:30:00Z`;
+    const p = createMockPorts({ today: TODAY, now: () => now });
+    p.state.trainers[0]!.timeZone = "Europe/Madrid";
+    expect((await p.reviews.openCurrentReview(TRAINER, MARTA)).weekNumber).toBe(6);
+  });
+});
+
+describe("client tracking for the dashboard: three statuses and the last review (E13, card 52)", () => {
+  const query = { filter: "todos" as const, today: TODAY, page: 0, pageSize: 50 };
+  const rowOf = async (p: ReturnType<typeof ports>, clientId: string) =>
+    (await p.clients.listClientsTracking(TRAINER, query)).rows.find(
+      (r) => r.client.id === clientId,
+    )!;
+
+  it("counts a new client as a pending invitation, not as inactive (E13)", async () => {
+    const p = ports();
+    const before = (await p.clients.listClientsTracking(TRAINER, query)).counts;
+    const marta = (await p.clients.getClient(TRAINER, MARTA))!;
+    const { id, createdAt, status, ...input } = marta;
+    void [id, createdAt, status];
+    await p.clients.createClient({
+      ...input,
+      email: "prueba.nueva@example.test",
+      startDate: TODAY,
+    });
+    const after = (await p.clients.listClientsTracking(TRAINER, query)).counts;
+    expect(after).toEqual({
+      ...before,
+      todos: before.todos + 1,
+      invitado: before.invitado + 1,
+    });
+  });
+
+  it("gives the last sent review whatever its status, and ignores drafts", async () => {
+    const p = ports();
+    const s5 = (await p.reviews.getReview(TRAINER, "rv-marta-s5"))!;
+    expect((await rowOf(p, MARTA)).lastReviewAt).toBe(s5.submittedAt);
+    await p.reviews.markReviewViewed(TRAINER, s5.id);
+    expect((await rowOf(p, MARTA)).lastReviewAt).toBe(s5.submittedAt);
+    await p.reviews.openCurrentReview(TRAINER, DAVID);
+    expect((await rowOf(p, DAVID)).lastReviewAt).toBeNull();
+  });
+});
+
+describe("exercise usage before archiving counts active and draft routines, not archived ones (E16)", () => {
+  it("stops naming a client whose routine with the exercise was archived", async () => {
+    const p = ports();
+    expect((await p.exercises.getExerciseUsage(TRAINER, "ex-press-banca")).clientIds).toEqual([
+      MARTA,
+    ]);
+    // Rutina nueva de Marta sin press banca: la anterior queda archivada.
+    const draft = await p.routines.createRoutine(TRAINER, MARTA, {
+      name: "Solo pierna",
+      note: "",
+      days: [
+        {
+          id: "d1",
+          dayNumber: 1,
+          label: "",
+          exercises: [
+            {
+              id: "d1-e1",
+              exerciseId: "ex-sentadilla-trasera",
+              prescription: { sets: 3, repsMin: 8, repsMax: 10, rir: "2", rest: "", note: "" },
+            },
+          ],
+        },
+      ],
+    });
+    await p.routines.activateRoutine(TRAINER, draft.id);
+    expect((await p.exercises.getExerciseUsage(TRAINER, "ex-press-banca")).clientIds).toEqual([]);
+  });
+
+  it("names a client who only has the exercise in a draft, which archiving also changes", async () => {
+    const p = ports();
+    const active = (await p.routines.getActiveRoutine(TRAINER, MARTA))!;
+    const { days, name, note } = active;
+    await p.routines.reviseRoutine(TRAINER, active.id, { name, note, days });
+    const draft = (await p.routines.listRoutines(TRAINER, MARTA)).find(
+      (r) => r.status === "borrador",
+    )!;
+    // La activa deja de tenerlo; el borrador lo conserva.
+    p.state.routines = p.state.routines.map((r) =>
+      r.id === active.id
+        ? {
+            ...r,
+            days: r.days.map((d) => ({
+              ...d,
+              exercises: d.exercises.filter((e) => e.exerciseId !== "ex-press-banca"),
+            })),
+          }
+        : r,
+    );
+    expect(JSON.stringify(draft.days)).toContain("ex-press-banca");
+    expect((await p.exercises.getExerciseUsage(TRAINER, "ex-press-banca")).clientIds).toEqual([
+      MARTA,
     ]);
   });
 });

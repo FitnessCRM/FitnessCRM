@@ -21,9 +21,14 @@ import {
   openReview,
   recordMeasurement,
   sendReviewFeedback,
+  assertWeightLogDeletable,
+  freezeMeasurements,
+  freezeResponses,
+  reviewWeight,
   submitReview,
   weightForReview,
 } from "./review";
+import { reviewSchema } from "./schemas";
 
 describe("I5 · isReviewComplete", () => {
   it("is complete with 3 photos, weight, every required measurement and every required answer", () => {
@@ -178,7 +183,7 @@ describe("I22 · weekNumber is frozen at creation", () => {
     expect(fresh.weekNumber).toBe(3);
     // …pero la existente conserva su número: es un dato almacenado, no derivado.
     expect(r.weekNumber).toBe(5);
-    const viewed = markReviewViewed(submitReview(r, NOW), NOW);
+    const viewed = markReviewViewed(submitReview(r, NOW), null, NOW);
     expect(viewed.weekNumber).toBe(5);
   });
 
@@ -239,7 +244,7 @@ describe("I12 · frozen copies of catalog text", () => {
 describe("review lifecycle: borrador → enviada → vista → revisada", () => {
   it("walks the happy path and stamps each timestamp", () => {
     const sent = submitReview(review(), "2026-08-29T08:00:00Z");
-    const viewed = markReviewViewed(sent, "2026-08-29T10:00:00Z");
+    const viewed = markReviewViewed(sent, null, "2026-08-29T10:00:00Z");
     const done = sendReviewFeedback(
       viewed,
       { videoUrl: "https://youtu.be/x", note: "Sube carbos" },
@@ -255,7 +260,7 @@ describe("review lifecycle: borrador → enviada → vista → revisada", () => 
   });
 
   it("rejects skipping or repeating states", () => {
-    expect(() => markReviewViewed(review(), NOW)).toThrow(DomainError);
+    expect(() => markReviewViewed(review(), null, NOW)).toThrow(DomainError);
     expect(() => submitReview(review({ status: "enviada" }), NOW)).toThrow(DomainError);
     expect(() =>
       sendReviewFeedback(review({ status: "enviada" }), { videoUrl: null, note: "" }, NOW),
@@ -303,5 +308,166 @@ describe("applyReviewDraft (vista previa tolerante)", () => {
     expect(preview.measurements).toEqual([]);
     expect(preview.responses.map((r) => r.questionId)).toEqual(["q-texto"]);
     expect(isReviewComplete(preview).missing.questionIds).toEqual(["q-energia"]);
+  });
+});
+
+describe("I24 · a review's weight: the linked log while editable, a frozen copy from vista", () => {
+  const linked = weightLog({ id: "w-1", date: "2026-08-30", weightKg: 63.9 });
+
+  it("copies kg and date of the linked log when it is marked vista", () => {
+    const sent = submitReview(review({ weightLogId: "w-1" }), NOW);
+    const viewed = markReviewViewed(sent, linked, NOW);
+    expect(viewed.frozenWeight).toEqual({ weightKg: 63.9, date: "2026-08-30" });
+    expect(reviewSchema.safeParse(viewed).success).toBe(true);
+  });
+
+  it("reads the copy from vista on, even after the log is corrected", () => {
+    const viewed = markReviewViewed(submitReview(review({ weightLogId: "w-1" }), NOW), linked, NOW);
+    const corrected = [{ ...linked, weightKg: 80 }];
+    expect(reviewWeight(viewed, corrected)).toEqual({ weightKg: 63.9, date: "2026-08-30" });
+    const done = sendReviewFeedback(viewed, { videoUrl: null, note: "" }, NOW);
+    expect(reviewWeight(done, corrected)?.weightKg).toBe(63.9);
+  });
+
+  it("reflects a correction of the linked log while the review is still editable", () => {
+    const sent = submitReview(review({ weightLogId: "w-1" }), NOW);
+    expect(reviewWeight(sent, [{ ...linked, weightKg: 64.2 }])?.weightKg).toBe(64.2);
+  });
+
+  it("does not follow a newer log in the window: it changes only when the client saves again", () => {
+    const sent = submitReview(review({ weightLogId: "w-1" }), NOW);
+    const newer = weightLog({ id: "w-2", date: "2026-09-02", weightKg: 63.1 });
+    expect(weightForReview([linked, newer], sent.window)?.id).toBe("w-2");
+    expect(reviewWeight(sent, [linked, newer])).toEqual({ weightKg: 63.9, date: "2026-08-30" });
+  });
+
+  it("has no weight and no copy when the review had no log", () => {
+    const viewed = markReviewViewed(submitReview(review(), NOW), null, NOW);
+    expect(viewed.frozenWeight).toBeNull();
+    expect(reviewWeight(viewed, [linked])).toBeNull();
+  });
+
+  it("refuses to freeze a log other than the linked one", () => {
+    const sent = submitReview(review({ weightLogId: "w-1" }), NOW);
+    expect(() => markReviewViewed(sent, { ...linked, id: "w-2" }, NOW)).toThrow(DomainError);
+    expect(() => markReviewViewed(sent, null, NOW)).toThrow(DomainError);
+  });
+
+  it("the schema rejects a copy on an editable review and a missing copy on a viewed one", () => {
+    const sent = submitReview(review({ weightLogId: "w-1" }), NOW);
+    const frozen = { weightKg: 63.9, date: "2026-08-30" };
+    expect(reviewSchema.safeParse({ ...sent, frozenWeight: frozen }).success).toBe(false);
+    const viewed = markReviewViewed(sent, linked, NOW);
+    expect(reviewSchema.safeParse({ ...viewed, frozenWeight: null }).success).toBe(false);
+  });
+});
+
+describe("I25 · a weight log used by a sent review cannot be deleted", () => {
+  it.each(["enviada", "vista", "revisada"] as const)(
+    "refuses when a %s review uses it",
+    (status) => {
+      const reviews = [review({ status, weightLogId: "w-1" })];
+      expect(() => assertWeightLogDeletable("w-1", reviews)).toThrow(DomainError);
+    },
+  );
+
+  it("allows it when only a draft uses it, or nothing does", () => {
+    expect(() =>
+      assertWeightLogDeletable("w-1", [review({ status: "borrador", weightLogId: "w-1" })]),
+    ).not.toThrow();
+    expect(() =>
+      assertWeightLogDeletable("w-1", [review({ status: "revisada", weightLogId: "w-9" })]),
+    ).not.toThrow();
+  });
+});
+
+describe("I20 · the feedback video is an external http(s) link", () => {
+  const viewed = () => markReviewViewed(submitReview(review(), NOW), null, NOW);
+
+  it("accepts an http(s) link or no video", () => {
+    const withVideo = sendReviewFeedback(
+      viewed(),
+      { videoUrl: "https://youtu.be/x", note: "" },
+      NOW,
+    );
+    expect(withVideo.status).toBe("revisada");
+    expect(sendReviewFeedback(viewed(), { videoUrl: null, note: "Bien" }, NOW).status).toBe(
+      "revisada",
+    );
+  });
+
+  it.each(["ftp://host/video.mp4", "not a url", "javascript:alert(1)"])(
+    "rejects %s",
+    (videoUrl) => {
+      expect(() => sendReviewFeedback(viewed(), { videoUrl, note: "" }, NOW)).toThrow(DomainError);
+    },
+  );
+});
+
+describe("I5 · photos: all three poses, not just some (E07)", () => {
+  it.each([
+    [["frente"] as const, ["perfil", "espalda"]],
+    [["frente", "perfil"] as const, ["espalda"]],
+  ])("is incomplete with only %j uploaded", (poses, missing) => {
+    const result = isReviewComplete(completeReview({ media: poses.map((p) => media(p)) }));
+    expect(result.complete).toBe(false);
+    expect(result.blocks.photos).toBe(false);
+    expect(result.missing.poses).toEqual(missing);
+  });
+});
+
+describe("I12 · saving again only refreezes what is new or changed", () => {
+  const cintura = { id: "mt-cintura", label: "Cintura", unit: "cm" };
+  const renamed = { ...cintura, label: "Perímetro de cintura" };
+  const energia = question({ id: "q-energia" });
+
+  it("keeps the frozen label and unit of a measurement whose value did not change", () => {
+    const [kept] = freezeMeasurements(
+      [recordMeasurement(cintura, 71, () => "bm-1")],
+      [{ measurementTypeId: "mt-cintura", value: 71 }],
+      () => renamed,
+      () => "bm-2",
+    );
+    expect(kept).toEqual({
+      id: "bm-1",
+      measurementTypeId: "mt-cintura",
+      value: 71,
+      label: "Cintura",
+      unit: "cm",
+    });
+  });
+
+  it("refreezes a measurement whose value changed, and freezes a new one", () => {
+    const next = freezeMeasurements(
+      [recordMeasurement(cintura, 71, () => "bm-1")],
+      [
+        { measurementTypeId: "mt-cintura", value: 70.5 },
+        { measurementTypeId: "mt-cadera", value: 95 },
+      ],
+      (id) => (id === "mt-cintura" ? renamed : { id, label: "Cadera", unit: "cm" }),
+      idFactory(),
+    );
+    expect(next.map((m) => [m.label, m.value])).toEqual([
+      ["Perímetro de cintura", 70.5],
+      ["Cadera", 95],
+    ]);
+  });
+
+  it("keeps the frozen prompt and format of an answer whose value did not change", () => {
+    const given = answerQuestion(energia, 4, () => "qr-1");
+    const [kept] = freezeResponses(
+      [given],
+      [{ questionId: "q-energia", value: 4 }],
+      () => ({ ...energia, prompt: "Otro enunciado" }),
+      () => "qr-2",
+    );
+    expect(kept).toEqual(given);
+    const [changed] = freezeResponses(
+      [given],
+      [{ questionId: "q-energia", value: 3 }],
+      () => ({ ...energia, prompt: "Otro enunciado" }),
+      () => "qr-3",
+    );
+    expect(changed).toMatchObject({ id: "qr-3", prompt: "Otro enunciado", value: 3 });
   });
 });

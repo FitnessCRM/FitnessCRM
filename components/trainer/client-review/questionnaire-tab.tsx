@@ -23,7 +23,9 @@ export function QuestionnaireTab({ review }: { review: Review }) {
         <h2 className="section-title">{t.scaleTitle}</h2>
         {scales.length === 0 ? <p className="text-text-subtle text-[13px]">{t.noScale}</p> : null}
         {scales.map((response) => {
-          const max = response.format.kind === "escala" ? response.format.max : 0;
+          // I12: la escala es la congelada en la respuesta, de su mínimo a su máximo, no de 1.
+          const { min, max } =
+            response.format.kind === "escala" ? response.format : { min: 0, max: -1 };
           return (
             <div
               key={response.id}
@@ -35,7 +37,7 @@ export function QuestionnaireTab({ review }: { review: Review }) {
                 aria-label={`${response.value} ${t.scaleOf} ${max}`}
                 className="flex gap-1.5"
               >
-                {Array.from({ length: max }, (_, i) => i + 1).map((n) => (
+                {Array.from({ length: max - min + 1 }, (_, i) => min + i).map((n) => (
                   <span
                     key={n}
                     aria-hidden

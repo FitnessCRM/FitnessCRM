@@ -53,10 +53,7 @@ export function ClientSignupScreen() {
       await saveMembership.mutateAsync({
         create: {
           clientId: client.id,
-          type: values.membershipType,
-          startDate: values.membershipStart,
-          endDate: values.membershipEnd,
-          paymentStatus: values.paymentStatus,
+          ...values.membership,
         },
       });
     } catch (cause) {

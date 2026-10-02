@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  clientDataSchema,
+  clientSignupSchema,
   macrosSchema,
   membershipEditSchema,
   membershipSchema,
   prescriptionSchema,
   questionnaireResponseSchema,
   responseFormatSchema,
+  reviewObjectSchema,
   reviewSchema,
   exerciseSchema,
   timeZoneSchema,
@@ -80,6 +83,7 @@ describe("review", () => {
       requirements: { measurementTypeIds: [], questionIds: [] },
       media: [{ id: "m", pose: "frente", url: "storage://x", uploadedAt: NOW }],
       weightLogId: null,
+      frozenWeight: null,
       measurements: [],
       responses: [],
       feedbackVideoUrl: null,
@@ -97,7 +101,7 @@ describe("review", () => {
   });
 
   it("feedback video must be an external http(s) link (I20)", () => {
-    const partial = reviewSchema.pick({ feedbackVideoUrl: true });
+    const partial = reviewObjectSchema.pick({ feedbackVideoUrl: true });
     expect(partial.safeParse({ feedbackVideoUrl: "https://youtu.be/abc" }).success).toBe(true);
     expect(partial.safeParse({ feedbackVideoUrl: "ftp://host/video.mp4" }).success).toBe(false);
     expect(partial.safeParse({ feedbackVideoUrl: "not a url" }).success).toBe(false);
@@ -194,5 +198,43 @@ describe("macros (§5): kcal written by the trainer and stored", () => {
     expect(
       macrosSchema.safeParse({ kcal: 2500, proteinG: 160, carbsG: 280, fatG: 70 }).success,
     ).toBe(true);
+  });
+});
+
+describe("client data and signup (E21): the forms validate with the domain", () => {
+  const data = {
+    firstName: "Prueba",
+    lastName: "Alta",
+    email: " prueba.alta@example.test ",
+    phone: "",
+    goal: "",
+    level: "",
+    initialNotes: "",
+    startDate: "2026-10-02",
+  };
+  const membership = {
+    type: "trimestral",
+    startDate: "2026-10-02",
+    endDate: "2026-12-31",
+    paymentStatus: "pagada",
+  };
+
+  it("client data is a cut of the client schema, with the email trimmed", () => {
+    const parsed = clientDataSchema.parse(data);
+    expect(parsed.email).toBe("prueba.alta@example.test");
+    expect(clientDataSchema.safeParse({ ...data, firstName: " " }).success).toBe(false);
+    expect(clientDataSchema.safeParse({ ...data, email: "sin arroba" }).success).toBe(false);
+    expect(clientDataSchema.safeParse({ ...data, startDate: "02-10-2026" }).success).toBe(false);
+  });
+
+  it("signup joins the client data and the initial membership, with the membership's own rules", () => {
+    expect(clientSignupSchema.safeParse({ ...data, membership }).success).toBe(true);
+    const backwards = clientSignupSchema.safeParse({
+      ...data,
+      membership: { ...membership, endDate: "2026-10-01" },
+    });
+    expect(backwards.success).toBe(false);
+    expect(backwards.error?.issues[0]?.path).toEqual(["membership", "endDate"]);
+    expect(clientSignupSchema.safeParse(data).success).toBe(false);
   });
 });
