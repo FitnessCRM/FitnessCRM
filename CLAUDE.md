@@ -63,9 +63,9 @@ Estas seis se comprueban antes de dar por buena cualquier tarea.
 | Tests | Vitest |
 | Gestor de paquetes | pnpm. Node 22 |
 
-**Sin fetching en Server Components de momento.** Es deliberado: Supabase encaja con RSC y
-Firebase es SDK de cliente; elegir RSC ahora ataría la decisión de facto. Los Server Components
-montan el armazón, los datos llegan por hooks. Se puede migrar después si gana Supabase.
+**Sin fetching en Server Components.** Es deliberado: el backend es Firebase (`docs/dominio.md`
+§12) y Firebase es un SDK de cliente, así que los datos llegan por los hooks de `lib/data/hooks/`
+y no por RSC. Los Server Components montan el armazón.
 
 **Camino a móvil.** Se mantiene Next.js. El día que haya Expo se reutilizan `lib/domain`,
 `lib/data` y `lib/i18n` íntegros; los componentes se reescriben, que es lo que va a pasar de
@@ -78,14 +78,21 @@ todas formas porque el diseño móvil será otro. Por eso la regla 2 no es negoc
 ```
 app/
   (auth)/login/
-  (cliente)/          rutina, menu, peso, revision, progreso, membresia, ver-revision
-  (entrenador)/       dashboard, clientes, clientes/nuevo, clientes/[clientId],
-                      clientes/[clientId]/editor, clientes/[clientId]/revision,
-                      biblioteca, plantillas, cuestionario, medidas, membresias, asignacion
+  (client)/           routine, menu, weight, review, progress, membership, view-review
+  (trainer)/          dashboard, clients, clients/new, clients/[clientId],
+                      clients/[clientId]/edit, clients/[clientId]/editor,
+                      clients/[clientId]/review, reviews, library, templates,
+                      templates/new, templates/[kind]/[templateId], questionnaire,
+                      measurements, memberships, assignment
   providers.tsx       raíz de composición: el único archivo que elige un adaptador
 components/
-  ui/                 shadcn, retematizado
-  cliente/ entrenador/ charts/
+  ui/                 shadcn retematizado y piezas comunes (sheet, combobox, mobile-nav…)
+  charts/             gráficas que usan las dos áreas
+  review/             lectura de una revisión (fotos, respuestas), común a las dos áreas
+  editor/             editores de rutina y menú, comunes a plantillas y editor de plan
+  client/             pantallas del cliente
+  trainer/            pantallas del entrenador
+  login-form.tsx, login-hero.tsx
 lib/
   domain/             tipos, esquemas zod, invariantes. CERO dependencias externas
   data/
@@ -94,17 +101,20 @@ lib/
     hooks/            TanStack Query sobre los puertos
   design/             tokens
   i18n/es.ts          todos los literales visibles
+  format.ts           formateadores de fechas y cifras
 docs/
   dominio.md
+  estado.md
+  revision-errores-2026-09-30.md   informe de la revisión de errores (tarjetas 30 y 60)
   design/screens/     las 18 capturas del prototipo: la referencia visual
   design/demo-navegable.html   volcado estático de la demo
 ```
 
-**`cliente/` y `entrenador/` son hermanas: ninguna importa de la otra.** Cuando las dos necesitan
-el mismo componente, se mueve a un sitio neutro —`components/charts/`, `components/ui/`— y las dos
-importan de ahí; sus literales se mueven con él, fuera de la clave de una pantalla. La salida
-rápida —que `entrenador/` importe de `components/cliente/`— es peor que mover, y hay que decir por
-qué o alguien la elegirá: convierte un área en dependencia de la otra, ata su diseño (un
+**`client/` y `trainer/` son hermanas: ninguna importa de la otra.** Cuando las dos necesitan
+el mismo componente, se mueve a un sitio neutro —`components/charts/`, `components/review/`,
+`components/editor/`, `components/ui/`— y las dos importan de ahí; sus literales se mueven con él,
+fuera de la clave de una pantalla. La salida rápida —que `trainer/` importe de
+`components/client/`— es peor que mover, y hay que decir por qué o alguien la elegirá: convierte un área en dependencia de la otra, ata su diseño (un
 componente pensado para el móvil del cliente pasa a mandar en el escritorio del entrenador) y el
 día que se reescriba la UI de cliente para móvil se lleva por delante el panel. Mover cuesta un PR
 pequeño de terreno común; deshacer el atajo cuesta más y más tarde.
@@ -178,9 +188,8 @@ complemento —nunca como único sitio donde está el dato—. Los controles peq
 32 px de alto.
 
 **Navegación en tablet y móvil.** Por debajo de `lg` el menú de navegación es una hamburguesa, en
-el panel del entrenador y donde el diseño lo pida. Hasta que exista ese patrón (tarjeta
-«Navegación · Menú hamburguesa en tablet y móvil»), la barra lateral fija de 232 px es una deuda
-conocida, no una pauta a imitar.
+las dos áreas: `components/ui/mobile-nav.tsx` sobre `components/ui/sheet.tsx` (tarjeta 48). Desde
+`lg`, barra lateral de 232 px en el panel y nav superior en el área de cliente.
 
 **Columna lateral en móvil.** Cuando en móvil las dos columnas pasan a una, lo que estaba en la
 lateral **sube por encima del contenido principal cuando es contexto para leerlo, y baja cuando es
@@ -201,11 +210,21 @@ verdad. El formulario valida contra él y el futuro backend también.
 I23, I24, I25, I26 e I27 tienen test. Los componentes no se testean todavía.
 
 **Verificar el entorno antes de concluir.** Antes de dar por buena una comprobación, confirma que
-el entorno mide lo que crees. Ya ha mentido tres veces: la emulación de viewport del panel que no
-siempre se aplicaba (se mide en un iframe del ancho exacto), un diálogo comprobado cerrado que
-nunca llegaba al HTML del servidor (se fuerza abierto para que hidrate), y un aviso de hidratación
-que solo daba la primera compilación de `pnpm dev`. Si una medición depende del entorno, compruébala
-contra un caso conocido —que detecte el fallo que sabes que existe— y repítela en el entorno que
+el entorno mide lo que crees. Ya ha mentido cinco veces:
+
+- la emulación de viewport del panel, que no siempre se aplicaba (se mide en un iframe del ancho
+  exacto);
+- un diálogo comprobado cerrado, que nunca llegaba al HTML del servidor (se fuerza abierto para
+  que hidrate);
+- un aviso de hidratación que solo daba la primera compilación de `pnpm dev`;
+- `pnpm typecheck` en rojo con un `.next` antiguo: `tsconfig.json` incluye `.next/types`, así que
+  comprueba tipos de rutas que ya no existen. Se arregla reconstruyendo (`pnpm build`), no tocando
+  el código;
+- con el panel del navegador oculto, TanStack Query pausa los reintentos porque la página no está
+  visible, y una pantalla se queda en «Cargando…» en vez de llegar a su estado de error. El
+  estado de error se comprueba con el panel visible.
+
+Si una medición depende del entorno, compruébala contra un caso conocido —que detecte el fallo que sabes que existe— y repítela en el entorno que
 cuenta. Y **«solo sale en dev» no significa «no importa»**: significa que hay que comprobarlo en
 producción (`pnpm build` + `pnpm start`, entrada `prod` de `.claude/launch.json`) antes de decidir,
 en los dos sentidos —ni se descarta sin mirar, ni se arregla lo que en producción no pasa—.
@@ -340,6 +359,13 @@ Reglas que Claude Code debe cumplir:
    tuyo. No lo arregles de paso: un arreglo fuera de alcance en una rama ajena es lo que rompe
    el reparto.
 
+**Dónde acaba la regla 5.** Existe para que los diffs se puedan revisar, no para proteger un texto
+que se sabe falso. La prueba es qué toca ya el diff: **si ya toca ese párrafo o ese archivo, un
+dato falso se corrige ahí**, y se dice en el cuerpo del commit y en el comentario de la tarjeta.
+Dejar un dato que sabemos falso junto al texto nuevo que lo contradice no es respetar el alcance,
+es conservar un error. **Si corregirlo arrastra código, secciones nuevas o archivos que el diff no
+tocaba, es otra tarjeta.**
+
 ### La documentación va en su propio PR
 
 **`CLAUDE.md`, `docs/dominio.md` y `docs/estado.md` no viajan nunca en una rama de feature.** Van
@@ -374,14 +400,12 @@ tu rama. Anótalo en la tarjeta, ciérralo con los dos, y que entre en `main` en
 
 ### Lo que no cambia
 
-Estas cuatro siguen siendo innegociables: sin SDK de backend hasta que se decida, `lib/domain/`
-puro, los datos solo por los hooks, y ni un literal suelto fuera de `lib/i18n/es.ts`. Y el
-criterio de terminado tampoco cambia: compila, pasan `lint`, `typecheck` y `test`, los tres
-estados implementados, comparada en el navegador contra su captura, y comprobada a 390 y 768 px
-en un iframe del ancho exacto (ver «Verificar el entorno antes de concluir»). Esto último rige
-desde que se cierre la tarjeta «Navegación · Menú hamburguesa»: hasta entonces, el panel del
-entrenador hereda la barra lateral y se anota como deuda lo que ella impida medir. Las pantallas
-del panel anteriores a esta regla se adaptan en la tarjeta «Panel responsive».
+Estas cuatro siguen siendo innegociables: sin SDK de backend hasta la tarjeta del adaptador,
+`lib/domain/` puro, los datos solo por los hooks, y ni un literal suelto fuera de
+`lib/i18n/es.ts`. Y el criterio de terminado tampoco cambia: compila, pasan `lint`, `typecheck` y
+`test`, los tres estados implementados, comparada en el navegador contra su captura, y comprobada
+a 390 y 768 px en un iframe del ancho exacto (ver «Verificar el entorno antes de concluir»). Las
+pantallas del panel anteriores a esta regla se adaptan en la tarjeta 49 («Panel responsive»).
 
 Ese criterio es **para las ramas de código**. Un PR de solo documentación se da por terminado
 cuando el texto es correcto y pasa `lint`: no toca una línea de código, así que no puede romper el
@@ -426,9 +450,21 @@ proyecto de claude.ai es su espejo.
 
 Pantallas del cliente terminadas (20-09-2026), las siete: Peso, Revisión, Progreso, Rutina,
 Menú, Membresía y Ver revisión, y pasada responsive del área de cliente hecha (21-09-2026, detalle
-en `docs/estado.md`). Coordinación de equipo montada (21-09-2026, sección «Equipo»). Del panel del
-entrenador están integradas la Biblioteca de ejercicios y los catálogos de Cuestionario y Medidas
-(27-09-2026); el resto se reparte por pantallas en el tablero. Backend decidido el 29-09-2026
-—Firebase para datos y auth, Drive del entrenador para las imágenes—, escrito en `docs/dominio.md`
-§9 y §12 y todavía sin implementar: queda su adaptador, que es lo último. Esta sección se
-actualiza en el PR de documentación posterior a cada fusión.
+en `docs/estado.md`). Coordinación de equipo montada (21-09-2026, sección «Equipo»).
+
+Panel del entrenador integrado (02-10-2026, `main` en `99b276a`): login, panel de control,
+seguimiento de clientes, alta, detalle, edición de datos, baja y reactivación, membresías con
+renovación, revisión de cliente con envío de feedback, revisiones recibidas, biblioteca,
+plantillas con su editor, cuestionario, medidas, asignación y editor de plan, más el menú
+hamburguesa en las dos áreas. Rutas y carpetas en inglés desde los PR #15 y #16. Las kcal las
+fija el entrenador y se guardan (tarjeta 58, `docs/dominio.md` §5). La revisión de errores del
+30-09-2026 (`docs/revision-errores-2026-09-30.md`, tarjeta 30) dejó I24–I27 y la regla de que un
+plan activo no se edita en sitio (§6 y §7); sus treinta hallazgos están cerrados en la tarjeta
+60, salvo el resto de E19 (login), que va con la auth real (35).
+
+Backend decidido el 29-09-2026 —Firebase para datos y auth, Drive del entrenador para las
+imágenes—, escrito en `docs/dominio.md` §9 y §12 y todavía sin implementar. Falta, por este
+orden: reglas de seguridad (tarjeta 34), adaptador (16), auth (35), fotos en el Drive (17) y
+consentimiento del alta con el borrado a petición (31). Lo pendiente, con su tarjeta, en
+«Siguiente» de `docs/estado.md`. Esta sección se actualiza en el PR de documentación posterior a
+cada fusión.

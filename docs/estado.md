@@ -1,7 +1,8 @@
-# Estado del arranque
+# Estado del proyecto
 
-Última actualización: 19-09-2026. Las cinco fases de la tarea de cimientos están hechas y en
-`main`. Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
+Última actualización: 02-10-2026. Corresponde a `main` en `99b276a` (PR #42). Están en `main` los
+cimientos, las siete pantallas del cliente y el panel del entrenador; falta el backend
+(«Siguiente»). Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
 ## Cómo se trabajó hasta aquí
 
@@ -47,7 +48,8 @@ Windows. Consecuencias:
   (`week.ts`); `isReviewComplete`, `canClientEditReview`, `weightForReview`, `openReview`,
   `recordMeasurement`, `answerQuestion`, `submitReview`, `markReviewViewed`,
   `sendReviewFeedback` (`review.ts`); `canChangeQuestionFormat`, `canUpdateQuestion`
-  (`questionnaire.ts`); `derivedKcal` (`macros.ts`); `cloneRoutineTemplate`,
+  (`questionnaire.ts`); `derivedKcal` (`macros.ts`, retirada en la tarjeta 58: las kcal las
+  escribe el entrenador); `cloneRoutineTemplate`,
   `cloneMenuTemplate` (`templates.ts`); `routinesUsingExercise`, `removeExerciseFromRoutine`
   (`routine.ts`). `DomainError` con `code` para que la UI traduzca.
 - Tests de I5, I9, I12, I15, I17 y I22 con casos límite, más esquemas y plantillas. 57 tests.
@@ -56,8 +58,13 @@ Windows. Consecuencias:
 ### Fase 4 — Capa de datos (`lib/data/`)
 - `ports/`: una interfaz por agregado, agrupadas en `DataPorts` (`ports/index.ts`). Todos los
   métodos reciben `trainerId` explícito.
-- `adapters/mock/`: en memoria, 150 ms de latencia, filtrado por `trainerId`, copia en cada
-  respuesta. Las invariantes se aplican con las funciones del dominio (I4, I9, I13, I15, I16,
+- `adapters/mock/`: en memoria, filtrado por `trainerId`, copia en cada respuesta. **Sin
+  latencia desde el PR #13** (29-09-2026; antes, 150 ms por llamada): las consultas resuelven en
+  el mismo instante, así que el estado de carga de una pantalla apenas llega a pintarse y mirar la
+  pantalla no demuestra que exista. Para comprobarlo hay que forzarlo, por ejemplo con un retraso
+  temporal en el adaptador que no se commitea. El mismo PR carga las gráficas de Peso y Progreso
+  con `next/dynamic` sin SSR, con un hueco mientras llegan; el Detalle de cliente hace lo mismo.
+  `lib/data/adapters/mock/latency.ts` quedó sin uso (tarjeta 66). Las invariantes se aplican con las funciones del dominio (I4, I9, I13, I15, I16,
   I17). `demo-data/` reproduce la demo: Adrián Vega, cinco clientes, 10 ejercicios, 3 plantillas
   de rutina, 2 de menú, rutina y menús de Marta, 10 membresías, 8 tipos de medida, 5 preguntas,
   13 pesajes del último mes, 5 revisiones de Marta y las enviadas de Jorge y Sara. Un test valida
@@ -69,10 +76,10 @@ Windows. Consecuencias:
   el adaptador.
 
 ### Fase 5 — Armazón de navegación
-- `components/entrenador/trainer-shell.tsx`: barra lateral de 232 px con Dashboard, Clientes,
+- `components/trainer/trainer-shell.tsx`: barra lateral de 232 px con Dashboard, Clientes,
   Biblioteca, Plantillas, Cuestionario, **Medidas**, Membresías, Asignación; logo con etiqueta
   «Coach» y bloque de usuario leído por `useTrainer()`.
-- `components/cliente/client-shell.tsx`: nav superior con Rutina, Menú, Peso, Revisión,
+- `components/client/client-shell.tsx`: nav superior con Rutina, Menú, Peso, Revisión,
   Progreso, Membresía; «Ver revisión» marca Progreso; nombre corto y avatar por `useClient()`.
 - `app/(auth)/layout.tsx` con la marca arriba y el contenido centrado. `/` redirige a `/login`.
 - Todas las rutas renderizan su título con `PageHeader`; el `<title>` usa la plantilla
@@ -122,11 +129,13 @@ Fase 4 (datos):
     `{ trainerId: Adrián, clientId: Marta }`. Los hooks toman el `trainerId` de ahí. Cuando haya
     auth, ese puerto es el que cambia.
 17. **Todos los métodos de puerto reciben `trainerId` explícito**: hace visible I1 y permite el
-    test de tenancy. Un backend con RLS podrá ignorarlo.
+    test de tenancy. Con Firestore lo garantizan además las reglas de seguridad (tarjeta 34).
 18. **Los métodos del adaptador son `async`** para que un `DomainError` sea siempre un rechazo,
     nunca una excepción síncrona.
-19. Los menús de demo declaran las macros de la maqueta y las kcal se derivan: Menú A da 2.348
-    kcal (la maqueta dice 2.410) y el de descanso 2.145 (2.100). Manda la fórmula 4/4/9.
+19. Los menús de demo declaran las macros de la maqueta. Las kcal se derivaban con 4/4/9: Menú A
+    daba 2.348 kcal (la maqueta dice 2.410) y el de descanso 2.145 (2.100). **Desde la tarjeta 58
+    (01-10-2026) las kcal las escribe el entrenador y se guardan**; los datos de demo conservan
+    esas cifras como valor escrito.
 20. **Lucía Torres está `dado_de_baja`**: la maqueta dice "Inactiva · pausado" y no hay estado
     pausado.
 21. **Datos de demo relativos a hoy** (19-09-2026, `a0238b8`): antes eran fechas fijas de agosto
@@ -146,9 +155,11 @@ Fase 5 (navegación):
     segmento y ambas resolverían a `/revision`, que Next rechaza. Siguiendo la miga «Clientes /
     Marta Ruiz» de la demo, el editor y la revisión del entrenador viven en
     `/clientes/[clientId]/editor` y `/clientes/[clientId]/revision`; el detalle en
-    `/clientes/[clientId]` y el alta en `/clientes/nuevo`. `CLAUDE.md` está actualizado.
+    `/clientes/[clientId]` y el alta en `/clientes/nuevo`. Desde los PR #15 y #16 (29-09-2026)
+    rutas y carpetas están en inglés: `app/(client)/`, `app/(trainer)/`, `/clients/[clientId]/…`
+    con `editor`, `review` y `edit`, y `/clients/new`. El choque sigue resuelto igual.
 25. `/` redirige a `/login` mientras no haya auth. Para navegar: `/dashboard` (entrenador),
-    `/rutina` (cliente).
+    `/routine` (cliente). El login lleva al panel del entrenador mientras se desarrolla.
 26. `initialsOf` y `shortNameOf` en `lib/utils.ts` para "MR" y "Marta R.".
 
 ## Dudas / contradicciones detectadas
@@ -166,13 +177,13 @@ Fase 5 (navegación):
   hoy la fecha del panel será la real y el día de la semana se calcula.
 - La demo muestra en el Día 1 del cliente ejercicios de pierna y en el editor Día 1 = Torso.
 - El "Eliminar" de la biblioteca (archivar) y las macros por menú ya están resueltos (decisión 15).
-- Sin cubrir por el dominio ni la demo: la pantalla «Medidas» (§11.1) y el envío de feedback
-  (§11.2) tienen ruta y puerto, pero no diseño.
-- `app/favicon.ico` sigue siendo el de create-next-app.
+- Sin cubrir por la demo: la pantalla «Medidas» (§11.1) y el envío de feedback (§11.2). Las dos
+  están hechas con diseño propuesto (tarjetas 12 y 11).
+- `app/favicon.ico` sigue siendo el de create-next-app (tarjeta 19).
 
 ### Pantallas del cliente
 
-- **Peso** (`components/cliente/weight/`, 18-09-2026): formulario (react-hook-form + zod, coma
+- **Peso** (`components/client/weight/`, 18-09-2026): formulario (react-hook-form + zod, coma
   decimal admitida), tres cifras, gráfica de las últimas 6 semanas con `TrendChart` e historial
   descendente con «Día de revisión». Las definiciones viven en `lib/domain/weight.ts` y tienen
   test: **media 7 días** = media de los pesajes de los 7 días civiles que terminan en el último
@@ -183,7 +194,7 @@ Fase 5 (navegación):
   si no hubo. Fechas en `DD-MM-YYYY` por convención (la demo enseña "29 ago"). El delta solo se
   pinta en verde cuando baja, como en la demo; para un cliente de hipertrofia eso es discutible.
 
-- **Revisión** (`components/cliente/review/`, 19-09-2026): abre o recupera la revisión de la semana
+- **Revisión** (`components/client/review/`, 19-09-2026): abre o recupera la revisión de la semana
   actual (`useCurrentReview`, idempotente por I16). Los campos salen de los **requisitos
   congelados** al abrirla, no del catálogo actual; etiqueta y formato se leen primero de la copia
   congelada (I12) y después del catálogo. **I5**: la tira de cuatro bloques y la barra de progreso
@@ -198,10 +209,11 @@ Fase 5 (navegación):
   fila vacía ocupando el hueco de I16 y saliendo en Progreso como «en curso 0/4». **Fotos:
   pendiente número uno cuando haya backend.** Hoy son `object URL` del navegador, revocadas al
   desmontar, y no sobreviven a una recarga: una revisión puede quedar enviada y completa sin
-  imágenes recuperables. Con backend, la foto sube a Storage antes de guardar la URL en
-  `ReviewMedia`.
+  imágenes recuperables. Lo decidido el 29-09-2026 es que las fotos vivan en el Drive del
+  entrenador (`docs/dominio.md` §9 y §12), no en un Storage propio. **No está implementado**: es
+  la tarjeta 17, y hasta entonces siguen siendo `object URL` en memoria.
 
-- **Progreso** (`components/cliente/progress/`, 19-09-2026): «Evolución de peso» con todas las
+- **Progreso** (`components/client/progress/`, 19-09-2026): «Evolución de peso» con todas las
   semanas del cliente (`weeklyWeights`) y el delta sin color; «Medidas», primera gráfica
   multi-serie: `measurementSeries` en `lib/domain/progress.ts` da una serie por tipo de medida
   presente en las revisiones, dispersa y con `null` donde no hubo valor, en orden de catálogo;
@@ -210,10 +222,10 @@ Fase 5 (navegación):
   demo; por defecto se muestran los tres primeros del catálogo (la demo enseña cintura, cadera y
   muslo, que son los que más varían: elegirlos automáticamente sería un juicio). Histórico
   agrupado de dos en dos semanas (`groupReviewsByWeekPair`, §8); un borrador enlaza a Revisión con
-  «n/4», el resto a `/ver-revision?review=id` con «Completa ✓» o «Parcial». Las líneas van con
+  «n/4», el resto a `/view-review?review=id` con «Completa ✓» o «Parcial». Las líneas van con
   segmentos rectos: la demo no suaviza y una curva inventa valores entre semanas.
 
-- **Rutina** (`components/cliente/routine/`, 19-09-2026): pestañas por día numérico, tarjeta por
+- **Rutina** (`components/client/routine/`, 19-09-2026): pestañas por día numérico, tarjeta por
   ejercicio con su prescripción («4 series · 6-8 reps · RIR 2 · descanso 3 min»; `repsMax` nulo
   pinta reps fijas; RIR, descanso y nota tal como los escribe el entrenador, la nota como último
   segmento) y registro opcional desplegable. Nombres por `getExercise` (`useExercisesById`), así
@@ -251,11 +263,11 @@ Fase 5 (navegación):
   del cliente medían 842 px de ancho. El nav ahora se desplaza dentro de su caja (`overflow-x-auto`
   con la barra de scroll oculta y los enlaces sin encoger), el nombre corto se oculta y el
   relleno baja a 16 px. Medido en un iframe de 390 px, no con la emulación del panel, que no
-  siempre se aplica: `/rutina`, `/peso`, `/progreso`, `/menu` y `/membresia` miden ya 390.
-  **`/revision` sigue midiendo 688** por contenido suyo (la tira de completitud), no por el nav:
+  siempre se aplica: `/routine`, `/weight`, `/progress`, `/menu` y `/membership` miden ya 390.
+  **`/review` sigue midiendo 688** por contenido suyo (la tira de completitud), no por el nav:
   es trabajo de la pasada responsive, que es una fase aparte y no se ha abierto.
 
-- **Menú** (`components/cliente/menu/`, 20-09-2026): selector de tipo de día, un menú por tarjeta
+- **Menú** (`components/client/menu/`, 20-09-2026): selector de tipo de día, un menú por tarjeta
   (el sugerido primero y abierto, los demás plegados) con sus comidas y gramos, objetivo del
   cliente a la derecha y la nota del menú sugerido. Decisiones del 20-09-2026:
   - **La pantalla se llama «Tu menú», no «Menú de hoy».** El tipo de día lo elige el cliente con
@@ -270,14 +282,16 @@ Fase 5 (navegación):
     ni impide que difieran**: es criterio del entrenador (§5). Los datos de demo las dejan
     idénticas (165/260/72 en las dos), que es el caso peor para el etiquetado y por eso se
     mantiene así.
-  - Las barras del objetivo son la **parte de las kcal** que aporta cada macro (4/4/9), con el
-    porcentaje en el `title`. La maqueta las pinta casi llenas sin decir qué miden.
+  - Las barras del objetivo eran la **parte de las kcal** que aporta cada macro (4/4/9). Desde la
+    tarjeta 58 (opción B) cada barra es lo que aporta ese macro con 4/4/9 **sobre la suma de los
+    tres**: siempre suma 100 % y no lee las kcal, que escribe el entrenador y pueden no cuadrar
+    (`macroEnergyShares`). La maqueta las pinta casi llenas sin decir qué miden.
   - Las kcal se formatean con `formatInteger` (`lib/format.ts`): `es-ES` no agrupa los millares de
     cuatro cifras y la demo escribe «2.400», así que va con `useGrouping: "always"`.
   - El selector usa el `Tabs` de Radix, controlado. Durante un rato llevó botones propios por un
     aviso de hidratación que resultó ser **solo del servidor de desarrollo en frío**: ver el
     diagnóstico en el hito responsive (20-09-2026).
-  - `TrainerNoteCard` pasa a `components/cliente/` y su literal a `es.common.trainerNote`: lo usan
+  - `TrainerNoteCard` pasa a `components/client/` y su literal a `es.common.trainerNote`: lo usan
     Rutina y Menú.
   - **Menú B declara macros que no son el objetivo ni cuadran con sus alimentos** (150/230/80 →
     2.240 kcal, frente a 2.348 del objetivo; 20-09-2026). El Menú A sigue clavado al objetivo. Así
@@ -291,7 +305,7 @@ Fase 5 (navegación):
   dentro del año en curso y completas fuera de él, con `dateTime` para máquinas. La regla, con la
   distinción entre área de cliente y panel del entrenador, está en `CLAUDE.md`.
 
-- **Membresía** (`components/cliente/membership/`, 20-09-2026): la membresía en curso con su
+- **Membresía** (`components/client/membership/`, 20-09-2026): la membresía en curso con su
   tiempo restante, la próxima renovación si está registrada, y el historial completo. **Solo
   lectura**: el cliente no toca nada de su membresía y el cobro pasa fuera de la app (§10, I21),
   así que se mantiene el texto de la maqueta «Si tienes dudas sobre un pago, escribe a tu
@@ -310,7 +324,7 @@ Fase 5 (navegación):
     ninguna todavía) sale un vacío explicativo y, si hay una futura, se sigue anunciando; si la
     próxima ya está pagada, el pie dice que empieza al terminar la actual en vez de pedir el pago.
 
-- **Ver revisión** (`components/cliente/view-review/`, 20-09-2026): solo lectura de una revisión
+- **Ver revisión** (`components/client/view-review/`, 20-09-2026): solo lectura de una revisión
   ya enviada. Cifras, las tres fotos, las respuestas y el feedback. Los borradores no se leen
   aquí: se rellenan en Revisión, y Progreso ya enlaza cada uno a su sitio.
   - **El vídeo es un enlace externo (I20)**: `target="_blank"`, `rel="noopener noreferrer"` y,
@@ -332,7 +346,7 @@ Fase 5 (navegación):
 
 ### Panel del entrenador
 
-- **Biblioteca de ejercicios** (`components/entrenador/library/`, tarjeta 7, integrada el
+- **Biblioteca de ejercicios** (`components/trainer/library/`, tarjeta 7, integrada el
   27-09-2026). Primera pantalla del panel; deja montados los tres patrones que reutilizan las
   demás: rejilla con filtros, panel de edición lateral y acción destructiva con aviso.
   - **«Eliminar» archiva** (I13, §7). Antes de confirmar, el diálogo **nombra a los clientes** que
@@ -348,10 +362,10 @@ Fase 5 (navegación):
     entrenador.
   - `ExerciseInput` deja de exigir `status` (tarjeta 29): el adaptador siempre crea en «activo»,
     así que el tipo solo producía relleno. Revisados los demás puertos: era el único con ese vicio.
-    `ClientInput` incluye `status` pero el adaptador **no** lo fuerza, así que hoy es honesto;
-    anotado en la tarjeta del alta de cliente.
+    `ClientInput` incluía `status` y el adaptador no lo forzaba; desde el alta de cliente
+    (tarjeta 6) tampoco lo lleva y el adaptador crea siempre en `invitado`.
 
-- **Cuestionario y Medidas** (`components/entrenador/catalog/`, tarjeta 12, integrada el
+- **Cuestionario y Medidas** (`components/trainer/catalog/`, tarjeta 12, integrada el
   27-09-2026). Las dos pantallas comparten `CatalogList`, el armazón del catálogo ordenable del
   entrenador: orden con botones de subir y bajar —sin dependencia de arrastre, accesible por
   teclado y usable en táctil—, archivado con aviso corto, archivadas en sección plegada con
@@ -421,26 +435,177 @@ Fase 5 (navegación):
     valor de antes por defecto, para que la pantalla del entrenador pueda titularla sin volver a
     editar terreno común. Traslado e imports: Progreso se comprobó en el navegador después y se
     comporta igual.
-  - **La tercera salida —que `components/entrenador/` importe de `components/cliente/`— queda
+  - **La tercera salida —que `components/trainer/` importe de `components/client/`— queda
     descartada por escrito** en «Estructura» de `CLAUDE.md`. Es peor que mover: convierte un área
     en dependencia de la otra y ata su diseño, y el día que la UI de cliente se reescriba para
     móvil se lleva por delante el panel. Sin el porqué escrito, parece la opción barata.
 
+Desde aquí, una entrada corta por tarjeta integrada. El detalle está en el comentario de cada
+tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía no tiene una propia.
+
+- **Login** (`app/(auth)/login/`, `components/login-form.tsx` y `login-hero.tsx`, tarjeta 37,
+  PR #17). Dos columnas de la captura 01 que se apilan en móvil. Valida contra el adaptador en
+  memoria y, mientras se desarrolla el panel, lleva a `/dashboard`. La revisión de errores le
+  corrigió colores y textos (E22, tarjeta 39) y su literal suelto (E19). Deuda: auth real y el
+  resto de E19 (tarjeta 35).
+
+- **Menú hamburguesa** (`components/ui/sheet.tsx` y `mobile-nav.tsx`, tarjeta 48, PR #24). Por
+  debajo de `lg`, barra superior con hamburguesa en las dos áreas; desde `lg`, sin cambios. El
+  área de cliente también lo recibe: su nav con scroll horizontal no se entendía. El panel se
+  cierra con Escape, tocando fuera o navegando. Deuda: no hay botón de cierre visible (sin
+  tarjeta); el resto del responsive del panel, en la 49.
+
+- **Panel de control** (`components/trainer/dashboard/`, tarjeta 4, PR #21). Cuatro cifras de
+  toda la cartera —no de la página visible—, las cinco últimas revisiones enviadas con «Ver
+  todas» a `/reviews` y la tabla de clientes paginada en servidor. «Revisiones esta semana» cuenta
+  por fecha de envío. La tarjeta 60 le añadió carga y error (E15), quitó «inactivos», que no es un
+  estado del dominio (E13), y cerró la 52: fuera «Bloque», «Última revisión» real. Deuda:
+  unificar sus cifras en una consulta (tarjeta 42).
+
+- **Seguimiento de clientes y selector común** (`components/trainer/clients/`,
+  `components/trainer/client-picker.tsx`, tarjetas 51 y 57, PR #25 y #38). Lista de la cartera con
+  plan, semana, revisión nueva, pago de la membresía vigente y estado; filtro por estado con
+  contadores, paginación en servidor y revisiones nuevas primero. Desde el PR #38 Clientes,
+  Membresías y Asignación usan el mismo `ClientPicker`: se elige **un** cliente. Con ese cambio
+  desapareció la búsqueda por texto parcial; quedó avisado en la tarjeta 57 como consecuencia, no
+  consta que se decidiera (sin tarjeta). «Última revisión», su deuda, llegó con la tarjeta 60.
+
+- **Detalle de cliente** (`components/trainer/client-detail/`, tarjeta 5, PR #22). Cabecera con
+  estado y semana, rutina y macros asignadas, gráficas de `components/charts/` y el histórico por
+  pares de semanas. «Ver revisión nueva» solo enlaza: abrirla es lo que la pasa a `vista`. Fuera
+  «Bloque» y la adherencia; un borrador se ve «En curso n/4», sin enlace. Deuda: con un único
+  pesaje la gráfica no pinta nada, también en Progreso (sin tarjeta).
+
+- **Alta de cliente** (`/clients/new`, tarjeta 6, PR #26). Datos, membresía inicial obligatoria y
+  siguiente paso (detalle o Asignación). El cliente nace siempre `invitado` y la fecha de alta es
+  editable, hoy por defecto. «Invitar» no envía nada. Desde la tarjeta 60 valida con los esquemas
+  del dominio (E21). Deuda: email duplicado sin decidir y sin transacción entre cliente y
+  membresía (sin tarjeta); el consentimiento, en la 31.
+
+- **Editar datos del cliente** (`/clients/[clientId]/edit`, tarjeta 43, PR #35). Comparte la
+  tarjeta de datos con el alta. La fecha de alta se ve pero no se edita (I22) y el estado tiene
+  su propio flujo. La cadencia es un número de días libre. Deuda: qué pasa al cambiar el email
+  cuando las fotos vivan en el Drive (sin tarjeta, afecta a la 35 y la 17); editar un cliente de
+  baja por URL (tarjeta 63).
+
+- **Baja y reactivación** (`client-status-action.tsx`, tarjeta 44, PR #37). Tarjeta al pie del
+  detalle con su diálogo. Decidido con el propietario: la baja no toca plan ni membresía,
+  reactivar vuelve siempre a «En activo» y se puede dar de baja desde cualquier estado. La baja no
+  borra nada: el borrado a petición es otra operación (tarjeta 31). Deuda: «reactivar» no está en
+  §7 (H6, tarjeta 61); qué bloquea la baja con auth real (tarjetas 34 y 35).
+
+- **Membresías** (`components/trainer/memberships/`, tarjeta 13, PR #18). Una fila por periodo,
+  no por cliente como la captura 17: las renovaciones son filas nuevas. Chips Todas / No pagadas
+  / Caducan pronto (vigente que acaba en 7 días o menos) y edición en línea. Los solapes se marcan
+  «Solapada» y se avisan sin bloquear, porque el dominio no los prohíbe. Deuda: contadores y
+  solapes se recalculan sobre toda la cartera en cada consulta (sin tarjeta).
+
+- **Membresía en el detalle y renovación** (`membership-card.tsx`, `renew-membership-dialog.tsx`,
+  tarjetas 45 y 38, PR #36). La vigente, la próxima y aviso de solape; «Gestionar» abre
+  Membresías filtrada por el cliente. «Renovar» crea una fila nueva: inicio el día siguiente al
+  último fin (hoy si ya pasó) y estado «No pagada» por defecto. Renovar solo existe aquí. Deuda:
+  `ToggleChip` copiado en el alta y en el diálogo, y el filtro de Membresías no actualiza la URL
+  (sin tarjeta).
+
+- **Revisión de cliente y envío de feedback** (`components/trainer/client-review/`, tarjetas 11 y
+  15, PR #27, #28 y #33). Abrir una revisión enviada la pasa a `vista` (I17) y la comparación de
+  fotos es una acción explícita (I10). **Se aparta de la captura 14 y de su tarjeta en dos
+  cosas**, decididas al implementar y que solo constan en los commits (`98706eb`, `7afd6ef`):
+  tiene **dos pestañas y no tres** —«Fotos y peso» juntas, y «Cuestionario»—, y en el feedback
+  **el vídeo es obligatorio y la nota opcional**, aunque el dominio admite un feedback sin vídeo.
+  Las fotos y respuestas de solo lectura se movieron antes a `components/review/` (PR #27).
+
+- **Revisiones recibidas** (`/reviews`, tarjeta 41, PR #34). Sin captura: sigue el patrón de
+  Seguimiento, con chips por estado y contadores, paginación en servidor y nuevas primero. Los
+  borradores no se listan. Cada fila abre la revisión con «Volver a revisiones». Deuda: su
+  buscador sigue siendo de texto libre, distinto del `ClientPicker` (sin tarjeta).
+
+- **Plantillas** (`components/trainer/templates/`, tarjeta 8, PR #29). Rutinas y menús en una
+  rejilla con filtros, «Usada en N clientes», duplicar y eliminar avisando de que lo asignado no
+  cambia. El uso es un modelo de lectura del puerto, no un campo del dominio, y se cuenta por el
+  nombre congelado en cada plan. Deuda: renombrar una plantilla pierde sus usos y dos con el mismo
+  nombre los suman (sin tarjeta); duplicar desde un plan, en la 55.
+
+- **Crear y editar plantilla** (`/templates/new`, `/templates/[kind]/[templateId]`, tarjetas 53
+  y 54, PR #30). Sin captura: el layout de la 12 sin macros del cliente. Los editores de rutina y
+  menú viven en `components/editor/`, controlados y sin datos, para que los use también el editor
+  de plan; `NativeSelect` pasó a `components/ui/`. Se reordena con botones, sin arrastrar. Deuda:
+  sin aviso al navegar dentro de la app con cambios, sin nota por ejercicio y `<title>` genérico
+  (sin tarjeta).
+
+- **Asignación de plan** (`components/trainer/assignment/`, tarjeta 9, PR #31). Cliente por
+  `?clientId=` (sin los de baja); entreno y menú desde plantilla o desde cero, y macros aparte.
+  Asignar clona la plantilla como borrador (§4) y lleva al editor. Las kcal son un campo
+  obligatorio desde la tarjeta 58. Deuda: asignar dos veces la misma plantilla crea dos
+  borradores, sin aviso (sin tarjeta).
+
+- **Editor de plan** (`components/trainer/plan-editor/`, tarjeta 10, PR #32). Pestañas Rutina y
+  Menú sobre los editores de `components/editor/`, «Partir de plantilla» y un solo «Publicar
+  cambios». La edición en sitio de la rutina activa que decidió la tarjeta la sustituyó D3
+  (§7): publicar sobre un plan activo crea versión nueva (E27, tarjeta 60). Deuda: lo no
+  publicado vive solo en pantalla (sin tarjeta); en móvil es usable pero largo (tarjeta 49).
+
+### Lo que no es pantalla
+
+- **Un pesaje por cliente y día** (tarjeta 40, PR #19 y #20). I23 en `docs/dominio.md`:
+  registrar peso en una fecha que ya tiene pesaje lo actualiza, conservando id y fecha de
+  creación, así que la revisión que lo referencia no se rompe. El puerto pasa a
+  `saveWeightLog`. La regla de la nota (vacía conserva la anterior) vive en el adaptador, y el de
+  Firebase tendrá que repetirla.
+
+- **Las kcal las fija el entrenador** (tarjeta 58, PR #39 y #40). `Macros` lleva `kcal`
+  obligatoria y entera, que se guarda tal cual; la app no comprueba 4/4/9 ni avisa
+  (`docs/dominio.md` §5). Se retira `derivedKcal`. El campo de kcal es propio
+  (`components/editor/kcal-field.tsx`) y no admite punto de millar. Las barras de «Tu objetivo
+  del día» del cliente, opción B (ver Menú).
+
+- **Revisión de errores y sus arreglos** (tarjetas 30 y 60, PR #41 y #42). El informe, las
+  decisiones que salieron de él y el estado de los treinta hallazgos están en
+  `docs/revision-errores-2026-09-30.md`; no se repiten aquí. En el mismo PR se cerraron las
+  tarjetas 52 y 39. Siguen abiertos los huecos menores (tarjeta 61) y lo que apareció por el
+  camino (62, 63 y 64).
+
+- **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
+  inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
+  `trainer/`) y #33 (enlace a la revisión desde el panel de control, rama
+  `feature/navigate-to-reviews`).
+
 ## Siguiente
 
-Las siete pantallas del cliente y el hito responsive están terminados. Desde el 21-09-2026
-trabajan dos personas (sección «Equipo» de `CLAUDE.md`): el panel del entrenador se reparte por
-pantallas completas en el tablero de Trello, y este archivo pasa a ser un resumen curado que solo
-edita quien integra. Por último, la decisión de backend con su adaptador.
+Las pantallas del cliente y del panel están en `main`. Desde el 21-09-2026 trabajan dos personas
+(sección «Equipo» de `CLAUDE.md`) y este archivo es un resumen curado que se escribe en un PR de
+documentación después de cada fusión. Lo que queda, con su tarjeta:
+
+- **Backend**, en este orden: reglas de seguridad de Firestore (tarjeta 34), que van antes o
+  junto al adaptador porque sin ellas la base está abierta; adaptador de Firebase (16), con la
+  deuda de consultas caras y escrituras atómicas anotada en la tarjeta; auth real con Firebase
+  Auth y Google (35); fotos de revisión en el Drive del entrenador (17); y consentimiento del alta
+  con el borrado a petición (31).
+- **CI** en GitHub Actions (tarjeta 28): `lint`, `typecheck`, `test` y `build` en cada PR, que es
+  lo que podrá exigir la protección de rama.
+- **Decisiones de dominio pendientes**: los huecos menores de la revisión de errores, H5, H6, H7 y
+  H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62).
+- **Pantallas menores**: planes anteriores del cliente (46), reenviar invitación (47), panel
+  responsive (49), cerrar sesión desde el panel (56) y editar un cliente de baja por URL (63).
+  Además, **dos tarjetas en «En revisión» sin código en `main`**: perfil del cliente (50), cuya
+  rama no está en el remoto, y duplicar una plantilla desde un plan (55), sin comentario ni
+  código.
+- **Deuda menor con tarjeta**: editar registros de entreno de otra fecha (18), favicon (19),
+  cifras del panel en una consulta (42), nombre accesible de `NumberField` (59),
+  `listSubmittedReviews` sin uso (64) y `latency.ts` sin uso (66).
 
 ### Anotado para el panel del entrenador
 
-- **Marcar las membresías solapadas en la tabla de Membresías** (20-09-2026). El dominio no
-  prohíbe que dos periodos de un cliente se solapen y no se va a llevar allí. La pantalla del
-  cliente lo resuelve en silencio: `membershipStanding` enseña la que empezó más tarde. Eso
-  significa que, si el entrenador se equivoca de fechas, **el cliente ve una membresía y el
-  entrenador cree que aplica otra**. La tabla del entrenador tiene que marcar el solape donde se
-  crea, que es donde se puede corregir.
+- ~~Marcar las membresías solapadas en la tabla de Membresías~~ (20-09-2026). **Hecho en la
+  tarjeta 13**: la tabla marca «Solapada» y el detalle del cliente avisa (tarjeta 45). El dominio
+  sigue sin prohibir el solape.
+
+### Puntos abiertos
+
+- **Versión de Node.** `.nvmrc` pide Node 22 y todas las comprobaciones desde el 30-09-2026 se han
+  hecho con Node 24.18, que es el que hay instalado. No se ha cambiado `.nvmrc`: queda por decidir
+  si se instala Node 22 o se sube la versión fijada, y lo natural es cerrarlo con la CI (tarjeta
+  28), que fijará la suya.
 
 ### Hito: pasada responsive del área de cliente — hecho (21-09-2026)
 
@@ -452,14 +617,14 @@ El porqué: el área de cliente es la que se usa en el móvil —el cliente mira
 gimnasio— y el panel del entrenador es de escritorio por naturaleza, con tablas densas, barra
 lateral y comparador de fotos a dos columnas.
 
-Entra en esta pasada: los 688 px de `/revision` a 390 px (la tira de completitud), y lo que
+Entra en esta pasada: los 688 px de `/review` a 390 px (la tira de completitud), y lo que
 salga de revisar las demás. Ya hecho aparte, porque desbordaba todo el área: el nav de
 `client-shell.tsx`.
 
 **Cómo se midió.** En un iframe de 390 px (dentro de él la página dispone de 375: la barra de
 scroll vertical del iframe ocupa 15 px, cosa que en un móvil no pasa, así que la prueba es más
 estricta que el teléfono). Antes de fiarse del instrumento se comprobó que detectaba el fallo
-conocido de `/revision` (688 px, y señalaba la tira). Tres comprobaciones por pantalla: que nada
+conocido de `/review` (688 px, y señalaba la tira). Tres comprobaciones por pantalla: que nada
 desborde el viewport, ningún control tocable por debajo de 32 px, y que el apartado activo del nav
 se vea entero. Un «desborde» de las gráficas de Peso y Progreso resultó ser un falso positivo del
 propio instrumento: el contenedor que medía era un envoltorio de Recharts de ancho 0. **Todo se
