@@ -27,6 +27,26 @@ export function useQuestions() {
 }
 
 /**
+ * Qué tipos de medida tienen ya alguna medida registrada: I26 congela su unidad desde ese momento,
+ * y la pantalla la enseña deshabilitada en vez de negarlo al intentar guardarla.
+ */
+export function useMeasurementTypesWithMeasurements(typeIds: readonly string[] | undefined) {
+  const ports = usePorts();
+  const trainerId = useTrainerId();
+  const ids = [...new Set(typeIds ?? [])].sort();
+  return useQuery({
+    queryKey: queryKeys.measurementTypesWithMeasurements(trainerId ?? "", ids),
+    queryFn: async () => {
+      const flags = await Promise.all(
+        ids.map((id) => ports.measurementTypes.measurementTypeHasMeasurements(trainerId!, id)),
+      );
+      return new Set(ids.filter((_, i) => flags[i]));
+    },
+    enabled: trainerId !== undefined && typeIds !== undefined,
+  });
+}
+
+/**
  * Qué preguntas tienen ya alguna respuesta: I15 congela su formato desde ese momento, y la
  * pantalla lo enseña deshabilitado en vez de negarlo al intentar guardarlo.
  */

@@ -1066,3 +1066,64 @@ describe("invariants the adapter keeps on writes the old tests did not cover (E0
     expect(second.createdAt).toBe(first.createdAt);
   });
 });
+
+describe("I26 and I12: a measurement's unit and frozen copies (E05)", () => {
+  it("locks the unit of a type with measurements but keeps its label editable", async () => {
+    const p = ports();
+    expect(await p.measurementTypes.measurementTypeHasMeasurements(TRAINER, "mt-cuello")).toBe(
+      true,
+    );
+    await expect(
+      p.measurementTypes.updateMeasurementType(TRAINER, "mt-cuello", { unit: "mm" }),
+    ).rejects.toMatchObject({ code: "measurement_type.unit_locked" });
+    const renamed = await p.measurementTypes.updateMeasurementType(TRAINER, "mt-cuello", {
+      label: "Cuello (contorno)",
+    });
+    expect(renamed).toMatchObject({ label: "Cuello (contorno)", unit: "cm" });
+  });
+
+  it("lets a type without measurements change unit, and counts drafts as measured (same rule as I15)", async () => {
+    const p = ports();
+    const fresh = await p.measurementTypes.createMeasurementType(TRAINER, {
+      label: "Muñeca",
+      unit: "cm",
+    });
+    expect(await p.measurementTypes.measurementTypeHasMeasurements(TRAINER, fresh.id)).toBe(false);
+    await p.measurementTypes.updateMeasurementType(TRAINER, fresh.id, { unit: "mm" });
+    const draft = await p.reviews.openCurrentReview(TRAINER, DAVID);
+    expect(draft.status).toBe("borrador");
+    await p.reviews.updateReviewDraft(TRAINER, draft.id, {
+      measurements: [{ measurementTypeId: fresh.id, value: 160 }],
+    });
+    expect(await p.measurementTypes.measurementTypeHasMeasurements(TRAINER, fresh.id)).toBe(true);
+    await expect(
+      p.measurementTypes.updateMeasurementType(TRAINER, fresh.id, { unit: "cm" }),
+    ).rejects.toMatchObject({ code: "measurement_type.unit_locked" });
+  });
+
+  it("saving a sent review again keeps the frozen copies of what did not change (E05 step 3)", async () => {
+    const p = ports();
+    const s5 = (await p.reviews.getReview(TRAINER, "rv-marta-s5"))!;
+    expect(s5.status).toBe("enviada");
+    await p.measurementTypes.updateMeasurementType(TRAINER, "mt-cuello", {
+      label: "Cuello (contorno)",
+    });
+    const same = s5.measurements.map((m) => ({
+      measurementTypeId: m.measurementTypeId,
+      value: m.value,
+    }));
+    const saved = await p.reviews.updateReviewDraft(TRAINER, s5.id, {
+      measurements: same,
+      responses: s5.responses.map((r) => ({ questionId: r.questionId, value: r.value })),
+    });
+    expect(saved.measurements).toEqual(s5.measurements);
+    expect(saved.responses).toEqual(s5.responses);
+    const changed = await p.reviews.updateReviewDraft(TRAINER, s5.id, {
+      measurements: same.map((m) =>
+        m.measurementTypeId === "mt-cuello" ? { ...m, value: m.value + 0.5 } : m,
+      ),
+    });
+    const cuello = changed.measurements.find((m) => m.measurementTypeId === "mt-cuello")!;
+    expect(cuello).toMatchObject({ label: "Cuello (contorno)", unit: "cm" });
+  });
+});

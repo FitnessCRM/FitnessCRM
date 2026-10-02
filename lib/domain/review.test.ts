@@ -22,6 +22,8 @@ import {
   recordMeasurement,
   sendReviewFeedback,
   assertWeightLogDeletable,
+  freezeMeasurements,
+  freezeResponses,
   reviewWeight,
   submitReview,
   weightForReview,
@@ -411,5 +413,61 @@ describe("I5 · photos: all three poses, not just some (E07)", () => {
     expect(result.complete).toBe(false);
     expect(result.blocks.photos).toBe(false);
     expect(result.missing.poses).toEqual(missing);
+  });
+});
+
+describe("I12 · saving again only refreezes what is new or changed", () => {
+  const cintura = { id: "mt-cintura", label: "Cintura", unit: "cm" };
+  const renamed = { ...cintura, label: "Perímetro de cintura" };
+  const energia = question({ id: "q-energia" });
+
+  it("keeps the frozen label and unit of a measurement whose value did not change", () => {
+    const [kept] = freezeMeasurements(
+      [recordMeasurement(cintura, 71, () => "bm-1")],
+      [{ measurementTypeId: "mt-cintura", value: 71 }],
+      () => renamed,
+      () => "bm-2",
+    );
+    expect(kept).toEqual({
+      id: "bm-1",
+      measurementTypeId: "mt-cintura",
+      value: 71,
+      label: "Cintura",
+      unit: "cm",
+    });
+  });
+
+  it("refreezes a measurement whose value changed, and freezes a new one", () => {
+    const next = freezeMeasurements(
+      [recordMeasurement(cintura, 71, () => "bm-1")],
+      [
+        { measurementTypeId: "mt-cintura", value: 70.5 },
+        { measurementTypeId: "mt-cadera", value: 95 },
+      ],
+      (id) => (id === "mt-cintura" ? renamed : { id, label: "Cadera", unit: "cm" }),
+      idFactory(),
+    );
+    expect(next.map((m) => [m.label, m.value])).toEqual([
+      ["Perímetro de cintura", 70.5],
+      ["Cadera", 95],
+    ]);
+  });
+
+  it("keeps the frozen prompt and format of an answer whose value did not change", () => {
+    const given = answerQuestion(energia, 4, () => "qr-1");
+    const [kept] = freezeResponses(
+      [given],
+      [{ questionId: "q-energia", value: 4 }],
+      () => ({ ...energia, prompt: "Otro enunciado" }),
+      () => "qr-2",
+    );
+    expect(kept).toEqual(given);
+    const [changed] = freezeResponses(
+      [given],
+      [{ questionId: "q-energia", value: 3 }],
+      () => ({ ...energia, prompt: "Otro enunciado" }),
+      () => "qr-3",
+    );
+    expect(changed).toMatchObject({ id: "qr-3", prompt: "Otro enunciado", value: 3 });
   });
 });

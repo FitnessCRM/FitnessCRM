@@ -1,12 +1,12 @@
 import type { ReviewPort, ReviewTrackingFilter } from "@/lib/data/ports";
 import {
   DomainError,
-  answerQuestion,
   canClientEditReview,
+  freezeMeasurements,
+  freezeResponses,
   isWeightLogInWindow,
   markReviewViewed,
   openReview,
-  recordMeasurement,
   sendReviewFeedback,
   submitReview,
   weekNumber,
@@ -141,22 +141,22 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
         }
         review.weightLogId = changes.weightLogId;
       }
+      // I12: solo se recongela lo nuevo o lo que cambia de valor.
       if (changes.measurements) {
-        review.measurements = changes.measurements.map(({ measurementTypeId, value }) => {
-          const type = findOwn(
-            ctx.state.measurementTypes,
-            trainerId,
-            measurementTypeId,
-            "Tipo de medida",
-          );
-          return recordMeasurement(type, value, ctx.newId);
-        });
+        review.measurements = freezeMeasurements(
+          review.measurements,
+          changes.measurements,
+          (id) => findOwn(ctx.state.measurementTypes, trainerId, id, "Tipo de medida"),
+          ctx.newId,
+        );
       }
       if (changes.responses) {
-        review.responses = changes.responses.map(({ questionId, value }) => {
-          const question = findOwn(ctx.state.questions, trainerId, questionId, "Pregunta");
-          return answerQuestion(question, value, ctx.newId);
-        });
+        review.responses = freezeResponses(
+          review.responses,
+          changes.responses,
+          (id) => findOwn(ctx.state.questions, trainerId, id, "Pregunta"),
+          ctx.newId,
+        );
       }
       return ctx.reply(review);
     },

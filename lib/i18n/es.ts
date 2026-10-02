@@ -352,6 +352,9 @@ export const es = {
     unit: "Unidad",
     unitRequired: "La unidad no puede quedar vacía",
     unitPlaceholder: "cm",
+    /** I26: la unidad no se cambia desde la primera medida registrada. */
+    unitLocked:
+      "Unidad bloqueada: ya hay medidas registradas. Para cambiarla, archiva la medida y crea otra.",
     add: "+ Añadir medida",
     empty: {
       title: "Sin tipos de medida",

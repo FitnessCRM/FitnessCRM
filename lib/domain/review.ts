@@ -225,6 +225,39 @@ export function answerQuestion(
   return { ...base, format: { kind: "texto" }, value };
 }
 
+/**
+ * I12 al volver a guardar: la copia congelada se escribe al registrar el valor por primera vez o al
+ * cambiarlo. Lo que llega con el mismo valor que ya tenía conserva su copia —etiqueta y unidad, o
+ * enunciado y formato— aunque el catálogo haya cambiado desde entonces. `type` busca la entrada del
+ * catálogo solo para lo nuevo o cambiado.
+ */
+export function freezeMeasurements(
+  current: readonly BodyMeasurement[],
+  changes: readonly { measurementTypeId: string; value: number }[],
+  type: (measurementTypeId: string) => Pick<MeasurementType, "id" | "label" | "unit">,
+  newId: () => string,
+): BodyMeasurement[] {
+  return changes.map(({ measurementTypeId, value }) => {
+    const kept = current.find((m) => m.measurementTypeId === measurementTypeId);
+    return kept && kept.value === value
+      ? kept
+      : recordMeasurement(type(measurementTypeId), value, newId);
+  });
+}
+
+/** Lo mismo para las respuestas: con el mismo valor, se conserva la copia de enunciado y formato. */
+export function freezeResponses(
+  current: readonly QuestionnaireResponse[],
+  changes: readonly { questionId: string; value: number | string }[],
+  question: (questionId: string) => Pick<QuestionnaireQuestion, "id" | "prompt" | "format">,
+  newId: () => string,
+): QuestionnaireResponse[] {
+  return changes.map(({ questionId, value }) => {
+    const kept = current.find((r) => r.questionId === questionId);
+    return kept && kept.value === value ? kept : answerQuestion(question(questionId), value, newId);
+  });
+}
+
 /* ---------- Ciclo de vida: borrador → enviada → vista → revisada ---------- */
 
 const TRANSITIONS: Record<ReviewStatus, ReviewStatus | null> = {
