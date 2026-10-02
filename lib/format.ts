@@ -89,6 +89,15 @@ export function parseWholeNumberInput(raw: string): number {
   return /^\d+$/.test(trimmed) ? Number(trimmed) : NaN;
 }
 
+/**
+ * Día civil de un instante técnico (`submittedAt`, `reviewedAt`…) en la zona del entrenador. Nunca
+ * `slice(0, 10)`: eso es el día en UTC, y una revisión enviada a las 00:30 de Madrid saldría con el
+ * día anterior.
+ */
+export function civilDateOf(instant: string, timeZone: string): CivilDate {
+  return civilDateInTimeZone(instant, timeZone);
+}
+
 /** Fecha civil de hoy en la zona del entrenador (o la del navegador mientras no se conoce). */
 export function todayCivil(timeZone?: string): CivilDate {
   return civilDateInTimeZone(

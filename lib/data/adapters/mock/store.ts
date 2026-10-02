@@ -28,8 +28,6 @@ import { buildRoutines } from "./demo-data/routines";
 /** Todo el estado del adaptador en memoria. Se muta en sitio; los puertos devuelven copias. */
 export interface MockState {
   session: Session;
-  /** "Hoy" del adaptador: fija qué semana es la actual al abrir una revisión. */
-  today: string;
   trainers: Trainer[];
   clients: Client[];
   memberships: Membership[];
@@ -63,7 +61,6 @@ export function createDemoState(today: CivilDate = demoToday()): MockState {
   const { macroTargets, menus, menuTemplates } = buildNutrition(d);
   return clone({
     session: { trainerId: TRAINER_ID, clientId: CLIENT_IDS.marta },
-    today,
     trainers: [trainer],
     clients: buildClients(d),
     memberships: buildMemberships(d),

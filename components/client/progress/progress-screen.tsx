@@ -79,7 +79,12 @@ export function ProgressScreen() {
       </div>
       <div className="flex flex-col gap-[18px] lg:pt-3.5">
         <h2 className="section-title">{t.reviews.title}</h2>
-        <ReviewsList reviews={reviews.data} logs={logs.data} today={today} />
+        <ReviewsList
+          reviews={reviews.data}
+          logs={logs.data}
+          today={today}
+          timeZone={trainer.data.timeZone}
+        />
       </div>
     </div>
   );

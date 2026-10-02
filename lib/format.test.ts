@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { parseWholeNumberInput } from "./format";
+import { civilDateOf, parseWholeNumberInput } from "./format";
+
+describe("civilDateOf (E10)", () => {
+  it("takes the day in the trainer's time zone, not in UTC", () => {
+    // 00:30 en Madrid del 30-09 son las 22:30Z del 29-09: `slice(0, 10)` diría 29.
+    expect(civilDateOf("2026-09-29T22:30:00Z", "Europe/Madrid")).toBe("2026-09-30");
+    expect(civilDateOf("2026-09-29T22:30:00Z", "UTC")).toBe("2026-09-29");
+  });
+});
 
 describe("parseWholeNumberInput", () => {
   it("reads a number written only with digits", () => {

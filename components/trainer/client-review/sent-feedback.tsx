@@ -1,7 +1,7 @@
 import { PlayIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import type { CivilDate, Review } from "@/lib/domain";
-import { formatShortDate } from "@/lib/format";
+import { civilDateOf, formatShortDate } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 
 const t = es.screensTrainerReview.feedback;
@@ -16,10 +16,19 @@ function hostOf(url: string): string {
 }
 
 /** Lo que ya se envió al cliente. El feedback no se edita: la revisión pasó a `revisada`. */
-export function SentFeedback({ review, today }: { review: Review; today: CivilDate }) {
+export function SentFeedback({
+  review,
+  today,
+  timeZone,
+}: {
+  review: Review;
+  today: CivilDate;
+  timeZone: string;
+}) {
   const video = review.feedbackVideoUrl;
   const note = review.feedbackNote;
-  const sent = review.reviewedAt?.slice(0, 10);
+  // Día del feedback en la zona del entrenador, no en UTC.
+  const sent = review.reviewedAt ? civilDateOf(review.reviewedAt, timeZone) : undefined;
 
   return (
     <Card className="border-accent-outline gap-3 px-[22px] py-5">

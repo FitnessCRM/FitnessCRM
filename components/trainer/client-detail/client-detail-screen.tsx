@@ -197,6 +197,7 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
             reviews={reviews.data}
             logs={logs.data}
             today={today}
+            timeZone={trainer.data.timeZone}
             inactive={inactive}
           />
         </div>

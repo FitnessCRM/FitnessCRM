@@ -1165,3 +1165,24 @@ describe("I27 and section 8 on the port (E08, E14)", () => {
     });
   });
 });
+
+describe("the port's today follows its clock in the trainer's time zone (E12)", () => {
+  it("after a day change, the current review is the new week's, as the screen computes it", async () => {
+    // Datos de demo de TODAY (Marta en S5), pero el reloj ya va una semana por delante: S6.
+    let now = `${TODAY}T10:00:00Z`;
+    const p = createMockPorts({ today: TODAY, now: () => now });
+    expect((await p.reviews.getCurrentReview(TRAINER, MARTA))?.weekNumber).toBe(5);
+    now = `${addCivilDays(TODAY, 7)}T10:00:00Z`;
+    expect(await p.reviews.getCurrentReview(TRAINER, MARTA)).toBeNull();
+    const opened = await p.reviews.openCurrentReview(TRAINER, MARTA);
+    expect(opened.weekNumber).toBe(6);
+  });
+
+  it("uses the trainer's time zone, not a constant one, at the edge of a day", async () => {
+    // 22:30Z del día anterior a S6 son las 00:30 del primer día de S6 en Madrid.
+    const now = `${addCivilDays(TODAY, 6)}T22:30:00Z`;
+    const p = createMockPorts({ today: TODAY, now: () => now });
+    p.state.trainers[0]!.timeZone = "Europe/Madrid";
+    expect((await p.reviews.openCurrentReview(TRAINER, MARTA)).weekNumber).toBe(6);
+  });
+});

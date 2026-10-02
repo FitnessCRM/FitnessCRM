@@ -4,7 +4,7 @@ import { InitialsAvatar } from "@/components/ui/initials-avatar";
 import type { ReviewTrackingRow } from "@/lib/data/ports";
 import { isReviewComplete } from "@/lib/domain";
 import type { CivilDate } from "@/lib/domain";
-import { formatCivilDate, formatShortDate } from "@/lib/format";
+import { civilDateOf, formatCivilDate, formatShortDate } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn, initialsOf } from "@/lib/utils";
 
@@ -22,10 +22,19 @@ function CellLabel({ children }: { children: string }) {
   );
 }
 
-export function ReviewRow({ row, today }: { row: ReviewTrackingRow; today: CivilDate }) {
+export function ReviewRow({
+  row,
+  today,
+  timeZone,
+}: {
+  row: ReviewTrackingRow;
+  today: CivilDate;
+  timeZone: string;
+}) {
   const { review, client } = row;
   const fullName = `${client.firstName} ${client.lastName}`;
-  const sentOn = review.submittedAt?.slice(0, 10) ?? null;
+  // Día del envío en la zona del entrenador, no en UTC.
+  const sentOn = review.submittedAt ? civilDateOf(review.submittedAt, timeZone) : null;
   const complete = isReviewComplete(review, review.requirements);
 
   return (

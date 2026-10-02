@@ -27,11 +27,14 @@ export function WeightTab({
   review,
   logs,
   today,
+  timeZone,
   stacked = false,
 }: {
   review: Review;
   logs: WeightLog[];
   today: CivilDate;
+  /** Zona del entrenador: el día de la revisión se cuenta en ella, no en UTC. */
+  timeZone: string;
   /** En una columna estrecha, calendario, detalle y tendencia van uno sobre otro. */
   stacked?: boolean;
 }) {
@@ -39,7 +42,7 @@ export function WeightTab({
   // El calendario es el dato continuo: pinta los pesajes. Solo el día de la revisión sale de su
   // peso (I24), que desde `vista` es la copia.
   const reviewDay = reviewWeight(review, logs)?.date;
-  const anchor = reviewDay ?? sorted.at(-1)?.date ?? reviewDate(review) ?? today;
+  const anchor = reviewDay ?? sorted.at(-1)?.date ?? reviewDate(review, timeZone) ?? today;
 
   const [selectedDate, setSelectedDate] = useState<CivilDate | undefined>(
     reviewDay ?? sorted.at(-1)?.date,

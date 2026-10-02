@@ -8,25 +8,27 @@ import {
   type Review,
   type WeightLog,
 } from "@/lib/domain";
-import { formatDecimal, formatShortDate } from "@/lib/format";
+import { civilDateOf, formatDecimal, formatShortDate } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 
 const t = es.screensClientDetail.reviews;
 
-function subtitle(review: Review, logs: WeightLog[], today: CivilDate) {
+function subtitle(review: Review, logs: WeightLog[], today: CivilDate, timeZone: string) {
   if (review.status === "borrador") {
     const values = Object.values(isReviewComplete(review).blocks);
     return `${t.inProgress} ${values.filter(Boolean).length}/${values.length}`;
   }
   const completeness = isReviewComplete(review).complete ? t.complete : t.partial;
   if (review.status === "revisada") {
-    const sent = review.reviewedAt ? formatShortDate(review.reviewedAt.slice(0, 10), today) : null;
+    const sent = review.reviewedAt
+      ? formatShortDate(civilDateOf(review.reviewedAt, timeZone), today)
+      : null;
     return [es.status.review.revisada, sent ? `${t.feedbackSent} ${sent}` : null]
       .filter(Boolean)
       .join(" · ");
   }
-  const date = (review.submittedAt ?? review.createdAt).slice(0, 10);
+  const date = civilDateOf(review.submittedAt ?? review.createdAt, timeZone);
   const kg = weightOf(review, logs);
   const parts = [date === today ? t.today : formatShortDate(date, today)];
   // La revisión nueva enseña su peso en el subtítulo; las demás lo llevan a la derecha.
@@ -45,12 +47,15 @@ export function ReviewsHistory({
   reviews,
   logs,
   today,
+  timeZone,
   inactive = false,
 }: {
   clientId: string;
   reviews: Review[];
   logs: WeightLog[];
   today: CivilDate;
+  /** Zona del entrenador: el día de un envío o de un feedback se cuenta en ella, no en UTC. */
+  timeZone: string;
   /** Cliente de baja: el vacío no le promete revisiones. */
   inactive?: boolean;
 }) {
@@ -87,7 +92,9 @@ export function ReviewsHistory({
                       </span>
                     ) : null}
                   </p>
-                  <p className="text-text-muted text-xs">{subtitle(review, logs, today)}</p>
+                  <p className="text-text-muted text-xs">
+                    {subtitle(review, logs, today, timeZone)}
+                  </p>
                 </div>
                 {!fresh && weightOf(review, logs) !== undefined ? (
                   <span className="text-text-muted self-start text-xs">

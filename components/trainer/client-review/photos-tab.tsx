@@ -26,11 +26,14 @@ export function PhotosTab({
   others,
   logs,
   today,
+  timeZone,
 }: {
   review: Review;
   others: Review[];
   logs: WeightLog[];
   today: CivilDate;
+  /** Zona del entrenador: el día de cada revisión se cuenta en ella, no en UTC. */
+  timeZone: string;
 }) {
   const [pose, setPose] = useState<Pose>("frente");
   const [mode, setMode] = useState<Mode>("single");
@@ -73,6 +76,7 @@ export function PhotosTab({
             review={other}
             pose={pose}
             today={today}
+            timeZone={timeZone}
             header={
               <label className="flex flex-wrap items-center gap-2">
                 <span className="text-text-subtle tracking-label font-display text-[13px] uppercase">
@@ -86,7 +90,7 @@ export function PhotosTab({
                   {others.map((r) => (
                     <option key={r.id} value={r.id}>
                       {es.screensReview.week} {r.weekNumber} ·{" "}
-                      {formatShortDate(reviewDate(r), today)}
+                      {formatShortDate(reviewDate(r, timeZone), today)}
                     </option>
                   ))}
                 </NativeSelect>
@@ -98,6 +102,7 @@ export function PhotosTab({
           review={review}
           pose={pose}
           today={today}
+          timeZone={timeZone}
           current
           large={!comparing}
           header={
@@ -117,6 +122,7 @@ function Panel({
   review,
   pose,
   today,
+  timeZone,
   header,
   current = false,
   large = false,
@@ -124,6 +130,7 @@ function Panel({
   review: Review;
   pose: Pose;
   today: CivilDate;
+  timeZone: string;
   header: ReactNode;
   current?: boolean;
   /** Sola en pantalla, la foto puede crecer más que cuando comparte la fila con otra. */
@@ -133,7 +140,7 @@ function Panel({
   const [broken, setBroken] = useState<string | null>(null);
   const showImage = url !== undefined && broken !== url;
   const label = `${t.poseLabel} ${es.status.pose[pose].toLowerCase()} · ${es.screensReview.week.toLowerCase()} ${review.weekNumber}`;
-  const date = reviewDate(review);
+  const date = reviewDate(review, timeZone);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2">

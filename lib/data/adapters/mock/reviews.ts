@@ -2,6 +2,7 @@ import type { ReviewPort, ReviewTrackingFilter } from "@/lib/data/ports";
 import {
   DomainError,
   canClientEditReview,
+  civilDateInTimeZone,
   freezeMeasurements,
   freezeResponses,
   isWeightLogInWindow,
@@ -24,6 +25,8 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
     if (!trainer) throw new DomainError("not_found", `Entrenador ${trainerId} no existe`);
     return trainer;
   };
+  /** «Hoy» en la zona del entrenador, con el reloj de esta llamada: no se fija al arrancar (E12). */
+  const todayOf = (timeZone: string) => civilDateInTimeZone(ctx.now(), timeZone);
   const editable = (trainerId: string, reviewId: string) => {
     const review = findOwn(ctx.state.reviews, trainerId, reviewId, "Revisión");
     if (!canClientEditReview(review)) {
@@ -105,11 +108,8 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
     getCurrentReview: async (trainerId, clientId) => {
       const client = findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
       // Antes del alta no hay semana, así que tampoco revisión de esta semana (§8).
-      const week = weekNumberOrNull(
-        client.startDate,
-        ctx.state.today,
-        trainerOf(trainerId).timeZone,
-      );
+      const { timeZone } = trainerOf(trainerId);
+      const week = weekNumberOrNull(client.startDate, todayOf(timeZone), timeZone);
       if (week === null) return ctx.reply(null);
       return ctx.reply(
         ctx.state.reviews.find((r) => r.clientId === clientId && r.weekNumber === week) ?? null,
@@ -118,7 +118,8 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
     openCurrentReview: async (trainerId, clientId) => {
       const client = findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
       const trainer = trainerOf(trainerId);
-      const week = weekNumber(client.startDate, ctx.state.today, trainer.timeZone);
+      const today = todayOf(trainer.timeZone);
+      const week = weekNumber(client.startDate, today, trainer.timeZone);
       // I16: como máximo una revisión por cliente y semana.
       const existing = ctx.state.reviews.find(
         (r) => r.clientId === clientId && r.weekNumber === week,
@@ -127,7 +128,7 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
       const review = openReview({
         client,
         timeZone: trainer.timeZone,
-        at: ctx.state.today,
+        at: today,
         measurementTypes: own(ctx.state.measurementTypes, trainerId),
         questions: own(ctx.state.questions, trainerId),
         newId: ctx.newId,
