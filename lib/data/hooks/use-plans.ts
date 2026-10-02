@@ -106,7 +106,18 @@ export function useAssignTemplate(clientId: string | undefined) {
           : queryKeys.menuTemplates(trainerId!),
       });
       void queryClient.invalidateQueries({ queryKey: queryKeys.clientsTrackingAll(trainerId!) });
+      if (routine) invalidateExerciseUsage(queryClient);
     },
+  });
+}
+
+/**
+ * El aviso de archivado de Biblioteca dice quién tiene cada ejercicio en una rutina activa o en
+ * borrador: asignar o publicar una rutina lo cambia.
+ */
+function invalidateExerciseUsage(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({
+    predicate: (query) => query.queryKey[0] === "exercises" && query.queryKey[3] === "usage",
   });
 }
 
@@ -226,6 +237,7 @@ export function usePublishRoutine(clientId: string | undefined) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.routines(trainerId!, clientId!) });
       // El seguimiento enseña el nombre de la rutina activa.
       void queryClient.invalidateQueries({ queryKey: queryKeys.clientsTrackingAll(trainerId!) });
+      invalidateExerciseUsage(queryClient);
     },
   });
 }

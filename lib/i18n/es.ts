@@ -634,12 +634,16 @@ export const es = {
       intro: "El ejercicio sale de la biblioteca y de los planes vivos. No se borra el histórico:",
       keepsHistory:
         "las rutinas archivadas se quedan como están, así que un entreno registrado sigue diciendo qué ejercicio fue.",
-      clients: "Lo tienen prescrito ahora:",
+      /** Activas y borradores: las dos que modifica el archivado. Las archivadas no cuentan. */
+      clients: "Lo tienen en su rutina, activa o en borrador:",
       templates: "Plantillas de rutina afectadas:",
       noUse: "Ningún cliente ni plantilla lo usa ahora mismo.",
       confirm: "Eliminar de la biblioteca",
       cancel: "Cancelar",
       error: "No se ha podido eliminar el ejercicio.",
+      /** Sin saber a quién afecta no se deja confirmar. */
+      usageError:
+        "No se ha podido comprobar quién usa este ejercicio. Vuelve a intentarlo antes de eliminarlo.",
       working: "Eliminando…",
     },
   },

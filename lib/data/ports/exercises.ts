@@ -4,7 +4,10 @@ import type { Exercise } from "@/lib/domain";
 export type ExerciseInput = Omit<Exercise, "id" | "createdAt" | "status">;
 export type ExerciseChanges = Partial<Omit<ExerciseInput, "trainerId">>;
 
-/** Qué rutinas de cliente prescriben un ejercicio: base del aviso previo al archivado. */
+/**
+ * A quién afecta archivar un ejercicio: base del aviso previo. Cuenta las rutinas de cliente que
+ * modifica el archivado, activas y borradores; las archivadas no, porque no se tocan (§7).
+ */
 export interface ExerciseUsage {
   clientIds: string[];
   routineTemplateIds: string[];

@@ -157,7 +157,9 @@ function Library({ exercises }: { exercises: Exercise[] }) {
         <ArchiveDialog
           exercise={selected}
           usage={usage.data}
-          isLoadingUsage={usage.isPending}
+          isLoadingUsage={usage.isPending && !usage.isError}
+          usageError={usage.isError}
+          onRetryUsage={() => void usage.refetch()}
           clients={clients.data ?? []}
           isWorking={archiveExercise.isPending}
           hasError={archiveExercise.isError}

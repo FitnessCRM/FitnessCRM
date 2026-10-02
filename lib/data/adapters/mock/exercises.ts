@@ -31,7 +31,9 @@ export function createExercisePort(ctx: MockContext): ExercisePort {
       return ctx.reply(replaceById(ctx.state.exercises, next));
     },
     getExerciseUsage: async (trainerId, exerciseId) => {
-      const routines = routinesUsingExercise(own(ctx.state.routines, trainerId), exerciseId);
+      // Las que modifica el archivado: activas y borradores. Las archivadas no se tocan (§7).
+      const live = own(ctx.state.routines, trainerId).filter((r) => r.status !== "archivado");
+      const routines = routinesUsingExercise(live, exerciseId);
       const templates = routinesUsingExercise(
         own(ctx.state.routineTemplates, trainerId),
         exerciseId,

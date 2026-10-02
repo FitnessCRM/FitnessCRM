@@ -1223,3 +1223,59 @@ describe("client tracking for the dashboard: three statuses and the last review 
     expect((await rowOf(p, DAVID)).lastReviewAt).toBeNull();
   });
 });
+
+describe("exercise usage before archiving counts active and draft routines, not archived ones (E16)", () => {
+  it("stops naming a client whose routine with the exercise was archived", async () => {
+    const p = ports();
+    expect((await p.exercises.getExerciseUsage(TRAINER, "ex-press-banca")).clientIds).toEqual([
+      MARTA,
+    ]);
+    // Rutina nueva de Marta sin press banca: la anterior queda archivada.
+    const draft = await p.routines.createRoutine(TRAINER, MARTA, {
+      name: "Solo pierna",
+      note: "",
+      days: [
+        {
+          id: "d1",
+          dayNumber: 1,
+          label: "",
+          exercises: [
+            {
+              id: "d1-e1",
+              exerciseId: "ex-sentadilla-trasera",
+              prescription: { sets: 3, repsMin: 8, repsMax: 10, rir: "2", rest: "", note: "" },
+            },
+          ],
+        },
+      ],
+    });
+    await p.routines.activateRoutine(TRAINER, draft.id);
+    expect((await p.exercises.getExerciseUsage(TRAINER, "ex-press-banca")).clientIds).toEqual([]);
+  });
+
+  it("names a client who only has the exercise in a draft, which archiving also changes", async () => {
+    const p = ports();
+    const active = (await p.routines.getActiveRoutine(TRAINER, MARTA))!;
+    const { days, name, note } = active;
+    await p.routines.reviseRoutine(TRAINER, active.id, { name, note, days });
+    const draft = (await p.routines.listRoutines(TRAINER, MARTA)).find(
+      (r) => r.status === "borrador",
+    )!;
+    // La activa deja de tenerlo; el borrador lo conserva.
+    p.state.routines = p.state.routines.map((r) =>
+      r.id === active.id
+        ? {
+            ...r,
+            days: r.days.map((d) => ({
+              ...d,
+              exercises: d.exercises.filter((e) => e.exerciseId !== "ex-press-banca"),
+            })),
+          }
+        : r,
+    );
+    expect(JSON.stringify(draft.days)).toContain("ex-press-banca");
+    expect((await p.exercises.getExerciseUsage(TRAINER, "ex-press-banca")).clientIds).toEqual([
+      MARTA,
+    ]);
+  });
+});

@@ -24,6 +24,8 @@ export function ArchiveDialog({
   exercise,
   usage,
   isLoadingUsage,
+  usageError,
+  onRetryUsage,
   clients,
   isWorking,
   hasError,
@@ -34,6 +36,9 @@ export function ArchiveDialog({
   /** Quién lo usa ahora, tal como lo devuelve el hook: clientes y plantillas afectadas. */
   usage: { clientIds: string[]; routineTemplateIds: string[] } | undefined;
   isLoadingUsage: boolean;
+  /** La consulta de uso falló: no se sabe a quién afecta, así que no se deja confirmar. */
+  usageError: boolean;
+  onRetryUsage: () => void;
   clients: Client[];
   isWorking: boolean;
   hasError: boolean;
@@ -60,6 +65,8 @@ export function ArchiveDialog({
         </DialogHeader>
 
         {isLoadingUsage ? <LoadingState /> : null}
+
+        {usageError ? <ErrorState message={t.usageError} onRetry={onRetryUsage} /> : null}
 
         {untouched ? <p className="text-text-muted text-[14px]">{t.noUse}</p> : null}
 
@@ -88,7 +95,11 @@ export function ArchiveDialog({
           <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={isWorking}>
             {t.cancel}
           </Button>
-          <Button variant="destructive" onClick={onConfirm} disabled={isWorking || isLoadingUsage}>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={isWorking || isLoadingUsage || usageError || usage === undefined}
+          >
             {isWorking ? t.working : t.confirm}
           </Button>
         </DialogFooter>
