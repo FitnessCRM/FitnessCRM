@@ -1,4 +1,4 @@
-import { DomainError, type Client } from "@/lib/domain";
+import { DomainError, type Client, type Trainer } from "@/lib/domain";
 
 /** Aislamiento multi-tenant (I1): todo lo que sale del adaptador se filtra por `trainerId`. */
 export function own<T extends { trainerId: string }>(items: T[], trainerId: string): T[] {
@@ -26,6 +26,13 @@ export function ownClient(
   clientId: string,
 ): Client {
   return findOwn(state.clients, trainerId, clientId, "Cliente");
+}
+
+/** El entrenador de la sesión: su zona horaria decide qué día es «hoy». */
+export function findOwnTrainer(state: { trainers: Trainer[] }, trainerId: string): Trainer {
+  const trainer = state.trainers.find((t) => t.id === trainerId);
+  if (!trainer) throw new DomainError("not_found", `Entrenador ${trainerId} no existe`);
+  return trainer;
 }
 
 export function replaceById<T extends { id: string }>(items: T[], next: T): T {

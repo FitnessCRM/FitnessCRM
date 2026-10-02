@@ -1,11 +1,13 @@
 import type { WeightLogPort, WorkoutLogPort } from "@/lib/data/ports";
 import {
   DomainError,
+  assertWeightLogDate,
   assertWeightLogDeletable,
+  civilDateInTimeZone,
   weightLogSchema,
   workoutLogSchema,
 } from "@/lib/domain";
-import { findOwn, own, ownClient, removeById, replaceById } from "./helpers";
+import { findOwn, findOwnTrainer, own, ownClient, removeById, replaceById } from "./helpers";
 import type { MockContext } from "./store";
 
 export function createWeightLogPort(ctx: MockContext): WeightLogPort {
@@ -17,7 +19,13 @@ export function createWeightLogPort(ctx: MockContext): WeightLogPort {
           .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt)),
       ),
     saveWeightLog: async (input) => {
-      ownClient(ctx.state, input.trainerId, input.clientId);
+      const client = ownClient(ctx.state, input.trainerId, input.clientId);
+      // I27: ni futuro, en la zona del entrenador y con el reloj de esta llamada, ni antes del alta.
+      const trainer = findOwnTrainer(ctx.state, input.trainerId);
+      assertWeightLogDate(input.date, {
+        today: civilDateInTimeZone(ctx.now(), trainer.timeZone),
+        startDate: client.startDate,
+      });
       const existing = ctx.state.weightLogs.find(
         (w) =>
           w.trainerId === input.trainerId && w.clientId === input.clientId && w.date === input.date,

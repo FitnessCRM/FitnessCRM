@@ -16,6 +16,8 @@ export const es = {
     kcalInvalid: "Escribe las kcal sin puntos ni decimales, por ejemplo 2400",
     coachTag: "Coach",
     trainerNote: { title: "Nota del entrenador" },
+    /** Lo que se pinta en lugar de un dato que no hay, p. ej. la semana antes del alta (§8). */
+    none: "—",
   },
   roles: {
     trainer: "Entrenador",
@@ -99,6 +101,8 @@ export const es = {
   screens: {
     weight: {
       eyebrow: "Cuando tú quieras",
+      /** Antes del alta no hay ninguna fecha válida (I27): en vez del formulario, desde cuándo. */
+      notStarted: "Podrás registrar tu peso a partir del {date}, cuando empiece tu seguimiento.",
       intro:
         "Entrada libre y opcional. No hace falta pesarse a diario: puedes apuntarlo cuando quieras o dejarlo para el día de la revisión.",
       form: {
@@ -112,6 +116,9 @@ export const es = {
         weightRequired: "Escribe tu peso",
         weightInvalid: "El peso debe ser un número en kg, por ejemplo 63,4",
         dateInvalid: "Elige una fecha",
+        /** I27: ni futuro ni antes del alta. `{date}` es la fecha de alta. */
+        dateFuture: "La fecha no puede ser posterior a hoy",
+        dateBeforeStart: "La fecha no puede ser anterior a tu alta, el {date}",
         saveError: "No se ha podido guardar el pesaje.",
       },
       summary: {
@@ -139,6 +146,8 @@ export const es = {
   },
   screensReview: {
     week: "Semana",
+    /** Antes del alta no hay semana ni revisión (§8). */
+    notStarted: "Tu seguimiento empieza el {date}",
     blocks: {
       photos: "Fotos",
       weight: "Peso",
@@ -1008,6 +1017,8 @@ export const es = {
     editPlan: "Editar plan",
     viewNewReview: "Ver revisión nueva",
     weekLabel: "Semana",
+    /** En la cabecera, en lugar de la semana, si el alta todavía no ha llegado (§8). */
+    startsOn: "Empieza el {date}",
     plan: {
       routineTitle: "Rutina asignada",
       macrosTitle: "Macros y menú",

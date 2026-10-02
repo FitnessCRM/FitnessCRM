@@ -2,7 +2,7 @@ import Link from "next/link";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
 import { PaymentPill } from "@/components/ui/payment-pill";
 import type { ClientTrackingRow } from "@/lib/data/ports";
-import { DomainError, weekNumber } from "@/lib/domain";
+import { weekNumberOrNull } from "@/lib/domain";
 import { todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn, initialsOf } from "@/lib/utils";
@@ -23,12 +23,7 @@ function CellLabel({ children }: { children: string }) {
 
 /** Semana en curso desde el alta; `null` si el alta es futura y todavía no tiene semana. */
 function currentWeek(startDate: string, timeZone: string): number | null {
-  try {
-    return weekNumber(startDate, todayCivil(timeZone), timeZone);
-  } catch (error) {
-    if (error instanceof DomainError) return null;
-    throw error;
-  }
+  return weekNumberOrNull(startDate, todayCivil(timeZone), timeZone);
 }
 
 export function ClientRow({ row, timeZone }: { row: ClientTrackingRow; timeZone: string }) {
@@ -71,7 +66,7 @@ export function ClientRow({ row, timeZone }: { row: ClientTrackingRow; timeZone:
         <span className="flex flex-col gap-1">
           <CellLabel>{t.columns.week}</CellLabel>
           <span className="text-text-muted text-[13px] lg:text-[14px]">
-            {week === null ? "—" : `${t.weekShort}${week}`}
+            {week === null ? es.common.none : `${t.weekShort}${week}`}
           </span>
         </span>
 

@@ -62,7 +62,10 @@ export interface ReviewPort {
   listReviewsTracking(trainerId: string, query: ReviewTrackingQuery): Promise<ReviewTrackingPage>;
   /** Contadores de la cartera entera, calculados donde están los datos y no sobre una página. */
   getReviewStats(trainerId: string): Promise<ReviewStats>;
-  /** La revisión de la semana actual del cliente si existe. Solo lectura: nunca crea nada. */
+  /**
+   * La revisión de la semana actual del cliente si existe. Solo lectura: nunca crea nada. Antes del
+   * alta no hay semana (§8): devuelve `null`.
+   */
   getCurrentReview(trainerId: string, clientId: string): Promise<Review | null>;
   /**
    * Abre (o devuelve) la revisión de la semana actual, congelando semana y catálogo. Se llama

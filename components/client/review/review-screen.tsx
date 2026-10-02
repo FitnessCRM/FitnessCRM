@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
-import { ErrorState, LoadingState } from "@/components/ui/states";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import {
   applyReviewDraft,
   canClientEditReview,
   isReviewComplete,
   openReview,
   reviewWeight,
+  weekNumberOrNull,
   weightForReview,
   type Client,
   type MeasurementType,
@@ -29,7 +30,7 @@ import {
   useTrainer,
   useWeightLogs,
 } from "@/lib/data/hooks";
-import { parseDecimalInput, todayCivil } from "@/lib/format";
+import { formatCivilDate, parseDecimalInput, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { CompletenessStrip } from "./completeness-strip";
 import { MeasurementsBlock, type MeasurementField } from "./measurements-block";
@@ -246,6 +247,22 @@ export function ReviewScreen() {
     !logs.data
   ) {
     return <LoadingState />;
+  }
+
+  // Antes del alta no hay semana ni revisión que abrir (§8): se dice cuándo empieza.
+  const tz = trainer.data.timeZone;
+  if (
+    review.data === null &&
+    weekNumberOrNull(client.data.startDate, todayCivil(tz), tz) === null
+  ) {
+    return (
+      <>
+        <PageHeader title={es.pages.client.revision} />
+        <EmptyState
+          title={t.notStarted.replace("{date}", formatCivilDate(client.data.startDate))}
+        />
+      </>
+    );
   }
 
   const current = review.data ?? draftFor(client.data, trainer.data, types.data, questions.data);

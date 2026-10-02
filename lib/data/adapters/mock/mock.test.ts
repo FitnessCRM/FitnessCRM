@@ -292,7 +292,7 @@ describe("flows", () => {
   it("registering a weight on a day that already has one updates it in place (I23)", async () => {
     const p = ports();
     const before = await p.weightLogs.listWeightLogs(TRAINER, MARTA);
-    const date = "2026-08-30"; // sin pesaje en la demo
+    const date = "2026-08-28"; // sin pesaje en la demo
     const base = { trainerId: TRAINER, clientId: MARTA, date };
     const first = await p.weightLogs.saveWeightLog({ ...base, weightKg: 63.0, note: "En ayunas" });
     const second = await p.weightLogs.saveWeightLog({ ...base, weightKg: 62.8, note: "" });
@@ -1059,7 +1059,7 @@ describe("invariants the adapter keeps on writes the old tests did not cover (E0
       today: TODAY,
       now: () => new Date(Date.UTC(2026, 7, 29, 10, 0, tick++)).toISOString(),
     });
-    const base = { trainerId: TRAINER, clientId: MARTA, date: "2026-08-30" };
+    const base = { trainerId: TRAINER, clientId: MARTA, date: "2026-08-28" };
     const first = await p.weightLogs.saveWeightLog({ ...base, weightKg: 63, note: "" });
     const second = await p.weightLogs.saveWeightLog({ ...base, weightKg: 62.8, note: "" });
     expect(second.id).toBe(first.id);
@@ -1125,5 +1125,43 @@ describe("I26 and I12: a measurement's unit and frozen copies (E05)", () => {
     });
     const cuello = changed.measurements.find((m) => m.measurementTypeId === "mt-cuello")!;
     expect(cuello).toMatchObject({ label: "Cuello (contorno)", unit: "cm" });
+  });
+});
+
+describe("I27 and section 8 on the port (E08, E14)", () => {
+  // `ports()` tiene el reloj a las 10:00Z de TODAY: en Madrid, el mismo día.
+  const log = (date: string) => ({
+    trainerId: TRAINER,
+    clientId: MARTA,
+    date,
+    weightKg: 70,
+    note: "",
+  });
+
+  it("rejects a weight log in the future, in the trainer's time zone (E08)", async () => {
+    const p = ports();
+    await expect(p.weightLogs.saveWeightLog(log("2026-08-30"))).rejects.toMatchObject({
+      code: "weight_log.future_date",
+    });
+    expect((await p.weightLogs.saveWeightLog(log(TODAY))).date).toBe(TODAY);
+  });
+
+  it("rejects a weight log before the client's start date", async () => {
+    const p = ports();
+    const client = (await p.clients.getClient(TRAINER, MARTA))!;
+    await expect(
+      p.weightLogs.saveWeightLog(log(addCivilDays(client.startDate, -1))),
+    ).rejects.toMatchObject({ code: "weight_log.before_start" });
+    expect((await p.weightLogs.saveWeightLog(log(client.startDate))).date).toBe(client.startDate);
+  });
+
+  it("a client whose start date has not come has no current review (E14)", async () => {
+    const p = ports();
+    const marta = p.state.clients.find((c) => c.id === MARTA)!;
+    p.state.clients.push({ ...marta, id: "c-futuro", startDate: addCivilDays(TODAY, 10) });
+    expect(await p.reviews.getCurrentReview(TRAINER, "c-futuro")).toBeNull();
+    await expect(p.reviews.openCurrentReview(TRAINER, "c-futuro")).rejects.toMatchObject({
+      code: "week.before_start",
+    });
   });
 });

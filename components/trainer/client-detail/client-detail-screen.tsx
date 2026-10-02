@@ -16,14 +16,8 @@ import {
   useTrainer,
   useWeightLogs,
 } from "@/lib/data/hooks";
-import {
-  DomainError,
-  changeSinceStart,
-  measurementSeries,
-  weekNumber,
-  weeklyWeights,
-} from "@/lib/domain";
-import { todayCivil } from "@/lib/format";
+import { changeSinceStart, measurementSeries, weekNumberOrNull, weeklyWeights } from "@/lib/domain";
+import { formatCivilDate, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn, initialsOf } from "@/lib/utils";
 import { ClientStatusAction } from "./client-status-action";
@@ -84,12 +78,9 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
 
   const c = client.data;
   const today = todayCivil(trainer.data.timeZone);
-  let currentWeek = 1;
-  try {
-    currentWeek = weekNumber(c.startDate, today, trainer.data.timeZone);
-  } catch (error) {
-    if (!(error instanceof DomainError)) throw error;
-  }
+  // Antes del alta no hay semana (§8): la cabecera dice cuándo empieza y las gráficas no tienen
+  // semanas que pintar.
+  const currentWeek = weekNumberOrNull(c.startDate, today, trainer.data.timeZone);
   const hasNewReview = reviews.data.some((r) => r.status === "enviada");
   // De baja: ficha de solo lectura, salvo «Reactivar» (tarjeta 5, n.º 8), y sin planes nuevos
   // (tarjeta 44). Ver la revisión nueva y el histórico siguen: son de lectura.
@@ -135,7 +126,14 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
             </span>
           </div>
           <p className="text-text-muted text-sm">
-            {[c.goal, `${t.weekLabel} ${currentWeek}`].filter(Boolean).join(" · ")}
+            {[
+              c.goal,
+              currentWeek === null
+                ? t.startsOn.replace("{date}", formatCivilDate(c.startDate))
+                : `${t.weekLabel} ${currentWeek}`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -176,13 +174,19 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
           </div>
           <WeightEvolutionCard
             title={t.weightTitle}
-            points={weeklyWeights(logs.data, c.startDate, 1, currentWeek)}
+            points={
+              currentWeek === null ? [] : weeklyWeights(logs.data, c.startDate, 1, currentWeek)
+            }
             changeSinceStart={changeSinceStart(logs.data)}
             emptyAction={chartAction}
           />
           <MeasurementsCard
             key={types.data.length}
-            series={measurementSeries(reviews.data, types.data, 1, currentWeek)}
+            series={
+              currentWeek === null
+                ? []
+                : measurementSeries(reviews.data, types.data, 1, currentWeek)
+            }
             emptyAction={chartAction}
           />
         </div>

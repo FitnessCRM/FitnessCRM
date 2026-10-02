@@ -5,11 +5,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { QueryBoundary } from "@/components/ui/query-boundary";
 import { EmptyState } from "@/components/ui/states";
 import {
-  DomainError,
   dayRecordOn,
   defaultRoutineDay,
   latestDayRecord,
-  weekNumber,
+  weekNumberOrNull,
   type Exercise,
   type Routine,
   type WorkoutLog,
@@ -42,12 +41,10 @@ export function RoutineScreen() {
 
   let eyebrow: string | undefined;
   if (trainer.data && client.data) {
-    try {
-      const today = todayCivil(trainer.data.timeZone);
-      eyebrow = `${t.week} ${weekNumber(client.data.startDate, today, trainer.data.timeZone)}`;
-    } catch (error) {
-      if (!(error instanceof DomainError)) throw error;
-    }
+    const today = todayCivil(trainer.data.timeZone);
+    // Antes del alta no hay semana (§8): «—», nunca «Semana 1».
+    const week = weekNumberOrNull(client.data.startDate, today, trainer.data.timeZone);
+    eyebrow = `${t.week} ${week ?? es.common.none}`;
   }
 
   return (

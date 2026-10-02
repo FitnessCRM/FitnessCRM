@@ -10,6 +10,7 @@ import {
   sendReviewFeedback,
   submitReview,
   weekNumber,
+  weekNumberOrNull,
 } from "@/lib/domain";
 import { findOwn, own, replaceById } from "./helpers";
 import type { MockContext } from "./store";
@@ -103,7 +104,13 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
     },
     getCurrentReview: async (trainerId, clientId) => {
       const client = findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
-      const week = weekNumber(client.startDate, ctx.state.today, trainerOf(trainerId).timeZone);
+      // Antes del alta no hay semana, así que tampoco revisión de esta semana (§8).
+      const week = weekNumberOrNull(
+        client.startDate,
+        ctx.state.today,
+        trainerOf(trainerId).timeZone,
+      );
+      if (week === null) return ctx.reply(null);
       return ctx.reply(
         ctx.state.reviews.find((r) => r.clientId === clientId && r.weekNumber === week) ?? null,
       );
