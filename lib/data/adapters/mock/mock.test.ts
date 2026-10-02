@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DomainError,
+  addCivilDays,
   clientSchema,
   exerciseSchema,
   macroTargetsSchema,
@@ -993,5 +994,75 @@ describe("I20 on the feedback write (E06)", () => {
       note: "",
     });
     expect(done.status).toBe("revisada");
+  });
+});
+
+describe("invariants the adapter keeps on writes the old tests did not cover (E07)", () => {
+  it("I12: editing a measurement type's label leaves registered measurements as they were", async () => {
+    const p = ports();
+    const before = await p.reviews.listClientReviews(TRAINER, MARTA);
+    const frozen = before.flatMap((r) =>
+      r.measurements.filter((m) => m.measurementTypeId === "mt-cuello"),
+    );
+    expect(frozen.length).toBeGreaterThan(0);
+    await p.measurementTypes.updateMeasurementType(TRAINER, "mt-cuello", {
+      label: "Cuello (nuevo)",
+    });
+    const after = await p.reviews.listClientReviews(TRAINER, MARTA);
+    expect(
+      after.flatMap((r) => r.measurements.filter((m) => m.measurementTypeId === "mt-cuello")),
+    ).toEqual(frozen);
+  });
+
+  it("I12: editing a question's prompt leaves the answers already given as they were", async () => {
+    const p = ports();
+    const before = await p.reviews.listClientReviews(TRAINER, MARTA);
+    const answered = before.flatMap((r) => r.responses).find(() => true)!;
+    const frozen = before.flatMap((r) =>
+      r.responses.filter((x) => x.questionId === answered.questionId),
+    );
+    await p.questionnaire.updateQuestion(TRAINER, answered.questionId, {
+      prompt: "Otro enunciado",
+    });
+    const after = await p.reviews.listClientReviews(TRAINER, MARTA);
+    expect(
+      after.flatMap((r) => r.responses.filter((x) => x.questionId === answered.questionId)),
+    ).toEqual(frozen);
+  });
+
+  it("I17: a photo cannot be attached once the review is vista", async () => {
+    const p = ports();
+    await p.reviews.markReviewViewed(TRAINER, "rv-marta-s5");
+    await expect(
+      p.reviews.attachReviewMedia(TRAINER, "rv-marta-s5", "frente", "storage://otra.jpg"),
+    ).rejects.toMatchObject({ code: "review.locked" });
+    await expect(
+      p.reviews.attachReviewMedia(TRAINER, "rv-marta-s4", "perfil", "storage://otra.jpg"),
+    ).rejects.toMatchObject({ code: "review.locked" });
+  });
+
+  it("I22: changing a client's start date does not renumber their reviews", async () => {
+    const p = ports();
+    const weeks = async () =>
+      (await p.reviews.listClientReviews(TRAINER, MARTA)).map((r) => [r.id, r.weekNumber]);
+    const before = await weeks();
+    const client = (await p.clients.getClient(TRAINER, MARTA))!;
+    await p.clients.updateClient(TRAINER, MARTA, {
+      startDate: addCivilDays(client.startDate, -14),
+    });
+    expect(await weeks()).toEqual(before);
+  });
+
+  it("I23: updating a day's weight keeps its creation time even when the clock has moved", async () => {
+    let tick = 0;
+    const p = createMockPorts({
+      today: TODAY,
+      now: () => new Date(Date.UTC(2026, 7, 29, 10, 0, tick++)).toISOString(),
+    });
+    const base = { trainerId: TRAINER, clientId: MARTA, date: "2026-08-30" };
+    const first = await p.weightLogs.saveWeightLog({ ...base, weightKg: 63, note: "" });
+    const second = await p.weightLogs.saveWeightLog({ ...base, weightKg: 62.8, note: "" });
+    expect(second.id).toBe(first.id);
+    expect(second.createdAt).toBe(first.createdAt);
   });
 });

@@ -401,3 +401,15 @@ describe("I20 · the feedback video is an external http(s) link", () => {
     },
   );
 });
+
+describe("I5 · photos: all three poses, not just some (E07)", () => {
+  it.each([
+    [["frente"] as const, ["perfil", "espalda"]],
+    [["frente", "perfil"] as const, ["espalda"]],
+  ])("is incomplete with only %j uploaded", (poses, missing) => {
+    const result = isReviewComplete(completeReview({ media: poses.map((p) => media(p)) }));
+    expect(result.complete).toBe(false);
+    expect(result.blocks.photos).toBe(false);
+    expect(result.missing.poses).toEqual(missing);
+  });
+});
