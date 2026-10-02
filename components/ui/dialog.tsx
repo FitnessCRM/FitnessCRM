@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
@@ -62,10 +63,11 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="ring-offset-background focus:ring-ring data-[state=open]:text-text-primary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            // 32 px como mínimo, como todo control pequeño: también se usa en táctil.
+            className="ring-offset-background focus:ring-ring data-[state=open]:text-text-primary absolute top-3 right-3 grid size-8 place-items-center rounded-md opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">{es.common.close}</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Content>
@@ -73,11 +75,15 @@ function DialogContent({
   );
 }
 
+/**
+ * Deja libre la esquina del aspa (32 px desde 12 px del borde, más que el relleno del diálogo):
+ * sin ese hueco, un título largo pasa por debajo. Centrado en móvil, el hueco va a los dos lados.
+ */
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      className={cn("flex flex-col gap-2 px-6 text-center sm:pl-0 sm:text-left", className)}
       {...props}
     />
   );
@@ -100,7 +106,7 @@ function DialogFooter({
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close asChild>
-          <Button variant="outline">Close</Button>
+          <Button variant="outline">{es.common.close}</Button>
         </DialogPrimitive.Close>
       )}
     </div>

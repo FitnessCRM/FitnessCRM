@@ -18,6 +18,14 @@ export const es = {
     trainerNote: { title: "Nota del entrenador" },
     /** Lo que se pinta en lugar de un dato que no hay, p. ej. la semana antes del alta (§8). */
     none: "—",
+    /** Unidades y abreviaturas que comparten varias pantallas de las dos áreas. */
+    kg: "kg",
+    kcal: "kcal",
+    week: "Semana",
+    /** «S5»: semana abreviada en ejes y celdas estrechas. */
+    weekShort: "S",
+    /** Nombre accesible y texto del botón que cierra un diálogo. */
+    close: "Cerrar",
   },
   roles: {
     trainer: "Entrenador",
@@ -182,7 +190,7 @@ export const es = {
       title: "Cuestionario de sensaciones",
       textPlaceholder: "Escribe libremente…",
     },
-    progress: { of: "de", blocks: "bloques completos" },
+    progress: { of: "de", blocks: "apartados completos" },
     actions: {
       saveDraft: "Guardar borrador",
       submit: "Enviar revisión",
@@ -657,7 +665,7 @@ export const es = {
       lastDay: "último día",
       none: {
         title: "Sin membresía en curso",
-        hint: "Tu entrenador registra aquí los periodos que contratas.",
+        hint: "Tu entrenador registra aquí las membresías que contratas.",
       },
     },
     next: {
@@ -675,7 +683,7 @@ export const es = {
       nextTag: "próxima",
       empty: {
         title: "Sin renovaciones todavía",
-        hint: "Aquí verás cada periodo que contrates.",
+        hint: "Aquí verás cada membresía que contrates.",
       },
     },
     footer: "Si tienes dudas sobre un pago, escribe a tu entrenador.",

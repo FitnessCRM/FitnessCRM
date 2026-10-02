@@ -34,7 +34,7 @@ export function SummaryBar({
       <div className="flex flex-wrap items-end gap-x-9 gap-y-4">
         <Figure
           label={t.weight}
-          value={weightKg === undefined ? t.noWeight : `${formatDecimal(weightKg)} kg`}
+          value={weightKg === undefined ? t.noWeight : `${formatDecimal(weightKg)} ${es.common.kg}`}
         />
         {measurements.map((m) => (
           <Figure key={m.id} label={m.label} value={`${formatDecimal(m.value)} ${m.unit}`} />
@@ -42,7 +42,7 @@ export function SummaryBar({
         {delta !== undefined && previousWeek !== undefined ? (
           <Figure
             label={`${t.versus} ${previousWeek}`}
-            value={`${formatSignedDecimal(delta)} kg`}
+            value={`${formatSignedDecimal(delta)} ${es.common.kg}`}
           />
         ) : null}
       </div>

@@ -40,7 +40,7 @@ export function MeasurementsCard({
   const visible = series.filter((s) => selected.has(s.typeId));
   const weeks = series[0]?.points.map((p) => p.week) ?? [];
   const data: TrendPoint[] = weeks.map((week, i) => ({
-    label: `S${week}`,
+    label: `${es.common.weekShort}${week}`,
     ...Object.fromEntries(visible.map((s) => [s.typeId, s.points[i]?.value ?? null])),
   }));
 

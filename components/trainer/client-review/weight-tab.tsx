@@ -129,7 +129,7 @@ export function WeightTab({
                 type="button"
                 onClick={() => select(log)}
                 aria-pressed={isSelected}
-                aria-label={`${day} ${t.months[m - 1]}: ${formatDecimal(log.weightKg)} kg`}
+                aria-label={`${day} ${t.months[m - 1]}: ${formatDecimal(log.weightKg)} ${es.common.kg}`}
                 className={cn(
                   base,
                   "focus-visible:ring-ring/50 cursor-pointer outline-none focus-visible:ring-[3px]",
@@ -214,7 +214,7 @@ export function WeightTab({
           ) : (
             <TrendChart
               height={140}
-              unit="kg"
+              unit={es.common.kg}
               series={[{ key: "kg", label: es.charts.weight.series }]}
               data={monthLogs.map((l) => ({
                 label: String(Number(l.date.slice(8))),

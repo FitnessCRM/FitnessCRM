@@ -20,7 +20,7 @@ function subtitle(review: Review, logs: WeightLog[], today: CivilDate, timeZone:
   if (review.status === "borrador") {
     return `${date === today ? t.today : formatShortDate(date, today)} · ${t.inProgress}`;
   }
-  return `${formatShortDate(date, today)}${kg !== undefined ? ` · ${formatDecimal(kg)} kg` : ""}`;
+  return `${formatShortDate(date, today)}${kg !== undefined ? ` · ${formatDecimal(kg)} ${es.common.kg}` : ""}`;
 }
 
 /** Histórico agrupado de dos en dos semanas (§8). Una semana saltada no tiene fila. */

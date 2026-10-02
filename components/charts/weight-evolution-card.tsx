@@ -41,7 +41,7 @@ export function WeightEvolutionCard({
             unit={t.unit}
             height={200}
             series={[{ key: "kg", label: t.series }]}
-            data={points.map((p) => ({ label: `S${p.week}`, kg: p.weightKg }))}
+            data={points.map((p) => ({ label: `${es.common.weekShort}${p.week}`, kg: p.weightKg }))}
           />
         ) : (
           <div className="flex flex-col items-center gap-2 py-8 text-center text-sm">

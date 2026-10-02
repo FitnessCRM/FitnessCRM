@@ -121,7 +121,9 @@ export function MacrosMenuCard({
   return (
     <PlanCard title={t.plan.macrosTitle} editHref={editHref}>
       {kcal.length ? (
-        <p className="text-[15px] font-semibold">{kcal.join(" / ")} kcal</p>
+        <p className="text-[15px] font-semibold">
+          {kcal.join(" / ")} {es.common.kcal}
+        </p>
       ) : (
         <EmptyPlan text={t.plan.noMacros} assignHref={assignHref} />
       )}

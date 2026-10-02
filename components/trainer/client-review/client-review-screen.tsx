@@ -182,7 +182,7 @@ function ClientReview({
                   <option key={r.id} value={r.id}>
                     {es.screensReview.week} {r.weekNumber} ·{" "}
                     {date === today ? t.today : formatShortDate(date, today)}
-                    {kg !== undefined ? ` · ${formatDecimal(kg)} kg` : ""}
+                    {kg !== undefined ? ` · ${formatDecimal(kg)} ${es.common.kg}` : ""}
                   </option>
                 );
               })}

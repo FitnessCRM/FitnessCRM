@@ -210,7 +210,7 @@ function Difference({ from, to, logs }: { from: Review; to: Review; logs: Weight
   const kgOld = weightOf(older, logs);
   const kgNew = weightOf(newer, logs);
   if (kgOld !== undefined && kgNew !== undefined) {
-    figures.push({ key: "weight", delta: kgNew - kgOld, unit: "kg", label: t.diffWeight });
+    figures.push({ key: "weight", delta: kgNew - kgOld, unit: es.common.kg, label: t.diffWeight });
   }
   for (const m of newer.measurements) {
     const before = older.measurements.find((o) => o.measurementTypeId === m.measurementTypeId);

@@ -93,7 +93,7 @@ export function SetRow({
     ) : reference ? (
       <span className="text-text-subtle">
         {t.lastTime} ({formatShortDate(reference.date, today)}):{" "}
-        {formatNumber(reference.log.weightKg)} kg × {reference.log.reps}
+        {formatNumber(reference.log.weightKg)} {es.common.kg} × {reference.log.reps}
       </span>
     ) : null;
 

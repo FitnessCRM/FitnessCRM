@@ -49,7 +49,9 @@ function ReviewRow({ row }: { row: ReviewTrackingRow }) {
           <InitialsAvatar initials={initialsOf(client.firstName, client.lastName)} />
           <div className="min-w-0 flex-1">
             <p className="text-text-primary text-sm font-medium">{clientName}</p>
-            <p className="text-text-muted text-xs">Semana {review.weekNumber}</p>
+            <p className="text-text-muted text-xs">
+              {es.common.week} {review.weekNumber}
+            </p>
           </div>
         </div>
       </div>

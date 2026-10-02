@@ -186,7 +186,7 @@ function OtherReviews({
               </time>
             </p>
             <p className="text-text-muted text-xs">
-              {kg !== undefined ? `${formatDecimal(kg)} kg` : t.summary.noWeight}
+              {kg !== undefined ? `${formatDecimal(kg)} ${es.common.kg}` : t.summary.noWeight}
               {r.feedbackVideoUrl ? ` · ${t.others.withVideo}` : ""}
             </p>
           </Link>

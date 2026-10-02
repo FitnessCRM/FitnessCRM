@@ -32,7 +32,8 @@ function subtitle(review: Review, logs: WeightLog[], today: CivilDate, timeZone:
   const kg = weightOf(review, logs);
   const parts = [date === today ? t.today : formatShortDate(date, today)];
   // La revisión nueva enseña su peso en el subtítulo; las demás lo llevan a la derecha.
-  if (review.status === "enviada" && kg !== undefined) parts.push(`${formatDecimal(kg)} kg`);
+  if (review.status === "enviada" && kg !== undefined)
+    parts.push(`${formatDecimal(kg)} ${es.common.kg}`);
   parts.push(completeness);
   return parts.join(" · ");
 }
