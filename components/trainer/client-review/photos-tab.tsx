@@ -43,6 +43,14 @@ export function PhotosTab({
   );
   const other = others.find((r) => r.id === otherId);
   const comparing = mode === "compare" && other !== undefined;
+  // Las fotos que no cargan, por URL: se explica una vez, debajo, como en Ver revisión (§9.4).
+  const [broken, setBroken] = useState<ReadonlySet<string>>(new Set());
+  const markBroken = (url: string) => setBroken((prev) => new Set(prev).add(url));
+  const shown = comparing ? [review, other] : [review];
+  const missing = shown.some((r) => {
+    const url = r.media.find((m) => m.pose === pose)?.url;
+    return url !== undefined && broken.has(url);
+  });
 
   return (
     <>
@@ -77,6 +85,8 @@ export function PhotosTab({
             pose={pose}
             today={today}
             timeZone={timeZone}
+            broken={broken}
+            onBroken={markBroken}
             header={
               <label className="flex flex-wrap items-center gap-2">
                 <span className="text-text-subtle tracking-label font-display text-[13px] uppercase">
@@ -103,6 +113,8 @@ export function PhotosTab({
           pose={pose}
           today={today}
           timeZone={timeZone}
+          broken={broken}
+          onBroken={markBroken}
           current
           large={!comparing}
           header={
@@ -112,6 +124,8 @@ export function PhotosTab({
           }
         />
       </div>
+
+      {missing ? <p className="text-text-subtle text-xs">{es.review.photos.missingHint}</p> : null}
 
       {comparing ? <Difference from={other} to={review} logs={logs} /> : null}
     </>
@@ -123,6 +137,8 @@ function Panel({
   pose,
   today,
   timeZone,
+  broken,
+  onBroken,
   header,
   current = false,
   large = false,
@@ -131,14 +147,15 @@ function Panel({
   pose: Pose;
   today: CivilDate;
   timeZone: string;
+  broken: ReadonlySet<string>;
+  onBroken: (url: string) => void;
   header: ReactNode;
   current?: boolean;
   /** Sola en pantalla, la foto puede crecer más que cuando comparte la fila con otra. */
   large?: boolean;
 }) {
   const url = review.media.find((m) => m.pose === pose)?.url;
-  const [broken, setBroken] = useState<string | null>(null);
-  const showImage = url !== undefined && broken !== url;
+  const showImage = url !== undefined && !broken.has(url);
   const label = `${t.poseLabel} ${es.status.pose[pose].toLowerCase()} · ${es.screensReview.week.toLowerCase()} ${review.weekNumber}`;
   const date = reviewDate(review, timeZone);
 
@@ -167,7 +184,7 @@ function Panel({
           <img
             src={url}
             alt={label}
-            onError={() => setBroken(url)}
+            onError={() => onBroken(url)}
             className="size-full object-cover"
           />
         ) : (
