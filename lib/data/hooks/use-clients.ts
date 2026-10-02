@@ -23,21 +23,6 @@ export function useClients() {
   });
 }
 
-export function useClientsWithPagination(
-  filter: "activo" | "inactivo" | "todos",
-  page: number,
-  pageSize: number,
-) {
-  const ports = usePorts();
-  const trainerId = useTrainerId();
-  return useQuery({
-    queryKey: [...queryKeys.clients(trainerId ?? ""), "paginated", filter, page, pageSize],
-    queryFn: () => ports.clients.listClientsWithPagination(trainerId!, { filter, page, pageSize }),
-    enabled: trainerId !== undefined,
-    placeholderData: keepPreviousData,
-  });
-}
-
 export function useClientsTracking(query: ClientTrackingQuery) {
   const ports = usePorts();
   const trainerId = useTrainerId();

@@ -3,14 +3,14 @@ import { InitialsAvatar } from "@/components/ui/initials-avatar";
 import { PaymentPill } from "@/components/ui/payment-pill";
 import type { ClientTrackingRow } from "@/lib/data/ports";
 import { weekNumberOrNull } from "@/lib/domain";
-import { todayCivil } from "@/lib/format";
+import { civilDateOf, formatShortDate, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn, initialsOf } from "@/lib/utils";
 
 const t = es.screensClients;
 
 /** Columnas de escritorio; por debajo de `lg` la fila se apila como tarjeta. */
-export const ROW_GRID = "lg:grid lg:grid-cols-[1.8fr_1.4fr_0.5fr_1.1fr_1.1fr_1.1fr] lg:gap-4";
+export const ROW_GRID = "lg:grid lg:grid-cols-[1.8fr_1.4fr_0.5fr_1.1fr_0.9fr_1.1fr_1.1fr] lg:gap-4";
 
 /** Etiqueta de la celda: solo por debajo de `lg`, donde no hay cabecera de columnas. */
 function CellLabel({ children }: { children: string }) {
@@ -27,7 +27,9 @@ function currentWeek(startDate: string, timeZone: string): number | null {
 }
 
 export function ClientRow({ row, timeZone }: { row: ClientTrackingRow; timeZone: string }) {
-  const { client, routineName, newReviewWeek, membership } = row;
+  const { client, routineName, newReviewWeek, lastReviewAt, membership } = row;
+  // La última revisión enviada, contada en la zona del entrenador (no en UTC).
+  const lastReview = lastReviewAt ? civilDateOf(lastReviewAt, timeZone) : null;
   const fullName = `${client.firstName} ${client.lastName}`;
   const week = currentWeek(client.startDate, timeZone);
 
@@ -93,6 +95,17 @@ export function ClientRow({ row, timeZone }: { row: ClientTrackingRow; timeZone:
           ) : (
             <span className="text-text-subtle text-[13px]">{t.noReview}</span>
           )}
+        </span>
+
+        <span className="flex flex-col items-start gap-1">
+          <CellLabel>{t.columns.lastReview}</CellLabel>
+          <span className="text-text-muted text-[13px] lg:text-[14px]">
+            {lastReview ? (
+              <time dateTime={lastReview}>{formatShortDate(lastReview, todayCivil(timeZone))}</time>
+            ) : (
+              es.common.none
+            )}
+          </span>
         </span>
 
         <span className="flex flex-col items-start gap-1">

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
-import type { Review } from "@/lib/domain";
+import type { ReviewTrackingRow } from "@/lib/data/ports";
 import { es } from "@/lib/i18n/es";
 import { initialsOf } from "@/lib/utils";
 import { isReviewComplete } from "@/lib/domain";
@@ -10,9 +10,8 @@ import { isReviewComplete } from "@/lib/domain";
 const t = es.components.dashboard;
 const tStatus = es.status.review;
 
-type ReviewWithClient = Review & { clientName: string };
-
-export function RecentReviews({ reviews }: { reviews: ReviewWithClient[] }) {
+/** Las revisiones `enviada` más recientes, cada una con su cliente: nunca un nombre que falte. */
+export function RecentReviews({ rows }: { rows: ReviewTrackingRow[] }) {
   return (
     <div className="border-border bg-surface flex flex-col gap-4 rounded-lg border p-6">
       <h2 className="text-text-primary text-sm font-semibold tracking-wider uppercase">
@@ -20,10 +19,10 @@ export function RecentReviews({ reviews }: { reviews: ReviewWithClient[] }) {
       </h2>
 
       <div className="space-y-3">
-        {reviews.length === 0 ? (
+        {rows.length === 0 ? (
           <p className="text-text-muted text-sm">{t.noReviews}</p>
         ) : (
-          reviews.map((review) => <ReviewRow key={review.id} review={review} />)
+          rows.map((row) => <ReviewRow key={row.review.id} row={row} />)
         )}
       </div>
 
@@ -34,13 +33,11 @@ export function RecentReviews({ reviews }: { reviews: ReviewWithClient[] }) {
   );
 }
 
-function ReviewRow({ review }: { review: ReviewWithClient }) {
+function ReviewRow({ row }: { row: ReviewTrackingRow }) {
+  const { review, client } = row;
   const isComplete = isReviewComplete(review, review.requirements);
   const badgeType = review.status === "enviada" ? "nueva" : isComplete ? "completa" : "parcial";
-
-  const nameParts = review.clientName.split(" ");
-  const firstName = nameParts[0] || "";
-  const lastName = nameParts.slice(1).join(" ") || "";
+  const clientName = `${client.firstName} ${client.lastName}`;
 
   return (
     <Link
@@ -49,9 +46,9 @@ function ReviewRow({ review }: { review: ReviewWithClient }) {
     >
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <InitialsAvatar initials={initialsOf(firstName, lastName)} />
+          <InitialsAvatar initials={initialsOf(client.firstName, client.lastName)} />
           <div className="min-w-0 flex-1">
-            <p className="text-text-primary text-sm font-medium">{review.clientName}</p>
+            <p className="text-text-primary text-sm font-medium">{clientName}</p>
             <p className="text-text-muted text-xs">Semana {review.weekNumber}</p>
           </div>
         </div>

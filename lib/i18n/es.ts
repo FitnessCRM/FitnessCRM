@@ -743,21 +743,29 @@ export const es = {
   },
   /** Componentes `components/`: literales que comparten varios componentes. */
   components: {
+    /**
+     * Panel de control. Se aparta de la captura 09 a propósito: «inactivo» no existe (§7, D4), así
+     * que cifras y pestañas usan los tres estados del cliente con sus etiquetas de `status.client`.
+     */
     dashboard: {
-      activeClients: "CLIENTES ACTIVOS",
-      unviewedReviews: "REVISIONES SIN REVISAR",
-      thisWeekReviews: "REVISIONES ESTA SEMANA",
-      inactiveClients: "CLIENTES INACTIVOS",
+      activeClients: "Clientes en activo",
+      unviewedReviews: "Revisiones sin revisar",
+      thisWeekReviews: "Revisiones esta semana",
+      pendingInvitations: "Invitaciones pendientes",
       recentReviews: "REVISIONES RECIBIDAS",
       noReviews: "Sin revisiones aún.",
       seeAll: "Ver todas →",
-      activeTabLabel: "Activos",
-      inactiveTabLabel: "Inactivos",
+      clientsTitle: "Clientes",
+      tabsLabel: "Clientes por estado",
       clientCol: "CLIENTE",
-      blockCol: "BLOQUE",
       lastReviewCol: "ÚLTIMA REVISIÓN",
       statusCol: "ESTADO",
       noClients: "Sin clientes.",
+      pagination: {
+        summary: "Página {page} de {pages}",
+        previous: "Anterior",
+        next: "Siguiente",
+      },
     },
   },
   screensProgress: {
@@ -856,6 +864,7 @@ export const es = {
       week: "Semana",
       plan: "Plan",
       review: "Revisión",
+      lastReview: "Última revisión",
       membership: "Membresía",
       status: "Estado",
     },

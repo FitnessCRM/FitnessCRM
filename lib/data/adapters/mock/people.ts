@@ -49,33 +49,18 @@ export function createTrainerPort(ctx: MockContext): TrainerPort {
 export function createClientPort(ctx: MockContext): ClientPort {
   return {
     listClients: async (trainerId) => ctx.reply(own(ctx.state.clients, trainerId)),
-    listClientsWithPagination: async (trainerId, query) => {
-      const all = own(ctx.state.clients, trainerId);
-      const filtered =
-        query.filter === "activo"
-          ? all.filter((c) => c.status === "activo")
-          : query.filter === "inactivo"
-            ? all.filter((c) => c.status !== "activo")
-            : all;
-
-      const total = filtered.length;
-      const start = query.page * query.pageSize;
-      const rows = filtered.slice(start, start + query.pageSize);
-
-      const counts = {
-        activo: all.filter((c) => c.status === "activo").length,
-        inactivo: all.filter((c) => c.status !== "activo").length,
-        todos: all.length,
-      };
-
-      return ctx.reply({ rows, counts });
-    },
     listClientsTracking: async (trainerId, query) => {
       const memberships = own(ctx.state.memberships, trainerId);
       const routines = own(ctx.state.routines, trainerId).filter((r) => r.status === "activo");
       const newReviewWeek = new Map<string, number>();
+      // La última enviada, esté como esté hoy: los borradores no tienen `submittedAt`.
+      const lastReviewAt = new Map<string, string>();
       for (const r of own(ctx.state.reviews, trainerId)) {
         if (r.status === "enviada") newReviewWeek.set(r.clientId, r.weekNumber);
+        const last = lastReviewAt.get(r.clientId);
+        if (r.submittedAt !== null && (last === undefined || r.submittedAt > last)) {
+          lastReviewAt.set(r.clientId, r.submittedAt);
+        }
       }
 
       const named = own(ctx.state.clients, trainerId).filter(
@@ -100,6 +85,7 @@ export function createClientPort(ctx: MockContext): ClientPort {
           client,
           routineName: routines.find((r) => r.clientId === client.id)?.name ?? null,
           newReviewWeek: newReviewWeek.get(client.id) ?? null,
+          lastReviewAt: lastReviewAt.get(client.id) ?? null,
           membership: membershipStanding(
             memberships.filter((m) => m.clientId === client.id),
             query.today,

@@ -1186,3 +1186,40 @@ describe("the port's today follows its clock in the trainer's time zone (E12)", 
     expect((await p.reviews.openCurrentReview(TRAINER, MARTA)).weekNumber).toBe(6);
   });
 });
+
+describe("client tracking for the dashboard: three statuses and the last review (E13, card 52)", () => {
+  const query = { filter: "todos" as const, today: TODAY, page: 0, pageSize: 50 };
+  const rowOf = async (p: ReturnType<typeof ports>, clientId: string) =>
+    (await p.clients.listClientsTracking(TRAINER, query)).rows.find(
+      (r) => r.client.id === clientId,
+    )!;
+
+  it("counts a new client as a pending invitation, not as inactive (E13)", async () => {
+    const p = ports();
+    const before = (await p.clients.listClientsTracking(TRAINER, query)).counts;
+    const marta = (await p.clients.getClient(TRAINER, MARTA))!;
+    const { id, createdAt, status, ...input } = marta;
+    void [id, createdAt, status];
+    await p.clients.createClient({
+      ...input,
+      email: "prueba.nueva@example.test",
+      startDate: TODAY,
+    });
+    const after = (await p.clients.listClientsTracking(TRAINER, query)).counts;
+    expect(after).toEqual({
+      ...before,
+      todos: before.todos + 1,
+      invitado: before.invitado + 1,
+    });
+  });
+
+  it("gives the last sent review whatever its status, and ignores drafts", async () => {
+    const p = ports();
+    const s5 = (await p.reviews.getReview(TRAINER, "rv-marta-s5"))!;
+    expect((await rowOf(p, MARTA)).lastReviewAt).toBe(s5.submittedAt);
+    await p.reviews.markReviewViewed(TRAINER, s5.id);
+    expect((await rowOf(p, MARTA)).lastReviewAt).toBe(s5.submittedAt);
+    await p.reviews.openCurrentReview(TRAINER, DAVID);
+    expect((await rowOf(p, DAVID)).lastReviewAt).toBeNull();
+  });
+});

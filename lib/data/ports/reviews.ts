@@ -3,18 +3,6 @@ import type { Client, Pose, Review, ReviewDraft, ReviewFeedback } from "@/lib/do
 /** Lo que el cliente puede rellenar mientras la revisión sigue editable (I17). */
 export type ReviewDraftChanges = ReviewDraft;
 
-/** Consulta paginada de revisiones recibidas para el dashboard. */
-export interface SubmittedReviewsQuery {
-  page: number;
-  pageSize: number;
-}
-
-/** Página de revisiones enviadas con metadatos. */
-export interface SubmittedReviewsPage {
-  rows: Review[];
-  total: number;
-}
-
 /** Cifras de revisiones de toda la cartera para el panel de control. */
 export interface ReviewStats {
   /** Revisiones `enviada` que el entrenador aún no ha abierto. */
@@ -53,11 +41,6 @@ export interface ReviewPort {
   getReview(trainerId: string, reviewId: string): Promise<Review | null>;
   /** Revisiones `enviada` de toda la cartera: la lista "Revisiones recibidas" del panel. */
   listSubmittedReviews(trainerId: string): Promise<Review[]>;
-  /** Página de revisiones `enviada` con paginación en servidor. */
-  listSubmittedReviewsPage(
-    trainerId: string,
-    query: SubmittedReviewsQuery,
-  ): Promise<SubmittedReviewsPage>;
   /** Todas las revisiones recibidas (no borradores): filtra, busca, ordena y pagina en servidor. */
   listReviewsTracking(trainerId: string, query: ReviewTrackingQuery): Promise<ReviewTrackingPage>;
   /** Contadores de la cartera entera, calculados donde están los datos y no sobre una página. */

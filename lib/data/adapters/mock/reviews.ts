@@ -52,17 +52,6 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
           .filter((r) => r.status === "enviada")
           .sort(bySubmittedDesc),
       ),
-    listSubmittedReviewsPage: async (trainerId, query) => {
-      const all = own(ctx.state.reviews, trainerId)
-        .filter((r) => r.status === "enviada")
-        .sort(bySubmittedDesc);
-
-      const total = all.length;
-      const start = query.page * query.pageSize;
-      const rows = all.slice(start, start + query.pageSize);
-
-      return ctx.reply({ rows, total });
-    },
     listReviewsTracking: async (trainerId, query) => {
       const fold = (text: string) =>
         text

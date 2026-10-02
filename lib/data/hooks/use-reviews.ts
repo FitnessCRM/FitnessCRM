@@ -52,18 +52,6 @@ export function useSubmittedReviews() {
   });
 }
 
-/** Página de revisiones `enviada` para el dashboard, con paginación en servidor. */
-export function useSubmittedReviewsPage(page: number, pageSize: number) {
-  const ports = usePorts();
-  const trainerId = useTrainerId();
-  return useQuery({
-    queryKey: [...queryKeys.submittedReviews(trainerId ?? ""), "paginated", page, pageSize],
-    queryFn: () => ports.reviews.listSubmittedReviewsPage(trainerId!, { page, pageSize }),
-    enabled: trainerId !== undefined,
-    placeholderData: keepPreviousData,
-  });
-}
-
 /** Todas las revisiones recibidas con su cliente, paginadas en servidor (`/reviews`). */
 export function useReviewsTracking(query: ReviewTrackingQuery) {
   const ports = usePorts();

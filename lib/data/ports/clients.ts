@@ -1,4 +1,4 @@
-import type { CivilDate, Client, ClientStatus, Membership } from "@/lib/domain";
+import type { CivilDate, Client, ClientStatus, IsoTimestamp, Membership } from "@/lib/domain";
 
 /**
  * Datos que aporta el entrenador al dar de alta. El resto lo pone el adaptador: `id`, `createdAt`
@@ -7,24 +7,10 @@ import type { CivilDate, Client, ClientStatus, Membership } from "@/lib/domain";
 export type ClientInput = Omit<Client, "id" | "createdAt" | "status">;
 export type ClientChanges = Partial<Omit<Client, "id" | "createdAt" | "trainerId">>;
 
-/** Estado de cliente para filtrar en dashboard. */
-export type ClientStatusFilter = "activo" | "inactivo" | "todos";
-
-/** Consulta paginada en servidor de clientes en el dashboard. */
-export interface ClientQuery {
-  filter: ClientStatusFilter;
-  page: number;
-  pageSize: number;
-}
-
-/** Página de clientes con sus datos para el dashboard. */
-export interface ClientPage {
-  rows: Client[];
-  /** Contadores por estado. */
-  counts: Record<ClientStatusFilter, number>;
-}
-
-/** Corte por estado del seguimiento de clientes. */
+/**
+ * Corte por estado del seguimiento de clientes: los tres estados del dominio (§7). «Inactivo» no
+ * existe; la usan Clientes y el panel de control.
+ */
 export type ClientTrackingFilter = "todos" | ClientStatus;
 
 /** Consulta paginada en servidor del seguimiento de clientes (`/clients`). */
@@ -46,6 +32,11 @@ export interface ClientTrackingRow {
   routineName: string | null;
   /** Semana de la revisión pendiente de ver (`enviada`), si la hay. */
   newReviewWeek: number | null;
+  /**
+   * Cuándo envió su última revisión, sea cual sea hoy su estado (`enviada`, `vista` o `revisada`).
+   * Los borradores no cuentan: no se han enviado. `null` si nunca ha enviado ninguna.
+   */
+  lastReviewAt: IsoTimestamp | null;
   /** Membresía vigente hoy. */
   membership: Membership | null;
 }
@@ -60,9 +51,10 @@ export interface ClientTrackingPage {
 export interface ClientPort {
   /** Lista completa de clientes (para lecturas que no necesitan paginación). */
   listClients(trainerId: string): Promise<Client[]>;
-  /** Página de clientes con paginación en servidor (para el dashboard). */
-  listClientsWithPagination(trainerId: string, query: ClientQuery): Promise<ClientPage>;
-  /** Página del seguimiento de clientes: filtra, busca, ordena y pagina en servidor. */
+  /**
+   * Página del seguimiento de clientes: filtra, busca, ordena y pagina en servidor. Sus contadores
+   * por estado son también las cifras de clientes del panel de control.
+   */
   listClientsTracking(trainerId: string, query: ClientTrackingQuery): Promise<ClientTrackingPage>;
   getClient(trainerId: string, clientId: string): Promise<Client | null>;
   createClient(input: ClientInput): Promise<Client>;
