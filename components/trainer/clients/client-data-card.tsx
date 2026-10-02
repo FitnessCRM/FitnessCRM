@@ -13,27 +13,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { civilDateSchema } from "@/lib/domain";
+import { clientDataSchema } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 
 const t = es.clientData;
 
-export const dateField = z
-  .string()
-  .refine((v) => civilDateSchema.safeParse(v).success, { message: t.errors.dateInvalid });
-
-/** Los campos de texto se validan aquí para los mensajes; el adaptador vuelve a validar con `clientSchema`. */
-export const clientDataSchema = z.object({
-  firstName: z.string().trim().min(1, t.errors.firstNameRequired),
-  lastName: z.string().trim().min(1, t.errors.lastNameRequired),
-  email: z.string().trim().pipe(z.email(t.errors.emailInvalid)),
-  phone: z.string().trim(),
-  goal: z.string(),
-  level: z.string(),
-  initialNotes: z.string().trim(),
-  startDate: dateField,
-});
-
+/**
+ * Los campos de `clientDataSchema`, el esquema del dominio: el formulario valida con él (E21) y el
+ * adaptador, con `clientSchema`, del que es un recorte. Los mensajes los elige la pantalla por
+ * campo, como en Membresías: cada uno de estos campos solo puede fallar de una manera.
+ */
 export type ClientDataValues = z.output<typeof clientDataSchema>;
 
 /** `Select` de Radix no admite `value=""` en un ítem: este centinela es el «sin especificar». */
@@ -78,7 +67,7 @@ export function ClientDataCard({
             aria-invalid={!!errors.firstName}
             {...form.register("firstName")}
           />
-          <FieldError message={errors.firstName?.message} />
+          <FieldError message={errors.firstName ? t.errors.firstNameRequired : undefined} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="cd-last">{t.lastName}</Label>
@@ -88,7 +77,7 @@ export function ClientDataCard({
             aria-invalid={!!errors.lastName}
             {...form.register("lastName")}
           />
-          <FieldError message={errors.lastName?.message} />
+          <FieldError message={errors.lastName ? t.errors.lastNameRequired : undefined} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="cd-email">{t.email}</Label>
@@ -99,7 +88,7 @@ export function ClientDataCard({
             aria-invalid={!!errors.email}
             {...form.register("email")}
           />
-          <FieldError message={errors.email?.message} />
+          <FieldError message={errors.email ? t.errors.emailInvalid : undefined} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="cd-phone">{t.phone}</Label>
@@ -127,7 +116,7 @@ export function ClientDataCard({
           aria-describedby="cd-start-hint"
           {...form.register("startDate")}
         />
-        <FieldError message={errors.startDate?.message} />
+        <FieldError message={errors.startDate ? t.errors.dateInvalid : undefined} />
         <p id="cd-start-hint" className="text-text-subtle text-xs">
           {startDateHint}
         </p>

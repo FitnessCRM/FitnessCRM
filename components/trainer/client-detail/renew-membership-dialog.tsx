@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,38 +17,25 @@ import { Label } from "@/components/ui/label";
 import { useSaveMembership } from "@/lib/data/hooks";
 import {
   civilDateSchema,
+  membershipEditSchema,
   membershipEndDate,
   membershipTypeSchema,
   overlapsAnyMembership,
   paymentStatusSchema,
   suggestedRenewalStart,
   type Membership,
+  type MembershipEdit,
 } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 
 const t = es.screensClientDetail.membership.renewDialog;
 
-const dateField = z
-  .string()
-  .refine((v) => civilDateSchema.safeParse(v).success, { message: t.errors.dateInvalid });
-
-const formSchema = z
-  .object({
-    type: membershipTypeSchema,
-    startDate: dateField,
-    endDate: dateField,
-    paymentStatus: paymentStatusSchema,
-  })
-  .refine(
-    (v) =>
-      !civilDateSchema.safeParse(v.startDate).success ||
-      !civilDateSchema.safeParse(v.endDate).success ||
-      v.endDate >= v.startDate,
-    { message: t.errors.endBeforeStart, path: ["endDate"] },
-  );
-
-type Values = z.output<typeof formSchema>;
+/**
+ * Una renovación es una membresía nueva con los mismos campos que una editada en Membresías: valida
+ * con `membershipEditSchema`, el esquema del dominio (E21), y la pantalla elige el mensaje.
+ */
+type Values = MembershipEdit;
 
 function initialValues(memberships: Membership[], today: string): Values {
   const startDate = suggestedRenewalStart(memberships, today);
@@ -82,10 +68,16 @@ export function RenewMembershipDialog({
   const save = useSaveMembership();
   const [failed, setFailed] = useState(false);
   const form = useForm<Values>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(membershipEditSchema),
     defaultValues: initialValues(memberships, today),
   });
   const { errors, dirtyFields } = form.formState;
+  // El fin solo puede fallar por fecha inválida o por ser anterior al inicio, como en Membresías.
+  const endError = errors.endDate
+    ? civilDateSchema.safeParse(form.getValues("endDate")).success
+      ? t.errors.endBeforeStart
+      : t.errors.dateInvalid
+    : null;
 
   const type = form.watch("type");
   const startDate = form.watch("startDate");
@@ -168,7 +160,7 @@ export function RenewMembershipDialog({
               />
               {errors.startDate ? (
                 <p role="alert" className="text-danger text-xs">
-                  {errors.startDate.message}
+                  {t.errors.dateInvalid}
                 </p>
               ) : null}
             </div>
@@ -181,9 +173,9 @@ export function RenewMembershipDialog({
                 aria-invalid={!!errors.endDate}
                 {...form.register("endDate")}
               />
-              {errors.endDate ? (
+              {endError ? (
                 <p role="alert" className="text-danger text-xs">
-                  {errors.endDate.message}
+                  {endError}
                 </p>
               ) : null}
             </div>

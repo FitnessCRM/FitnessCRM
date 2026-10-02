@@ -1,6 +1,7 @@
 export * from "./primitives";
 export * from "./trainer";
 export * from "./client";
+export * from "./signup";
 export * from "./membership";
 export * from "./exercise";
 export * from "./plan-status";
