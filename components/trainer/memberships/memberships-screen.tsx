@@ -71,6 +71,9 @@ export function MembershipsScreen({ initialClientId }: { initialClientId?: strin
   ];
   const total = data?.counts[filter] ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // Si una edición saca del corte la única fila de la última página, esa página deja de existir:
+  // se pasa a la última que queda en vez de pintar «Ninguna membresía coincide» sin navegación.
+  if (data !== undefined && page > pages - 1) setPage(pages - 1);
   const neverAny = data !== undefined && data.counts.all === 0 && clientId === null;
 
   return (
