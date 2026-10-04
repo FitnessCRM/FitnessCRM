@@ -6,6 +6,7 @@ import type {
   TrainerPort,
 } from "@/lib/data/ports";
 import {
+  DomainError,
   clientSchema,
   matchesMembershipFilter,
   membershipStanding,
@@ -22,7 +23,9 @@ export function createSessionPort(ctx: MockContext): SessionPort {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     login: async (email, _password) => {
       const trainer = ctx.state.trainers.find((t) => t.email === email);
-      if (!trainer) throw new Error("Email no encontrado");
+      if (!trainer) {
+        throw new DomainError("session.invalid_credentials", "Correo o contraseña incorrectos");
+      }
 
       // En mock, cualquier password sirve; con Firebase se validaría realmente
       ctx.state.session = { trainerId: trainer.id, clientId: null };

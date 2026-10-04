@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLogin } from "@/lib/data/hooks";
+import { DomainError } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +36,7 @@ export function LoginForm() {
           onError: (error) => {
             if (error instanceof Error) {
               setError(
-                error.message === "Email no encontrado"
+                error instanceof DomainError && error.code === "session.invalid_credentials"
                   ? es.pages.login.form.errorInvalid
                   : es.pages.login.form.errorNetwork,
               );
