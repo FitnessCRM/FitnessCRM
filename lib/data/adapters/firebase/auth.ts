@@ -34,7 +34,7 @@ import type { FirebaseContext } from "./context";
 const USERS = "users";
 
 /** Sesión de nadie: la que devuelve `getSession` sin cuenta abierta, como hacía el mock al salir. */
-const SIGNED_OUT: Session = { trainerId: "", clientId: null };
+const SIGNED_OUT: Session = { trainerId: "", clientId: null, role: null };
 
 /** Firebase exige al menos 6 caracteres. Se comprueba antes de gastar el enlace, que es de un solo uso. */
 const MIN_PASSWORD_LENGTH = 6;
@@ -72,7 +72,7 @@ async function resolveSession(ctx: FirebaseAuthContext, user: User): Promise<Ses
   const known = await getDoc(doc(ctx.db, USERS, user.uid));
   if (known.exists()) {
     const data = known.data() as DocumentData;
-    return { trainerId: data.trainerId, clientId: data.clientId ?? null };
+    return { trainerId: data.trainerId, clientId: data.clientId ?? null, role: data.role };
   }
   // Primera entrada de un entrenador: se le reconoce por el correo de su ficha, que se dio de alta
   // fuera de la app (no hay alta de entrenadores en el MVP).
@@ -93,7 +93,7 @@ async function resolveSession(ctx: FirebaseAuthContext, user: User): Promise<Ses
       email: trainer.email,
     })
     .commit();
-  return { trainerId: trainer.id, clientId: null };
+  return { trainerId: trainer.id, clientId: null, role: "trainer" };
 }
 
 export function createSessionPort(ctx: FirebaseAuthContext): SessionPort {
@@ -192,7 +192,7 @@ export function createInvitationPort(ctx: FirebaseAuthContext): InvitationPort {
         })
         .update(doc(ctx.db, "clients", client.id), { status: "activo" })
         .commit();
-      return { trainerId: client.trainerId, clientId: client.id };
+      return { trainerId: client.trainerId, clientId: client.id, role: "client" };
     },
   };
 }

@@ -28,11 +28,11 @@ export function createSessionPort(ctx: MockContext): SessionPort {
       }
 
       // En mock, cualquier password sirve; con Firebase se validaría realmente
-      ctx.state.session = { trainerId: trainer.id, clientId: null };
+      ctx.state.session = { trainerId: trainer.id, clientId: null, role: "trainer" };
       return ctx.reply(ctx.state.session);
     },
     logout: async () => {
-      ctx.state.session = { trainerId: "", clientId: null };
+      ctx.state.session = { trainerId: "", clientId: null, role: null };
     },
   };
 }

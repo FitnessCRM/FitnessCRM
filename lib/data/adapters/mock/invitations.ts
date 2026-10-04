@@ -30,7 +30,7 @@ export function createInvitationPort(ctx: MockContext): InvitationPort {
         throw new DomainError("invitation.not_found", "Ningún cliente invitado tiene ese correo");
       }
       client.status = "activo";
-      ctx.state.session = { trainerId: client.trainerId, clientId: client.id };
+      ctx.state.session = { trainerId: client.trainerId, clientId: client.id, role: "client" };
       return ctx.reply(ctx.state.session);
     },
   };

@@ -60,7 +60,8 @@ export function createDemoState(today: CivilDate = demoToday()): MockState {
   const { routineTemplates, routines } = buildRoutines(d);
   const { macroTargets, menus, menuTemplates } = buildNutrition(d);
   return clone({
-    session: { trainerId: TRAINER_ID, clientId: CLIENT_IDS.marta },
+    // La demo es el entrenador con un cliente a mano: puede recorrer las dos áreas.
+    session: { trainerId: TRAINER_ID, clientId: CLIENT_IDS.marta, role: "trainer" },
     trainers: [trainer],
     clients: buildClients(d),
     memberships: buildMemberships(d),

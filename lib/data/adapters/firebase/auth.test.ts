@@ -94,15 +94,23 @@ describe.skipIf(!firestoreHost || !authHost)("adaptador de Firebase · auth", ()
     expect(invitations.isInvitationLink("http://localhost:3000/login")).toBe(false);
 
     const session = await invitations.acceptInvitation({ email, link, password: "secreto-1" });
-    expect(session).toEqual({ trainerId: TRAINER.id, clientId });
+    expect(session).toEqual({ trainerId: TRAINER.id, clientId, role: "client" });
     expect((await getDoc(doc(db, "clients", clientId))).data()?.status).toBe("activo");
 
     // Después, entra con correo y contraseña, como cualquiera.
     const sessions = createSessionPort(ctx);
     await sessions.logout();
-    expect(await sessions.getSession()).toEqual({ trainerId: "", clientId: null });
-    expect(await sessions.login(email, "secreto-1")).toEqual({ trainerId: TRAINER.id, clientId });
-    expect(await sessions.getSession()).toEqual({ trainerId: TRAINER.id, clientId });
+    expect(await sessions.getSession()).toEqual({ trainerId: "", clientId: null, role: null });
+    expect(await sessions.login(email, "secreto-1")).toEqual({
+      trainerId: TRAINER.id,
+      clientId,
+      role: "client",
+    });
+    expect(await sessions.getSession()).toEqual({
+      trainerId: TRAINER.id,
+      clientId,
+      role: "client",
+    });
   });
 
   it("only sends to an own client that is still invited", async () => {
@@ -166,6 +174,7 @@ describe.skipIf(!firestoreHost || !authHost)("adaptador de Firebase · auth", ()
     expect(await sessions.login(TRAINER.email, "entrenador-1")).toEqual({
       trainerId: TRAINER.id,
       clientId: null,
+      role: "trainer",
     });
   });
 

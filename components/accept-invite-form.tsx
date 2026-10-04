@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAcceptInvitation, useIsInvitationLink } from "@/lib/data/hooks";
 import { DomainError } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
+import { homePath } from "@/lib/session-access";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,7 +54,7 @@ export function AcceptInviteForm() {
     accept(
       { email, link: window.location.href, password },
       {
-        onSuccess: () => router.push("/routine"),
+        onSuccess: (session) => router.push(homePath(session)),
         onError: (failure) => {
           // Un enlace caducado o ya usado no se arregla reintentando: se cambia de pantalla.
           if (failure instanceof DomainError && failure.code === "invitation.invalid_link") {

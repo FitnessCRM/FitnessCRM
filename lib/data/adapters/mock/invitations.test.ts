@@ -29,7 +29,7 @@ describe("mock: invitation of a client", () => {
       link: MOCK_INVITATION_LINK,
       password: "secreto-1",
     });
-    expect(session).toEqual({ trainerId: TRAINER_ID, clientId: client.id });
+    expect(session).toEqual({ trainerId: TRAINER_ID, clientId: client.id, role: "client" });
     expect((await ports.clients.getClient(TRAINER_ID, client.id))?.status).toBe("activo");
     expect(await ports.session.getSession()).toEqual(session);
   });
