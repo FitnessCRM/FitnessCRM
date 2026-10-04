@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "prepare": "husky",
-    "test:firebase": "pnpm dlx firebase-tools emulators:exec --only firestore --project demo-hector \"vitest run lib/data/adapters/firebase\""
+    "test:firebase": "pnpm dlx firebase-tools emulators:exec --only firestore,auth --project demo-hector \"vitest run lib/data/adapters/firebase\""
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
