@@ -6,3 +6,10 @@ export {
   createSessionPort,
   type FirebaseAuthContext,
 } from "./auth";
+export { createMeasurementTypePort, createQuestionnairePort } from "./catalogs";
+export { createClientPort } from "./clients";
+export { createExercisePort } from "./exercises";
+export { createWeightLogPort, createWorkoutLogPort } from "./logs";
+export { createMembershipPort } from "./memberships";
+export { createTrainerPort } from "./trainer";
+export { COLLECTIONS, FLAGS } from "./helpers";
