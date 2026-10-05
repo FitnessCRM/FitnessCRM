@@ -5,7 +5,6 @@ import {
   query,
   runTransaction,
   where,
-  writeBatch,
   type DocumentData,
 } from "firebase/firestore";
 import type { WeightLogPort, WorkoutLogPort } from "@/lib/data/ports";
@@ -80,28 +79,38 @@ export function createWeightLogPort(ctx: FirebaseContext): WeightLogPort {
       }),
     deleteWeightLog: async (trainerId, weightLogId) => {
       const log = await requireOwn(ctx, name, weightLogSchema, trainerId, weightLogId, "Pesaje");
-      // Las revisiones del cliente: de ahí sale quién usa el pesaje. No se parsean con el esquema
-      // completo; aquí solo importan su estado y su `weightLogId`.
-      const snaps = await getDocs(
+      // Las revisiones que lo apuntan: de ahí sale quién lo usa. La consulta va fuera de la
+      // transacción y solo da los ids; dentro se releen por referencia (I25), así que una revisión
+      // enviada entre la consulta y el borrado también bloquea. No se parsean con el esquema
+      // completo: aquí solo importan su estado y su `weightLogId`.
+      const pointing = await getDocs(
         query(
           collection(ctx.db, COLLECTIONS.reviews),
           where("trainerId", "==", trainerId),
+          // Las reglas dejan leer al cliente solo sus revisiones, y una consulta tiene que probarlo.
           where("clientId", "==", log.clientId),
+          where("weightLogId", "==", weightLogId),
         ),
       );
-      const reviews = snaps.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as Pick<Review, "id" | "status" | "weightLogId">,
-      );
-      assertWeightLogDeletable(weightLogId, reviews); // I25
-      const batch = writeBatch(ctx.db);
-      batch.delete(ref(ctx, name, weightLogId));
-      // Solo puede quedar algún borrador apuntándolo: se queda sin peso.
-      for (const review of reviews) {
-        if (review.weightLogId === weightLogId) {
-          batch.update(ref(ctx, COLLECTIONS.reviews, review.id), { weightLogId: null });
+      await runTransaction(ctx.db, async (tx) => {
+        const logRef = ref(ctx, name, weightLogId);
+        await txRequireOwn(tx, logRef, weightLogSchema, trainerId, "Pesaje");
+        const reviews = (
+          await Promise.all(pointing.docs.map((d) => tx.get(ref(ctx, COLLECTIONS.reviews, d.id))))
+        ).flatMap((snap) =>
+          snap.exists()
+            ? [{ id: snap.id, ...snap.data() } as Pick<Review, "id" | "status" | "weightLogId">]
+            : [],
+        );
+        assertWeightLogDeletable(weightLogId, reviews); // I25
+        tx.delete(logRef);
+        // Solo puede quedar algún borrador apuntándolo: se queda sin peso.
+        for (const review of reviews) {
+          if (review.weightLogId === weightLogId) {
+            tx.update(ref(ctx, COLLECTIONS.reviews, review.id), { weightLogId: null });
+          }
         }
-      }
-      await batch.commit();
+      });
     },
   };
 }

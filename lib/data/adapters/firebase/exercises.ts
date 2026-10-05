@@ -1,4 +1,4 @@
-import { runTransaction, setDoc, where, writeBatch } from "firebase/firestore";
+import { runTransaction, setDoc, where } from "firebase/firestore";
 import type { ExercisePort } from "@/lib/data/ports";
 import {
   exerciseSchema,
@@ -8,7 +8,7 @@ import {
   routinesUsingExercise,
 } from "@/lib/domain";
 import type { FirebaseContext } from "./context";
-import { COLLECTIONS, listOwn, readOwn, ref, requireOwn, txRequireOwn } from "./helpers";
+import { COLLECTIONS, listOwn, readOwn, ref, txRequireOwn } from "./helpers";
 
 export function createExercisePort(ctx: FirebaseContext): ExercisePort {
   const name = COLLECTIONS.exercises;
@@ -65,36 +65,66 @@ export function createExercisePort(ctx: FirebaseContext): ExercisePort {
       };
     },
     archiveExercise: async (trainerId, exerciseId) => {
-      const exercise = await requireOwn(
-        ctx,
-        name,
-        exerciseSchema,
-        trainerId,
-        exerciseId,
-        "Ejercicio",
-      );
+      // Las consultas van fuera de la transacción (el SDK de cliente no las admite dentro): dan los
+      // ids. Dentro se vuelve a leer cada documento por referencia y se recalcula sobre lo leído,
+      // para no escribir encima de una rutina que el entrenador editó entre la consulta y el lote.
       const [routines, tpls] = await Promise.all([liveRoutines(trainerId), templates(trainerId)]);
-      const now = ctx.now();
-      // Un solo lote: el ejercicio se archiva a la vez que sale de las rutinas y plantillas que lo
-      // prescribían, o no pasa nada. Solo se tocan las que lo usan.
-      const batch = writeBatch(ctx.db);
-      for (const r of routinesUsingExercise(routines, exerciseId)) {
-        batch.set(
-          ref(ctx, COLLECTIONS.routines, r.id),
-          { ...removeExerciseFromRoutine(r, exerciseId), updatedAt: now },
-          { merge: true },
+      const usingRoutines = routinesUsingExercise(routines, exerciseId);
+      const usingTemplates = routinesUsingExercise(tpls, exerciseId);
+      return runTransaction(ctx.db, async (tx) => {
+        const exerciseRef = ref(ctx, name, exerciseId);
+        const { value: exercise } = await txRequireOwn(
+          tx,
+          exerciseRef,
+          exerciseSchema,
+          trainerId,
+          "Ejercicio",
         );
-      }
-      for (const t of routinesUsingExercise(tpls, exerciseId)) {
-        batch.set(
-          ref(ctx, COLLECTIONS.routineTemplates, t.id),
-          { ...removeExerciseFromRoutine(t, exerciseId), updatedAt: now },
-          { merge: true },
-        );
-      }
-      batch.update(ref(ctx, name, exerciseId), { status: "archivado" });
-      await batch.commit();
-      return { ...exercise, status: "archivado" };
+        const [freshRoutines, freshTemplates] = await Promise.all([
+          Promise.all(
+            usingRoutines.map((r) =>
+              txRequireOwn(
+                tx,
+                ref(ctx, COLLECTIONS.routines, r.id),
+                routineSchema,
+                trainerId,
+                "Rutina",
+              ),
+            ),
+          ),
+          Promise.all(
+            usingTemplates.map((t) =>
+              txRequireOwn(
+                tx,
+                ref(ctx, COLLECTIONS.routineTemplates, t.id),
+                routineTemplateSchema,
+                trainerId,
+                "Plantilla",
+              ),
+            ),
+          ),
+        ]);
+        const now = ctx.now();
+        // El ejercicio se archiva a la vez que sale de las rutinas y plantillas que lo prescribían,
+        // o no pasa nada. Una rutina archivada entretanto ya no se toca (§7).
+        for (const { value: r } of freshRoutines) {
+          if (r.status === "archivado") continue;
+          tx.set(
+            ref(ctx, COLLECTIONS.routines, r.id),
+            { ...removeExerciseFromRoutine(r, exerciseId), updatedAt: now },
+            { merge: true },
+          );
+        }
+        for (const { value: t } of freshTemplates) {
+          tx.set(
+            ref(ctx, COLLECTIONS.routineTemplates, t.id),
+            { ...removeExerciseFromRoutine(t, exerciseId), updatedAt: now },
+            { merge: true },
+          );
+        }
+        tx.update(exerciseRef, { status: "archivado" });
+        return { ...exercise, status: "archivado" as const };
+      });
     },
   };
 }

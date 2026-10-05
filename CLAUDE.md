@@ -19,14 +19,14 @@ Arquitectura multi-tenant desde el primer día, aunque en el lanzamiento solo op
 
 Estas seis se comprueban antes de dar por buena cualquier tarea.
 
-1. **El backend está decidido, pero no implementado.** Firebase para los datos y la auth, y el
-   Drive del entrenador para las imágenes de las revisiones (`docs/dominio.md` §9 y §12). La
-   instrucción operativa no cambia: **no instales ni importes ningún SDK de backend, ni
-   `firebase`, ni `@supabase/*`, ni un ORM, ni nada que hable con una base de datos.** Cuando se
-   coja la tarjeta del adaptador, el SDK entra **solo por `lib/data/adapters/firebase/`**, detrás
-   de las interfaces de `lib/data/ports/`: ningún componente y ningún hook lo importa nunca, que
-   es lo que hace que la regla 3 siga siendo cierta con un backend real detrás. Si una tarea
-   parece exigirlo antes de esa tarjeta, para y pregunta.
+1. **El backend es Firebase y su SDK entra solo por `lib/data/adapters/firebase/`.** Firebase
+   para los datos y la auth, y el Drive del entrenador para las imágenes de las revisiones
+   (`docs/dominio.md` §9 y §12). Detrás de las interfaces de `lib/data/ports/`: ningún componente
+   y ningún hook importa `firebase` ni `@firebase/*`, que es lo que hace que la regla 3 siga
+   siendo cierta con un backend real detrás, y ESLint lo impide (`no-restricted-imports`). No
+   instales ningún otro SDK de backend (`@supabase/*`, un ORM, nada que hable con una base de
+   datos) sin tarjeta. El adaptador se escribe por tarjetas (16 y 35) y `app/providers.tsx` sigue
+   montando el adaptador en memoria hasta que el de Firebase cubra todos los puertos.
 2. **El dominio es puro.** Nada dentro de `lib/domain/` importa React, Next, el DOM ni la red.
    Es TypeScript y zod, y se ejecuta igual en Node, en el navegador y algún día en React Native.
 3. **Los datos entran por el puerto.** Ningún componente llama a una fuente de datos
@@ -60,7 +60,8 @@ Estas seis se comprueban antes de dar por buena cualquier tarea.
 | Gráficas | Recharts |
 | Fechas | date-fns + @date-fns/tz |
 | PWA | Serwist |
-| Tests | Vitest |
+| Backend | Firebase (Firestore y Auth), con el SDK solo en `lib/data/adapters/firebase/` |
+| Tests | Vitest; el adaptador de Firebase y las reglas, contra los emuladores (necesitan Java) |
 | Gestor de paquetes | pnpm. Node 22 |
 
 **Sin fetching en Server Components.** Es deliberado: el backend es Firebase (`docs/dominio.md`
@@ -77,7 +78,7 @@ todas formas porque el diseño móvil será otro. Por eso la regla 2 no es negoc
 
 ```
 app/
-  (auth)/login/
+  (auth)/login/, accept-invite/
   (client)/           routine, menu, weight, review, progress, membership, view-review
   (trainer)/          dashboard, clients, clients/new, clients/[clientId],
                       clients/[clientId]/edit, clients/[clientId]/editor,
@@ -92,16 +93,19 @@ components/
   editor/             editores de rutina y menú, comunes a plantillas y editor de plan
   client/             pantallas del cliente
   trainer/            pantallas del entrenador
-  login-form.tsx, login-hero.tsx
+  login-form.tsx, accept-invite-form.tsx, login-hero.tsx
 lib/
   domain/             tipos, esquemas zod, invariantes. CERO dependencias externas
   data/
     ports/            interfaces de repositorio
     adapters/mock/    implementación en memoria con datos de demo
+    adapters/firebase/  Firestore y Auth: el único sitio que importa el SDK, con sus tests de
+                        emulador (`rules/` para las reglas de seguridad)
     hooks/            TanStack Query sobre los puertos
   design/             tokens
   i18n/es.ts          todos los literales visibles
   format.ts           formateadores de fechas y cifras
+  session-access.ts   qué área carga cada rol (panel del entrenador o área de cliente)
 docs/
   dominio.md
   estado.md
@@ -218,7 +222,8 @@ el entorno mide lo que crees. Ya ha mentido cinco veces:
   que hidrate);
 - un aviso de hidratación que solo daba la primera compilación de `pnpm dev`;
 - `pnpm typecheck` en rojo con un `.next` antiguo: `tsconfig.json` incluye `.next/types`, así que
-  comprueba tipos de rutas que ya no existen. Se arregla reconstruyendo (`pnpm build`), no tocando
+  comprueba tipos de rutas que ya no existen, y pasa también al cambiar de rama si una tenía
+  páginas que la otra no. Se arregla reconstruyendo (`pnpm build`) o borrando `.next`, no tocando
   el código;
 - con el panel del navegador oculto, TanStack Query pausa los reintentos porque la página no está
   visible, y una pantalla se queda en «Cargando…» en vez de llegar a su estado de error. El
@@ -431,16 +436,24 @@ pnpm build        # producción
 pnpm test         # Vitest
 pnpm lint         # ESLint
 pnpm typecheck    # tsc --noEmit
+pnpm test:firebase  # adaptador de Firebase contra los emuladores de Firestore y Auth
+pnpm test:rules     # reglas de seguridad (`firestore.rules`) contra el emulador de Firestore
 ```
+
+Los dos `test:*` de Firebase arrancan los emuladores con `firebase-tools` y necesitan **Java**
+(JDK 21). Sin emulador, `pnpm test` salta esos archivos y sigue siendo solo de dominio.
+`firebase.json` carga las reglas; `firebase.open.json` no, para que el adaptador se pruebe sin
+autenticarse.
 
 ---
 
 ## Estado
 
 Cimientos terminados (18-09-2026): esqueleto, sistema de diseño, dominio con tests, capa de
-datos con adaptador en memoria y armazón de navegación con las dos áreas. Sin backend, sin auth
-real y sin persistencia: `app/providers.tsx` monta el adaptador en memoria y `SessionPort`
-devuelve una sesión de demo (Adrián como entrenador, Marta como cliente). Los datos de demo se
+datos con adaptador en memoria y armazón de navegación con las dos áreas. `app/providers.tsx`
+monta todavía el adaptador en memoria y `SessionPort` devuelve una sesión de demo (Adrián como
+entrenador, con Marta a mano para recorrer las dos áreas); el de Firebase existe pero no está
+montado. Los datos de demo se
 generan relativos a la fecha de hoy (Marta siempre en su semana 5), no con fechas fijas.
 Detalle, decisiones y dudas en `docs/estado.md`.
 
@@ -463,8 +476,10 @@ plan activo no se edita en sitio (§6 y §7); sus treinta hallazgos están cerra
 60, salvo el resto de E19 (login), que va con la auth real (35).
 
 Backend decidido el 29-09-2026 —Firebase para datos y auth, Drive del entrenador para las
-imágenes—, escrito en `docs/dominio.md` §9 y §12 y todavía sin implementar. Falta, por este
-orden: reglas de seguridad (tarjeta 34), adaptador (16), auth (35), fotos en el Drive (17) y
-consentimiento del alta con el borrado a petición (31). Lo pendiente, con su tarjeta, en
-«Siguiente» de `docs/estado.md`. Esta sección se actualiza en el PR de documentación posterior a
-cada fusión.
+imágenes—, escrito en `docs/dominio.md` §9 y §12. Acceso por correo y contraseña, con invitación
+por enlace de correo (decidido el 03-10-2026, §12). En `main`: auth, invitaciones y entrada por
+rol (tarjeta 35, PR #44) y reglas de seguridad de Firestore con tests de emulador (tarjeta 34,
+PR #45). Falta, por este orden: desplegar las reglas y crear a mano el `users/{uid}` del
+entrenador, adaptador de datos (16, sin fusionar), fotos en el Drive (17) y consentimiento del
+alta con el borrado a petición (31). Lo pendiente, con su tarjeta, en «Siguiente» de
+`docs/estado.md`. Esta sección se actualiza en el PR de documentación posterior a cada fusión.

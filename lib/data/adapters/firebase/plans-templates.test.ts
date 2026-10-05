@@ -339,7 +339,7 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
       ).rejects.toMatchObject({ code: "not_found" });
     });
 
-    it("duplicates with a new id and name, and counts no use for the copy", async () => {
+    it("duplicates with a new id and name", async () => {
       const templates = createTemplatePort(ctx);
       const copy = await templates.duplicateRoutineTemplate(
         TRAINER_ID,

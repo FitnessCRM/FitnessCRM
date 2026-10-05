@@ -1,8 +1,8 @@
 # Estado del proyecto
 
-Última actualización: 02-10-2026. Corresponde a `main` en `99b276a` (PR #42). Están en `main` los
-cimientos, las siete pantallas del cliente y el panel del entrenador; falta el backend
-(«Siguiente»). Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
+Última actualización: 05-10-2026. Corresponde a `main` en `d68935c` (PR #46). Están en `main` los
+cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
+seguridad; falta el adaptador de datos de Firebase («Siguiente»). Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
 ## Cómo se trabajó hasta aquí
 
@@ -565,6 +565,30 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   tarjetas 52 y 39. Siguen abiertos los huecos menores (tarjeta 61) y lo que apareció por el
   camino (62, 63 y 64).
 
+- **Autenticación con correo y contraseña e invitación por enlace** (tarjeta 35, PR #44).
+  `docs/dominio.md` §12. Se aparta de la descripción de la tarjeta, que pedía Google obligatorio:
+  **no hay login con Google** (decisión del 03-10-2026). El entrenador da de alta al cliente, la app
+  le envía un enlace de correo, el cliente lo abre, reescribe su correo y crea su contraseña, y en
+  ese primer acceso pasa de `invitado` a `activo`. Nuevo `InvitationPort` (con mock) y `Session`
+  con `role`; `RoleGate` en los dos layouts manda a cada cuenta a su área (`lib/session-access.ts`);
+  pantalla `/accept-invite` sin captura, sobre el layout del login. El alta de cliente envía la
+  invitación y, si falla un paso, el reintento repite solo el que falta (antes habría duplicado la
+  membresía). `users/{uid}` enlaza cuenta y persona; el del entrenador lo crea el propietario a mano.
+  El enlace lleva el id del cliente (`?c=`), no su correo. Deuda: los correos no se normalizan a
+  minúsculas (cambio de dominio, sin tarjeta); `/login` no redirige a quien ya tiene sesión; falta
+  cerrar sesión (tarjeta 50).
+
+- **Reglas de seguridad de Firestore** (tarjeta 34, PR #45). `firestore.rules` defiende I1, I2, I11,
+  I13, I15, I16, I17, I18, I21, I22, I23 e I26 con 34 tests de emulador (`pnpm test:rules`); I3, I4,
+  I25 e I27 y la mitad de I8 quedan en el adaptador, y el encabezado del archivo lo dice. Dos
+  campos fuera del dominio, `hasResponses` y `hasMeasurements`, son banderas del catálogo que sube
+  el cliente. **Las reglas no están desplegadas en el proyecto de Firebase.** Consecuencia para el
+  adaptador: el cliente solo lee rutinas, menús y macros que no sean borrador, así que sus consultas
+  tienen que filtrar por estado.
+
+- **Configuración de los emuladores** (PR #46, sin tarjeta). `test:firebase` ejecuta ahora también el
+  emulador de Auth; antes los tests de auth se saltaban siempre.
+
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
   `trainer/`) y #33 (enlace a la revisión desde el panel de control, rama
@@ -576,11 +600,13 @@ Las pantallas del cliente y del panel están en `main`. Desde el 21-09-2026 trab
 (sección «Equipo» de `CLAUDE.md`) y este archivo es un resumen curado que se escribe en un PR de
 documentación después de cada fusión. Lo que queda, con su tarjeta:
 
-- **Backend**, en este orden: reglas de seguridad de Firestore (tarjeta 34), que van antes o
-  junto al adaptador porque sin ellas la base está abierta; adaptador de Firebase (16), con la
-  deuda de consultas caras y escrituras atómicas anotada en la tarjeta; auth real con Firebase
-  Auth y Google (35); fotos de revisión en el Drive del entrenador (17); y consentimiento del alta
-  con el borrado a petición (31).
+- **Backend**, por este orden: desplegar las reglas de seguridad (tarjeta 34, ya en `main`) y
+  crear a mano el `users/{uid}` del entrenador; adaptador de datos de Firebase (16), del que solo
+  existe en una rama local la sección 1 (entrenador, catálogos, ejercicios y registros), con la
+  deuda de consultas caras y escrituras atómicas anotada en la tarjeta, y que al cubrir todos los
+  puertos se monta en `providers.tsx`; fotos de revisión en el Drive del entrenador (17), cuyo
+  planteamiento depende ahora de que el acceso no sea con Google; y consentimiento del alta con el
+  borrado a petición (31).
 - **CI** en GitHub Actions (tarjeta 28): `lint`, `typecheck`, `test` y `build` en cada PR, que es
   lo que podrá exigir la protección de rama.
 - **Decisiones de dominio pendientes**: los huecos menores de la revisión de errores, H5, H6, H7 y
