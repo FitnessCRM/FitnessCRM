@@ -14,15 +14,14 @@ import {
   countTemplateExercises,
   type CivilDate,
 } from "@/lib/domain";
-import type { MenuTemplateSummary, RoutineTemplateSummary } from "@/lib/data/ports";
+import type { MenuTemplate, RoutineTemplate } from "@/lib/domain";
 import { formatShortDate } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 
 const t = es.screensTemplates;
 
 export type TemplateItem =
-  | { kind: "routine"; template: RoutineTemplateSummary }
-  | { kind: "menu"; template: MenuTemplateSummary };
+  { kind: "routine"; template: RoutineTemplate } | { kind: "menu"; template: MenuTemplate };
 
 function plural(n: number, forms: { one: string; other: string }) {
   return `${n} ${n === 1 ? forms.one : forms.other}`;
@@ -43,11 +42,6 @@ function details(item: TemplateItem): string {
           plural(item.template.menus.length, t.menus),
         ];
   return parts.filter(Boolean).join(" · ");
-}
-
-function usageLabel(count: number): string {
-  if (count === 0) return t.usage.none;
-  return count === 1 ? t.usage.one : t.usage.other.replace("{n}", String(count));
 }
 
 /**
@@ -107,8 +101,7 @@ export function TemplateCard({
       </h2>
       <p className="text-text-muted mt-1 text-[13px]">{details(item)}</p>
       <p className="border-border-subtle text-text-subtle mt-4 border-t pt-3 text-xs">
-        {usageLabel(template.usageCount)} · {t.edited}{" "}
-        <time dateTime={edited}>{formatShortDate(edited, today)}</time>
+        {t.edited} <time dateTime={edited}>{formatShortDate(edited, today)}</time>
       </p>
     </article>
   );

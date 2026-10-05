@@ -16,18 +16,16 @@ const t = es.screensTemplates.deleteDialog;
 
 /**
  * Eliminar una plantilla no toca los planes de nadie (§4: se clonan al asignar). Se dice antes
- * de confirmar, con a cuántos clientes se les copió, para que nadie crea que borra su plan.
+ * de confirmar, para que nadie crea que borra su plan.
  */
 export function DeleteDialog({
   name,
-  usageCount,
   isWorking,
   hasError,
   onConfirm,
   onOpenChange,
 }: {
   name: string;
-  usageCount: number;
   isWorking: boolean;
   hasError: boolean;
   onConfirm: () => void;
@@ -42,11 +40,6 @@ export function DeleteDialog({
           </DialogTitle>
           <DialogDescription>{t.intro}</DialogDescription>
         </DialogHeader>
-        {usageCount > 0 ? (
-          <p className="text-text-muted text-[14px]">
-            {usageCount === 1 ? t.usedByOne : t.usedBy.replace("{n}", String(usageCount))}
-          </p>
-        ) : null}
         {hasError ? <ErrorState message={t.error} /> : null}
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={isWorking}>

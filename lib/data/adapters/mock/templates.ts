@@ -11,34 +11,20 @@ import {
 import { findOwn, own, removeById, replaceById } from "./helpers";
 import type { MockContext } from "./store";
 
-/** Clientes distintos con algún plan copiado de una plantilla con ese nombre congelado. */
-function usageByName(plans: { clientId: string; sourceTemplateName: string | null }[]) {
-  const clientsByName = new Map<string, Set<string>>();
-  for (const plan of plans) {
-    if (plan.sourceTemplateName === null) continue;
-    const clients = clientsByName.get(plan.sourceTemplateName) ?? new Set<string>();
-    clients.add(plan.clientId);
-    clientsByName.set(plan.sourceTemplateName, clients);
-  }
-  return (name: string) => clientsByName.get(name)?.size ?? 0;
-}
-
 export function createTemplatePort(ctx: MockContext): TemplatePort {
   return {
     listRoutineTemplates: async (trainerId) => {
-      const usage = usageByName(own(ctx.state.routines, trainerId));
       return ctx.reply(
-        own(ctx.state.routineTemplates, trainerId)
-          .map((t) => ({ ...t, usageCount: usage(t.name) }))
-          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+        own(ctx.state.routineTemplates, trainerId).sort((a, b) =>
+          b.updatedAt.localeCompare(a.updatedAt),
+        ),
       );
     },
     listMenuTemplates: async (trainerId) => {
-      const usage = usageByName(own(ctx.state.menus, trainerId));
       return ctx.reply(
-        own(ctx.state.menuTemplates, trainerId)
-          .map((t) => ({ ...t, usageCount: usage(t.name) }))
-          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+        own(ctx.state.menuTemplates, trainerId).sort((a, b) =>
+          b.updatedAt.localeCompare(a.updatedAt),
+        ),
       );
     },
     duplicateRoutineTemplate: async (trainerId, templateId, name) => {
