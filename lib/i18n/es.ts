@@ -1128,6 +1128,15 @@ export const es = {
       cancel: "Cancelar",
       saving: "Guardando…",
     },
+    /** Invitación pendiente de un cliente que aún no ha entrado. `{email}` lo rellena la pantalla. */
+    invitation: {
+      title: "Invitación pendiente",
+      hint: "Aún no ha entrado. Se le envió un enlace a {email}; si no lo encuentra o ha caducado, puedes enviarle otro.",
+      action: "Reenviar invitación",
+      sending: "Enviando…",
+      sent: "Invitación enviada a {email}.",
+      failed: "No se ha podido enviar la invitación.",
+    },
     membership: {
       title: "Membresía",
       manage: "Gestionar",
