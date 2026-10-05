@@ -104,6 +104,7 @@ export const es = {
         submitting: "Entrando…",
         forgotPassword: "He olvidado mi contraseña",
         errorInvalid: "Email o contraseña incorrectos",
+        errorNoProfile: "Esta cuenta aún no tiene acceso a la app",
         errorNetwork: "No se ha podido conectar",
       },
     },

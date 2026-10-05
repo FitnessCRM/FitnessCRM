@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
 import { doc, setDoc, type Firestore } from "firebase/firestore";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createDemoState, type MockState } from "../../mock";
+import { menuBodySchema, routineBodySchema } from "@/lib/domain";
+import { createDemoState, createMockPorts, type MockState } from "../../mock";
 import { CLIENT_IDS, TRAINER_ID } from "../../mock/demo-data/common";
 import { createMeasurementTypePort, createQuestionnairePort } from "../catalogs";
 import { createClientPort } from "../clients";
@@ -11,6 +12,9 @@ import { createExercisePort } from "../exercises";
 import { COLLECTIONS } from "../helpers";
 import { createWeightLogPort, createWorkoutLogPort } from "../logs";
 import { createMembershipPort } from "../memberships";
+import { createReviewPort, reviewDocId } from "../reviews";
+import { createMacroTargetsPort, createMenuPort, createRoutinePort } from "../plans";
+import { createTemplatePort } from "../templates";
 import { createTrainerPort } from "../trainer";
 
 /**
@@ -42,6 +46,8 @@ describe.skipIf(!emulatorHost)("el adaptador de Firebase bajo las reglas de segu
   beforeEach(async () => {
     await env.clearFirestore();
     state = createDemoState(TODAY);
+    // I16: el id de una revisión es `{clientId}_{semana}`; los de la demo son otros.
+    for (const r of state.reviews) r.id = reviewDocId(r.clientId, r.weekNumber);
     await env.withSecurityRulesDisabled(async (admin) => {
       const db = admin.firestore();
       const seed = (name: string, items: { id: string }[]) =>
@@ -52,6 +58,9 @@ describe.skipIf(!emulatorHost)("el adaptador de Firebase bajo las reglas de segu
       await seed(COLLECTIONS.exercises, state.exercises);
       await seed(COLLECTIONS.routines, state.routines);
       await seed(COLLECTIONS.routineTemplates, state.routineTemplates);
+      await seed(COLLECTIONS.menus, state.menus);
+      await seed(COLLECTIONS.macroTargets, state.macroTargets);
+      await seed(COLLECTIONS.menuTemplates, state.menuTemplates);
       await seed(COLLECTIONS.measurementTypes, state.measurementTypes);
       await seed(COLLECTIONS.questions, state.questions);
       await seed(COLLECTIONS.reviews, state.reviews);
@@ -186,6 +195,151 @@ describe.skipIf(!emulatorHost)("el adaptador de Firebase bajo las reglas de segu
     });
   });
 
+  describe("revisiones, de punta a punta", () => {
+    /** Un cliente activo sin revisión esta semana: donde el cliente abre la suya. */
+    const clientToOpen = async () => {
+      const reference = createMockPorts({
+        state: structuredClone(state),
+        today: TODAY,
+        now: () => NOW,
+      });
+      for (const c of state.clients) {
+        if (c.status !== "activo") continue;
+        if ((await reference.reviews.getCurrentReview(TRAINER_ID, c.id)) === null) return c.id;
+      }
+      throw new Error("La demo no tiene un cliente sin revisión de esta semana");
+    };
+
+    it("the client fills and sends it, the trainer sees it and gives feedback", async () => {
+      const clientId = await clientToOpen();
+      const mine = createReviewPort(client(clientId));
+      const opened = await mine.openCurrentReview(TRAINER_ID, clientId);
+      expect(opened.id).toBe(reviewDocId(clientId, opened.weekNumber));
+
+      const typeId = opened.requirements.measurementTypeIds[0]!;
+      const question = state.questions.find((q) => opened.requirements.questionIds.includes(q.id))!;
+      await mine.updateReviewDraft(TRAINER_ID, opened.id, {
+        measurements: [{ measurementTypeId: typeId, value: 80 }],
+        responses: [
+          {
+            questionId: question.id,
+            value: question.format.kind === "escala" ? question.format.min : "bien",
+          },
+        ],
+      });
+      await mine.attachReviewMedia(TRAINER_ID, opened.id, "frente", "blob:uno");
+      expect((await mine.submitReview(TRAINER_ID, opened.id)).status).toBe("enviada");
+      expect((await mine.getCurrentReview(TRAINER_ID, clientId))?.id).toBe(opened.id);
+      expect(
+        (await mine.listClientReviews(TRAINER_ID, clientId)).some((r) => r.id === opened.id),
+      ).toBe(true);
+
+      // El cliente subió las banderas del catálogo, y desde entonces unidad y formato quedan fijos.
+      const types = createMeasurementTypePort(trainer());
+      expect(await types.measurementTypeHasMeasurements(TRAINER_ID, typeId)).toBe(true);
+      expect(
+        await createQuestionnairePort(trainer()).questionHasResponses(TRAINER_ID, question.id),
+      ).toBe(true);
+
+      const theirs = createReviewPort(trainer());
+      const table = await theirs.listReviewsTracking(TRAINER_ID, {
+        filter: "enviada",
+        search: "",
+        page: 0,
+        pageSize: 50,
+      });
+      expect(table.rows.some((r) => r.review.id === opened.id)).toBe(true);
+      expect((await theirs.getReviewStats(TRAINER_ID)).unviewed).toBeGreaterThan(0);
+      expect((await theirs.markReviewViewed(TRAINER_ID, opened.id)).status).toBe("vista");
+      const done = await theirs.sendReviewFeedback(TRAINER_ID, opened.id, {
+        videoUrl: "https://example.com/v",
+        note: "Bien",
+      });
+      expect(done.status).toBe("revisada");
+    });
+
+    it("the client cannot view, give feedback or read another client's review", async () => {
+      const clientId = await clientToOpen();
+      const mine = createReviewPort(client(clientId));
+      const opened = await mine.openCurrentReview(TRAINER_ID, clientId);
+      await mine.submitReview(TRAINER_ID, opened.id);
+      await expect(mine.markReviewViewed(TRAINER_ID, opened.id)).rejects.toThrow();
+      await expect(
+        mine.sendReviewFeedback(TRAINER_ID, opened.id, { videoUrl: null, note: "yo" }),
+      ).rejects.toThrow();
+      const other = state.clients.find((c) => c.id !== clientId && c.status === "activo")!;
+      await expect(
+        createReviewPort(client(other.id)).getReview(TRAINER_ID, opened.id),
+      ).rejects.toThrow();
+      await expect(
+        mine.listReviewsTracking(TRAINER_ID, { filter: "todas", search: "", page: 0, pageSize: 5 }),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe("como entrenador · planes y plantillas", () => {
+    const marta = CLIENT_IDS.marta;
+    const activeRoutine = () =>
+      state.routines.find((r) => r.clientId === marta && r.status === "activo")!;
+
+    it("creates, revises and activates a routine, archiving the previous one", async () => {
+      const routines = createRoutinePort(trainer());
+      const body = routineBodySchema.parse(activeRoutine());
+      const draft = await routines.createRoutine(TRAINER_ID, marta, body);
+      await routines.updateRoutine(TRAINER_ID, draft.id, { ...body, name: "Otra" });
+      const activated = await routines.activateRoutine(TRAINER_ID, draft.id);
+      expect(activated.status).toBe("activo");
+      const revised = await routines.reviseRoutine(TRAINER_ID, activated.id, body);
+      expect(revised.status).toBe("borrador");
+      const all = await routines.listRoutines(TRAINER_ID, marta);
+      expect(all.filter((r) => r.status === "activo")).toHaveLength(1);
+    });
+
+    it("sets macros and manages menus with their day-type set", async () => {
+      const macros = createMacroTargetsPort(trainer());
+      const set = await macros.setMacroTargets(TRAINER_ID, marta, "descanso", {
+        kcal: 2100,
+        proteinG: 170,
+        carbsG: 200,
+        fatG: 70,
+      });
+      expect(set.status).toBe("activo");
+
+      const menus = createMenuPort(trainer());
+      const active = state.menus.find((m) => m.clientId === marta && m.status === "activo")!;
+      const draft = await menus.reviseMenu(TRAINER_ID, active.id, menuBodySchema.parse(active));
+      const activated = await menus.activateMenus(TRAINER_ID, marta, active.dayType);
+      expect(activated.map((m) => m.id)).toEqual([draft.id]);
+      await menus.archiveMenu(TRAINER_ID, draft.id);
+      const created = await menus.createMenu(TRAINER_ID, marta, menuBodySchema.parse(active));
+      await menus.updateMenu(TRAINER_ID, created.id, {
+        ...menuBodySchema.parse(active),
+        name: "Otro",
+      });
+    });
+
+    it("saves, duplicates, assigns and deletes templates", async () => {
+      const templates = createTemplatePort(trainer());
+      const source = state.routineTemplates[0]!;
+      const { id: _id, createdAt: _c, updatedAt: _u, ...input } = source;
+      void [_id, _c, _u];
+      const saved = await templates.saveRoutineTemplate({ ...input, name: "Mía" });
+      await templates.saveRoutineTemplate({ ...input, id: saved.id, name: "Mía v2" });
+      const copy = await templates.duplicateRoutineTemplate(TRAINER_ID, saved.id, "Copia");
+      await templates.assignRoutineTemplate(TRAINER_ID, CLIENT_IDS.jorge, copy.id);
+      const menuTemplate = state.menuTemplates[0]!;
+      const assigned = await templates.assignMenuTemplate(
+        TRAINER_ID,
+        CLIENT_IDS.jorge,
+        menuTemplate.id,
+      );
+      expect(assigned.length).toBe(menuTemplate.menus.length);
+      expect((await templates.listRoutineTemplates(TRAINER_ID)).length).toBeGreaterThan(1);
+      expect((await templates.listMenuTemplates(TRAINER_ID)).length).toBeGreaterThan(0);
+      await templates.deleteRoutineTemplate(TRAINER_ID, copy.id);
+    });
+  });
+
   describe("como cliente", () => {
     it("logs a weight, replaces it on the same day and deletes it", async () => {
       const ctx = client(CLIENT_IDS.marta);
@@ -242,6 +396,40 @@ describe.skipIf(!emulatorHost)("el adaptador de Firebase bajo las reglas de segu
         ),
       ).toBe(true);
       await workouts.deleteWorkoutLog(TRAINER_ID, saved.id);
+    });
+
+    it("reads the published plan and never a draft or the whole history", async () => {
+      const marta = CLIENT_IDS.marta;
+      const ctx = client(marta);
+      const routine = await createRoutinePort(ctx).getActiveRoutine(TRAINER_ID, marta);
+      expect(routine?.status).toBe("activo");
+      expect(
+        (await createMacroTargetsPort(ctx).listMacroTargets(TRAINER_ID, marta)).length,
+      ).toBeGreaterThan(0);
+      expect((await createMenuPort(ctx).listActiveMenus(TRAINER_ID, marta)).length).toBeGreaterThan(
+        0,
+      );
+      // Los borradores y el histórico completo son del entrenador.
+      await expect(createRoutinePort(ctx).listRoutines(TRAINER_ID, marta)).rejects.toThrow();
+      await expect(createMenuPort(ctx).listMenus(TRAINER_ID, marta)).rejects.toThrow();
+    });
+
+    it("cannot write a plan", async () => {
+      const marta = CLIENT_IDS.marta;
+      const body = routineBodySchema.parse(
+        state.routines.find((r) => r.clientId === marta && r.status === "activo")!,
+      );
+      await expect(
+        createRoutinePort(client(marta)).createRoutine(TRAINER_ID, marta, body),
+      ).rejects.toThrow();
+      await expect(
+        createMacroTargetsPort(client(marta)).setMacroTargets(TRAINER_ID, marta, "descanso", {
+          kcal: 1,
+          proteinG: 1,
+          carbsG: 1,
+          fatG: 1,
+        }),
+      ).rejects.toThrow();
     });
 
     it("reads their own record and nobody else's", async () => {
