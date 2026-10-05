@@ -1,6 +1,7 @@
 import type { MeasurementTypePort, QuestionnairePort } from "./catalogs";
 import type { ClientPort } from "./clients";
 import type { ExercisePort } from "./exercises";
+import type { InvitationPort } from "./invitations";
 import type { MembershipPort } from "./memberships";
 import type { MacroTargetsPort, MenuPort, RoutinePort } from "./plans";
 import type { ReviewPort } from "./reviews";
@@ -13,6 +14,7 @@ import type { WorkoutLogPort } from "./workout-logs";
 export type * from "./catalogs";
 export type * from "./clients";
 export type * from "./exercises";
+export type * from "./invitations";
 export type * from "./memberships";
 export type * from "./plans";
 export type * from "./reviews";
@@ -38,6 +40,7 @@ export type * from "./workout-logs";
  */
 export interface DataPorts {
   session: SessionPort;
+  invitations: InvitationPort;
   trainer: TrainerPort;
   clients: ClientPort;
   memberships: MembershipPort;

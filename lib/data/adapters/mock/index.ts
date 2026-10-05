@@ -2,6 +2,7 @@ import type { DataPorts } from "@/lib/data/ports";
 import { createMeasurementTypePort, createQuestionnairePort } from "./catalogs";
 import { createExercisePort } from "./exercises";
 import { createIdFactory } from "./ids";
+import { createInvitationPort } from "./invitations";
 import { createWeightLogPort, createWorkoutLogPort } from "./logs";
 import {
   createClientPort,
@@ -34,6 +35,7 @@ export function createMockPorts(options: MockPortsOptions = {}): DataPorts & { s
   return {
     state,
     session: createSessionPort(ctx),
+    invitations: createInvitationPort(ctx),
     trainer: createTrainerPort(ctx),
     clients: createClientPort(ctx),
     memberships: createMembershipPort(ctx),

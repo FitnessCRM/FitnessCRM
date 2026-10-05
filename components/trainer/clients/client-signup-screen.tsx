@@ -4,7 +4,12 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { ErrorState, LoadingState } from "@/components/ui/states";
-import { useCreateClient, useSaveMembership, useTrainer } from "@/lib/data/hooks";
+import {
+  useCreateClient,
+  useSaveMembership,
+  useSendInvitation,
+  useTrainer,
+} from "@/lib/data/hooks";
 import type { Client } from "@/lib/domain";
 import { todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
@@ -16,17 +21,19 @@ const t = es.screensClientSignup;
 const DEFAULT_REVIEW_EVERY_DAYS = 7;
 
 /**
- * Alta de cliente (`/clients/new`). Crea el cliente —siempre `invitado`, lo fija el adaptador—
- * y su membresía inicial. Son dos escrituras de los puertos y no hay transacción entre ellas: si
- * la segunda falla el cliente ya existe, y reintentar solo repite la membresía en vez de crear un
- * segundo cliente.
+ * Alta de cliente (`/clients/new`). Crea el cliente —siempre `invitado`, lo fija el adaptador—,
+ * su membresía inicial y le envía la invitación por correo. Son tres operaciones de los puertos y
+ * no hay transacción entre ellas: si una falla las anteriores ya están hechas, y reintentar solo
+ * repite la que falta en vez de crear un segundo cliente o una segunda membresía.
  */
 export function ClientSignupScreen() {
   const router = useRouter();
   const trainer = useTrainer();
   const createClient = useCreateClient();
   const saveMembership = useSaveMembership();
+  const sendInvitation = useSendInvitation(trainer.data?.id ?? "");
   const created = useRef<Client | null>(null);
+  const membershipSaved = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const submit = async (values: SignupValues, intent: SignupIntent) => {
@@ -49,15 +56,25 @@ export function ClientSignupScreen() {
     }
 
     const client = created.current;
+    if (!membershipSaved.current) {
+      try {
+        await saveMembership.mutateAsync({
+          create: {
+            clientId: client.id,
+            ...values.membership,
+          },
+        });
+        membershipSaved.current = true;
+      } catch (cause) {
+        setError(t.errors.membershipFailed);
+        throw cause;
+      }
+    }
+
     try {
-      await saveMembership.mutateAsync({
-        create: {
-          clientId: client.id,
-          ...values.membership,
-        },
-      });
+      await sendInvitation.mutateAsync(client.id);
     } catch (cause) {
-      setError(t.errors.membershipFailed);
+      setError(t.errors.invitationFailed);
       throw cause;
     }
 
@@ -75,7 +92,7 @@ export function ClientSignupScreen() {
     body = (
       <ClientSignupForm
         today={todayCivil(trainer.data.timeZone)}
-        isSaving={createClient.isPending || saveMembership.isPending}
+        isSaving={createClient.isPending || saveMembership.isPending || sendInvitation.isPending}
         error={error}
         onSubmit={submit}
       />
