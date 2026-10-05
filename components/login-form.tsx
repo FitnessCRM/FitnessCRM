@@ -11,6 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+/** Qué dice el formulario de cada fallo del puerto; lo que no conoce es un fallo de conexión. */
+function loginErrorMessage(error: Error): string {
+  if (error instanceof DomainError) {
+    if (error.code === "session.invalid_credentials") return es.pages.login.form.errorInvalid;
+    if (error.code === "session.no_profile") return es.pages.login.form.errorNoProfile;
+  }
+  return es.pages.login.form.errorNetwork;
+}
+
 export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,11 +46,7 @@ export function LoginForm() {
           },
           onError: (error) => {
             if (error instanceof Error) {
-              setError(
-                error instanceof DomainError && error.code === "session.invalid_credentials"
-                  ? es.pages.login.form.errorInvalid
-                  : es.pages.login.form.errorNetwork,
-              );
+              setError(loginErrorMessage(error));
             } else {
               setError(es.pages.login.form.errorNetwork);
             }

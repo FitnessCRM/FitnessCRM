@@ -16,3 +16,8 @@ export { createMacroTargetsPort, createMenuPort, createRoutinePort } from "./pla
 export { createTemplatePort } from "./templates";
 export { createTrainerPort } from "./trainer";
 export { COLLECTIONS, FLAGS } from "./helpers";
+export {
+  createFirebasePorts,
+  createFirebasePortsFromEnv,
+  type FirebasePortsOptions,
+} from "./ports";
