@@ -887,6 +887,8 @@ export const es = {
       clientFailed: "No se ha podido crear el cliente.",
       membershipFailed:
         "El cliente se ha creado, pero no su membresía. Vuelve a pulsar para añadirla.",
+      invitationFailed:
+        "El cliente se ha creado, pero no se ha podido enviar la invitación. Vuelve a pulsar para enviarla.",
     },
   },
   screensClients: {
