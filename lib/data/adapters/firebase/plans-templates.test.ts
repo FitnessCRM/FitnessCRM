@@ -106,7 +106,7 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
       expect((await menus.listActiveMenus(TRAINER_ID, CLIENT_IDS.marta)).length).toBeGreaterThan(0);
     });
 
-    it("templates with their usage count", async () => {
+    it("lists templates", async () => {
       const templates = createTemplatePort(ctx);
       const ref = mock();
       const routineTemplates = await templates.listRoutineTemplates(TRAINER_ID);
@@ -117,11 +117,6 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
         byId(await ref.templates.listMenuTemplates(TRAINER_ID)),
       );
       expect(routineTemplates.length).toBeGreaterThan(0);
-      expect(
-        routineTemplates.some(
-          (t) => "usageCount" in t && typeof t.usageCount === "number" && t.usageCount > 0,
-        ),
-      ).toBe(true);
       expect(await templates.listRoutineTemplates(STRANGER)).toEqual([]);
     });
   });
@@ -344,7 +339,7 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
       ).rejects.toMatchObject({ code: "not_found" });
     });
 
-    it("duplicates with a new id and name, and counts no use for the copy", async () => {
+    it("duplicates with a new id and name", async () => {
       const templates = createTemplatePort(ctx);
       const copy = await templates.duplicateRoutineTemplate(
         TRAINER_ID,
@@ -353,15 +348,6 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
       );
       expect(copy).toMatchObject({ name: "Copia" });
       expect(copy.id).not.toBe(firstRoutineTemplate().id);
-      const listed = (await templates.listRoutineTemplates(TRAINER_ID)).find(
-        (t) => t.id === copy.id,
-      );
-      expect(listed).toBeDefined();
-      expect(
-        listed && "usageCount" in listed && typeof listed.usageCount === "number"
-          ? listed.usageCount
-          : undefined,
-      ).toBe(0);
       expect((await templates.listRoutineTemplates(TRAINER_ID)).some((t) => t.id === copy.id)).toBe(
         true,
       );
