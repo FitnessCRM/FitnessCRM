@@ -2,12 +2,14 @@ import {
   collection,
   getCountFromServer,
   getDoc,
+  limit,
+  orderBy,
   query,
   runTransaction,
   where,
   type Transaction,
 } from "firebase/firestore";
-import type { ReviewPort, ReviewTrackingFilter } from "@/lib/data/ports";
+import type { ReviewPort, ReviewTrackingFilter, ReviewTrackingRow } from "@/lib/data/ports";
 import {
   DomainError,
   canClientEditReview,
@@ -48,6 +50,12 @@ import {
  */
 export const reviewDocId = (clientId: string, week: number) => `${clientId}_${week}`;
 
+const fold = (text: string) =>
+  text
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+
 const bySubmittedDesc = <T extends { submittedAt: string | null }>(a: T, b: T) =>
   (b.submittedAt ?? "").localeCompare(a.submittedAt ?? "");
 
@@ -86,9 +94,6 @@ export function createReviewPort(ctx: FirebaseContext): ReviewPort {
     return value;
   };
 
-  const receivedOf = (trainerId: string) =>
-    listOwn(ctx, name, reviewSchema, trainerId, where("status", "in", RECEIVED));
-
   return {
     listClientReviews: async (trainerId, clientId) =>
       (await listOwn(ctx, name, reviewSchema, trainerId, where("clientId", "==", clientId))).sort(
@@ -103,36 +108,103 @@ export function createReviewPort(ctx: FirebaseContext): ReviewPort {
       ),
 
     listReviewsTracking: async (trainerId, q) => {
-      const fold = (text: string) =>
-        text
-          .normalize("NFD")
-          .replace(/\p{Diacritic}/gu, "")
-          .toLowerCase();
       const needle = fold(q.search.trim());
-      const [clients, received] = await Promise.all([
-        listOwn(ctx, COLLECTIONS.clients, clientSchema, trainerId),
-        receivedOf(trainerId),
+      const clients = await listOwn(ctx, COLLECTIONS.clients, clientSchema, trainerId);
+      const rowsOf = (reviews: Review[]) =>
+        reviews.flatMap((review) => {
+          const client = clients.find((c) => c.id === review.clientId);
+          return client ? [{ review, client }] : [];
+        });
+      const start = q.page * q.pageSize;
+      const end = start + q.pageSize;
+
+      // Con búsqueda, los clientes que encajan se conocen sin tocar las revisiones, y solo se leen las
+      // suyas: el filtro por nombre no existe en el servidor. El estado se filtra en memoria porque
+      // dos `in` en la misma consulta (cliente y estado) pasan del límite de combinaciones.
+      if (needle !== "") {
+        const ids = clients
+          .filter((c) => fold(`${c.firstName} ${c.lastName}`).includes(needle))
+          .map((c) => c.id);
+        const received: Review[] = [];
+        for (let i = 0; i < ids.length; i += 30) {
+          const chunk = await listOwn(
+            ctx,
+            name,
+            reviewSchema,
+            trainerId,
+            where("clientId", "in", ids.slice(i, i + 30)),
+          );
+          received.push(...chunk.filter((r) => RECEIVED.includes(r.status)));
+        }
+        const named = rowsOf(received);
+        const counts: Record<ReviewTrackingFilter, number> = {
+          todas: named.length,
+          enviada: named.filter((r) => r.review.status === "enviada").length,
+          vista: named.filter((r) => r.review.status === "vista").length,
+          revisada: named.filter((r) => r.review.status === "revisada").length,
+        };
+        const rows = named
+          .filter((r) => q.filter === "todas" || r.review.status === q.filter)
+          .sort(
+            (a, b) =>
+              Number(b.review.status === "enviada") - Number(a.review.status === "enviada") ||
+              bySubmittedDesc(a.review, b.review),
+          )
+          .slice(start, end);
+        return { rows, counts };
+      }
+
+      // Sin búsqueda, los contadores son cuentas de servidor y la página sale de consultas con su
+      // propio orden y límite: no se trae el histórico, que crece cada semana. Necesita el índice
+      // compuesto de `firestore.indexes.json`.
+      const count = async (status: Review["status"]) =>
+        (
+          await getCountFromServer(
+            query(
+              collection(ctx.db, name),
+              where("trainerId", "==", trainerId),
+              where("status", "==", status),
+            ),
+          )
+        ).data().count;
+      const [enviada, vista, revisada] = await Promise.all([
+        count("enviada"),
+        count("vista"),
+        count("revisada"),
       ]);
-      const named = received.flatMap((review) => {
-        const client = clients.find((c) => c.id === review.clientId);
-        return client && fold(`${client.firstName} ${client.lastName}`).includes(needle)
-          ? [{ review, client }]
-          : [];
-      });
       const counts: Record<ReviewTrackingFilter, number> = {
-        todas: named.length,
-        enviada: named.filter((r) => r.review.status === "enviada").length,
-        vista: named.filter((r) => r.review.status === "vista").length,
-        revisada: named.filter((r) => r.review.status === "revisada").length,
+        todas: enviada + vista + revisada,
+        enviada,
+        vista,
+        revisada,
       };
-      const rows = named
-        .filter((r) => q.filter === "todas" || r.review.status === q.filter)
-        .sort(
-          (a, b) =>
-            Number(b.review.status === "enviada") - Number(a.review.status === "enviada") ||
-            bySubmittedDesc(a.review, b.review),
-        )
-        .slice(q.page * q.pageSize, (q.page + 1) * q.pageSize);
+      // El orden es «las nuevas primero y luego las más recientes»: son dos tramos consecutivos.
+      const segments: { statuses: Review["status"][]; total: number }[] =
+        q.filter === "todas"
+          ? [
+              { statuses: ["enviada"], total: enviada },
+              { statuses: ["vista", "revisada"], total: vista + revisada },
+            ]
+          : [{ statuses: [q.filter], total: counts[q.filter] }];
+      const rows: ReviewTrackingRow[] = [];
+      let segmentStart = 0;
+      for (const { statuses, total } of segments) {
+        const segmentEnd = segmentStart + total;
+        if (start < segmentEnd && end > segmentStart) {
+          const take = Math.min(end, segmentEnd) - segmentStart;
+          const reviews = await listOwn(
+            ctx,
+            name,
+            reviewSchema,
+            trainerId,
+            where("status", "in", statuses),
+            orderBy("submittedAt", "desc"),
+            limit(take),
+          );
+          rows.push(...rowsOf(reviews.slice(Math.max(start - segmentStart, 0))));
+        }
+        segmentStart = segmentEnd;
+      }
       return { rows, counts };
     },
 

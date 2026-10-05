@@ -107,8 +107,17 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · revisiones", () => {
       const filters: ReviewTrackingFilter[] = ["todas", "enviada", "vista", "revisada"];
       for (const filter of filters) {
         for (const search of ["", "mar", "ñ"]) {
-          for (const page of [0, 1]) {
-            const q = { filter, search, page, pageSize: 3 };
+          // Tamaños y páginas que cruzan la frontera entre «enviada» y el resto, y que se pasan del final.
+          for (const [page, pageSize] of [
+            [0, 3],
+            [1, 3],
+            [0, 2],
+            [1, 2],
+            [2, 2],
+            [3, 2],
+            [9, 2],
+          ] as const) {
+            const q = { filter, search, page, pageSize };
             expect(await reviews.listReviewsTracking(TRAINER_ID, q), JSON.stringify(q)).toEqual(
               await reference.listReviewsTracking(TRAINER_ID, q),
             );
