@@ -15,6 +15,12 @@ export const es = {
     /** Lo usan la tarjeta de macros (Asignación, Editor de plan) y el editor de menús. */
     kcalInvalid: "Escribe las kcal sin puntos ni decimales, por ejemplo 2400",
     coachTag: "Coach",
+    /** Cierre de sesión: el botón de la barra del entrenador y, cuando llegue, el perfil del cliente. */
+    signOut: {
+      action: "Cerrar sesión",
+      pending: "Saliendo…",
+      failed: "No se ha podido cerrar la sesión.",
+    },
     trainerNote: { title: "Nota del entrenador" },
     /** Lo que se pinta en lugar de un dato que no hay, p. ej. la semana antes del alta (§8). */
     none: "—",

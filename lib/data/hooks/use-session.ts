@@ -34,6 +34,18 @@ export function useTrainer() {
   });
 }
 
+/** Cierra la sesión y vacía la caché: lo cargado era de otra cuenta. Llevar a `/login` es de quien lo llama. */
+export function useLogout() {
+  const ports = usePorts();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => ports.session.logout(),
+    onSuccess: () => {
+      queryClient.clear();
+    },
+  });
+}
+
 export function useLogin() {
   const ports = usePorts();
   const queryClient = useQueryClient();
