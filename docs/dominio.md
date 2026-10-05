@@ -5,8 +5,10 @@ aprobada (`docs/design/demo-navegable.html`, 18 pantallas). **Donde el diseño y
 pasada discrepaban, manda el diseño**: es posterior y responde a peticiones explícitas.
 
 Estado: dominio cerrado para el MVP. Backend decidido el 29-09-2026: **Firebase para datos y
-auth, y el Drive del entrenador para las imágenes de las revisiones** — ver §12 y §9. Decidido no
-es implementado: el código sigue sin ninguna referencia a un backend.
+auth, y el Drive del entrenador para las imágenes de las revisiones** — ver §12 y §9. El acceso
+es con correo y contraseña, con invitación por enlace de correo (§12, 03-10-2026). Implementados:
+la autenticación y las reglas de seguridad; el adaptador de datos, solo en parte. La app sigue
+montando el adaptador en memoria hasta que el de Firebase cubra todos los puertos.
 
 ---
 
@@ -161,33 +163,40 @@ marcan y no se reutiliza su número.
 
 | # | Invariante | Dónde se garantiza |
 |---|---|---|
-| I1 | Todo registro pertenece a un único entrenador y solo él lo lee o escribe | Backend (RLS o reglas) |
-| I2 | Un cliente pertenece a exactamente un entrenador | FK + backend |
-| I3 | Una rutina solo usa ejercicios de la biblioteca de su mismo entrenador | Validación de dominio + backend |
-| I4 | Un cliente tiene como máximo una rutina activa y un juego de macros por tipo de día. De los menús puede haber varios activos por tipo de día, uno de ellos sugerido (§3) | Lógica de dominio |
+| I1 | Todo registro pertenece a un único entrenador y solo él lo lee o escribe | Reglas de seguridad de Firestore |
+| I2 | Un cliente pertenece a exactamente un entrenador | Reglas de seguridad (la escritura que nombra un cliente exige que sea del mismo entrenador) |
+| I3 | Una rutina solo usa ejercicios de la biblioteca de su mismo entrenador | Validación de dominio + adaptador. Las reglas no recorren la lista de ejercicios de una rutina |
+| I4 | Un cliente tiene como máximo una rutina activa y un juego de macros por tipo de día. De los menús puede haber varios activos por tipo de día, uno de ellos sugerido (§3) | Lógica de dominio + adaptador (transacción al activar). Las reglas no pueden contar documentos activos |
 | I5 | Una revisión está **completa** ⟺ 3 fotos (frente, perfil, espalda) + peso en ventana + un valor por cada tipo de medida exigido al abrirla + todas las preguntas exigidas al abrirla. **La completitud no bloquea el envío**: se avisa y el cliente decide. Es una **foto del momento del envío**: si una imagen desaparece después, la revisión ni se reabre ni pasa a incompleta | `lib/domain/review` |
 | ~~I6~~ | ~~La periodicidad la fija el entrenador y el cliente no la escribe~~ | **Derogada** (§1.3). La cadencia sigue siendo del entrenador, pero es orientativa |
 | ~~I7~~ | ~~Una revisión pertenece a exactamente un periodo~~ | **Derogada**: el periodo ya no existe |
-| I8 | Los tipos de medida provienen del catálogo **del entrenador**, cerrado para el cliente | FK + backend |
+| I8 | Los tipos de medida provienen del catálogo **del entrenador**, cerrado para el cliente | Reglas (el catálogo es del entrenador y cerrado para el cliente) + adaptador (que una medida apunte a un tipo del mismo entrenador) |
 | I9 | El peso de una revisión sale de un `WeightLog` con fecha dentro de la ventana de la revisión: mientras es editable lo referencia, y desde `vista` guarda su copia (I24) | Lógica de dominio |
 | I10 | La comparación de fotos es una acción explícita del entrenador, nunca un estado derivado | Ausencia de automatismo |
-| I11 | El cliente lee su rutina, macros y menú; nunca los escribe | Backend |
+| I11 | El cliente lee su rutina, macros y menú; nunca los escribe | Reglas de seguridad |
 | I12 | Toda respuesta y toda medida conservan enunciado/etiqueta, formato y unidad vigentes cuando se registró su valor. La copia congelada se escribe al registrar el valor por primera vez o al cambiarlo: volver a guardar una revisión no recongela lo que no ha cambiado. Editar el catálogo no altera el histórico. Lo único que puede faltar de una revisión antigua es la **imagen**, que vive fuera de la app (§9) | Columnas congeladas, escritas solo al registrar o cambiar el valor |
-| I13 | Nada de lo que cuelgue histórico se borra: preguntas, tipos de medida y ejercicios se archivan | Soft delete |
+| I13 | Nada de lo que cuelgue histórico se borra: preguntas, tipos de medida y ejercicios se archivan | Soft delete + reglas (ninguna colección con histórico admite `delete`) |
 | I14 | Las imágenes viven en el Drive del entrenador y **la app no puede borrarlas**: el borrado de las fotos lo hace el entrenador a mano, en su Drive. La app sí borra el resto de los datos del cliente, con una operación explícita por cliente | Fuera de la app (Drive) para las imágenes · lógica de dominio para lo demás |
-| I15 | El formato de una pregunta —tipo y límites de la escala— es inmutable desde que existe la primera respuesta. El enunciado es editable siempre | Lógica de dominio + backend |
-| I16 | Como máximo una revisión por cliente y número de semana | Índice único `(clientId, weekNumber)` o su equivalente |
-| I17 | El cliente puede editar su revisión hasta que el entrenador la marca como `vista` | Lógica de dominio + backend |
-| I18 | El peso corporal se almacena siempre en kg | Validación + convención |
+| I15 | El formato de una pregunta —tipo y límites de la escala— es inmutable desde que existe la primera respuesta. El enunciado es editable siempre | Lógica de dominio + reglas (bandera `hasResponses` en la pregunta) |
+| I16 | Como máximo una revisión por cliente y número de semana | Id del documento `{clientId}_{semana}`, que las reglas comprueban |
+| I17 | El cliente puede editar su revisión hasta que el entrenador la marca como `vista` | Lógica de dominio + reglas (el cliente solo edita en `borrador` y `enviada`) |
+| I18 | El peso corporal se almacena siempre en kg | Validación + reglas (número entre 0 y 400) |
 | ~~I19~~ | ~~Los periodos cerrados no se recalculan al cambiar la periodicidad~~ | **Derogada**: no hay periodos |
 | I20 | El vídeo, tanto de ejercicio como de feedback, es siempre un enlace externo. La app **no aloja vídeo ni imágenes**: las fotos de revisión viven en el Drive del entrenador (§9) | Validación de URL |
-| I21 | Una membresía registra estado de pago, nunca importes cobrados ni datos de pago | Modelo de datos |
-| I22 | `weekNumber` se congela al crear la revisión y no se recalcula nunca | Escritura única |
-| I23 | Como máximo un `WeightLog` por cliente y fecha civil. Registrar un peso en una fecha que ya tiene pesaje **lo actualiza** en lugar de crear otro: conserva su identidad y su fecha de creación (la revisión que lo referencia, I9, no se rompe) y sustituye el peso. La nota se sustituye solo si llega una; si llega vacía, se conserva la anterior | Lógica de dominio + backend (índice único `(clientId, date)` o id determinista `clientId_fecha`) |
-| I24 | Mientras una revisión está en `borrador` o `enviada`, su peso es el del pesaje al que apunta (`weightLogId`): si el cliente corrige ese pesaje, la revisión lo refleja. La revisión no cambia sola de pesaje —no sigue al último de la ventana—: cambia cuando el cliente la vuelve a guardar. Al pasar a `vista` guarda copia del peso en kg y de la fecha del pesaje, y desde entonces se lee de la copia aunque el pesaje se corrija | Lógica de dominio + escritura única de la copia |
-| I25 | Un pesaje al que apunta una revisión `enviada`, `vista` o `revisada` no se puede borrar. Rige en el uso normal de la app: el borrado a petición (§7, §9) se lleva a la vez las revisiones y los pesajes del cliente, e I25 no lo impide | Lógica de dominio + backend |
-| I26 | La unidad de un tipo de medida es inmutable desde la primera medida registrada de ese tipo. Para cambiarla se archiva el tipo y se crea otro. La etiqueta es editable siempre | Lógica de dominio + backend |
-| I27 | Un pesaje no admite una fecha posterior a hoy, en la zona del entrenador, ni anterior a la fecha de alta del cliente | Lógica de dominio (recibe «hoy» y la fecha de alta) + backend |
+| I21 | Una membresía registra estado de pago, nunca importes cobrados ni datos de pago | Modelo de datos + reglas (solo existen las claves del modelo) |
+| I22 | `weekNumber` se congela al crear la revisión y no se recalcula nunca | Escritura única + reglas (no cambia tras crearse) |
+| I23 | Como máximo un `WeightLog` por cliente y fecha civil. Registrar un peso en una fecha que ya tiene pesaje **lo actualiza** en lugar de crear otro: conserva su identidad y su fecha de creación (la revisión que lo referencia, I9, no se rompe) y sustituye el peso. La nota se sustituye solo si llega una; si llega vacía, se conserva la anterior | Lógica de dominio + id del documento `{clientId}_{fecha}`, que las reglas comprueban |
+| I24 | Mientras una revisión está en `borrador` o `enviada`, su peso es el del pesaje al que apunta (`weightLogId`): si el cliente corrige ese pesaje, la revisión lo refleja. La revisión no cambia sola de pesaje —no sigue al último de la ventana—: cambia cuando el cliente la vuelve a guardar. Al pasar a `vista` guarda copia del peso en kg y de la fecha del pesaje, y desde entonces se lee de la copia aunque el pesaje se corrija | Lógica de dominio + reglas (solo el entrenador escribe la copia, al marcar `vista`) |
+| I25 | Un pesaje al que apunta una revisión `enviada`, `vista` o `revisada` no se puede borrar. Rige en el uso normal de la app: el borrado a petición (§7, §9) se lleva a la vez las revisiones y los pesajes del cliente, e I25 no lo impide | Lógica de dominio + adaptador. Las reglas no consultan las revisiones que apuntan a un pesaje |
+| I26 | La unidad de un tipo de medida es inmutable desde la primera medida registrada de ese tipo. Para cambiarla se archiva el tipo y se crea otro. La etiqueta es editable siempre | Lógica de dominio + reglas (bandera `hasMeasurements` en el tipo de medida) |
+| I27 | Un pesaje no admite una fecha posterior a hoy, en la zona del entrenador, ni anterior a la fecha de alta del cliente | Lógica de dominio + adaptador. Las reglas no conocen «hoy» en la zona del entrenador |
+
+Las reglas de seguridad (`firestore.rules`, tarjeta 34) son el sustituto de RLS y llevan un test
+por invariante contra el emulador de Firestore, con su caso negativo. Dos campos **no son del
+dominio**: `hasResponses` en la pregunta y `hasMeasurements` en el tipo de medida. Son banderas que
+sube a `true` quien registra la primera respuesta o la primera medida —el cliente, al guardar su
+revisión— y que fijan el formato (I15) y la unidad (I26) sin recorrer el histórico. Nadie las baja
+y los esquemas zod las descartan al leer.
 
 I5, I9, I12, I15, I17, I22, I23, I24, I25, I26 e I27 concentran casi toda la lógica de negocio
 real. Se cubren con tests desde el primer día.
@@ -220,6 +229,8 @@ Es aceptable: el entrenador recibe aviso de revisión nueva y el flujo real es q
 Son los tres únicos estados: **«inactivo» no existe**. Cualquier agrupación o cifra en pantalla
 usa estos tres, con sus etiquetas «Invitación pendiente», «En activo» y «Baja» (decidido el
 01-10-2026).
+**`invitado` pasa a `activo` en el primer acceso**: el cliente abre el enlace de la invitación que
+recibe por correo, escribe su correo y crea su contraseña (§12).
 La baja conserva el histórico completo, fotos incluidas, sin caducidad. Aparte existe una
 operación de **borrado a petición** que anonimiza el histórico y borra los datos del cliente. Se
 lleva a la vez sus revisiones y sus pesajes, y por eso I25 no la impide.
@@ -297,6 +308,11 @@ weekNumber(client, date) = floor((date - client.startDate) / 7 días) + 1
 carpeta por cliente compartida con la cuenta de Google de ese cliente. No a Firebase Storage. Los
 datos y la autenticación siguen en Firebase (§12). Conservación indefinida, también tras la baja.
 
+> **Punto abierto (03-10-2026).** Esta sección suponía que el cliente entra con Google y que su
+> carpeta se comparte con esa cuenta. El acceso es ahora con correo y contraseña (§12), así que
+> **cómo ve el cliente su carpeta queda por decidir** en la tarjeta de las fotos (17): no se decide
+> aquí. Lo que no cambia: la app no puede borrar las fotos y su ausencia es un estado esperado.
+
 Esto tiene una consecuencia que no se puede suavizar, y de la que cuelga el resto de esta sección:
 **la app no puede borrar las fotos.** No es que delegue el borrado: no tiene la capacidad, porque
 los archivos no son suyos. Viven en una cuenta de Google que la app no administra.
@@ -373,13 +389,40 @@ garantiza" de §6 asignaba a Postgres —RLS, FKs, índices únicos parciales, c
 parte del trabajo. **Con Firestore ninguna de esas herramientas existe**: I1, I2, I3, I4, I8, I13,
 I15, I16, I18 e I23 pasan de garantía del motor a reglas de seguridad más lógica de aplicación, es
 decir, código que hay que escribir, testear y mantener. A cambio, Firebase resuelve auth con 2FA
-de serie, hosting y push sin trabajo — y, con las fotos en Drive, la autenticación con Google deja
-de ser una opción entre otras: es la que sostiene el acceso del cliente a su carpeta.
+de serie, hosting y push sin trabajo. En §6 consta, invariante a invariante, qué cubren las reglas
+y qué queda en el adaptador.
 
-La decisión está tomada, pero **no está implementada, y eso no cambia todavía ninguna regla del
-código**: el dominio sigue puro, el acceso a datos sigue pasando por las interfaces de
-`lib/data/ports/` con el adaptador en memoria, y no se instala ni se importa ningún SDK hasta que
-se coja la tarjeta del adaptador. Lo que sí cambia es que las interfaces ya se pueden diseñar
-sabiendo que detrás habrá Firestore y un Drive ajeno, en vez de un Storage propio: en particular,
-**leer una imagen es una operación que puede fallar por ausencia y tiene que poder decirlo** (§9),
-no una URL que siempre resuelve.
+La decisión se implementa por tarjetas. El acceso a datos sigue pasando por las interfaces de
+`lib/data/ports/`, y el SDK de Firebase solo se importa desde `lib/data/adapters/firebase/`
+(ESLint lo impide en cualquier otro sitio). Con el adaptador de datos a medias, la app sigue
+montando el adaptador en memoria. Las interfaces se diseñan sabiendo que detrás hay Firestore y un
+Drive ajeno: en particular, **leer una imagen es una operación que puede fallar por ausencia y
+tiene que poder decirlo** (§9), no una URL que siempre resuelve.
+
+### Acceso: correo y contraseña, con invitación por enlace
+
+**Decidido el 03-10-2026. No hay login con Google.** El flujo es:
+
+1. El entrenador da de alta al cliente con su correo y la app le envía un enlace de acceso
+   (`sendSignInLinkToEmail`).
+2. El cliente abre el enlace, vuelve a escribir su correo y crea su contraseña. En ese primer acceso
+   pasa de `invitado` a `activo` (§7).
+3. Desde entonces entra con correo y contraseña. Reenviar la invitación es volver a enviar el
+   enlace a un cliente que sigue `invitado`.
+
+El enlace lleva el id del cliente invitado (`?c=`) y ningún dato personal; el correo lo reescribe
+quien lo recibe, porque casi nunca abre el enlace el navegador del entrenador que lo envió. Cualquiera
+puede pedir un enlace para cualquier correo, así que, si al aceptar no hay un cliente `invitado` con
+ese correo, la cuenta recién creada se deshace.
+
+**Quién es cada cuenta.** Un documento `users/{uid}` con `role` (`trainer` o `client`), `trainerId` y
+`clientId`. No es una entidad del dominio. Lo crea el propio cliente al aceptar la invitación, y las
+reglas lo permiten solo con un correo verificado igual al del cliente invitado; el del entrenador lo
+crea el propietario a mano en la consola, porque no hay alta de entrenadores en la app. No se usan
+*custom claims* porque solo se asignan desde un servidor (SDK de administración, Cloud Functions) y
+el proyecto no lo tiene; se revisará el día que lo tenga. La sesión lleva ese `role`, y es lo que
+decide si se carga el panel del entrenador o el área de cliente.
+
+**Correos.** Firestore compara los correos tal cual y Firebase Auth los guarda en minúsculas. Hasta
+que el esquema los normalice a minúsculas al guardarlos (pendiente: es un cambio de dominio), la
+comparación entre ambos no es fiable si el entrenador escribió mayúsculas.
