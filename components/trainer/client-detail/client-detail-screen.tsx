@@ -20,6 +20,7 @@ import { changeSinceStart, measurementSeries, weekNumberOrNull, weeklyWeights } 
 import { formatCivilDate, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn, initialsOf } from "@/lib/utils";
+import { ClientInvitationCard } from "./client-invitation-card";
 import { ClientStatusAction } from "./client-status-action";
 import { MembershipCard } from "./membership-card";
 import { MacrosMenuCard, RoutineCard } from "./plan-cards";
@@ -154,6 +155,10 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
           ) : null}
         </div>
       </header>
+
+      {c.status === "invitado" ? (
+        <ClientInvitationCard client={c} trainerId={trainer.data.id} />
+      ) : null}
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px]">
         <div className="flex flex-col gap-5">
