@@ -106,7 +106,7 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
       expect((await menus.listActiveMenus(TRAINER_ID, CLIENT_IDS.marta)).length).toBeGreaterThan(0);
     });
 
-    it("templates with their usage count", async () => {
+    it("lists templates", async () => {
       const templates = createTemplatePort(ctx);
       const ref = mock();
       const routineTemplates = await templates.listRoutineTemplates(TRAINER_ID);
@@ -117,7 +117,6 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
         byId(await ref.templates.listMenuTemplates(TRAINER_ID)),
       );
       expect(routineTemplates.length).toBeGreaterThan(0);
-      expect(routineTemplates.some((t) => t.usageCount > 0)).toBe(true);
       expect(await templates.listRoutineTemplates(STRANGER)).toEqual([]);
     });
   });
@@ -349,10 +348,9 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
       );
       expect(copy).toMatchObject({ name: "Copia" });
       expect(copy.id).not.toBe(firstRoutineTemplate().id);
-      const listed = (await templates.listRoutineTemplates(TRAINER_ID)).find(
-        (t) => t.id === copy.id,
+      expect((await templates.listRoutineTemplates(TRAINER_ID)).some((t) => t.id === copy.id)).toBe(
+        true,
       );
-      expect(listed?.usageCount).toBe(0);
       const menuCopy = await templates.duplicateMenuTemplate(
         TRAINER_ID,
         firstMenuTemplate().id,

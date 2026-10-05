@@ -3,18 +3,10 @@ import type { Menu, MenuTemplate, Routine, RoutineTemplate } from "@/lib/domain"
 export type RoutineTemplateInput = Omit<RoutineTemplate, "id" | "createdAt" | "updatedAt">;
 export type MenuTemplateInput = Omit<MenuTemplate, "id" | "createdAt" | "updatedAt">;
 
-/**
- * Modelo de lectura: la plantilla más cuántos clientes han recibido una copia suya. Es un dato
- * derivado (se cuenta sobre los planes cuyo `sourceTemplateName` coincide), no un campo del dominio:
- * la plantilla no sabe quién la usa, que es lo que significa clonar y no enlazar (§4).
- */
-export type RoutineTemplateSummary = RoutineTemplate & { usageCount: number };
-export type MenuTemplateSummary = MenuTemplate & { usageCount: number };
-
 export interface TemplatePort {
-  listRoutineTemplates(trainerId: string): Promise<RoutineTemplateSummary[]>;
-  listMenuTemplates(trainerId: string): Promise<MenuTemplateSummary[]>;
-  /** Copia la plantilla con ids nuevos y el nombre dado. La copia empieza con 0 usos. */
+  listRoutineTemplates(trainerId: string): Promise<RoutineTemplate[]>;
+  listMenuTemplates(trainerId: string): Promise<MenuTemplate[]>;
+  /** Copia la plantilla con ids nuevos y el nombre dado. */
   duplicateRoutineTemplate(
     trainerId: string,
     templateId: string,

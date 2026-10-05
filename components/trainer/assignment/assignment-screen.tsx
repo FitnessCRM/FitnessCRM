@@ -11,7 +11,7 @@ import {
   useMenuTemplates,
   useRoutineTemplates,
 } from "@/lib/data/hooks";
-import type { MenuTemplateSummary, RoutineTemplateSummary } from "@/lib/data/ports";
+import type { MenuTemplate, RoutineTemplate } from "@/lib/domain";
 import { countTemplateExercises } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 import { ClientPicker } from "../client-picker";
@@ -24,7 +24,7 @@ function plural(n: number, forms: { one: string; other: string }) {
   return `${n} ${n === 1 ? forms.one : forms.other}`;
 }
 
-function routineDetails(template: RoutineTemplateSummary): string {
+function routineDetails(template: RoutineTemplate): string {
   return [
     plural(template.days.length, t.routine.days),
     template.description,
@@ -35,7 +35,7 @@ function routineDetails(template: RoutineTemplateSummary): string {
 }
 
 /** Comidas del menú más largo y menús por tipo de día, como en la demo. */
-function menuDetails(template: MenuTemplateSummary): string {
+function menuDetails(template: MenuTemplate): string {
   const meals = Math.max(0, ...template.menus.map((m) => m.meals.length));
   const perDayType = new Map<string, number>();
   for (const menu of template.menus) {

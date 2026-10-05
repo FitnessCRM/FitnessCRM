@@ -8,68 +8,33 @@ import {
   duplicateMenuTemplate,
   duplicateRoutineTemplate,
   exerciseSchema,
-  menuSchema,
   menuTemplateSchema,
-  routineSchema,
   routineTemplateSchema,
 } from "@/lib/domain";
 import type { FirebaseContext } from "./context";
 import { COLLECTIONS, listOwn, ref, requireOwn } from "./helpers";
-
-/** Clientes distintos con algún plan copiado de una plantilla con ese nombre congelado. */
-const distinctClients = (plans: { clientId: string }[]) =>
-  new Set(plans.map((p) => p.clientId)).size;
 
 /**
  * Plantillas (§4): sin cliente, se clonan al asignar y nunca se enlazan. Por eso se pueden borrar:
  * no cuelga histórico de ellas. El uso es un dato derivado que se cuenta sobre los planes con ese
  * `sourceTemplateName`, no un campo de la plantilla.
  */
+const byUpdatedDesc = <T extends { updatedAt: string }>(a: T, b: T) =>
+  b.updatedAt.localeCompare(a.updatedAt);
+
 export function createTemplatePort(ctx: FirebaseContext): TemplatePort {
   const routineTemplates = COLLECTIONS.routineTemplates;
   const menuTemplates = COLLECTIONS.menuTemplates;
-
-  const usageOf = async (
-    collection: typeof COLLECTIONS.routines | typeof COLLECTIONS.menus,
-    schema: typeof routineSchema | typeof menuSchema,
-    trainerId: string,
-    templateName: string,
-  ) =>
-    distinctClients(
-      await listOwn(
-        ctx,
-        collection,
-        schema,
-        trainerId,
-        where("sourceTemplateName", "==", templateName),
-      ),
-    );
 
   const library = (trainerId: string) =>
     listOwn(ctx, COLLECTIONS.exercises, exerciseSchema, trainerId, where("status", "==", "activo"));
 
   return {
-    listRoutineTemplates: async (trainerId) => {
-      const templates = await listOwn(ctx, routineTemplates, routineTemplateSchema, trainerId);
-      const withUsage = await Promise.all(
-        templates.map(async (t) => ({
-          ...t,
-          usageCount: await usageOf(COLLECTIONS.routines, routineSchema, trainerId, t.name),
-        })),
-      );
-      return withUsage.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-    },
+    listRoutineTemplates: async (trainerId) =>
+      (await listOwn(ctx, routineTemplates, routineTemplateSchema, trainerId)).sort(byUpdatedDesc),
 
-    listMenuTemplates: async (trainerId) => {
-      const templates = await listOwn(ctx, menuTemplates, menuTemplateSchema, trainerId);
-      const withUsage = await Promise.all(
-        templates.map(async (t) => ({
-          ...t,
-          usageCount: await usageOf(COLLECTIONS.menus, menuSchema, trainerId, t.name),
-        })),
-      );
-      return withUsage.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-    },
+    listMenuTemplates: async (trainerId) =>
+      (await listOwn(ctx, menuTemplates, menuTemplateSchema, trainerId)).sort(byUpdatedDesc),
 
     duplicateRoutineTemplate: async (trainerId, templateId, name) => {
       const template = await requireOwn(

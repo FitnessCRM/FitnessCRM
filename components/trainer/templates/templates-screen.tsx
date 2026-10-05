@@ -134,7 +134,6 @@ export function TemplatesScreen() {
       {deleting ? (
         <DeleteDialog
           name={deleting.template.name}
-          usageCount={deleting.template.usageCount}
           isWorking={remove.isPending}
           hasError={remove.isError}
           onConfirm={async () => {
