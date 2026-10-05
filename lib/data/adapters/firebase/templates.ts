@@ -25,6 +25,9 @@ const distinctClients = (plans: { clientId: string }[]) =>
  * no cuelga histórico de ellas. El uso es un dato derivado que se cuenta sobre los planes con ese
  * `sourceTemplateName`, no un campo de la plantilla.
  */
+const byUpdatedDesc = <T extends { updatedAt: string }>(a: T, b: T) =>
+  b.updatedAt.localeCompare(a.updatedAt);
+
 export function createTemplatePort(ctx: FirebaseContext): TemplatePort {
   const routineTemplates = COLLECTIONS.routineTemplates;
   const menuTemplates = COLLECTIONS.menuTemplates;
@@ -57,7 +60,7 @@ export function createTemplatePort(ctx: FirebaseContext): TemplatePort {
           usageCount: await usageOf(COLLECTIONS.routines, routineSchema, trainerId, t.name),
         })),
       );
-      return withUsage.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      return withUsage.sort(byUpdatedDesc);
     },
 
     listMenuTemplates: async (trainerId) => {
@@ -68,7 +71,7 @@ export function createTemplatePort(ctx: FirebaseContext): TemplatePort {
           usageCount: await usageOf(COLLECTIONS.menus, menuSchema, trainerId, t.name),
         })),
       );
-      return withUsage.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      return withUsage.sort(byUpdatedDesc);
     },
 
     duplicateRoutineTemplate: async (trainerId, templateId, name) => {

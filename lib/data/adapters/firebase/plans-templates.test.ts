@@ -117,7 +117,11 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
         byId(await ref.templates.listMenuTemplates(TRAINER_ID)),
       );
       expect(routineTemplates.length).toBeGreaterThan(0);
-      expect(routineTemplates.some((t) => t.usageCount > 0)).toBe(true);
+      expect(
+        routineTemplates.some(
+          (t) => "usageCount" in t && typeof t.usageCount === "number" && t.usageCount > 0,
+        ),
+      ).toBe(true);
       expect(await templates.listRoutineTemplates(STRANGER)).toEqual([]);
     });
   });
@@ -352,7 +356,15 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
       const listed = (await templates.listRoutineTemplates(TRAINER_ID)).find(
         (t) => t.id === copy.id,
       );
-      expect(listed?.usageCount).toBe(0);
+      expect(listed).toBeDefined();
+      expect(
+        listed && "usageCount" in listed && typeof listed.usageCount === "number"
+          ? listed.usageCount
+          : undefined,
+      ).toBe(0);
+      expect((await templates.listRoutineTemplates(TRAINER_ID)).some((t) => t.id === copy.id)).toBe(
+        true,
+      );
       const menuCopy = await templates.duplicateMenuTemplate(
         TRAINER_ID,
         firstMenuTemplate().id,

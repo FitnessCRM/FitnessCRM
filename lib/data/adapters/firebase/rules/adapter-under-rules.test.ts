@@ -3,7 +3,7 @@ import { initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/
 import { doc, setDoc, type Firestore } from "firebase/firestore";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { menuBodySchema, routineBodySchema } from "@/lib/domain";
-import { createDemoState, type MockState } from "../../mock";
+import { createDemoState, createMockPorts, type MockState } from "../../mock";
 import { CLIENT_IDS, TRAINER_ID } from "../../mock/demo-data/common";
 import { createMeasurementTypePort, createQuestionnairePort } from "../catalogs";
 import { createClientPort } from "../clients";
@@ -12,6 +12,7 @@ import { createExercisePort } from "../exercises";
 import { COLLECTIONS } from "../helpers";
 import { createWeightLogPort, createWorkoutLogPort } from "../logs";
 import { createMembershipPort } from "../memberships";
+import { createReviewPort, reviewDocId } from "../reviews";
 import { createMacroTargetsPort, createMenuPort, createRoutinePort } from "../plans";
 import { createTemplatePort } from "../templates";
 import { createTrainerPort } from "../trainer";
@@ -45,6 +46,8 @@ describe.skipIf(!emulatorHost)("el adaptador de Firebase bajo las reglas de segu
   beforeEach(async () => {
     await env.clearFirestore();
     state = createDemoState(TODAY);
+    // I16: el id de una revisión es `{clientId}_{semana}`; los de la demo son otros.
+    for (const r of state.reviews) r.id = reviewDocId(r.clientId, r.weekNumber);
     await env.withSecurityRulesDisabled(async (admin) => {
       const db = admin.firestore();
       const seed = (name: string, items: { id: string }[]) =>
@@ -189,6 +192,88 @@ describe.skipIf(!emulatorHost)("el adaptador de Firebase bajo las reglas de segu
       await questions.updateQuestion(TRAINER_ID, question.id, { prompt: "¿Cómo has descansado?" });
       await questions.archiveQuestion(TRAINER_ID, question.id);
       expect(await questions.questionHasResponses(TRAINER_ID, question.id)).toBe(false);
+    });
+  });
+
+  describe("revisiones, de punta a punta", () => {
+    /** Un cliente activo sin revisión esta semana: donde el cliente abre la suya. */
+    const clientToOpen = async () => {
+      const reference = createMockPorts({
+        state: structuredClone(state),
+        today: TODAY,
+        now: () => NOW,
+      });
+      for (const c of state.clients) {
+        if (c.status !== "activo") continue;
+        if ((await reference.reviews.getCurrentReview(TRAINER_ID, c.id)) === null) return c.id;
+      }
+      throw new Error("La demo no tiene un cliente sin revisión de esta semana");
+    };
+
+    it("the client fills and sends it, the trainer sees it and gives feedback", async () => {
+      const clientId = await clientToOpen();
+      const mine = createReviewPort(client(clientId));
+      const opened = await mine.openCurrentReview(TRAINER_ID, clientId);
+      expect(opened.id).toBe(reviewDocId(clientId, opened.weekNumber));
+
+      const typeId = opened.requirements.measurementTypeIds[0]!;
+      const question = state.questions.find((q) => opened.requirements.questionIds.includes(q.id))!;
+      await mine.updateReviewDraft(TRAINER_ID, opened.id, {
+        measurements: [{ measurementTypeId: typeId, value: 80 }],
+        responses: [
+          {
+            questionId: question.id,
+            value: question.format.kind === "escala" ? question.format.min : "bien",
+          },
+        ],
+      });
+      await mine.attachReviewMedia(TRAINER_ID, opened.id, "frente", "blob:uno");
+      expect((await mine.submitReview(TRAINER_ID, opened.id)).status).toBe("enviada");
+      expect((await mine.getCurrentReview(TRAINER_ID, clientId))?.id).toBe(opened.id);
+      expect(
+        (await mine.listClientReviews(TRAINER_ID, clientId)).some((r) => r.id === opened.id),
+      ).toBe(true);
+
+      // El cliente subió las banderas del catálogo, y desde entonces unidad y formato quedan fijos.
+      const types = createMeasurementTypePort(trainer());
+      expect(await types.measurementTypeHasMeasurements(TRAINER_ID, typeId)).toBe(true);
+      expect(
+        await createQuestionnairePort(trainer()).questionHasResponses(TRAINER_ID, question.id),
+      ).toBe(true);
+
+      const theirs = createReviewPort(trainer());
+      const table = await theirs.listReviewsTracking(TRAINER_ID, {
+        filter: "enviada",
+        search: "",
+        page: 0,
+        pageSize: 50,
+      });
+      expect(table.rows.some((r) => r.review.id === opened.id)).toBe(true);
+      expect((await theirs.getReviewStats(TRAINER_ID)).unviewed).toBeGreaterThan(0);
+      expect((await theirs.markReviewViewed(TRAINER_ID, opened.id)).status).toBe("vista");
+      const done = await theirs.sendReviewFeedback(TRAINER_ID, opened.id, {
+        videoUrl: "https://example.com/v",
+        note: "Bien",
+      });
+      expect(done.status).toBe("revisada");
+    });
+
+    it("the client cannot view, give feedback or read another client's review", async () => {
+      const clientId = await clientToOpen();
+      const mine = createReviewPort(client(clientId));
+      const opened = await mine.openCurrentReview(TRAINER_ID, clientId);
+      await mine.submitReview(TRAINER_ID, opened.id);
+      await expect(mine.markReviewViewed(TRAINER_ID, opened.id)).rejects.toThrow();
+      await expect(
+        mine.sendReviewFeedback(TRAINER_ID, opened.id, { videoUrl: null, note: "yo" }),
+      ).rejects.toThrow();
+      const other = state.clients.find((c) => c.id !== clientId && c.status === "activo")!;
+      await expect(
+        createReviewPort(client(other.id)).getReview(TRAINER_ID, opened.id),
+      ).rejects.toThrow();
+      await expect(
+        mine.listReviewsTracking(TRAINER_ID, { filter: "todas", search: "", page: 0, pageSize: 5 }),
+      ).rejects.toThrow();
     });
   });
 
