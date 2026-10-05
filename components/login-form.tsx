@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLogin } from "@/lib/data/hooks";
+import { DomainError } from "@/lib/domain";
+import { homePath } from "@/lib/session-access";
 import { es } from "@/lib/i18n/es";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,13 +31,14 @@ export function LoginForm() {
       await login(
         { email, password },
         {
-          onSuccess: () => {
-            router.push("/dashboard");
+          // Cada cuenta entra por su área: el panel del entrenador o la rutina del cliente.
+          onSuccess: (session) => {
+            router.push(homePath(session));
           },
           onError: (error) => {
             if (error instanceof Error) {
               setError(
-                error.message === "Email no encontrado"
+                error instanceof DomainError && error.code === "session.invalid_credentials"
                   ? es.pages.login.form.errorInvalid
                   : es.pages.login.form.errorNetwork,
               );

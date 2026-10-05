@@ -55,6 +55,32 @@ export const es = {
     },
   },
   pages: {
+    acceptInvite: {
+      title: "Crea tu contraseña",
+      subtitle:
+        "Tu entrenador te ha invitado. Escribe tu email y elige una contraseña para entrar.",
+      checking: "Comprobando el enlace…",
+      form: {
+        email: "Email",
+        password: "Contraseña",
+        passwordHint: "Mínimo 6 caracteres",
+        confirm: "Repite la contraseña",
+        required: "Completa todos los campos",
+        submit: "Crear contraseña",
+        submitting: "Guardando…",
+        errorMismatch: "Las contraseñas no coinciden",
+        errorWeak: "La contraseña debe tener al menos 6 caracteres",
+        errorEmail: "Ese email no es el de la invitación",
+        errorNotFound: "No hay ninguna invitación pendiente para ese email",
+        errorNetwork: "No se ha podido conectar",
+      },
+      invalid: {
+        title: "Enlace no válido",
+        description:
+          "El enlace ha caducado o ya se ha usado. Pide a tu entrenador que te envíe otro.",
+        toLogin: "Ir al acceso",
+      },
+    },
     login: {
       title: "Entrar",
       subtitle: "Accede con tus credenciales",
@@ -861,6 +887,8 @@ export const es = {
       clientFailed: "No se ha podido crear el cliente.",
       membershipFailed:
         "El cliente se ha creado, pero no su membresía. Vuelve a pulsar para añadirla.",
+      invitationFailed:
+        "El cliente se ha creado, pero no se ha podido enviar la invitación. Vuelve a pulsar para enviarla.",
     },
   },
   screensClients: {
