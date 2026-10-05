@@ -1,4 +1,4 @@
-import { runTransaction, setDoc, where } from "firebase/firestore";
+import { limit, orderBy, runTransaction, setDoc, where } from "firebase/firestore";
 import { z } from "zod";
 import type { ClientPort, ClientTrackingFilter, ClientTrackingRow } from "@/lib/data/ports";
 import {
@@ -69,7 +69,7 @@ export function createClientPort(ctx: FirebaseContext): ClientPort {
       );
       const rows: ClientTrackingRow[] = await Promise.all(
         page.map(async (client) => {
-          const [memberships, reviews] = await Promise.all([
+          const [memberships, [lastSent]] = await Promise.all([
             listOwn(
               ctx,
               COLLECTIONS.memberships,
@@ -77,21 +77,20 @@ export function createClientPort(ctx: FirebaseContext): ClientPort {
               trainerId,
               where("clientId", "==", client.id),
             ),
+            // La última enviada, esté como esté hoy: una sola lectura en vez del histórico entero.
+            // Los borradores guardan `submittedAt: null`, que en orden descendente va el último.
+            // Necesita el índice compuesto de `firestore.indexes.json`.
             listOwn(
               ctx,
               COLLECTIONS.reviews,
               reviewTrackingFieldsSchema,
               trainerId,
               where("clientId", "==", client.id),
+              orderBy("submittedAt", "desc"),
+              limit(1),
             ),
           ]);
-          // La última enviada, esté como esté hoy: los borradores no tienen `submittedAt`.
-          let lastReviewAt: string | null = null;
-          for (const r of reviews) {
-            if (r.submittedAt !== null && (lastReviewAt === null || r.submittedAt > lastReviewAt)) {
-              lastReviewAt = r.submittedAt;
-            }
-          }
+          const lastReviewAt = lastSent?.submittedAt ?? null;
           return {
             client,
             routineName: routines.find((r) => r.clientId === client.id)?.name ?? null,

@@ -214,26 +214,29 @@ export function createReviewPort(ctx: FirebaseContext): ReviewPort {
     updateReviewDraft: async (trainerId, reviewId, changes) => {
       // Primero de quién es, después qué trae: así no se dice nada de lo ajeno.
       await requireOwn(ctx, name, reviewSchema, trainerId, reviewId, "Revisión");
-      const [types, questions, log] = await Promise.all([
+      const [types, questions] = await Promise.all([
         changes.measurements
           ? listOwn(ctx, COLLECTIONS.measurementTypes, measurementTypeSchema, trainerId)
           : [],
         changes.responses
           ? listOwn(ctx, COLLECTIONS.questions, questionnaireQuestionSchema, trainerId)
           : [],
-        changes.weightLogId
-          ? requireOwn(
-              ctx,
-              COLLECTIONS.weightLogs,
-              weightLogSchema,
-              trainerId,
-              changes.weightLogId,
-              "Pesaje",
-            )
-          : null,
       ]);
       return runTransaction(ctx.db, async (tx) => {
         const review = await editableIn(tx, trainerId, reviewId);
+        // El pesaje se lee dentro: si se borra entre la consulta y la escritura, la revisión no
+        // puede acabar apuntando a un documento que ya no existe.
+        const log = changes.weightLogId
+          ? (
+              await txRequireOwn(
+                tx,
+                ref(ctx, COLLECTIONS.weightLogs, changes.weightLogId),
+                weightLogSchema,
+                trainerId,
+                "Pesaje",
+              )
+            ).value
+          : null;
         const next: Review = { ...review };
         if (changes.weightLogId !== undefined) {
           // I9: el peso de la revisión cae dentro de su ventana.
@@ -317,10 +320,8 @@ export function createReviewPort(ctx: FirebaseContext): ReviewPort {
         return next;
       }),
 
-    markReviewViewed: async (trainerId, reviewId) => {
-      // I24: la copia del peso sale del pesaje al que apunta en este momento.
-      const seen = await requireOwn(ctx, name, reviewSchema, trainerId, reviewId, "Revisión");
-      return runTransaction(ctx.db, async (tx) => {
+    markReviewViewed: (trainerId, reviewId) =>
+      runTransaction(ctx.db, async (tx) => {
         const { value } = await txRequireOwn(
           tx,
           reviewRef(reviewId),
@@ -328,14 +329,14 @@ export function createReviewPort(ctx: FirebaseContext): ReviewPort {
           trainerId,
           "Revisión",
         );
-        const logRefId = seen.weightLogId;
+        // I24: la copia del peso sale del pesaje al que apunta en este momento.
         const log =
-          logRefId === null
+          value.weightLogId === null
             ? null
             : (
                 await txRequireOwn(
                   tx,
-                  ref(ctx, COLLECTIONS.weightLogs, logRefId),
+                  ref(ctx, COLLECTIONS.weightLogs, value.weightLogId),
                   weightLogSchema,
                   trainerId,
                   "Pesaje",
@@ -344,8 +345,7 @@ export function createReviewPort(ctx: FirebaseContext): ReviewPort {
         const next = reviewSchema.parse(markReviewViewed(value, log, ctx.now()));
         tx.set(reviewRef(reviewId), next);
         return next;
-      });
-    },
+      }),
 
     sendReviewFeedback: (trainerId, reviewId, feedback) =>
       runTransaction(ctx.db, async (tx) => {
