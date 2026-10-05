@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { Brand } from "@/components/ui/brand";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
 import { MobileNav } from "@/components/ui/mobile-nav";
+import { OfflineBanner } from "@/components/ui/offline-banner";
 import { useClient, useSessionClientId } from "@/lib/data/hooks";
 import { es } from "@/lib/i18n/es";
 import { cn, initialsOf, shortNameOf } from "@/lib/utils";
@@ -74,6 +75,7 @@ export function ClientShell({ children }: { children: ReactNode }) {
           />
         </div>
       </header>
+      <OfflineBanner />
       <main className="flex flex-1 flex-col gap-7 px-10 py-9 max-sm:px-4 max-sm:py-6">
         {children}
       </main>

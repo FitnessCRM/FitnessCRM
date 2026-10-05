@@ -16,6 +16,16 @@ const serwist = new Serwist({
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: defaultCache,
+  // Una pantalla que no está en el dispositivo y se pide sin red cae aquí en vez de en el
+  // error del navegador. La página va precacheada desde `next.config.ts`.
+  fallbacks: {
+    entries: [
+      {
+        url: "/~offline",
+        matcher: ({ request }) => request.destination === "document",
+      },
+    ],
+  },
 });
 
 serwist.addEventListeners();

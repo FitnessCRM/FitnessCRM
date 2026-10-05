@@ -27,6 +27,13 @@ export const es = {
     /** Nombre accesible y texto del botón que cierra un diálogo. */
     close: "Cerrar",
   },
+  /** Sin conexión: el aviso del área de cliente y la pantalla de respaldo del service worker. */
+  offline: {
+    banner: "Sin conexión. Se muestran los últimos datos guardados en este dispositivo.",
+    title: "Sin conexión",
+    body: "Esta pantalla todavía no está guardada en tu dispositivo. Vuelve a abrirla cuando tengas conexión.",
+    goHome: "Ir al inicio",
+  },
   roles: {
     trainer: "Entrenador",
     client: "Cliente",
