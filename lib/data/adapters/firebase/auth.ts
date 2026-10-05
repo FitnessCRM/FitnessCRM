@@ -12,18 +12,9 @@ import {
   type Auth,
   type User,
 } from "firebase/auth";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  writeBatch,
-  type DocumentData,
-} from "firebase/firestore";
+import { doc, getDoc, writeBatch, type DocumentData } from "firebase/firestore";
 import type { InvitationPort, Session, SessionPort } from "@/lib/data/ports";
-import { DomainError, clientSchema, trainerSchema } from "@/lib/domain";
+import { DomainError, clientSchema } from "@/lib/domain";
 import type { FirebaseContext } from "./context";
 
 /**
@@ -58,11 +49,21 @@ export function createFirebaseAuthContext(
 }
 
 /**
- * Firestore compara correos tal cual y Firebase Auth los guarda en minúsculas. Mientras el dominio no
- * normalice el correo al guardarlo, se prueba también la forma en minúsculas del que escribe quien
- * entra; un correo guardado con mayúsculas no se encuentra si se escribe en minúsculas.
+ * Id del cliente invitado, que viaja en el enlace (`?c=`). No es un dato personal: es un id opaco, y
+ * evita buscar al cliente por correo, que las reglas de seguridad no pueden comprobar en una consulta.
+ * El enlace del correo lo lleva dentro de `continueUrl`; la dirección que abre el cliente, directa.
  */
-const emailVariants = (email: string) => [...new Set([email.trim(), email.trim().toLowerCase()])];
+function invitedClientId(link: string): string | null {
+  try {
+    const url = new URL(link);
+    const direct = url.searchParams.get("c");
+    if (direct) return direct;
+    const next = url.searchParams.get("continueUrl");
+    return next ? new URL(next).searchParams.get("c") : null;
+  } catch {
+    return null;
+  }
+}
 
 const errorCode = (error: unknown): string | null =>
   error instanceof FirebaseError ? error.code : null;
@@ -74,26 +75,10 @@ async function resolveSession(ctx: FirebaseAuthContext, user: User): Promise<Ses
     const data = known.data() as DocumentData;
     return { trainerId: data.trainerId, clientId: data.clientId ?? null, role: data.role };
   }
-  // Primera entrada de un entrenador: se le reconoce por el correo de su ficha, que se dio de alta
-  // fuera de la app (no hay alta de entrenadores en el MVP).
-  const trainers = await getDocs(
-    query(collection(ctx.db, "trainers"), where("email", "in", emailVariants(user.email ?? ""))),
-  );
-  const trainerDoc = trainers.docs[0];
-  if (!trainerDoc) {
-    await signOut(ctx.auth);
-    throw new DomainError("session.no_profile", "La cuenta no corresponde a nadie de la cartera");
-  }
-  const trainer = trainerSchema.parse({ ...trainerDoc.data(), id: trainerDoc.id });
-  await writeBatch(ctx.db)
-    .set(doc(ctx.db, USERS, user.uid), {
-      role: "trainer",
-      trainerId: trainer.id,
-      clientId: null,
-      email: trainer.email,
-    })
-    .commit();
-  return { trainerId: trainer.id, clientId: null, role: "trainer" };
+  // Un entrenador no se enlaza solo: el propietario crea su `users/{uid}` a mano al dar de alta su
+  // cuenta, porque un correo sin verificar no demuestra quién es. Sin ese documento no hay persona.
+  await signOut(ctx.auth);
+  throw new DomainError("session.no_profile", "La cuenta no corresponde a nadie de la cartera");
 }
 
 export function createSessionPort(ctx: FirebaseAuthContext): SessionPort {
@@ -140,7 +125,7 @@ export function createInvitationPort(ctx: FirebaseAuthContext): InvitationPort {
       }
       // No se guarda el correo en el navegador: lo abrirá otro, y es el cliente quien lo reescribe.
       await sendSignInLinkToEmail(ctx.auth, client.email, {
-        url: ctx.inviteUrl,
+        url: `${ctx.inviteUrl}?c=${encodeURIComponent(client.id)}`,
         handleCodeInApp: true,
       });
     },
@@ -148,6 +133,10 @@ export function createInvitationPort(ctx: FirebaseAuthContext): InvitationPort {
     acceptInvitation: async ({ email, link, password }) => {
       if (!isSignInWithEmailLink(ctx.auth, link)) {
         throw new DomainError("invitation.invalid_link", "El enlace no es de invitación");
+      }
+      const clientId = invitedClientId(link);
+      if (!clientId) {
+        throw new DomainError("invitation.invalid_link", "El enlace no dice a qué cliente invita");
       }
       if (password.length < MIN_PASSWORD_LENGTH) {
         throw new DomainError("invitation.weak_password", "La contraseña es demasiado corta");
@@ -167,20 +156,21 @@ export function createInvitationPort(ctx: FirebaseAuthContext): InvitationPort {
       }
       // Hasta aquí la cuenta existe en Auth, pero solo ahora se puede leer la cartera para saber si
       // alguien invitó de verdad a este correo: cualquiera puede pedir un enlace para cualquier
-      // dirección. Si no hay cliente, la cuenta recién creada se deshace.
-      const found = await getDocs(
-        query(
-          collection(ctx.db, "clients"),
-          where("email", "in", emailVariants(email)),
-          where("status", "==", "invitado"),
-        ),
-      );
-      const clientDoc = found.docs[0];
-      if (!clientDoc) {
+      // dirección. Si el cliente no existe, ya entró o su correo es otro, la cuenta recién creada
+      // se deshace.
+      const clientSnap = await getDoc(doc(ctx.db, "clients", clientId)).catch(() => null);
+      const parsed = clientSnap?.exists()
+        ? clientSchema.safeParse({ ...clientSnap.data(), id: clientSnap.id })
+        : null;
+      const client = parsed?.success ? parsed.data : null;
+      if (
+        !client ||
+        client.status !== "invitado" ||
+        client.email.toLowerCase() !== email.trim().toLowerCase()
+      ) {
         await deleteUser(user);
         throw new DomainError("invitation.not_found", "Ningún cliente invitado tiene ese correo");
       }
-      const client = clientSchema.parse({ ...clientDoc.data(), id: clientDoc.id });
       await updatePassword(user, password);
       // Un lote: o la cuenta queda enlazada con su cliente y activa, o ninguna de las dos cosas.
       await writeBatch(ctx.db)

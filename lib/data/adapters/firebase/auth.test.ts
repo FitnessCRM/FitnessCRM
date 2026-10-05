@@ -155,21 +155,43 @@ describe.skipIf(!firestoreHost || !authHost)("adaptador de Firebase · auth", ()
     const invitations = createInvitationPort(ctx);
     // Cualquiera puede pedir un enlace para cualquier correo: se pide directamente a Auth.
     const { sendSignInLinkToEmail } = await import("firebase/auth");
-    await sendSignInLinkToEmail(ctx.auth, stranger, { url: INVITE_URL, handleCodeInApp: true });
+    // El enlace apunta al cliente invitado de otro correo: el correo no coincide, no hay cuenta.
+    await sendSignInLinkToEmail(ctx.auth, stranger, {
+      url: `${INVITE_URL}?c=${clientId}`,
+      handleCodeInApp: true,
+    });
     const link = await lastLinkFor(stranger);
     await expect(
       invitations.acceptInvitation({ email: stranger, link, password: "secreto-1" }),
     ).rejects.toMatchObject({ code: "invitation.not_found" });
+    expect((await getDoc(doc(db, "clients", clientId))).data()?.status).toBe("invitado");
     expect(ctx.auth.currentUser).toBeNull();
     await expect(createSessionPort(ctx).login(stranger, "secreto-1")).rejects.toMatchObject({
       code: "session.invalid_credentials",
     });
   });
 
-  it("a trainer account is recognised by the email of its profile on first login", async () => {
+  it("a link that does not say which client it invites is not spent", async () => {
+    const invitations = createInvitationPort(ctx);
+    const { sendSignInLinkToEmail } = await import("firebase/auth");
+    await sendSignInLinkToEmail(ctx.auth, email, { url: INVITE_URL, handleCodeInApp: true });
+    const link = await lastLinkFor(email);
+    await expect(
+      invitations.acceptInvitation({ email, link, password: "secreto-1" }),
+    ).rejects.toMatchObject({ code: "invitation.invalid_link" });
+    expect(ctx.auth.currentUser).toBeNull();
+  });
+
+  it("a trainer logs in through the users/{uid} document the owner created for the account", async () => {
     const sessions = createSessionPort(ctx);
     const { createUserWithEmailAndPassword } = await import("firebase/auth");
-    await createUserWithEmailAndPassword(ctx.auth, TRAINER.email, "entrenador-1");
+    const { user } = await createUserWithEmailAndPassword(ctx.auth, TRAINER.email, "entrenador-1");
+    await setDoc(doc(db, "users", user.uid), {
+      role: "trainer",
+      trainerId: TRAINER.id,
+      clientId: null,
+      email: TRAINER.email,
+    });
     await ctx.auth.signOut();
     expect(await sessions.login(TRAINER.email, "entrenador-1")).toEqual({
       trainerId: TRAINER.id,
