@@ -45,3 +45,6 @@ next-env.d.ts
 # serwist
 public/sw.js
 public/swe-worker-*.js
+
+# firebase emulator
+*-debug.log

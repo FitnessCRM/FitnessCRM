@@ -1,0 +1,373 @@
+rules_version = '2';
+
+// Reglas de seguridad de Firestore (tarjeta 34): el sustituto de RLS. El cliente web habla directo
+// con Firestore, así que lo que aquí no se comprueba no se comprueba en ningún sitio.
+//
+// Modelo: una colección de primer nivel por agregado del dominio, con `trainerId` en cada documento
+// (docs/dominio.md §4). Quién es cada cuenta lo dice `users/{uid}` ({role, trainerId, clientId}).
+//
+// Dónde se garantiza cada invariante (§6):
+//   En estas reglas      I1, I2, I11, I13, I15, I16, I17, I18, I21, I22, I23, I26 y la parte de I24
+//                        que dice quién escribe la copia del peso.
+//   En el adaptador      I3 (las reglas no recorren las listas de ejercicios de una rutina), I4
+//   (con test)           (una rutina activa por cliente pide una consulta), I5, I9, I12, I24 (qué
+//                        peso se copia), I25 (las reglas no consultan las revisiones de un
+//                        pesaje) e I27 (compara con «hoy» en la zona del entrenador).
+//   I8 queda a medias: el cliente no puede tocar el catálogo, pero que una medida apunte a un tipo
+//   del mismo entrenador es del adaptador, por la misma razón que I3.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------- quién es quién
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profileRef() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function hasProfile() {
+      return signedIn() && exists(profileRef());
+    }
+
+    // El entrenador `tid`.
+    function isTrainer(tid) {
+      return hasProfile() && get(profileRef()).data.role == 'trainer'
+        && get(profileRef()).data.trainerId == tid;
+    }
+
+    // Cualquier cliente del entrenador `tid`.
+    function isClientOfTrainer(tid) {
+      return hasProfile() && get(profileRef()).data.role == 'client'
+        && get(profileRef()).data.trainerId == tid;
+    }
+
+    // El cliente `cid` del entrenador `tid`, y nadie más (I11: solo lo suyo).
+    function isClient(tid, cid) {
+      return isClientOfTrainer(tid) && get(profileRef()).data.clientId == cid;
+    }
+
+    // Un correo verificado: la invitación llega por enlace, que lo verifica; un alta de correo y
+    // contraseña sin verificar no demuestra de quién es el correo.
+    function hasVerifiedEmail() {
+      return signedIn() && request.auth.token.email_verified == true;
+    }
+
+    // ---------------------------------------------------------------- utilidades de escritura
+
+    // Claves que cambian en una actualización.
+    function changes() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // I1 e I2 en escritura: el cliente al que se refiere existe y es del mismo entrenador.
+    function clientBelongsToTrainer(d) {
+      return get(/databases/$(database)/documents/clients/$(d.clientId)).data.trainerId == d.trainerId;
+    }
+
+    // La identidad no cambia nunca (id, entrenador).
+    function identityKept() {
+      return request.resource.data.trainerId == resource.data.trainerId
+        && request.resource.data.id == resource.data.id;
+    }
+
+    // ---------------------------------------------------------------- cuentas
+
+    // Cada cuenta puede leer su propio puente, y solo se crea al aceptar una invitación: el correo
+    // verificado de la cuenta es el del cliente invitado. Nunca se edita ni se borra desde la app.
+    // El `users/{uid}` de un entrenador lo crea el propietario a mano (la consola salta las reglas).
+    match /users/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid && isInvitedClientLink(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    function isInvitedClientLink(d) {
+      return hasVerifiedEmail()
+        && d.keys().hasOnly(['role', 'trainerId', 'clientId', 'email'])
+        && d.keys().hasAll(['role', 'trainerId', 'clientId', 'email'])
+        && d.role == 'client'
+        && d.trainerId == get(/databases/$(database)/documents/clients/$(d.clientId)).data.trainerId
+        && get(/databases/$(database)/documents/clients/$(d.clientId)).data.status == 'invitado'
+        && get(/databases/$(database)/documents/clients/$(d.clientId)).data.email.lower()
+          == request.auth.token.email.lower();
+    }
+
+    // ---------------------------------------------------------------- entrenador
+
+    match /trainers/{tid} {
+      allow read: if isTrainer(tid) || isClientOfTrainer(tid);
+      // Solo nombre y zona horaria; el correo y el alta no los cambia la app. No hay alta de
+      // entrenadores en la app: la hace el propietario.
+      allow update: if isTrainer(tid) && changes().hasOnly(['name', 'timeZone']);
+      allow create, delete: if false;
+    }
+
+    // ---------------------------------------------------------------- cliente
+
+    match /clients/{cid} {
+      // El entrenador, el propio cliente, y quien acaba de abrir su enlace de invitación (todavía
+      // sin `users/{uid}`) lee la ficha a la que invitan con su correo.
+      allow read: if isTrainer(resource.data.trainerId)
+        || isClient(resource.data.trainerId, cid)
+        || isInvitationRecipient();
+
+      // I2: nace de un entrenador y siempre `invitado` (§7).
+      allow create: if isTrainer(request.resource.data.trainerId)
+        && request.resource.data.id == cid
+        && request.resource.data.status == 'invitado';
+
+      allow update: if (isTrainer(resource.data.trainerId) && identityKept()
+          && !changes().hasAny(['createdAt']))
+        || acceptsInvitation();
+
+      // El borrado a petición (§7) es otra operación y tendrá su propia tarjeta (31).
+      allow delete: if false;
+    }
+
+    // Quien tiene un correo verificado igual al de un cliente que sigue `invitado`.
+    function isInvitationRecipient() {
+      return hasVerifiedEmail() && resource.data.status == 'invitado'
+        && resource.data.email.lower() == request.auth.token.email.lower();
+    }
+
+    // El paso de `invitado` a `activo` lo da el propio cliente al entrar, y no puede tocar nada más.
+    function acceptsInvitation() {
+      return isInvitationRecipient()
+        && request.resource.data.status == 'activo'
+        && changes().hasOnly(['status']);
+    }
+
+    // ---------------------------------------------------------------- membresía
+
+    match /memberships/{id} {
+      allow read: if isTrainer(resource.data.trainerId)
+        || isClient(resource.data.trainerId, resource.data.clientId);
+      allow create: if isTrainer(request.resource.data.trainerId)
+        && request.resource.data.id == id
+        && clientBelongsToTrainer(request.resource.data)
+        && validMembership(request.resource.data);
+      allow update: if isTrainer(resource.data.trainerId) && identityKept()
+        && !changes().hasAny(['clientId', 'createdAt'])
+        && validMembership(request.resource.data);
+      allow delete: if false;
+    }
+
+    // I21: estado de pago, nunca importes: las únicas claves que existen son estas.
+    function validMembership(d) {
+      return d.keys().hasOnly(
+          ['id', 'trainerId', 'clientId', 'type', 'startDate', 'endDate', 'paymentStatus', 'createdAt']
+        )
+        && d.paymentStatus in ['pagada', 'no_pagada'];
+    }
+
+    // ---------------------------------------------------------------- biblioteca
+
+    match /exercises/{id} {
+      // El cliente ve el nombre y el vídeo de lo que tiene prescrito.
+      allow read: if isTrainer(resource.data.trainerId) || isClientOfTrainer(resource.data.trainerId);
+      allow create: if isTrainer(request.resource.data.trainerId)
+        && request.resource.data.id == id
+        && request.resource.data.status == 'activo';
+      // I13: se archiva, no se borra, y un archivado no vuelve a la biblioteca (§7).
+      allow update: if isTrainer(resource.data.trainerId) && identityKept()
+        && !(resource.data.status == 'archivado' && request.resource.data.status == 'activo');
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------- plan del cliente
+
+    // Rutina, menú y macros (I11): el entrenador los escribe y el cliente solo lee lo ya publicado
+    // —no los borradores—, de modo que sus consultas tienen que filtrar por estado. Nada se borra
+    // (I13): lo que sustituye una versión es la versión nueva y la anterior pasa a `archivado`.
+    match /routines/{id} {
+      allow read: if isTrainer(resource.data.trainerId) || readableByClient();
+      allow create: if isPlanCreate(id);
+      allow update: if isPlanUpdate();
+      allow delete: if false;
+    }
+
+    match /menus/{id} {
+      allow read: if isTrainer(resource.data.trainerId) || readableByClient();
+      allow create: if isPlanCreate(id);
+      allow update: if isPlanUpdate();
+      allow delete: if false;
+    }
+
+    match /macroTargets/{id} {
+      allow read: if isTrainer(resource.data.trainerId) || readableByClient();
+      allow create: if isPlanCreate(id);
+      allow update: if isPlanUpdate();
+      allow delete: if false;
+    }
+
+    function readableByClient() {
+      return resource.data.status != 'borrador'
+        && isClient(resource.data.trainerId, resource.data.clientId);
+    }
+
+    function isPlanCreate(id) {
+      return isTrainer(request.resource.data.trainerId)
+        && request.resource.data.id == id
+        && clientBelongsToTrainer(request.resource.data)
+        && request.resource.data.status in ['borrador', 'activo'];
+    }
+
+    function isPlanUpdate() {
+      return isTrainer(resource.data.trainerId) && identityKept()
+        && !changes().hasAny(['clientId', 'createdAt']);
+    }
+
+    // Plantillas: sin cliente, solo del entrenador. Se clonan al asignar, así que no cuelga
+    // histórico de ellas y se pueden borrar.
+    match /routineTemplates/{id} {
+      allow read, delete: if isTrainer(resource.data.trainerId);
+      allow create: if isTrainer(request.resource.data.trainerId) && request.resource.data.id == id;
+      allow update: if isTrainer(resource.data.trainerId) && identityKept();
+    }
+
+    match /menuTemplates/{id} {
+      allow read, delete: if isTrainer(resource.data.trainerId);
+      allow create: if isTrainer(request.resource.data.trainerId) && request.resource.data.id == id;
+      allow update: if isTrainer(resource.data.trainerId) && identityKept();
+    }
+
+    // ---------------------------------------------------------------- catálogos
+
+    // Las banderas `hasMeasurements` y `hasResponses` no son del dominio: las pone `true` quien
+    // registra la primera medida o respuesta (el cliente, al guardar su revisión) y desde entonces
+    // fijan la unidad (I26) y el formato (I15). Nadie las baja.
+    match /measurementTypes/{id} {
+      allow read: if isTrainer(resource.data.trainerId) || isClientOfTrainer(resource.data.trainerId);
+      allow create: if isTrainer(request.resource.data.trainerId)
+        && request.resource.data.id == id
+        && request.resource.data.status == 'activa'
+        && !request.resource.data.keys().hasAny(['hasMeasurements']);
+      allow update: if (isTrainer(resource.data.trainerId) && identityKept()
+          && !changes().hasAny(['hasMeasurements'])
+          // I26: con medidas registradas, la unidad es la que era; la etiqueta se edita siempre.
+          && (resource.data.get('hasMeasurements', false) == false
+              || request.resource.data.unit == resource.data.unit))
+        || setsFlag('hasMeasurements');
+      allow delete: if false;
+    }
+
+    match /questions/{id} {
+      allow read: if isTrainer(resource.data.trainerId) || isClientOfTrainer(resource.data.trainerId);
+      allow create: if isTrainer(request.resource.data.trainerId)
+        && request.resource.data.id == id
+        && request.resource.data.status == 'activa'
+        && !request.resource.data.keys().hasAny(['hasResponses']);
+      allow update: if (isTrainer(resource.data.trainerId) && identityKept()
+          && !changes().hasAny(['hasResponses'])
+          // I15: con respuestas, el formato (tipo y límites) es el que era; el enunciado, editable.
+          && (resource.data.get('hasResponses', false) == false
+              || request.resource.data.format == resource.data.format))
+        || setsFlag('hasResponses');
+      allow delete: if false;
+    }
+
+    // El cliente de ese entrenador solo puede subir la bandera de `false` a `true`, y nada más.
+    function setsFlag(flag) {
+      return isClientOfTrainer(resource.data.trainerId)
+        && changes().hasOnly([flag])
+        && request.resource.data[flag] == true;
+    }
+
+    // ---------------------------------------------------------------- revisión
+
+    // I16: el id es `{clientId}_{semana}`, así que solo cabe una revisión por cliente y semana.
+    match /reviews/{id} {
+      allow read: if isTrainer(resource.data.trainerId)
+        || isClient(resource.data.trainerId, resource.data.clientId);
+
+      // La abre el cliente, vacía de feedback y sin copia del peso (I24): `weekNumber` se congela
+      // aquí y no vuelve a cambiar (I22).
+      allow create: if isClient(request.resource.data.trainerId, request.resource.data.clientId)
+        && request.resource.data.id == id
+        && id == request.resource.data.clientId + '_' + string(request.resource.data.weekNumber)
+        && request.resource.data.status == 'borrador'
+        && request.resource.data.frozenWeight == null
+        && request.resource.data.feedbackVideoUrl == null
+        && request.resource.data.feedbackNote == ''
+        && request.resource.data.submittedAt == null
+        && request.resource.data.viewedAt == null
+        && request.resource.data.reviewedAt == null;
+
+      allow update: if clientEditsReview() || trainerReviews();
+      allow delete: if false;
+    }
+
+    // I17: el cliente edita hasta que el entrenador la marca `vista`. Puede enviarla, no más allá, y
+    // no puede tocar lo que es del entrenador ni lo que se congela al abrirla.
+    function clientEditsReview() {
+      return isClient(resource.data.trainerId, resource.data.clientId)
+        && resource.data.status in ['borrador', 'enviada']
+        && request.resource.data.status in ['borrador', 'enviada']
+        && !(resource.data.status == 'enviada' && request.resource.data.status == 'borrador')
+        && !changes().hasAny([
+          'id', 'trainerId', 'clientId', 'weekNumber', 'window', 'requirements', 'createdAt',
+          'frozenWeight', 'feedbackVideoUrl', 'feedbackNote', 'viewedAt', 'reviewedAt'
+        ]);
+    }
+
+    // El entrenador la marca vista (y con ella se escribe la copia del peso, I24) y la cierra con su
+    // feedback. Solo avanza, y no toca lo que escribió el cliente.
+    function trainerReviews() {
+      return isTrainer(resource.data.trainerId)
+        && resource.data.status in ['enviada', 'vista', 'revisada']
+        && request.resource.data.status in ['vista', 'revisada']
+        && !(resource.data.status == 'revisada' && request.resource.data.status == 'vista')
+        && changes().hasOnly([
+          'status', 'viewedAt', 'reviewedAt', 'frozenWeight', 'feedbackVideoUrl', 'feedbackNote'
+        ]);
+    }
+
+    // ---------------------------------------------------------------- registros del cliente
+
+    // I23: un pesaje por cliente y fecha; el id lo dice. I18: kg, entre 0 y 400. El cliente puede
+    // retirar un pesaje (el aviso de I25 es del adaptador); el entrenador solo lo lee.
+    match /weightLogs/{id} {
+      allow read: if isTrainer(resource.data.trainerId)
+        || isClient(resource.data.trainerId, resource.data.clientId);
+      allow create: if ownWeightLog(id);
+      allow update: if ownWeightLog(id)
+        && isClient(resource.data.trainerId, resource.data.clientId)
+        && !changes().hasAny(['createdAt']);
+      allow delete: if isClient(resource.data.trainerId, resource.data.clientId);
+    }
+
+    function ownWeightLog(id) {
+      let d = request.resource.data;
+      return isClient(d.trainerId, d.clientId)
+        && d.id == id
+        && id == d.clientId + '_' + d.date
+        && d.weightKg is number && d.weightKg > 0 && d.weightKg <= 400;
+    }
+
+    // Una serie es única por línea prescrita, fecha y número; se registra sobre una rutina del propio
+    // cliente. El registro es opcional y tiene que poder retirarse.
+    match /workoutLogs/{id} {
+      allow read: if isTrainer(resource.data.trainerId)
+        || isClient(resource.data.trainerId, resource.data.clientId);
+      allow create: if ownWorkoutLog(id);
+      allow update: if ownWorkoutLog(id)
+        && isClient(resource.data.trainerId, resource.data.clientId)
+        && !changes().hasAny(['createdAt']);
+      allow delete: if isClient(resource.data.trainerId, resource.data.clientId);
+    }
+
+    function ownWorkoutLog(id) {
+      let d = request.resource.data;
+      return isClient(d.trainerId, d.clientId)
+        && d.id == id
+        && id == d.clientId + '_' + d.routineDayExerciseId + '_' + d.date + '_' + string(d.setNumber)
+        && d.weightKg is number && d.weightKg >= 0
+        && d.reps is int && d.reps >= 0
+        && get(/databases/$(database)/documents/routines/$(d.routineId)).data.clientId == d.clientId
+        && get(/databases/$(database)/documents/routines/$(d.routineId)).data.trainerId == d.trainerId;
+    }
+  }
+}
