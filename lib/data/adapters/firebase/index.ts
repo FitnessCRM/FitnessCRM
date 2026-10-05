@@ -11,5 +11,6 @@ export { createClientPort } from "./clients";
 export { createExercisePort } from "./exercises";
 export { createWeightLogPort, createWorkoutLogPort } from "./logs";
 export { createMembershipPort } from "./memberships";
+export { createReviewPort, reviewDocId } from "./reviews";
 export { createTrainerPort } from "./trainer";
 export { COLLECTIONS, FLAGS } from "./helpers";
