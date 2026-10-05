@@ -17,7 +17,7 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
-import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 /**
  * Las reglas de `firestore.rules` contra el emulador: `pnpm test:rules` lo arranca. Un test por
@@ -262,6 +262,38 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
           createdAt: "2026-09-10T08:00:00.000Z",
         }),
       ]);
+    });
+  });
+
+  describe("leer lo que no existe responde «no hay», no un permiso denegado", () => {
+    it("a trainer asking for a missing record gets an empty answer", async () => {
+      for (const [name, id] of [
+        ["clients", "no-existe"],
+        ["exercises", "no-existe"],
+        ["memberships", "no-existe"],
+        ["reviews", "no-existe"],
+        ["weightLogs", "no-existe"],
+      ] as const) {
+        const snap = await assertSucceeds(getDoc(doc(trainerA(), name, id)));
+        expect(snap.exists()).toBe(false);
+      }
+    });
+
+    it("a client probes only ids that start with their own client id", async () => {
+      const own = await assertSucceeds(getDoc(doc(clientA(), "weightLogs", "c-a_2026-01-01")));
+      expect(own.exists()).toBe(false);
+      await assertSucceeds(getDoc(doc(clientA(), "workoutLogs", "c-a_line_2026-01-01_1")));
+      await assertSucceeds(getDoc(doc(clientA(), "reviews", "c-a_9")));
+      // El de otro cliente, o una colección que el cliente no consulta por id, sigue denegado.
+      await assertFails(getDoc(doc(clientA(), "weightLogs", "c-a2_2026-01-01")));
+      await assertFails(getDoc(doc(clientA(), "clients", "no-existe")));
+      await assertFails(getDoc(doc(clientA(), "exercises", "no-existe")));
+    });
+
+    it("nobody signed in probes anything, and an existing foreign record is still denied", async () => {
+      await assertFails(getDoc(doc(anon(), "clients", "no-existe")));
+      await assertFails(getDoc(doc(anon(), "weightLogs", "c-a_2026-01-01")));
+      await assertFails(getDoc(doc(trainerB(), "clients", "c-a")));
     });
   });
 

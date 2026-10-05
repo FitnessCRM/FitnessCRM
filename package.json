@@ -12,7 +12,7 @@
     "format": "prettier --write .",
     "prepare": "husky",
     "test:firebase": "pnpm dlx firebase-tools emulators:exec --config firebase.open.json --only firestore,auth --project demo-hector \"vitest run lib/data/adapters/firebase --no-file-parallelism --exclude **/rules/**\"",
-    "test:rules": "pnpm dlx firebase-tools emulators:exec --only firestore --project demo-hector \"vitest run lib/data/adapters/firebase/rules\""
+    "test:rules": "pnpm dlx firebase-tools emulators:exec --only firestore --project demo-hector \"vitest run lib/data/adapters/firebase/rules --no-file-parallelism\""
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
