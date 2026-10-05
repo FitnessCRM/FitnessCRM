@@ -1,0 +1,54 @@
+name: CI
+
+# `lint`, `typecheck`, `test` y `build` en cada PR y en cada fusión a `main`. Es lo que exige la
+# protección de rama («Require status checks»): el check se llama `CI`.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # `prepare` instala husky: en CI no hay hooks que instalar.
+      HUSKY: "0"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Cada paso corre aunque falle el anterior, para que una revisión vea todos los fallos juntos.
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        if: ${{ !cancelled() }}
+        run: pnpm typecheck
+
+      - name: Test
+        if: ${{ !cancelled() }}
+        run: pnpm test
+
+      - name: Build
+        if: ${{ !cancelled() }}
+        run: pnpm build
