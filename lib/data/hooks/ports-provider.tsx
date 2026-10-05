@@ -1,25 +1,54 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type { DataPorts } from "@/lib/data/ports";
+import { createIdbPersister, PERSIST_MAX_AGE_MS, shouldPersistQuery } from "./query-persister";
 
 const PortsContext = createContext<DataPorts | null>(null);
 
 /**
+ * Cambia con cada compilación: una caché guardada por una versión anterior puede tener otra forma
+ * de datos, y es más barato volver a pedirla que leerla mal.
+ */
+const CACHE_BUSTER = process.env.NEXT_PUBLIC_BUILD_ID ?? "dev";
+
+/**
  * Único punto donde la app recibe una implementación de los puertos. Los hooks leen de aquí;
- * los componentes nunca importan un adaptador.
+ * los componentes nunca importan un adaptador. La caché de las consultas se guarda en el
+ * dispositivo para poder leer sin conexión (`networkMode: "offlineFirst"`: se intenta la
+ * petición, pero un fallo de red no vacía lo que ya hay).
  */
 export function PortsProvider({ ports, children }: { ports: DataPorts; children: ReactNode }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
-        defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
+        defaultOptions: {
+          queries: {
+            staleTime: 30_000,
+            gcTime: PERSIST_MAX_AGE_MS,
+            retry: 1,
+            refetchOnWindowFocus: false,
+            networkMode: "offlineFirst",
+          },
+        },
       }),
   );
+  const [persister] = useState(createIdbPersister);
   return (
     <PortsContext.Provider value={ports}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister,
+          maxAge: PERSIST_MAX_AGE_MS,
+          buster: CACHE_BUSTER,
+          dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery },
+        }}
+      >
+        {children}
+      </PersistQueryClientProvider>
     </PortsContext.Provider>
   );
 }
