@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 06-10-2026. Corresponde a `main` en `aac4542` (PR #68). Están en `main` los
+Última actualización: 06-10-2026. Corresponde a `main` en `0ab741f` (PR #69). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad, el adaptador de Firebase y el modo sin conexión del cliente; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
@@ -575,7 +575,7 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   con `role`; `RoleGate` en los dos layouts manda a cada cuenta a su área (`lib/session-access.ts`);
   pantalla `/accept-invite` sin captura, sobre el layout del login. El alta de cliente envía la
   invitación y, si falla un paso, el reintento repite solo el que falta (antes habría duplicado la
-  membresía). `users/{uid}` enlaza cuenta y persona; el del entrenador lo crea el propietario a mano.
+  membresía). `users/{uid}` enlaza cuenta y persona; el del entrenador lo crea el propietario a mano (ya creado, 06-10-2026).
   El enlace lleva el id del cliente (`?c=`), no su correo. Deuda: los correos no se normalizan a
   minúsculas (cambio de dominio, sin tarjeta); `/login` no redirige a quien ya tiene sesión; el
   cierre de sesión ya está en las dos áreas (tarjetas 50 y 56, PR #61 y #62).
@@ -584,7 +584,7 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   I13, I15, I16, I17, I18, I21, I22, I23 e I26 con 34 tests de emulador (`pnpm test:rules`); I3, I4,
   I25 e I27 y la mitad de I8 quedan en el adaptador, y el encabezado del archivo lo dice. Dos
   campos fuera del dominio, `hasResponses` y `hasMeasurements`, son banderas del catálogo que sube
-  el cliente. **Las reglas no están desplegadas en el proyecto de Firebase.** Consecuencia para el
+  el cliente. **Las reglas están desplegadas en el proyecto de Firebase** (06-10-2026). Consecuencia para el
   adaptador: el cliente solo lee rutinas, menús y macros que no sean borrador, así que sus consultas
   tienen que filtrar por estado.
 
@@ -613,7 +613,7 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   lee solo la última revisión enviada; ambas añaden índices compuestos sobre `reviews`. El #56 retira
   el recuento de uso de las plantillas, que costaba una consulta por plantilla: `TemplatePort`
   devuelve `RoutineTemplate[]` y `MenuTemplate[]` y desaparecen los `*Summary`
-  (**BREAKING CHANGE** de puerto). Las reglas siguen sin desplegarse.
+  (**BREAKING CHANGE** de puerto). Las reglas ya están desplegadas (06-10-2026).
 
 - **Área de cliente sin conexión** (tarjeta 81, PR #57). El service worker precachea las pantallas
   del cliente y una `/~offline` de respaldo; la caché de TanStack Query se persiste en IndexedDB
@@ -678,9 +678,9 @@ Las pantallas del cliente y del panel están en `main`. Desde el 21-09-2026 trab
 (sección «Equipo» de `CLAUDE.md`) y este archivo es un resumen curado que se escribe en un PR de
 documentación después de cada fusión. Lo que queda, con su tarjeta:
 
-- **Backend**, por este orden: desplegar las reglas de seguridad (tarjeta 34, ya en `main`) y
-  crear a mano el `users/{uid}` del entrenador; con eso, probar el adaptador de Firebase (16, ya en
-  `main` y cubriendo todos los puertos) con `NEXT_PUBLIC_DATA_BACKEND=firebase` y decidir cuándo
+- **Backend.** Firebase está conectado y se ha probado con el proyecto real (06-10-2026): el
+  `users/{uid}` del entrenador está creado, y las reglas de seguridad (tarjeta 34) y los índices de
+  `reviews` están desplegados. Falta, por este orden: decidir cuándo el adaptador de Firebase (16)
   pasa a ser el adaptador por defecto de `providers.tsx`; fotos de revisión (17), con la decisión
   de dónde guardarlas **reabierta el 05-10-2026** por el propietario: no se construye nada hasta
   cerrarla. Opciones: (a) el Drive del entrenador con un servidor y su token, que exige el plan
@@ -690,9 +690,10 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
 - **Protección de rama** en GitHub exigiendo el check `CI` (tarjeta 28, ya hecha): pendiente de
   activar.
 - **Índices compuestos de `reviews`** (tarjeta 71, en «En revisión»): los tres de
-  `firestore.indexes.json` no están desplegados ni verificados contra Firestore real, y el emulador
-  no los exige. Sin ellos, el panel, Clientes y Revisiones fallan con `failed-precondition` con
-  `NEXT_PUBLIC_DATA_BACKEND=firebase` apuntando a un proyecto real.
+  `firestore.indexes.json` están desplegados (06-10-2026). Sin ellos, el panel, Clientes y
+  Revisiones fallan con `failed-precondition` con `NEXT_PUBLIC_DATA_BACKEND=firebase`; el emulador
+  no los exige, así que solo se comprueban contra un proyecto real. La tarjeta sigue en «En
+  revisión» hasta su cierre.
 - **Decisiones de dominio pendientes**: los huecos menores de la revisión de errores, H5, H6, H7 y
   H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62).
 - **Pantallas menores**: planes anteriores del cliente (46) y editar un
