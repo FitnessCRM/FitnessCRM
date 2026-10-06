@@ -452,6 +452,8 @@ export const es = {
       repsMin: "Reps mín.",
       repsMax: "Reps máx.",
       repsMaxHint: "Vacío = repeticiones fijas",
+      /** Se ve dentro del campo vacío (en táctil `title` no existe). */
+      repsMaxPlaceholder: "Fijas",
       rir: "RIR",
       rest: "Descanso",
     },

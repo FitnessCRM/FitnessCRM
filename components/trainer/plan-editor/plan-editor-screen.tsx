@@ -84,7 +84,7 @@ export function PlanEditorScreen({ clientId }: { clientId: string }) {
   const back = (
     <Link
       href={`/clients/${clientId}`}
-      className="text-text-muted hover:text-text-primary w-fit text-[13px]"
+      className="text-text-muted hover:text-text-primary inline-flex min-h-8 w-fit items-center text-[13px]"
     >
       {t.back}
     </Link>

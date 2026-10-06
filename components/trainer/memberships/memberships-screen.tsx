@@ -69,6 +69,8 @@ export function MembershipsScreen({ initialClientId }: { initialClientId?: strin
       hint: t.filters.expiringHint.replace("{days}", String(EXPIRING_SOON_DAYS)),
     },
   ];
+  // En táctil `title` no existe: lo que define un filtro se escribe donde se ve, en el activo.
+  const activeHint = chips.find((chip) => chip.key === filter)?.hint;
   const total = data?.counts[filter] ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   // Si una edición saca del corte la única fila de la última página, esa página deja de existir:
@@ -98,6 +100,7 @@ export function MembershipsScreen({ initialClientId }: { initialClientId?: strin
           ) : null
         }
       />
+      {activeHint ? <p className="text-text-muted -mt-3 text-[13px]">{activeHint}</p> : null}
 
       {memberships.isPending ? (
         <LoadingState />

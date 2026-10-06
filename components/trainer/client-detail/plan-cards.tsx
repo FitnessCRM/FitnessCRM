@@ -33,7 +33,10 @@ function PlanCard({
       <div className="flex items-center justify-between">
         <h2 className="section-title">{title}</h2>
         {editHref ? (
-          <Link href={editHref} className="text-accent-hover hover:text-accent-emphasis text-xs">
+          <Link
+            href={editHref}
+            className="text-accent-hover hover:text-accent-emphasis -my-2 inline-flex min-h-8 items-center text-xs"
+          >
             {t.edit}
           </Link>
         ) : null}
