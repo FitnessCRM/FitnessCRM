@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -5,7 +6,8 @@ import { cn } from "@/lib/utils";
 /**
  * Campo numérico con etiqueta. `value` nulo o 0 se pinta vacío; al vaciarlo, `onChange` recibe
  * `null` y quien lo usa decide si es «sin valor» (reps máx.) o «inválido» (series). Con `showZero`
- * el 0 se pinta: en los macros de un menú, 0 g es un valor y vacío es «sin rellenar».
+ * el 0 se pinta: en los macros de un menú, 0 g es un valor y vacío es «sin rellenar». La etiqueta
+ * va asociada al campo con un `id` propio: un lector de pantalla lee «Proteína (g)», no «160».
  */
 export function NumberField({
   label,
@@ -26,10 +28,14 @@ export function NumberField({
   showZero?: boolean;
   className?: string;
 }) {
+  const id = useId();
   return (
     <div className={cn("flex min-w-0 flex-col gap-1", className)}>
-      <Label className="text-text-subtle tracking-label text-[11px] uppercase">{label}</Label>
+      <Label htmlFor={id} className="text-text-subtle tracking-label text-[11px] uppercase">
+        {label}
+      </Label>
       <Input
+        id={id}
         type="number"
         inputMode="decimal"
         min={min}
