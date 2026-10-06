@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 06-10-2026. Corresponde a `main` en `a64a77c` (PR #72). Están en `main` los
+Última actualización: 06-10-2026. Corresponde a `main` en `3727325` (PR #74). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad, el adaptador de Firebase y el modo sin conexión del cliente; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
@@ -712,8 +712,10 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
 - **Pantallas menores**: planes anteriores del cliente (46) y editar un
   cliente de baja por URL (63).
 - **Deuda menor con tarjeta**: editar registros de entreno de otra fecha (18), favicon (19),
-  cifras del panel en una consulta (42) y `listSubmittedReviews` sin uso (64). El nombre accesible
-  de `NumberField` (59, PR #66) ya está resuelto: etiqueta y campo van asociados con `useId`.
+  cifras del panel en una consulta (42). Resueltas: el nombre accesible de `NumberField` (59, PR
+  #66, etiqueta y campo asociados con `useId`) y `ReviewPort.listSubmittedReviews`, que se quitó
+  del puerto con su hook y su clave por no usarlo ninguna pantalla (64, PR #74, **BREAKING
+  CHANGE** de puerto): «Revisiones recibidas» lee `listReviewsTracking` filtrado por `enviada`.
 
 ### Anotado para el panel del entrenador
 
