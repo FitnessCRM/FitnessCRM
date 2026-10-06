@@ -28,6 +28,8 @@ export const queryKeys = {
   menus: (trainerId: string, clientId: string) => ["menus", trainerId, clientId] as const,
   editableMenus: (trainerId: string, clientId: string) =>
     ["menus", trainerId, clientId, "editable"] as const,
+  archivedMenus: (trainerId: string, clientId: string) =>
+    ["menus", trainerId, clientId, "archived"] as const,
   routineTemplates: (trainerId: string) => ["routine-templates", trainerId] as const,
   menuTemplates: (trainerId: string) => ["menu-templates", trainerId] as const,
   measurementTypes: (trainerId: string) => ["measurement-types", trainerId] as const,

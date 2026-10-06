@@ -213,6 +213,17 @@ export function useEditableMenus(clientId: string | undefined) {
   });
 }
 
+/** Menús archivados del cliente: versiones anteriores, de solo lectura. */
+export function useArchivedMenus(clientId: string | undefined) {
+  const ports = usePorts();
+  const trainerId = useTrainerId();
+  return useQuery({
+    queryKey: queryKeys.archivedMenus(trainerId ?? "", clientId ?? ""),
+    queryFn: () => ports.menus.listArchivedMenus(trainerId!, clientId!),
+    enabled: trainerId !== undefined && clientId !== undefined,
+  });
+}
+
 /**
  * Guarda y publica la rutina según `routinePublishOp` (§7): crea una nueva, edita en sitio el
  * borrador o, sobre la activa, crea una versión nueva; y la activa, con lo que la anterior pasa a
