@@ -589,6 +589,33 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
 - **Configuración de los emuladores** (PR #46, sin tarjeta). `test:firebase` ejecuta ahora también el
   emulador de Auth; antes los tests de auth se saltaban siempre.
 
+- **Adaptador de datos de Firebase** (tarjeta 16, PR #51, #55 y #56). Cubre los 15 puertos
+  (`lib/data/adapters/firebase/ports.ts`) y se monta en `app/providers.tsx` solo con
+  `NEXT_PUBLIC_DATA_BACKEND=firebase`; sin la variable la app sigue con el adaptador en memoria y el
+  SDK ni se descarga. Lo que en Postgres haría una restricción aquí es una transacción: activar un
+  plan archiva el anterior y escribe todo junto (I4), y `archiveExercise` y `deleteWeightLog`
+  releen cada documento dentro de la transacción para no pisar una edición ni saltarse I25 (#55).
+  Las listas del panel se paginan en el servidor (`listReviewsTracking`) y `listClientsTracking`
+  lee solo la última revisión enviada; ambas añaden índices compuestos sobre `reviews`. El #56 retira
+  el recuento de uso de las plantillas, que costaba una consulta por plantilla: `TemplatePort`
+  devuelve `RoutineTemplate[]` y `MenuTemplate[]` y desaparecen los `*Summary`
+  (**BREAKING CHANGE** de puerto). Las reglas siguen sin desplegarse.
+
+- **Área de cliente sin conexión** (tarjeta 81, PR #57). El service worker precachea las pantallas
+  del cliente y una `/~offline` de respaldo; la caché de TanStack Query se persiste en IndexedDB
+  (7 días, invalidada en cada build) y un aviso sale cuando el navegador no tiene red. La query de
+  sesión no se persiste, para no restaurar nunca una sesión caducada o ajena.
+
+- **Escrituras del cliente en cola sin conexión** (tarjeta 82, PR #58). Guardar o borrar una serie
+  de entreno y guardar un peso se registran como *mutation defaults* de TanStack Query
+  (`lib/data/hooks/offline-writes.ts`): sin red se pausan, se persisten con la caché y se reenvían
+  en orden al volver. Comparten una sola cola, así que un borrado posterior a una edición de la
+  misma serie no la adelanta, y son idempotentes por id de documento (I23), de modo que reenviar no
+  duplica. Solo hooks: ni puerto, ni adaptador, ni dominio. **Deuda:** esto no cubre las
+  transacciones de Firestore detrás de `saveWorkoutLog` y `saveWeightLog`, que fallan sin red en
+  vez de encolarse; la cola funciona porque la mutación espera a tener conexión antes de llamar al
+  puerto.
+
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
   `trainer/`) y #33 (enlace a la revisión desde el panel de control, rama
@@ -601,12 +628,11 @@ Las pantallas del cliente y del panel están en `main`. Desde el 21-09-2026 trab
 documentación después de cada fusión. Lo que queda, con su tarjeta:
 
 - **Backend**, por este orden: desplegar las reglas de seguridad (tarjeta 34, ya en `main`) y
-  crear a mano el `users/{uid}` del entrenador; adaptador de datos de Firebase (16), del que solo
-  existe en una rama local la sección 1 (entrenador, catálogos, ejercicios y registros), con la
-  deuda de consultas caras y escrituras atómicas anotada en la tarjeta, y que al cubrir todos los
-  puertos se monta en `providers.tsx`; fotos de revisión en el Drive del entrenador (17), cuyo
-  planteamiento depende ahora de que el acceso no sea con Google; y consentimiento del alta con el
-  borrado a petición (31).
+  crear a mano el `users/{uid}` del entrenador; con eso, probar el adaptador de Firebase (16, ya en
+  `main` y cubriendo todos los puertos) con `NEXT_PUBLIC_DATA_BACKEND=firebase` y decidir cuándo
+  pasa a ser el adaptador por defecto de `providers.tsx`; fotos de revisión en el Drive del
+  entrenador (17), cuyo planteamiento depende ahora de que el acceso no sea con Google; y
+  consentimiento del alta con el borrado a petición (31).
 - **CI** en GitHub Actions (tarjeta 28): `lint`, `typecheck`, `test` y `build` en cada PR, que es
   lo que podrá exigir la protección de rama.
 - **Decisiones de dominio pendientes**: los huecos menores de la revisión de errores, H5, H6, H7 y

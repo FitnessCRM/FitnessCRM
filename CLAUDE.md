@@ -479,7 +479,10 @@ Backend decidido el 29-09-2026 —Firebase para datos y auth, Drive del entrenad
 imágenes—, escrito en `docs/dominio.md` §9 y §12. Acceso por correo y contraseña, con invitación
 por enlace de correo (decidido el 03-10-2026, §12). En `main`: auth, invitaciones y entrada por
 rol (tarjeta 35, PR #44) y reglas de seguridad de Firestore con tests de emulador (tarjeta 34,
-PR #45). Falta, por este orden: desplegar las reglas y crear a mano el `users/{uid}` del
-entrenador, adaptador de datos (16, sin fusionar), fotos en el Drive (17) y consentimiento del
+PR #45). El adaptador de datos de Firebase (16) ya está en `main`, cubre los 15 puertos y se monta
+en `providers.tsx` solo con `NEXT_PUBLIC_DATA_BACKEND=firebase`; sin la variable sigue el adaptador
+en memoria. El área de cliente carga y se lee sin conexión, y las escrituras de series y pesos se
+encolan hasta volver la red (tarjetas 81 y 82, PR #57 y #58). Falta, por este orden: desplegar las
+reglas y crear a mano el `users/{uid}` del entrenador, fotos en el Drive (17) y consentimiento del
 alta con el borrado a petición (31). Lo pendiente, con su tarjeta, en «Siguiente» de
 `docs/estado.md`. Esta sección se actualiza en el PR de documentación posterior a cada fusión.
