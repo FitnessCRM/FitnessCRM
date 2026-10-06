@@ -16,6 +16,7 @@ export function NumberField({
   min = 0,
   step,
   hint,
+  placeholder,
   showZero = false,
   className,
 }: {
@@ -25,6 +26,8 @@ export function NumberField({
   min?: number;
   step?: number | "any";
   hint?: string;
+  /** Texto visible con el campo vacío: en táctil no hay `title`, así que lo que explica un vacío va aquí. */
+  placeholder?: string;
   showZero?: boolean;
   className?: string;
 }) {
@@ -44,6 +47,7 @@ export function NumberField({
           value === null || Number.isNaN(value) || (value === 0 && !showZero) ? "" : String(value)
         }
         title={hint}
+        placeholder={placeholder}
         onChange={(event) => {
           const raw = event.target.value;
           onChange(raw === "" ? null : Number(raw));

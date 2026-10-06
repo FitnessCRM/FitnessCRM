@@ -249,6 +249,7 @@ function ExerciseRow({
           label={t.repsMax}
           min={1}
           hint={t.repsMaxHint}
+          placeholder={t.repsMaxPlaceholder}
           value={p.repsMax}
           onChange={(v) => set({ repsMax: v })}
         />

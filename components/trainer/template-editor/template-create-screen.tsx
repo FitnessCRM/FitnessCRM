@@ -70,7 +70,10 @@ export function TemplateCreateScreen() {
 
   return (
     <div className="flex max-w-[640px] flex-col gap-6">
-      <Link href="/templates" className="text-text-muted hover:text-text-primary w-fit text-[13px]">
+      <Link
+        href="/templates"
+        className="text-text-muted hover:text-text-primary inline-flex min-h-8 w-fit items-center text-[13px]"
+      >
         {t.back}
       </Link>
       <PageHeader title={t.createTitle} />
