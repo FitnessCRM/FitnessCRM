@@ -1,6 +1,6 @@
 import { doc, setDoc, type Firestore } from "firebase/firestore";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import type { ReviewTrackingFilter } from "@/lib/data/ports";
+import type { ReviewPort, ReviewTrackingFilter } from "@/lib/data/ports";
 import { addCivilDays } from "@/lib/domain";
 import { createDemoState, createMockPorts, type MockState } from "../mock";
 import { CLIENT_IDS, TRAINER_ID } from "../mock/demo-data/common";
@@ -132,9 +132,11 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · revisiones", () => {
       });
       expect(all.rows.length).toBeGreaterThan(3);
       expect(all.counts.enviada).toBeGreaterThan(0);
-      expect(await reviews.listSubmittedReviews(TRAINER_ID)).toEqual(
-        await reference.listSubmittedReviews(TRAINER_ID),
-      );
+      const submitted = (port: ReviewPort) =>
+        port
+          .listReviewsTracking(TRAINER_ID, { filter: "enviada", search: "", page: 0, pageSize: 50 })
+          .then((page) => page.rows.map((row) => row.review.id));
+      expect(await submitted(reviews)).toEqual(await submitted(reference));
     });
 
     it("the dashboard figures", async () => {

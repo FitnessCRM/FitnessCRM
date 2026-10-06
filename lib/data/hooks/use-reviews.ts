@@ -41,17 +41,6 @@ export function useCurrentReview(clientId: string | undefined) {
   });
 }
 
-/** Revisiones `enviada` de toda la cartera ("Revisiones recibidas"). */
-export function useSubmittedReviews() {
-  const ports = usePorts();
-  const trainerId = useTrainerId();
-  return useQuery({
-    queryKey: queryKeys.submittedReviews(trainerId ?? ""),
-    queryFn: () => ports.reviews.listSubmittedReviews(trainerId!),
-    enabled: trainerId !== undefined,
-  });
-}
-
 /** Todas las revisiones recibidas con su cliente, paginadas en servidor (`/reviews`). */
 export function useReviewsTracking(query: ReviewTrackingQuery) {
   const ports = usePorts();

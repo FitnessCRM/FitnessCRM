@@ -43,7 +43,6 @@ export const queryKeys = {
     ["reviews", trainerId, "client", clientId] as const,
   currentReview: (trainerId: string, clientId: string) =>
     ["reviews", trainerId, "current", clientId] as const,
-  submittedReviews: (trainerId: string) => ["reviews", trainerId, "submitted"] as const,
   reviewsTracking: (trainerId: string, query: ReviewTrackingQuery) =>
     ["reviews", trainerId, "tracking", query] as const,
   review: (trainerId: string, reviewId: string) => ["reviews", trainerId, "id", reviewId] as const,
