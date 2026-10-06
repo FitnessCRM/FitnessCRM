@@ -46,12 +46,6 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
       ctx.reply(
         ctx.state.reviews.find((r) => r.id === reviewId && r.trainerId === trainerId) ?? null,
       ),
-    listSubmittedReviews: async (trainerId) =>
-      ctx.reply(
-        own(ctx.state.reviews, trainerId)
-          .filter((r) => r.status === "enviada")
-          .sort(bySubmittedDesc),
-      ),
     listReviewsTracking: async (trainerId, query) => {
       const fold = (text: string) =>
         text

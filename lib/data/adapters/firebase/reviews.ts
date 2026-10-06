@@ -102,11 +102,6 @@ export function createReviewPort(ctx: FirebaseContext): ReviewPort {
 
     getReview: (trainerId, reviewId) => readOwn(ctx, name, reviewSchema, trainerId, reviewId),
 
-    listSubmittedReviews: async (trainerId) =>
-      (await listOwn(ctx, name, reviewSchema, trainerId, where("status", "==", "enviada"))).sort(
-        bySubmittedDesc,
-      ),
-
     listReviewsTracking: async (trainerId, q) => {
       const needle = fold(q.search.trim());
       const clients = await listOwn(ctx, COLLECTIONS.clients, clientSchema, trainerId);

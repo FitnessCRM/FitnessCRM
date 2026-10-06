@@ -31,6 +31,17 @@ const DAVID = "c-david";
 const TODAY = "2026-08-29";
 const ports = () => createMockPorts({ today: TODAY, now: () => `${TODAY}T10:00:00Z` });
 
+/** Ids de las revisiones `enviada` de toda la cartera, en el orden de «Revisiones recibidas». */
+const submittedIds = async (p: ReturnType<typeof ports>, trainerId: string) =>
+  (
+    await p.reviews.listReviewsTracking(trainerId, {
+      filter: "enviada",
+      search: "",
+      page: 0,
+      pageSize: 50,
+    })
+  ).rows.map((row) => row.review.id);
+
 describe("demo data", () => {
   it("validates against every domain schema", () => {
     const s = createDemoState(TODAY);
@@ -115,11 +126,7 @@ describe("demo data", () => {
         expect(log.date >= r.window.start && log.date <= r.window.end).toBe(true);
       }
       s.memberships.forEach((m) => membershipSchema.parse(m));
-      expect((await p.reviews.listSubmittedReviews(TRAINER)).map((r) => r.id)).toEqual([
-        "rv-marta-s5",
-        "rv-jorge-s8",
-        "rv-sara-s3",
-      ]);
+      expect(await submittedIds(p, TRAINER)).toEqual(["rv-marta-s5", "rv-jorge-s8", "rv-sara-s3"]);
     }
   });
 });
@@ -197,7 +204,7 @@ describe("tenancy (I1)", () => {
     const p = ports();
     expect(await p.clients.listClients("t-otro")).toEqual([]);
     expect(await p.clients.getClient("t-otro", MARTA)).toBeNull();
-    expect(await p.reviews.listSubmittedReviews("t-otro")).toEqual([]);
+    expect(await submittedIds(p, "t-otro")).toEqual([]);
     expect(
       (
         await p.memberships.listMembershipsWithClients("t-otro", {
@@ -698,21 +705,14 @@ describe("flows", () => {
 
   it("feedback moves the review to revisada and the dashboard list shrinks", async () => {
     const p = ports();
-    expect((await p.reviews.listSubmittedReviews(TRAINER)).map((r) => r.id)).toEqual([
-      "rv-marta-s5",
-      "rv-jorge-s8",
-      "rv-sara-s3",
-    ]);
+    expect(await submittedIds(p, TRAINER)).toEqual(["rv-marta-s5", "rv-jorge-s8", "rv-sara-s3"]);
     await p.reviews.markReviewViewed(TRAINER, "rv-marta-s5");
     const done = await p.reviews.sendReviewFeedback(TRAINER, "rv-marta-s5", {
       videoUrl: "https://youtu.be/x",
       note: "Bien",
     });
     expect(done.status).toBe("revisada");
-    expect((await p.reviews.listSubmittedReviews(TRAINER)).map((r) => r.id)).toEqual([
-      "rv-jorge-s8",
-      "rv-sara-s3",
-    ]);
+    expect(await submittedIds(p, TRAINER)).toEqual(["rv-jorge-s8", "rv-sara-s3"]);
   });
 });
 

@@ -39,8 +39,6 @@ export interface ReviewTrackingPage {
 export interface ReviewPort {
   listClientReviews(trainerId: string, clientId: string): Promise<Review[]>;
   getReview(trainerId: string, reviewId: string): Promise<Review | null>;
-  /** Revisiones `enviada` de toda la cartera: la lista "Revisiones recibidas" del panel. */
-  listSubmittedReviews(trainerId: string): Promise<Review[]>;
   /** Todas las revisiones recibidas (no borradores): filtra, busca, ordena y pagina en servidor. */
   listReviewsTracking(trainerId: string, query: ReviewTrackingQuery): Promise<ReviewTrackingPage>;
   /** Contadores de la cartera entera, calculados donde están los datos y no sobre una página. */
