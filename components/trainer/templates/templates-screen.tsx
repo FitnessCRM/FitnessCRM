@@ -16,6 +16,7 @@ import { todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 import { DeleteDialog } from "./delete-dialog";
+import { FromPlanDialog } from "./from-plan-dialog";
 import { TemplateCard, type TemplateItem } from "./template-card";
 
 const t = es.screensTemplates;
@@ -34,6 +35,7 @@ export function TemplatesScreen() {
   const remove = useDeleteTemplate();
   const [filter, setFilter] = useState<Filter>("all");
   const [deleting, setDeleting] = useState<TemplateItem | null>(null);
+  const [fromPlanOpen, setFromPlanOpen] = useState(false);
 
   const header = (
     <PageHeader
@@ -128,8 +130,20 @@ export function TemplatesScreen() {
               onDelete={() => setDeleting(item)}
             />
           ))}
+          <button
+            type="button"
+            onClick={() => setFromPlanOpen(true)}
+            className="border-border-emphasis text-text-muted hover:text-text-primary focus-visible:ring-ring/50 flex min-h-32 flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-5 text-center text-[13px] transition-colors outline-none focus-visible:ring-[3px]"
+          >
+            <span aria-hidden className="text-xl leading-none">
+              +
+            </span>
+            {t.fromPlan.tile}
+          </button>
         </div>
       )}
+
+      {fromPlanOpen ? <FromPlanDialog onOpenChange={setFromPlanOpen} /> : null}
 
       {deleting ? (
         <DeleteDialog

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { NOW, idFactory } from "./__tests__/fixtures";
-import type { MenuTemplate, RoutineTemplate } from "./schemas";
+import type { Menu, MenuTemplate, Routine, RoutineTemplate } from "./schemas";
 import {
   cloneMenuTemplate,
   cloneRoutineTemplate,
@@ -8,8 +8,10 @@ import {
   countTemplateExercises,
   duplicateMenuTemplate,
   duplicateRoutineTemplate,
+  menusToTemplateContent,
   moveItem,
   renumberDays,
+  routineToTemplateContent,
   setSuggestedMenu,
 } from "./templates";
 
@@ -142,5 +144,98 @@ describe("template editing helpers", () => {
     const next = setSuggestedMenu(menus, "b");
     expect(next.map((m) => m.suggested)).toEqual([false, true, true]);
     expect(setSuggestedMenu(menus, "zzz")).toEqual(menus);
+  });
+});
+
+describe("a template made from a client's plan", () => {
+  const routine: Routine = {
+    id: "r-1",
+    trainerId: "t-adrian",
+    clientId: "c-marta",
+    name: "Rutina de Marta",
+    note: "Sube cuando te sobre una rep",
+    days: [
+      {
+        id: "d-1",
+        dayNumber: 1,
+        label: "Torso",
+        exercises: [
+          {
+            id: "e-1",
+            exerciseId: "ex-press",
+            prescription: { sets: 4, repsMin: 6, repsMax: 8, rir: "2", rest: "3 min", note: "" },
+          },
+        ],
+      },
+    ],
+    status: "archivado",
+    sourceTemplateName: "Hiper 5d v3",
+    createdAt: NOW,
+    updatedAt: NOW,
+  };
+
+  const menu = (id: string, over: Partial<Menu> = {}): Menu => ({
+    id,
+    trainerId: "t-adrian",
+    clientId: "c-marta",
+    name: `Menú ${id}`,
+    dayType: "entrenamiento",
+    suggested: false,
+    macros: { kcal: 2300, proteinG: 160, carbsG: 250, fatG: 70 },
+    note: "",
+    meals: [
+      { id: `meal-${id}`, name: "Desayuno", items: [{ id: `f-${id}`, name: "Avena", grams: 80 }] },
+    ],
+    status: "archivado",
+    sourceTemplateName: null,
+    createdAt: NOW,
+    updatedAt: NOW,
+    ...over,
+  });
+
+  it("copies a routine with fresh ids and no link to the client or the source routine", () => {
+    const content = routineToTemplateContent(routine, {
+      newId: idFactory("n"),
+      name: "Mi plantilla",
+    });
+    expect(content).toMatchObject({ trainerId: "t-adrian", name: "Mi plantilla", description: "" });
+    expect(content.note).toBe("Sube cuando te sobre una rep");
+    expect(content.days[0]?.id).not.toBe("d-1");
+    expect(content.days[0]?.exercises[0]?.id).not.toBe("e-1");
+    expect(content.days[0]?.exercises[0]?.exerciseId).toBe("ex-press");
+    expect(content).not.toHaveProperty("clientId");
+    expect(content).not.toHaveProperty("sourceTemplateName");
+    routine.days[0]!.exercises[0]!.prescription.sets = 99;
+    expect(content.days[0]?.exercises[0]?.prescription.sets).toBe(4);
+  });
+
+  it("copies menus of any status with fresh ids", () => {
+    const content = menusToTemplateContent([menu("a", { status: "activo" }), menu("b")], {
+      newId: idFactory("n"),
+      name: "Menús de Marta",
+    });
+    expect(content.menus).toHaveLength(2);
+    expect(content.menus.map((m) => m.id)).not.toContain("a");
+    expect(content.menus[0]?.meals[0]?.id).not.toBe("meal-a");
+    expect(content.menus[0]?.meals[0]?.items[0]?.name).toBe("Avena");
+    expect(content).not.toHaveProperty("clientId");
+  });
+
+  it("keeps one suggested menu per day type when versions are mixed", () => {
+    const content = menusToTemplateContent(
+      [
+        menu("a", { suggested: true }),
+        menu("b", { suggested: true }),
+        menu("c", { suggested: true, dayType: "descanso" }),
+      ],
+      { newId: idFactory("n"), name: "x" },
+    );
+    expect(content.menus.map((m) => m.suggested)).toEqual([true, false, true]);
+  });
+
+  it("refuses to make a menu template out of nothing", () => {
+    expect(() => menusToTemplateContent([], { newId: idFactory("n"), name: "x" })).toThrow(
+      expect.objectContaining({ code: "template.no_menus" }),
+    );
   });
 });
