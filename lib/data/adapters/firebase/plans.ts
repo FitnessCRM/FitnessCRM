@@ -247,6 +247,9 @@ export function createMenuPort(ctx: FirebaseContext): MenuPort {
     listMenus: (trainerId, clientId) =>
       ofClient(trainerId, clientId, where("status", "in", ["borrador", "activo"])),
 
+    listArchivedMenus: (trainerId, clientId) =>
+      ofClient(trainerId, clientId, where("status", "==", "archivado")),
+
     createMenu: (trainerId, clientId, body) =>
       runTransaction(ctx.db, async (tx) => {
         await txRequireOwn(tx, clientRef(clientId), clientSchema, trainerId, "Cliente");

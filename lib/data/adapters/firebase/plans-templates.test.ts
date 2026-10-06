@@ -280,6 +280,9 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
       expect(activated.every((m) => m.status === "activo")).toBe(true);
       const live = await menus.listMenus(TRAINER_ID, CLIENT_IDS.marta);
       expect(live.find((m) => m.id === active.id)).toBeUndefined(); // archivado: ya no sale
+      const archived = await menus.listArchivedMenus(TRAINER_ID, CLIENT_IDS.marta);
+      expect(archived.map((m) => m.id)).toContain(active.id);
+      expect(archived.every((m) => m.status === "archivado")).toBe(true);
       expect(
         live.filter((m) => m.dayType === active.dayType && m.status === "activo").map((m) => m.id),
       ).toEqual([revised.id]);

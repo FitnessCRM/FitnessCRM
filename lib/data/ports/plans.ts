@@ -50,6 +50,8 @@ export interface MenuPort {
   listActiveMenus(trainerId: string, clientId: string): Promise<Menu[]>;
   /** Menús del cliente que se pueden editar: los activos y los borradores, no los archivados. */
   listMenus(trainerId: string, clientId: string): Promise<Menu[]>;
+  /** Menús archivados del cliente: versiones anteriores, solo para consultarlas o copiarlas (§7). */
+  listArchivedMenus(trainerId: string, clientId: string): Promise<Menu[]>;
   createMenu(trainerId: string, clientId: string, body: MenuBody): Promise<Menu>;
   /** Edita en sitio un borrador. Lanza `menu.not_draft` sobre uno activo o archivado (§7). */
   updateMenu(trainerId: string, menuId: string, body: MenuBody): Promise<Menu>;

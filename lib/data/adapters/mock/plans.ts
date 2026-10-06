@@ -154,6 +154,12 @@ export function createMenuPort(ctx: MockContext): MenuPort {
           (m) => m.clientId === clientId && m.status !== "archivado",
         ),
       ),
+    listArchivedMenus: async (trainerId, clientId) =>
+      ctx.reply(
+        own(ctx.state.menus, trainerId).filter(
+          (m) => m.clientId === clientId && m.status === "archivado",
+        ),
+      ),
     createMenu: async (trainerId, clientId, body) => {
       ownClient(ctx.state, trainerId, clientId);
       const now = ctx.now();

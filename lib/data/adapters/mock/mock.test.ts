@@ -510,6 +510,11 @@ describe("flows", () => {
         .map((m) => m.id)
         .sort(),
     ).toEqual(drafts.map((d) => d.id).sort());
+    // El conjunto anterior pasó a archivado y se puede listar; el de otro entrenador no se ve.
+    const archived = await p.menus.listArchivedMenus(TRAINER, MARTA);
+    expect(archived.map((m) => m.id).sort()).toEqual(set.map((m) => m.id).sort());
+    expect(archived.every((m) => m.status === "archivado")).toBe(true);
+    expect(await p.menus.listArchivedMenus("t-otro", MARTA)).toEqual([]);
   });
 
   it("deletes a workout log only for its own trainer", async () => {
