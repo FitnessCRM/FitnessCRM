@@ -1,8 +1,8 @@
 # Estado del proyecto
 
-Última actualización: 06-10-2026. Corresponde a `main` en `5143f7d` (PR #59). Están en `main` los
+Última actualización: 06-10-2026. Corresponde a `main` en `075ccd5` (PR #62). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
-seguridad; falta el adaptador de datos de Firebase («Siguiente»). Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
+seguridad, el adaptador de Firebase y el modo sin conexión del cliente; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
 ## Cómo se trabajó hasta aquí
 
@@ -576,10 +576,8 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   invitación y, si falla un paso, el reintento repite solo el que falta (antes habría duplicado la
   membresía). `users/{uid}` enlaza cuenta y persona; el del entrenador lo crea el propietario a mano.
   El enlace lleva el id del cliente (`?c=`), no su correo. Deuda: los correos no se normalizan a
-  minúsculas (cambio de dominio, sin tarjeta); `/login` no redirige a quien ya tiene sesión; falta
-  cerrar sesión en las dos áreas (tarjeta 50, «Cliente · Perfil y ajustes», que incluye el cierre
-  de sesión del cliente, y tarjeta 56, «Entrenador · Cerrar sesión desde el panel»; ambas en
-  «En revisión» y sin código en `main`).
+  minúsculas (cambio de dominio, sin tarjeta); `/login` no redirige a quien ya tiene sesión; el
+  cierre de sesión ya está en las dos áreas (tarjetas 50 y 56, PR #61 y #62).
 
 - **Reglas de seguridad de Firestore** (tarjeta 34, PR #45). `firestore.rules` defiende I1, I2, I11,
   I13, I15, I16, I17, I18, I21, I22, I23 e I26 con 34 tests de emulador (`pnpm test:rules`); I3, I4,
@@ -619,9 +617,9 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
 - **Área de cliente sin conexión** (tarjeta 81, PR #57). El service worker precachea las pantallas
   del cliente y una `/~offline` de respaldo; la caché de TanStack Query se persiste en IndexedDB
   (7 días, invalidada en cada build) y un aviso sale cuando el navegador no tiene red. La query de
-  sesión no se persiste, para no restaurar nunca una sesión caducada o ajena. **Deuda:** cuando
-  exista cerrar sesión, tiene que vaciar la caché persistida (`createIdbPersister().removeClient()`);
-  si no, en un dispositivo compartido queda el rastro de los datos del anterior. El `start_url` es
+  sesión no se persiste, para no restaurar nunca una sesión caducada o ajena. **Deuda:** el cierre
+  de sesión ya vacía la caché persistida (tarjeta 50, PR #61: `useLogout` llama a
+  `clearPersistedCache`). El `start_url` es
   `/`, que redirige a `/login` y no se puede precachear: abrir la app instalada sin red desde el
   icono cae en `/~offline`. El aviso de conexión usa `navigator.onLine`, así que no salta con red
   pero sin servidor. No consta verificación en producción con la red cortada.
@@ -638,6 +636,25 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   ejemplo, una rutina archivada mientras tanto): hoy se pierde sin avisar. Falta la actualización
   optimista con marca «pendiente de enviar». Borrar un pesaje offline sigue fuera (I25). No consta
   verificación con la red cortada ni contra las reglas de seguridad con Firestore real.
+
+- **Perfil del cliente y cerrar sesión** (tarjeta 50, PR #61). `/profile` («Tu perfil»), solo
+  lectura: datos (nombre, email, teléfono, objetivo, nivel), seguimiento (alta con su semana,
+  cadencia, entrenador) y un bloque «Sesión» con «Cerrar sesión». Se llega desde el avatar: el de la
+  nav superior en escritorio y el bloque de usuario del menú hamburguesa en tablet y móvil. No hay
+  captura de diseño: es una propuesta, sin aprobar. No se edita nada («díselo a tu entrenador») ni
+  hay cambio de contraseña. `useLogout` cierra la sesión, vacía la caché de memoria y borra la copia
+  de IndexedDB (`clearPersistedCache`), y la pantalla lleva a `/login`. El mensaje de commit del PR
+  dice que el acceso será solo con Google: es falso, no hay login con Google (§12). **Deuda:**
+  cambiar contraseña y foto, y no consta prueba contra Firebase real, solo con el adaptador en
+  memoria.
+
+- **Cerrar sesión desde el panel** (tarjeta 56, PR #62). Botón «Cerrar sesión», con icono, bajo el
+  bloque de usuario de la barra lateral del entrenador y de su menú hamburguesa
+  (`components/ui/sign-out-button.tsx`). Usa el mismo `useLogout` que el perfil del cliente, lleva a
+  `/login` y, si el cierre falla, lo dice en el propio bloque y la sesión sigue abierta. Se eligió el
+  botón y no una pantalla de ajustes del entrenador, que tocaría el dominio (qué campos de `Trainer`
+  edita); sin captura, es una propuesta. **Deuda:** el perfil del cliente tiene su propio botón en
+  vez de usar este componente, y no consta prueba contra Firebase real.
 
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
@@ -667,11 +684,9 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   `NEXT_PUBLIC_DATA_BACKEND=firebase` apuntando a un proyecto real.
 - **Decisiones de dominio pendientes**: los huecos menores de la revisión de errores, H5, H6, H7 y
   H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62).
-- **Pantallas menores**: planes anteriores del cliente (46), panel responsive (49), cerrar sesión
-  desde el panel (56) y editar un cliente de baja por URL (63).
-  Además, **dos tarjetas en «En revisión» sin código en `main`**: perfil del cliente (50), cuya
-  rama no está en el remoto, y duplicar una plantilla desde un plan (55), sin comentario ni
-  código.
+- **Pantallas menores**: planes anteriores del cliente (46), panel responsive (49), editar un
+  cliente de baja por URL (63). Además, **una tarjeta en «En revisión» sin código en `main`**: duplicar una plantilla
+  desde un plan (55), sin comentario ni código.
 - **Deuda menor con tarjeta**: editar registros de entreno de otra fecha (18), favicon (19),
   cifras del panel en una consulta (42), nombre accesible de `NumberField` (59),
   `listSubmittedReviews` sin uso (64) y `latency.ts` sin uso (66).
