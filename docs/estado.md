@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 06-10-2026. Corresponde a `main` en `4e78625` (PR #66). Están en `main` los
+Última actualización: 06-10-2026. Corresponde a `main` en `aac4542` (PR #68). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad, el adaptador de Firebase y el modo sin conexión del cliente; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
@@ -455,7 +455,7 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   debajo de `lg`, barra superior con hamburguesa en las dos áreas; desde `lg`, sin cambios. El
   área de cliente también lo recibe: su nav con scroll horizontal no se entendía. El panel se
   cierra con Escape, tocando fuera o navegando. Deuda: no hay botón de cierre visible (sin
-  tarjeta); el resto del responsive del panel, en la 49.
+  tarjeta); el responsive del resto del panel se midió en la tarjeta 49 (PR #68).
 
 - **Panel de control** (`components/trainer/dashboard/`, tarjeta 4, PR #21). Cuatro cifras de
   toda la cartera —no de la página visible—, las cinco últimas revisiones enviadas con «Ver
@@ -545,7 +545,7 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   Menú sobre los editores de `components/editor/`, «Partir de plantilla» y un solo «Publicar
   cambios». La edición en sitio de la rutina activa que decidió la tarjeta la sustituyó D3
   (§7): publicar sobre un plan activo crea versión nueva (E27, tarjeta 60). Deuda: lo no
-  publicado vive solo en pantalla (sin tarjeta); en móvil es usable pero largo (tarjeta 49).
+  publicado vive solo en pantalla (sin tarjeta); en móvil es usable pero largo (≈4.500 px a 390; tarjeta 49, PR #68).
 
 ### Lo que no es pantalla
 
@@ -657,6 +657,16 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   edita); sin captura, es una propuesta. **Deuda:** el perfil del cliente tiene su propio botón en
   vez de usar este componente, y no consta prueba contra Firebase real.
 
+- **Panel del entrenador responsive** (tarjeta 49, PR #68). Se midieron las 17 rutas del panel a 390 y
+  768 px en un iframe del ancho exacto, en desarrollo y en producción: **ninguna desborda**. Lo que
+  fallaba era pequeño: los enlaces «volver» del editor de plantillas, de la alta de plantilla y del
+  editor de plan y el «Editar» de las tarjetas de plan medían 15-20 px (ahora 32), y dos datos
+  vivían solo en un `title`, que en táctil no existe: la definición del filtro «Caducan pronto» de
+  Membresías (ahora se escribe bajo la cabecera cuando está activo) y el significado de «Reps máx.»
+  vacío (el campo vacío muestra «Fijas»). El detalle de cliente conserva su orden en móvil, sin
+  reordenar bloques con `order`. **Deuda:** el editor de plan sigue siendo largo en móvil y no se
+  evaluó ofrecer otra cosa en su lugar; no consta prueba en un móvil físico ni con Firebase real.
+
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
   `trainer/`) y #33 (enlace a la revisión desde el panel de control, rama
@@ -685,7 +695,7 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   `NEXT_PUBLIC_DATA_BACKEND=firebase` apuntando a un proyecto real.
 - **Decisiones de dominio pendientes**: los huecos menores de la revisión de errores, H5, H6, H7 y
   H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62).
-- **Pantallas menores**: planes anteriores del cliente (46), panel responsive (49), editar un
+- **Pantallas menores**: planes anteriores del cliente (46) y editar un
   cliente de baja por URL (63). Además, **una tarjeta en «En revisión» sin código en `main`**: duplicar una plantilla
   desde un plan (55), sin comentario ni código.
 - **Deuda menor con tarjeta**: editar registros de entreno de otra fecha (18), favicon (19),
