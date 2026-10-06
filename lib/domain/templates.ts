@@ -1,3 +1,4 @@
+import { DomainError } from "./errors";
 import type { Menu, MenuTemplate, Routine, RoutineTemplate } from "./schemas";
 
 export type NewId = () => string;
@@ -109,6 +110,84 @@ export function duplicateMenuTemplate(template: MenuTemplate, ctx: DuplicateCont
     })),
     createdAt: ctx.now,
     updatedAt: ctx.now,
+  };
+}
+
+interface FromPlanContext {
+  newId: NewId;
+  /** Nombre de la plantilla: lo decide quien llama. */
+  name: string;
+}
+
+/** Lo que se guarda al crear una plantilla: el id y las fechas los pone quien la persiste. */
+export type RoutineTemplateDraftContent = Omit<RoutineTemplate, "id" | "createdAt" | "updatedAt">;
+export type MenuTemplateDraftContent = Omit<MenuTemplate, "id" | "createdAt" | "updatedAt">;
+
+/**
+ * Plantilla de rutina a partir de la rutina de un cliente (sea activa o archivada): el camino
+ * inverso a `cloneRoutineTemplate`. Es copia, no enlace (§4): ids nuevos en días y ejercicios y
+ * nada que apunte a la rutina de origen, ni a su cliente.
+ */
+export function routineToTemplateContent(
+  routine: Routine,
+  ctx: FromPlanContext,
+): RoutineTemplateDraftContent {
+  return {
+    trainerId: routine.trainerId,
+    name: ctx.name,
+    description: "",
+    note: routine.note,
+    days: routine.days.map((day) => ({
+      id: ctx.newId(),
+      dayNumber: day.dayNumber,
+      label: day.label,
+      exercises: day.exercises.map((ex) => ({
+        id: ctx.newId(),
+        exerciseId: ex.exerciseId,
+        prescription: { ...ex.prescription },
+      })),
+    })),
+  };
+}
+
+/**
+ * Plantilla de menú a partir de menús de un cliente (activos y archivados, pueden venir de
+ * versiones distintas). Ids nuevos y sin vínculo con el origen. Como al juntar versiones puede
+ * haber dos sugeridos del mismo tipo de día, se queda el primero: una plantilla tiene uno por tipo.
+ * Sin menús no hay plantilla que hacer.
+ */
+export function menusToTemplateContent(
+  menus: readonly Menu[],
+  ctx: FromPlanContext,
+): MenuTemplateDraftContent {
+  const first = menus[0];
+  if (!first) throw new DomainError("template.no_menus", "No hay menús que copiar a una plantilla");
+  const suggestedDayTypes = new Set<string>();
+  return {
+    trainerId: first.trainerId,
+    name: ctx.name,
+    description: "",
+    menus: menus.map((menu) => {
+      const suggested = menu.suggested && !suggestedDayTypes.has(menu.dayType);
+      if (suggested) suggestedDayTypes.add(menu.dayType);
+      return {
+        id: ctx.newId(),
+        name: menu.name,
+        dayType: menu.dayType,
+        suggested,
+        macros: { ...menu.macros },
+        note: menu.note,
+        meals: menu.meals.map((meal) => ({
+          id: ctx.newId(),
+          name: meal.name,
+          items: meal.items.map((item) => ({
+            id: ctx.newId(),
+            name: item.name,
+            grams: item.grams,
+          })),
+        })),
+      };
+    }),
   };
 }
 
