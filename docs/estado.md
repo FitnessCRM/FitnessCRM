@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 06-10-2026. Corresponde a `main` en `075ccd5` (PR #62). Están en `main` los
+Última actualización: 06-10-2026. Corresponde a `main` en `5fa6091` (PR #64). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad, el adaptador de Firebase y el modo sin conexión del cliente; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
@@ -64,7 +64,8 @@ Windows. Consecuencias:
   pantalla no demuestra que exista. Para comprobarlo hay que forzarlo, por ejemplo con un retraso
   temporal en el adaptador que no se commitea. El mismo PR carga las gráficas de Peso y Progreso
   con `next/dynamic` sin SSR, con un hueco mientras llegan; el Detalle de cliente hace lo mismo.
-  `lib/data/adapters/mock/latency.ts` quedó sin uso (tarjeta 66). Las invariantes se aplican con las funciones del dominio (I4, I9, I13, I15, I16,
+  `lib/data/adapters/mock/latency.ts` quedó sin uso y se borró (tarjeta 66, PR #64): para ver un
+  estado de carga hay que forzarlo a mano. Las invariantes se aplican con las funciones del dominio (I4, I9, I13, I15, I16,
   I17). `demo-data/` reproduce la demo: Adrián Vega, cinco clientes, 10 ejercicios, 3 plantillas
   de rutina, 2 de menú, rutina y menús de Marta, 10 membresías, 8 tipos de medida, 5 preguntas,
   13 pesajes del último mes, 5 revisiones de Marta y las enviadas de Jorge y Sara. Un test valida
@@ -689,7 +690,7 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   desde un plan (55), sin comentario ni código.
 - **Deuda menor con tarjeta**: editar registros de entreno de otra fecha (18), favicon (19),
   cifras del panel en una consulta (42), nombre accesible de `NumberField` (59),
-  `listSubmittedReviews` sin uso (64) y `latency.ts` sin uso (66).
+  `listSubmittedReviews` sin uso (64).
 
 ### Anotado para el panel del entrenador
 
