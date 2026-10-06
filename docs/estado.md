@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 06-10-2026. Corresponde a `main` en `5fa6091` (PR #64). Están en `main` los
+Última actualización: 06-10-2026. Corresponde a `main` en `4e78625` (PR #66). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad, el adaptador de Firebase y el modo sin conexión del cliente; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
@@ -689,8 +689,8 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   cliente de baja por URL (63). Además, **una tarjeta en «En revisión» sin código en `main`**: duplicar una plantilla
   desde un plan (55), sin comentario ni código.
 - **Deuda menor con tarjeta**: editar registros de entreno de otra fecha (18), favicon (19),
-  cifras del panel en una consulta (42), nombre accesible de `NumberField` (59),
-  `listSubmittedReviews` sin uso (64).
+  cifras del panel en una consulta (42) y `listSubmittedReviews` sin uso (64). El nombre accesible
+  de `NumberField` (59, PR #66) ya está resuelto: etiqueta y campo van asociados con `useId`.
 
 ### Anotado para el panel del entrenador
 
