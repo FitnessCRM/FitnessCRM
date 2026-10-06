@@ -63,3 +63,13 @@ export function createIdbPersister(): Persister {
     },
   };
 }
+
+/** Borra la caché guardada en el dispositivo, sin pasar por el persister montado (cerrar sesión). */
+export async function clearPersistedCache(): Promise<void> {
+  if (typeof indexedDB === "undefined") return;
+  try {
+    await del(STORAGE_KEY);
+  } catch {
+    /* sin almacén no hay nada que borrar */
+  }
+}
