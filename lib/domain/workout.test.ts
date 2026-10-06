@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RoutineDay, WorkoutLog } from "./schemas";
-import { dayRecordOn, defaultRoutineDay, latestDayRecord } from "./workout";
+import { dayRecordOn, defaultRoutineDay, latestDayRecord, workoutDates } from "./workout";
 
 function day(dayNumber: number, sets: number[]): RoutineDay {
   return {
@@ -194,5 +194,33 @@ describe("line ids carry over between routine versions (§7)", () => {
     expect(latestDayRecord(next, logs).logs.some((l) => l.routineDayExerciseId === "d2-e2")).toBe(
       false,
     );
+  });
+});
+
+describe("workoutDates", () => {
+  it("lists dates newest first with their number of sets", () => {
+    const logs = [
+      log("d1-e1", "2026-09-10", 1),
+      log("d1-e1", "2026-09-10", 2),
+      log("d2-e1", "2026-09-12", 1),
+    ];
+    expect(workoutDates(logs)).toEqual([
+      { date: "2026-09-12", sets: 1 },
+      { date: "2026-09-10", sets: 2 },
+    ]);
+  });
+
+  it("counts a set saved twice once", () => {
+    const logs = [
+      log("d1-e1", "2026-09-10", 1, "09:00:00"),
+      log("d1-e1", "2026-09-10", 1, "10:00:00"),
+    ];
+    expect(workoutDates(logs)).toEqual([{ date: "2026-09-10", sets: 1 }]);
+  });
+
+  it("honours the limit and handles no logs", () => {
+    const logs = [log("d1-e1", "2026-09-10", 1), log("d1-e1", "2026-09-11", 1)];
+    expect(workoutDates(logs, 1)).toEqual([{ date: "2026-09-11", sets: 1 }]);
+    expect(workoutDates([])).toEqual([]);
   });
 });

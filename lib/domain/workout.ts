@@ -94,3 +94,28 @@ export function latestDayRecord(
   );
   return recordOf(day, own, date);
 }
+
+/** Un día en el que el cliente registró series, con cuántas. */
+export interface WorkoutDate {
+  date: CivilDate;
+  sets: number;
+}
+
+/**
+ * Fechas con registros, de la más reciente a la más antigua, con su número de series. Cuenta una
+ * serie por línea prescrita y número, como `dayRecordOn`: guardar dos veces la misma no suma.
+ */
+export function workoutDates(logs: readonly WorkoutLog[], limit?: number): WorkoutDate[] {
+  const seen = new Set<string>();
+  const counts = new Map<CivilDate, number>();
+  for (const log of logs) {
+    const key = `${log.date}#${log.routineDayExerciseId}#${log.setNumber}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    counts.set(log.date, (counts.get(log.date) ?? 0) + 1);
+  }
+  const dates = [...counts]
+    .map(([date, sets]) => ({ date, sets }))
+    .sort((a, b) => b.date.localeCompare(a.date));
+  return limit === undefined ? dates : dates.slice(0, limit);
+}

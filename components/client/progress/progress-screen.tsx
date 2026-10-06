@@ -27,10 +27,12 @@ import {
   useSessionClientId,
   useTrainer,
   useWeightLogs,
+  useWorkoutLogs,
 } from "@/lib/data/hooks";
 import { todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { ReviewsList } from "./reviews-list";
+import { WorkoutsCard } from "./workouts-card";
 
 const t = es.screensProgress;
 
@@ -42,12 +44,20 @@ export function ProgressScreen() {
   const logs = useWeightLogs(clientId);
   const reviews = useClientReviews(clientId);
   const types = useMeasurementTypes();
-  const queries = [trainer, client, logs, reviews, types];
+  const workoutLogs = useWorkoutLogs(clientId);
+  const queries = [trainer, client, logs, reviews, types, workoutLogs];
 
   if (queries.some((q) => q.isError)) {
     return <ErrorState onRetry={() => queries.forEach((q) => void q.refetch())} />;
   }
-  if (!trainer.data || !client.data || !logs.data || !reviews.data || !types.data) {
+  if (
+    !trainer.data ||
+    !client.data ||
+    !logs.data ||
+    !reviews.data ||
+    !types.data ||
+    !workoutLogs.data
+  ) {
     return <LoadingState />;
   }
 
@@ -85,6 +95,7 @@ export function ProgressScreen() {
           today={today}
           timeZone={trainer.data.timeZone}
         />
+        <WorkoutsCard logs={workoutLogs.data} today={today} />
       </div>
     </div>
   );

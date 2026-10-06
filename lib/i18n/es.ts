@@ -885,6 +885,24 @@ export const es = {
       emptyTitle: "Sin revisiones todavía",
       emptyHint: "La primera aparecerá cuando empieces tu revisión semanal.",
     },
+    workouts: {
+      title: "Entrenos",
+      hint: "Corrige un entreno de otro día o registra uno que se te pasó.",
+      empty: "Todavía no has registrado ningún entreno.",
+      sets: "series",
+      set: "serie",
+      other: "Registrar otro día",
+    },
+  },
+  /** Registro de un entreno de otra fecha, desde Progreso. */
+  screensWorkoutDay: {
+    eyebrow: "Entrenos",
+    title: "Entreno de otro día",
+    back: "Volver a Progreso",
+    date: "Fecha del entreno",
+    dateInvalid: "Elige una fecha que no sea futura",
+    clearHint: "Vacía los dos campos para quitar una serie. Se guarda al salir de la fila.",
+    summaryLogged: "series registradas ese día",
   },
   /** Datos de un cliente: los comparten el alta y la edición. */
   clientData: {

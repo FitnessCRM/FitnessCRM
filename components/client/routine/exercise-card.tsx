@@ -71,6 +71,7 @@ export function ExerciseCard({
   reference,
   today,
   defaultOpen,
+  hint = t.log.clearHint,
   onSave,
   onDelete,
 }: {
@@ -84,6 +85,8 @@ export function ExerciseCard({
   /** Fecha civil de hoy, para fechar la referencia en la fila. */
   today: CivilDate;
   defaultOpen: boolean;
+  /** Pie del registro; por defecto el de la rejilla de hoy. */
+  hint?: string;
   onSave: (setNumber: number, values: { weightKg: number; reps: number }) => Promise<unknown>;
   onDelete: (workoutLogId: string) => Promise<unknown>;
 }) {
@@ -148,7 +151,7 @@ export function ExerciseCard({
               />
             );
           })}
-          <p className="text-text-subtle mt-1 text-xs">{t.log.clearHint}</p>
+          <p className="text-text-subtle mt-1 text-xs">{hint}</p>
         </div>
       ) : null}
     </article>
