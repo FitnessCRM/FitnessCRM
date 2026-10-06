@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 06-10-2026. Corresponde a `main` en `0ab741f` (PR #69). Están en `main` los
+Última actualización: 06-10-2026. Corresponde a `main` en `a64a77c` (PR #72). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad, el adaptador de Firebase y el modo sin conexión del cliente; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
@@ -526,7 +526,7 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   rejilla con filtros, «Usada en N clientes», duplicar y eliminar avisando de que lo asignado no
   cambia. El uso es un modelo de lectura del puerto, no un campo del dominio, y se cuenta por el
   nombre congelado en cada plan. Deuda: renombrar una plantilla pierde sus usos y dos con el mismo
-  nombre los suman (sin tarjeta); duplicar desde un plan, en la 55.
+  nombre los suman (sin tarjeta); duplicar desde un plan, en la 55 (PR #72, abajo).
 
 - **Crear y editar plantilla** (`/templates/new`, `/templates/[kind]/[templateId]`, tarjetas 53
   y 54, PR #30). Sin captura: el layout de la 12 sin macros del cliente. Los editores de rutina y
@@ -667,6 +667,19 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   reordenar bloques con `order`. **Deuda:** el editor de plan sigue siendo largo en móvil y no se
   evaluó ofrecer otra cosa en su lugar; no consta prueba en un móvil físico ni con Firebase real.
 
+- **Plantilla desde el plan de un cliente** (tarjeta 55, PR #71 y #72). La tarjeta punteada
+  «Duplicar desde un plan existente», última de la rejilla de Plantillas, abre un diálogo: cliente,
+  qué copiar y nombre, y al crear va al editor de la plantilla nueva, como el alta. De rutina se
+  elige una, activa o archivada; de menús, uno o varios, activos o archivados y de versiones
+  distintas si se quiere. Los borradores no se copian. La copia son dos funciones puras de dominio,
+  `routineToTemplateContent` y `menusToTemplateContent`, con ids nuevos y sin vínculo con el origen
+  (§4); al mezclar versiones se queda un menú sugerido por tipo de día. El PR #71 añadió antes
+  `MenuPort.listArchivedMenus` y el hook `useArchivedMenus` (solo añade un método, sin cambiar
+  firmas). El prototipo dibuja la tarjeta pero no el flujo: el diálogo es una propuesta sin
+  aprobar. **Deuda:** no se probó la lista de menús archivados en el navegador (la demo no tiene
+  ninguno); no consta prueba con Firebase real; si una rutina archivada prescribe un ejercicio
+  archivado después, el guardado puede fallar por I3 y el diálogo solo dice que no se pudo crear.
+
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
   `trainer/`) y #33 (enlace a la revisión desde el panel de control, rama
@@ -697,8 +710,7 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
 - **Decisiones de dominio pendientes**: los huecos menores de la revisión de errores, H5, H6, H7 y
   H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62).
 - **Pantallas menores**: planes anteriores del cliente (46) y editar un
-  cliente de baja por URL (63). Además, **una tarjeta en «En revisión» sin código en `main`**: duplicar una plantilla
-  desde un plan (55), sin comentario ni código.
+  cliente de baja por URL (63).
 - **Deuda menor con tarjeta**: editar registros de entreno de otra fecha (18), favicon (19),
   cifras del panel en una consulta (42) y `listSubmittedReviews` sin uso (64). El nombre accesible
   de `NumberField` (59, PR #66) ya está resuelto: etiqueta y campo van asociados con `useId`.
