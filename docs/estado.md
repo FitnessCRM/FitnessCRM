@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 05-10-2026. Corresponde a `main` en `d68935c` (PR #46). Están en `main` los
+Última actualización: 06-10-2026. Corresponde a `main` en `5143f7d` (PR #59). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad; falta el adaptador de datos de Firebase («Siguiente»). Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
@@ -209,9 +209,10 @@ Fase 5 (navegación):
   fila vacía ocupando el hueco de I16 y saliendo en Progreso como «en curso 0/4». **Fotos:
   pendiente número uno cuando haya backend.** Hoy son `object URL` del navegador, revocadas al
   desmontar, y no sobreviven a una recarga: una revisión puede quedar enviada y completa sin
-  imágenes recuperables. Lo decidido el 29-09-2026 es que las fotos vivan en el Drive del
-  entrenador (`docs/dominio.md` §9 y §12), no en un Storage propio. **No está implementado**: es
-  la tarjeta 17, y hasta entonces siguen siendo `object URL` en memoria.
+  imágenes recuperables. El 29-09-2026 se decidió que las fotos vivan en el Drive del entrenador
+  (`docs/dominio.md` §9 y §12), pero el 05-10-2026 el propietario reabrió esa decisión (ver
+  «Siguiente»). **No está implementado**: es la tarjeta 17, y hasta entonces siguen siendo
+  `object URL` en memoria.
 
 - **Progreso** (`components/client/progress/`, 19-09-2026): «Evolución de peso» con todas las
   semanas del cliente (`weeklyWeights`) y el delta sin color; «Medidas», primera gráfica
@@ -576,7 +577,9 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   membresía). `users/{uid}` enlaza cuenta y persona; el del entrenador lo crea el propietario a mano.
   El enlace lleva el id del cliente (`?c=`), no su correo. Deuda: los correos no se normalizan a
   minúsculas (cambio de dominio, sin tarjeta); `/login` no redirige a quien ya tiene sesión; falta
-  cerrar sesión (tarjeta 50).
+  cerrar sesión en las dos áreas (tarjeta 50, «Cliente · Perfil y ajustes», que incluye el cierre
+  de sesión del cliente, y tarjeta 56, «Entrenador · Cerrar sesión desde el panel»; ambas en
+  «En revisión» y sin código en `main`).
 
 - **Reglas de seguridad de Firestore** (tarjeta 34, PR #45). `firestore.rules` defiende I1, I2, I11,
   I13, I15, I16, I17, I18, I21, I22, I23 e I26 con 34 tests de emulador (`pnpm test:rules`); I3, I4,
@@ -588,6 +591,18 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
 
 - **Configuración de los emuladores** (PR #46, sin tarjeta). `test:firebase` ejecuta ahora también el
   emulador de Auth; antes los tests de auth se saltaban siempre.
+
+- **CI en GitHub Actions** (tarjeta 28, PR #48). `.github/workflows/ci.yml` ejecuta `lint`,
+  `typecheck`, `test` y `build` en cada PR y en cada fusión a `main`, con un único job cuyo check se
+  llama `CI` (límite de 15 minutos, `ubuntu-latest`). Node sale de `.nvmrc` (22) y pnpm es la
+  versión 12; cada paso corre aunque falle el anterior, para ver todos los fallos juntos. Deuda:
+  falta activar la protección de rama exigiendo el check `CI` (ver «Siguiente»).
+
+- **Reenviar invitación** (tarjeta 47, PR #49). En el detalle de un cliente `invitado` aparece
+  `client-invitation-card.tsx`, con un botón que vuelve a enviar el mismo enlace de correo (§12), por
+  si no llegó o caducó. Confirma a qué correo lo envió y muestra un aviso si el envío falla; cuando
+  el cliente entra y pasa a `activo`, la tarjeta desaparece. Se aparta de la descripción de la
+  tarjeta, que hablaba de Google: no hay login con Google.
 
 - **Adaptador de datos de Firebase** (tarjeta 16, PR #51, #55 y #56). Cubre los 15 puertos
   (`lib/data/adapters/firebase/ports.ts`) y se monta en `app/providers.tsx` solo con
@@ -604,7 +619,12 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
 - **Área de cliente sin conexión** (tarjeta 81, PR #57). El service worker precachea las pantallas
   del cliente y una `/~offline` de respaldo; la caché de TanStack Query se persiste en IndexedDB
   (7 días, invalidada en cada build) y un aviso sale cuando el navegador no tiene red. La query de
-  sesión no se persiste, para no restaurar nunca una sesión caducada o ajena.
+  sesión no se persiste, para no restaurar nunca una sesión caducada o ajena. **Deuda:** cuando
+  exista cerrar sesión, tiene que vaciar la caché persistida (`createIdbPersister().removeClient()`);
+  si no, en un dispositivo compartido queda el rastro de los datos del anterior. El `start_url` es
+  `/`, que redirige a `/login` y no se puede precachear: abrir la app instalada sin red desde el
+  icono cae en `/~offline`. El aviso de conexión usa `navigator.onLine`, así que no salta con red
+  pero sin servidor. No consta verificación en producción con la red cortada.
 
 - **Escrituras del cliente en cola sin conexión** (tarjeta 82, PR #58). Guardar o borrar una serie
   de entreno y guardar un peso se registran como *mutation defaults* de TanStack Query
@@ -614,7 +634,10 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   duplica. Solo hooks: ni puerto, ni adaptador, ni dominio. **Deuda:** esto no cubre las
   transacciones de Firestore detrás de `saveWorkoutLog` y `saveWeightLog`, que fallan sin red en
   vez de encolarse; la cola funciona porque la mutación espera a tener conexión antes de llamar al
-  puerto.
+  puerto. Falta decidir qué ve el cliente si una escritura encolada falla al reenviarse (por
+  ejemplo, una rutina archivada mientras tanto): hoy se pierde sin avisar. Falta la actualización
+  optimista con marca «pendiente de enviar». Borrar un pesaje offline sigue fuera (I25). No consta
+  verificación con la red cortada ni contra las reglas de seguridad con Firestore real.
 
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
@@ -630,15 +653,22 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
 - **Backend**, por este orden: desplegar las reglas de seguridad (tarjeta 34, ya en `main`) y
   crear a mano el `users/{uid}` del entrenador; con eso, probar el adaptador de Firebase (16, ya en
   `main` y cubriendo todos los puertos) con `NEXT_PUBLIC_DATA_BACKEND=firebase` y decidir cuándo
-  pasa a ser el adaptador por defecto de `providers.tsx`; fotos de revisión en el Drive del
-  entrenador (17), cuyo planteamiento depende ahora de que el acceso no sea con Google; y
-  consentimiento del alta con el borrado a petición (31).
-- **CI** en GitHub Actions (tarjeta 28): `lint`, `typecheck`, `test` y `build` en cada PR, que es
-  lo que podrá exigir la protección de rama.
+  pasa a ser el adaptador por defecto de `providers.tsx`; fotos de revisión (17), con la decisión
+  de dónde guardarlas **reabierta el 05-10-2026** por el propietario: no se construye nada hasta
+  cerrarla. Opciones: (a) el Drive del entrenador con un servidor y su token, que exige el plan
+  Blaze de Firebase, o (b) Firebase Storage. El motivo es que con el permiso `drive.file` una app
+  solo ve los archivos que ella misma creó, así que el token de un cliente no puede escribir en la
+  carpeta del entrenador; y consentimiento del alta con el borrado a petición (31).
+- **Protección de rama** en GitHub exigiendo el check `CI` (tarjeta 28, ya hecha): pendiente de
+  activar.
+- **Índices compuestos de `reviews`** (tarjeta 71, en «En revisión»): los tres de
+  `firestore.indexes.json` no están desplegados ni verificados contra Firestore real, y el emulador
+  no los exige. Sin ellos, el panel, Clientes y Revisiones fallan con `failed-precondition` con
+  `NEXT_PUBLIC_DATA_BACKEND=firebase` apuntando a un proyecto real.
 - **Decisiones de dominio pendientes**: los huecos menores de la revisión de errores, H5, H6, H7 y
   H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62).
-- **Pantallas menores**: planes anteriores del cliente (46), reenviar invitación (47), panel
-  responsive (49), cerrar sesión desde el panel (56) y editar un cliente de baja por URL (63).
+- **Pantallas menores**: planes anteriores del cliente (46), panel responsive (49), cerrar sesión
+  desde el panel (56) y editar un cliente de baja por URL (63).
   Además, **dos tarjetas en «En revisión» sin código en `main`**: perfil del cliente (50), cuya
   rama no está en el remoto, y duplicar una plantilla desde un plan (55), sin comentario ni
   código.
