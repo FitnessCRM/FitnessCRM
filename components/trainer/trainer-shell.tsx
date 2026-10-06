@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { Brand } from "@/components/ui/brand";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
 import { MobileNav } from "@/components/ui/mobile-nav";
+import { SignOutButton } from "@/components/ui/sign-out-button";
 import { useTrainer } from "@/lib/data/hooks";
 import { es } from "@/lib/i18n/es";
 import { cn, initialsOf } from "@/lib/utils";
@@ -32,12 +33,15 @@ export function TrainerShell({ children }: { children: ReactNode }) {
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const initials = trainer.data ? initialsOf(firstName, rest.join(" ")) : "";
   const userBlock = (
-    <div className="flex items-center gap-2.5">
-      <InitialsAvatar initials={initials} />
-      <div className="min-w-0">
-        <p className="truncate text-[14px] font-semibold">{trainer.data?.name ?? " "}</p>
-        <p className="text-text-subtle text-xs">{es.roles.trainer}</p>
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2.5">
+        <InitialsAvatar initials={initials} />
+        <div className="min-w-0">
+          <p className="truncate text-[14px] font-semibold">{trainer.data?.name ?? " "}</p>
+          <p className="text-text-subtle text-xs">{es.roles.trainer}</p>
+        </div>
       </div>
+      <SignOutButton />
     </div>
   );
 
