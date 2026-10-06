@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePorts } from "./ports-provider";
+import { clearPersistedCache } from "./query-persister";
 import { queryKeys } from "./query-keys";
 
 /** Sesión actual (ids de entrenador y, si procede, de cliente). */
@@ -34,14 +35,18 @@ export function useTrainer() {
   });
 }
 
-/** Cierra la sesión y vacía la caché: lo cargado era de otra cuenta. Llevar a `/login` es de quien lo llama. */
+/**
+ * Cierra la sesión y borra lo que el dispositivo guardó de ella, en memoria y en disco: eran datos
+ * de quien salía. Llevar a `/login` es de quien lo llama.
+ */
 export function useLogout() {
   const ports = usePorts();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => ports.session.logout(),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.clear();
+      await clearPersistedCache();
     },
   });
 }

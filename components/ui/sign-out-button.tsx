@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 const t = es.common.signOut;
 
 /**
- * Cierra la sesión y lleva a `/login`. Terreno neutro: lo usan el panel del entrenador y, cuando
- * llegue, el perfil del cliente. Si el cierre falla se dice aquí mismo y la sesión sigue abierta.
+ * Cierra la sesión y lleva a `/login`. Lo usa la barra del entrenador. Si el cierre falla se dice
+ * aquí mismo y la sesión sigue abierta.
  */
 export function SignOutButton({ className }: { className?: string }) {
   const router = useRouter();
