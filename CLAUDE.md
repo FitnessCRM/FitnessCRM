@@ -482,7 +482,9 @@ rol (tarjeta 35, PR #44) y reglas de seguridad de Firestore con tests de emulado
 PR #45). El adaptador de datos de Firebase (16) ya está en `main`, cubre los 15 puertos y se monta
 en `providers.tsx` solo con `NEXT_PUBLIC_DATA_BACKEND=firebase`; sin la variable sigue el adaptador
 en memoria. El área de cliente carga y se lee sin conexión, y las escrituras de series y pesos se
-encolan hasta volver la red (tarjetas 81 y 82, PR #57 y #58). Falta, por este orden: desplegar las
-reglas y crear a mano el `users/{uid}` del entrenador, fotos en el Drive (17) y consentimiento del
+encolan hasta volver la red (tarjetas 81 y 82, PR #57 y #58). Firebase está conectado y probado
+con el proyecto real (06-10-2026): el `users/{uid}` del entrenador está creado y las reglas y los índices
+de `reviews` están desplegados. Falta decidir cuándo el adaptador de Firebase pasa a ser el de por
+defecto, las fotos de revisión (17, con la decisión de dónde guardarlas reabierta el 05-10-2026) y el consentimiento del
 alta con el borrado a petición (31). Lo pendiente, con su tarjeta, en «Siguiente» de
 `docs/estado.md`. Esta sección se actualiza en el PR de documentación posterior a cada fusión.
