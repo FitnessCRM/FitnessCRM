@@ -1,4 +1,5 @@
 import { DomainError } from "./errors";
+import { copyFoodItem } from "./food";
 import type { Menu, MenuTemplate, Routine, RoutineTemplate } from "./schemas";
 
 export type NewId = () => string;
@@ -52,7 +53,7 @@ export function cloneMenuTemplate(template: MenuTemplate, ctx: CloneContext): Me
     meals: entry.meals.map((meal) => ({
       id: ctx.newId(),
       name: meal.name,
-      items: meal.items.map((item) => ({ id: ctx.newId(), name: item.name, grams: item.grams })),
+      items: meal.items.map((item) => copyFoodItem(item, ctx.newId())),
     })),
     status: "borrador",
     sourceTemplateName: template.name,
@@ -105,7 +106,7 @@ export function duplicateMenuTemplate(template: MenuTemplate, ctx: DuplicateCont
       meals: entry.meals.map((meal) => ({
         id: ctx.newId(),
         name: meal.name,
-        items: meal.items.map((item) => ({ id: ctx.newId(), name: item.name, grams: item.grams })),
+        items: meal.items.map((item) => copyFoodItem(item, ctx.newId())),
       })),
     })),
     createdAt: ctx.now,
@@ -180,11 +181,7 @@ export function menusToTemplateContent(
         meals: menu.meals.map((meal) => ({
           id: ctx.newId(),
           name: meal.name,
-          items: meal.items.map((item) => ({
-            id: ctx.newId(),
-            name: item.name,
-            grams: item.grams,
-          })),
+          items: meal.items.map((item) => copyFoodItem(item, ctx.newId())),
         })),
       };
     }),
