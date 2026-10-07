@@ -284,7 +284,7 @@ entra. Nunca se commitea `node_modules`, `.next`, `public/sw.js` ni `.env*`.
 ## Equipo
 
 Dos desarrolladores, cada uno con su Claude Code sobre el mismo repo
-(`github.com/danimoreno73/FitnessCRM`).
+(`github.com/FitnessCRM/FitnessCRM`).
 
 **Reparto: por pantallas completas.** Cada uno coge pantallas enteras del panel del entrenador,
 nunca capas de la misma pantalla. Dividir por «uno el dominio, otro la UI» bloquea al segundo
