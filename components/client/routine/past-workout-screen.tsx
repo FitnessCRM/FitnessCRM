@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/states";
 import {
   dayRecordOn,
   defaultRoutineDay,
-  latestDayRecord,
+  lastExerciseRecord,
   type CivilDate,
   type Exercise,
   type Routine,
@@ -174,7 +174,6 @@ function WorkoutDayView({
     ) ??
     routine.days[0];
   const record = day ? dayRecordOn(day, logs, date) : undefined;
-  const previous = day ? latestDayRecord(day, logs, { before: date }) : undefined;
 
   return (
     <div className="flex max-w-3xl flex-col gap-5">
@@ -241,14 +240,7 @@ function WorkoutDayView({
                 logs={itemLogs}
                 today={today}
                 hint={t.clearHint}
-                reference={
-                  previous?.date
-                    ? {
-                        date: previous.date,
-                        logs: previous.logs.filter((l) => l.routineDayExerciseId === item.id),
-                      }
-                    : undefined
-                }
+                lastTime={lastExerciseRecord(item.exerciseId, logs, date)}
                 defaultOpen
                 onSave={(setNumber, values) =>
                   saveLog.mutateAsync({

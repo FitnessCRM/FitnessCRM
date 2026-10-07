@@ -94,3 +94,37 @@ export function latestDayRecord(
   );
   return recordOf(day, own, date);
 }
+
+/** Lo que hizo el cliente la última vez en un ejercicio. */
+export interface ExerciseLastTime {
+  /** Último día anterior a `before` en que registró el ejercicio. */
+  date: CivilDate;
+  /** Sus series de ese día, de la primera a la última. */
+  logs: WorkoutLog[];
+}
+
+/**
+ * Las series del último día anterior a `before` en que se registró un ejercicio, estuviera en el
+ * día de rutina que estuviera. Busca por `exerciseId` y no por línea prescrita, a diferencia de
+ * `latestDayRecord`: aquel pregunta qué se hizo la última vez en ese día de rutina y, si ese día no
+ * incluyó el ejercicio, no encuentra nada aunque se hiciera otra semana. Una serie por línea y
+ * número (la creada más tarde, como `dayRecordOn`). `null` si nunca se registró.
+ */
+export function lastExerciseRecord(
+  exerciseId: string,
+  logs: readonly WorkoutLog[],
+  before: CivilDate,
+): ExerciseLastTime | null {
+  const own = logs.filter((l) => l.exerciseId === exerciseId && l.date < before);
+  const date = own.reduce<CivilDate | null>(
+    (latest, l) => (latest === null || l.date > latest ? l.date : latest),
+    null,
+  );
+  if (date === null) return null;
+
+  const bySet = new Map<string, WorkoutLog>();
+  for (const log of own.filter((l) => l.date === date).sort((a, b) => -newestFirst(a, b))) {
+    bySet.set(`${log.routineDayExerciseId}#${log.setNumber}`, log);
+  }
+  return { date, logs: [...bySet.values()].sort((a, b) => a.setNumber - b.setNumber) };
+}

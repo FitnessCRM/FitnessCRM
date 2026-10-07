@@ -28,7 +28,7 @@ export function SetRow({
   setNumber: number;
   /** Registro de hoy, lo único que esta pantalla escribe. */
   log: WorkoutLog | undefined;
-  /** Misma serie en el último día registrado antes de hoy: referencia, no se edita. */
+  /** Esta serie la última vez que se registró el ejercicio: referencia, no se edita. Se ve siempre, también con la serie ya guardada. */
   reference: { log: WorkoutLog; date: CivilDate } | undefined;
   /** Fecha civil de hoy, para escribir la fecha de la referencia en forma corta. */
   today: CivilDate;
@@ -90,11 +90,6 @@ export function SetRow({
       <span className="text-danger">{t.incomplete}</span>
     ) : log ? (
       <span className="text-success">{t.saved}</span>
-    ) : reference ? (
-      <span className="text-text-subtle">
-        {t.lastTime} ({formatShortDate(reference.date, today)}):{" "}
-        {formatNumber(reference.log.weightKg)} {es.common.kg} × {reference.log.reps}
-      </span>
     ) : null;
 
   return (
@@ -125,9 +120,18 @@ export function SetRow({
         onKeyDown={onKeyDown}
         className="h-[37px] text-[14px]"
       />
-      <p aria-live="polite" className="text-right text-[13px] max-sm:col-span-3 max-sm:text-left">
+      <div
+        aria-live="polite"
+        className="flex flex-col items-end text-[13px] max-sm:col-span-3 max-sm:flex-row max-sm:flex-wrap max-sm:items-baseline max-sm:gap-x-3"
+      >
+        {reference ? (
+          <span className="text-text-subtle">
+            {t.lastTime} ({formatShortDate(reference.date, today)}):{" "}
+            {formatNumber(reference.log.weightKg)} {es.common.kg} × {reference.log.reps}
+          </span>
+        ) : null}
         {feedback}
-      </p>
+      </div>
     </div>
   );
 }

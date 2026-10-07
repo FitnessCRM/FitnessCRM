@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RoutineDay, WorkoutLog } from "./schemas";
-import { dayRecordOn, defaultRoutineDay, latestDayRecord } from "./workout";
+import { dayRecordOn, defaultRoutineDay, lastExerciseRecord, latestDayRecord } from "./workout";
 
 function day(dayNumber: number, sets: number[]): RoutineDay {
   return {
@@ -194,5 +194,65 @@ describe("line ids carry over between routine versions (§7)", () => {
     expect(latestDayRecord(next, logs).logs.some((l) => l.routineDayExerciseId === "d2-e2")).toBe(
       false,
     );
+  });
+});
+
+describe("lastExerciseRecord", () => {
+  const of = (exerciseId: string, line: string, date: string, set: number, weightKg = 60) => ({
+    ...log(line, date, set),
+    exerciseId,
+    weightKg,
+  });
+
+  it("finds the last day before the given one on which the exercise was logged", () => {
+    const logs = [
+      of("sentadilla", "d1-e1", "2026-09-10", 1),
+      of("sentadilla", "d1-e1", "2026-09-17", 1, 70),
+      of("sentadilla", "d1-e1", "2026-09-24", 1, 80),
+    ];
+    const last = lastExerciseRecord("sentadilla", logs, "2026-09-24");
+    expect(last?.date).toBe("2026-09-17");
+    expect(last?.logs.map((l) => l.weightKg)).toEqual([70]);
+  });
+
+  it("ignores today and later days, and other exercises", () => {
+    const logs = [
+      of("sentadilla", "d1-e1", "2026-09-24", 1),
+      of("press", "d1-e2", "2026-09-20", 1),
+    ];
+    expect(lastExerciseRecord("sentadilla", logs, "2026-09-24")).toBeNull();
+    expect(lastExerciseRecord("sentadilla", [], "2026-09-24")).toBeNull();
+  });
+
+  it("finds it even when the day it was last logged on did not include it", () => {
+    // El día 1 se registró el 20 con sentadilla; el 22 se registró el día 1 sin ella.
+    const logs = [
+      of("sentadilla", "d1-e1", "2026-09-20", 1, 75),
+      of("press", "d1-e2", "2026-09-22", 1),
+    ];
+    expect(lastExerciseRecord("sentadilla", logs, "2026-09-24")?.date).toBe("2026-09-20");
+  });
+
+  it("follows the exercise to another routine day or a new line", () => {
+    const logs = [
+      of("sentadilla", "d1-e1", "2026-09-20", 1),
+      of("sentadilla", "d3-new", "2026-09-22", 1),
+    ];
+    expect(
+      lastExerciseRecord("sentadilla", logs, "2026-09-24")?.logs[0]?.routineDayExerciseId,
+    ).toBe("d3-new");
+  });
+
+  it("lists the sets in order and keeps the newest when one was saved twice", () => {
+    const logs = [
+      of("sentadilla", "d1-e1", "2026-09-20", 2, 70),
+      { ...of("sentadilla", "d1-e1", "2026-09-20", 1, 60), createdAt: "2026-09-20T10:00:00Z" },
+      { ...of("sentadilla", "d1-e1", "2026-09-20", 1, 65), createdAt: "2026-09-20T11:00:00Z" },
+    ];
+    const last = lastExerciseRecord("sentadilla", logs, "2026-09-24");
+    expect(last?.logs.map((l) => [l.setNumber, l.weightKg])).toEqual([
+      [1, 65],
+      [2, 70],
+    ]);
   });
 });
