@@ -1,20 +1,23 @@
 import { FirebaseError, getApp } from "firebase/app";
 import {
+  confirmPasswordReset,
   connectAuthEmulator,
   deleteUser,
   getAuth,
   isSignInWithEmailLink,
+  sendPasswordResetEmail,
   sendSignInLinkToEmail,
   signInWithEmailAndPassword,
   signInWithEmailLink,
   signOut,
   updatePassword,
+  verifyPasswordResetCode,
   type Auth,
   type User,
 } from "firebase/auth";
 import { doc, getDoc, writeBatch, type DocumentData } from "firebase/firestore";
-import type { InvitationPort, Session, SessionPort } from "@/lib/data/ports";
-import { DomainError, clientSchema } from "@/lib/domain";
+import type { InvitationPort, PasswordResetPort, Session, SessionPort } from "@/lib/data/ports";
+import { DomainError, clientSchema, emailSchema } from "@/lib/domain";
 import type { FirebaseContext } from "./context";
 
 /**
@@ -34,6 +37,8 @@ export interface FirebaseAuthContext extends FirebaseContext {
   auth: Auth;
   /** Página de la app a la que lleva el enlace del correo (`/accept-invite`), con su origen. */
   inviteUrl: string;
+  /** Adónde vuelve quien termina de recuperar su contraseña (`/login`), con el origen de la app. */
+  loginUrl: string;
 }
 
 export function createFirebaseAuthContext(
@@ -45,7 +50,12 @@ export function createFirebaseAuthContext(
   if (options.emulatorUrl && !auth.emulatorConfig) {
     connectAuthEmulator(auth, options.emulatorUrl, { disableWarnings: true });
   }
-  return { ...ctx, auth, inviteUrl: options.inviteUrl };
+  return {
+    ...ctx,
+    auth,
+    inviteUrl: options.inviteUrl,
+    loginUrl: new URL("/login", options.inviteUrl).href,
+  };
 }
 
 /**
@@ -183,6 +193,54 @@ export function createInvitationPort(ctx: FirebaseAuthContext): InvitationPort {
         .update(doc(ctx.db, "clients", client.id), { status: "activo" })
         .commit();
       return { trainerId: client.trainerId, clientId: client.id, role: "client" };
+    },
+  };
+}
+
+export function createPasswordResetPort(ctx: FirebaseAuthContext): PasswordResetPort {
+  const invalidLink = () =>
+    new DomainError("password_reset.invalid_link", "El enlace caducó o ya se usó");
+  const weakPassword = () =>
+    new DomainError("password_reset.weak_password", "La contraseña es demasiado corta");
+  const isDeadCode = (code: string | null) =>
+    code === "auth/invalid-action-code" || code === "auth/expired-action-code";
+  return {
+    sendPasswordReset: async (email) => {
+      // Firebase trata un correo mal escrito como una cuenta que no existe y lo traga: se avisa antes.
+      if (!emailSchema.safeParse(email).success) {
+        throw new DomainError("password_reset.invalid_email", "No es un correo");
+      }
+      try {
+        await sendPasswordResetEmail(ctx.auth, email.trim(), { url: ctx.loginUrl });
+      } catch (error) {
+        const code = errorCode(error);
+        if (code === "auth/invalid-email") {
+          throw new DomainError("password_reset.invalid_email", "No es un correo");
+        }
+        // Sin cuenta con ese correo: se trata como enviado, para no decir quién usa la app.
+        if (code === "auth/user-not-found") return;
+        throw error;
+      }
+    },
+    checkPasswordResetCode: async (code) => {
+      try {
+        return { email: await verifyPasswordResetCode(ctx.auth, code) };
+      } catch (error) {
+        if (isDeadCode(errorCode(error))) throw invalidLink();
+        throw error;
+      }
+    },
+    confirmPasswordReset: async ({ code, password }) => {
+      // Antes de gastar el código, que es de un solo uso.
+      if (password.length < MIN_PASSWORD_LENGTH) throw weakPassword();
+      try {
+        await confirmPasswordReset(ctx.auth, code, password);
+      } catch (error) {
+        const failure = errorCode(error);
+        if (isDeadCode(failure)) throw invalidLink();
+        if (failure === "auth/weak-password") throw weakPassword();
+        throw error;
+      }
     },
   };
 }

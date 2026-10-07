@@ -3,6 +3,8 @@ import type { ClientTrackingQuery, MembershipQuery, ReviewTrackingQuery } from "
 /** Claves de TanStack Query. Todas empiezan por el `trainerId` de la sesión salvo la sesión misma. */
 export const queryKeys = {
   session: ["session"] as const,
+  /** El código del enlace de recuperación de contraseña, para comprobarlo al abrir la pantalla. */
+  passwordResetCode: (code: string) => ["password-reset-code", code] as const,
   trainer: (trainerId: string) => ["trainer", trainerId] as const,
   clients: (trainerId: string) => ["clients", trainerId] as const,
   /** Prefijo de todas las páginas del seguimiento: lo que se invalida cuando cambia su contenido. */

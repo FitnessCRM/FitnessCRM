@@ -35,6 +35,8 @@ export const timeZoneSchema = z.string().refine(
 export type TimeZone = z.infer<typeof timeZoneSchema>;
 
 export const nonEmptyTextSchema = z.string().trim().min(1);
+/** Un correo, sin espacios alrededor: lo que se escribe en un formulario llega recortado. */
+export const emailSchema = z.string().trim().pipe(z.email());
 export const optionalTextSchema = z.string().trim().default("");
 export const positiveIntSchema = z.int().positive();
 export const nonNegativeIntSchema = z.int().nonnegative();

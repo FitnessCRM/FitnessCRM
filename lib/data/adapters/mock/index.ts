@@ -3,6 +3,7 @@ import { createMeasurementTypePort, createQuestionnairePort } from "./catalogs";
 import { createExercisePort } from "./exercises";
 import { createIdFactory } from "./ids";
 import { createInvitationPort } from "./invitations";
+import { createPasswordResetPort } from "./password-reset";
 import { createWeightLogPort, createWorkoutLogPort } from "./logs";
 import {
   createClientPort,
@@ -36,6 +37,7 @@ export function createMockPorts(options: MockPortsOptions = {}): DataPorts & { s
     state,
     session: createSessionPort(ctx),
     invitations: createInvitationPort(ctx),
+    passwordReset: createPasswordResetPort(ctx),
     trainer: createTrainerPort(ctx),
     clients: createClientPort(ctx),
     memberships: createMembershipPort(ctx),

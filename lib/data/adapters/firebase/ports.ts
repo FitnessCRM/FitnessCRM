@@ -1,5 +1,10 @@
 import type { DataPorts } from "@/lib/data/ports";
-import { createFirebaseAuthContext, createInvitationPort, createSessionPort } from "./auth";
+import {
+  createFirebaseAuthContext,
+  createInvitationPort,
+  createPasswordResetPort,
+  createSessionPort,
+} from "./auth";
 import { createMeasurementTypePort, createQuestionnairePort } from "./catalogs";
 import { createClientPort } from "./clients";
 import { createFirestore, firebaseConfigFromEnv, type FirebaseConfig } from "./config";
@@ -23,7 +28,7 @@ export interface FirebasePortsOptions {
   appName?: string;
 }
 
-/** Los 15 puertos de la aplicación sobre Firestore y Firebase Auth. */
+/** Los 16 puertos de la aplicación sobre Firestore y Firebase Auth. */
 export function createFirebasePorts(options: FirebasePortsOptions): DataPorts {
   const { config, inviteUrl, emulatorHost, appName } = options;
   const db = createFirestore(config, {
@@ -39,6 +44,7 @@ export function createFirebasePorts(options: FirebasePortsOptions): DataPorts {
   return {
     session: createSessionPort(authCtx),
     invitations: createInvitationPort(authCtx),
+    passwordReset: createPasswordResetPort(authCtx),
     trainer: createTrainerPort(ctx),
     clients: createClientPort(ctx),
     memberships: createMembershipPort(ctx),

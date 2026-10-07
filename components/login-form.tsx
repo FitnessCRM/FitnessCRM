@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLogin } from "@/lib/data/hooks";
@@ -24,8 +24,15 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [resetDone, setResetDone] = useState(false);
   const router = useRouter();
   const { mutate: login, isPending } = useLogin();
+
+  // Al volver de cambiar la contraseña (`/login?reset=1`) se avisa de que ya vale la nueva. La
+  // dirección solo existe en el navegador, así que se lee aquí y no en el servidor.
+  useEffect(() => {
+    setResetDone(new URLSearchParams(window.location.search).get("reset") === "1");
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +70,12 @@ export function LoginForm() {
       <div className="bg-surface-raised border-border-subtle rounded-xl border p-8">
         <h1 className="font-display text-display-sm font-bold uppercase">{es.pages.login.title}</h1>
         <p className="text-text-muted mt-2 text-sm">{es.pages.login.subtitle}</p>
+
+        {resetDone && (
+          <div role="status" className="bg-success-soft text-success mt-6 rounded-lg p-3 text-sm">
+            {es.pages.login.form.resetDone}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <div className="space-y-2">
@@ -103,7 +116,7 @@ export function LoginForm() {
         </form>
 
         <Link
-          href="#"
+          href="/forgot-password"
           className="text-accent hover:text-accent-hover mt-4 flex min-h-8 items-center justify-center text-sm"
         >
           {es.pages.login.form.forgotPassword}

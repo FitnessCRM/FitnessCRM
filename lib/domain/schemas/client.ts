@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   civilDateSchema,
   isoTimestampSchema,
+  emailSchema,
   nonEmptyTextSchema,
   optionalTextSchema,
   positiveIntSchema,
@@ -21,7 +22,7 @@ export const clientSchema = z.object({
   firstName: nonEmptyTextSchema,
   lastName: nonEmptyTextSchema,
   /** Sin espacios alrededor: lo que se escribe en el alta llega recortado. */
-  email: z.string().trim().pipe(z.email()),
+  email: emailSchema,
   phone: optionalTextSchema,
   /** Objetivo y nivel salen de la pantalla de alta; el dominio no cierra la lista. */
   goal: optionalTextSchema,

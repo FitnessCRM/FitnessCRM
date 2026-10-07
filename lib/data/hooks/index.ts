@@ -8,4 +8,5 @@ export * from "./use-catalogs";
 export * from "./use-reviews";
 export * from "./use-logs";
 export * from "./use-invitations";
+export * from "./use-password-reset";
 export * from "./use-online-status";
