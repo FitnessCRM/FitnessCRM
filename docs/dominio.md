@@ -426,3 +426,28 @@ decide si se carga el panel del entrenador o el área de cliente.
 **Correos.** Firestore compara los correos tal cual y Firebase Auth los guarda en minúsculas. Hasta
 que el esquema los normalice a minúsculas al guardarlos (pendiente: es un cambio de dominio), la
 comparación entre ambos no es fiable si el entrenador escribió mayúsculas.
+
+### Recuperar la contraseña
+
+**Decidido el 07-10-2026.** Quien pierde su contraseña la recupera por correo, sin intervención del
+entrenador:
+
+1. En el acceso, «He olvidado mi contraseña» lleva a una pantalla donde escribe su correo y la app
+   le envía un enlace (`sendPasswordResetEmail`).
+2. El enlace abre una pantalla de la app (`/reset-password`, no la página que aloja Firebase), que
+   comprueba el código, enseña a qué correo pertenece y pide la contraseña nueva dos veces.
+3. Al guardar no se abre sesión: vuelve al acceso con un aviso y se entra con la nueva.
+
+**No se enumeran cuentas.** Pedir el enlace dice siempre lo mismo, exista o no una cuenta con ese
+correo, igual que con las invitaciones. Debajo, una línea fija recuerda al cliente `invitado` que lo
+suyo es el enlace de invitación: no tiene contraseña que recuperar, porque su cuenta nace al aceptar
+la invitación (§7). Un correo mal escrito sí se rechaza antes de enviar.
+
+El código del enlace es de un solo uso y caduca; caducado o ya usado se dice «Enlace no válido» y se
+ofrece pedir otro. Una contraseña corta (menos de 6 caracteres, el mínimo de Firebase) se rechaza sin
+gastar el código.
+
+**Configuración manual.** La URL de acción de la plantilla «Restablecer contraseña» de Firebase
+Authentication tiene que apuntar a `/reset-password` de la app; es un ajuste de todo el proyecto y
+no distingue entornos. Los correos de recuperación tienen cuota diaria en Firebase Auth y son un
+blanco típico de abuso: App Check y las alertas de presupuesto (tarjeta 83) son lo que lo protege.

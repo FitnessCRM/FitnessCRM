@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 07-10-2026. Corresponde a `main` en `4f798fb` (PR #79). Están en `main` los
+Última actualización: 07-10-2026. Corresponde a `main` en `d374832` (PR #82). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad, el adaptador de Firebase y el modo sin conexión del cliente; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
@@ -605,8 +605,9 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   el cliente entra y pasa a `activo`, la tarjeta desaparece. Se aparta de la descripción de la
   tarjeta, que hablaba de Google: no hay login con Google.
 
-- **Adaptador de datos de Firebase** (tarjeta 16, PR #51, #55 y #56). Cubre los 15 puertos
-  (`lib/data/adapters/firebase/ports.ts`) y se monta en `app/providers.tsx` solo con
+- **Adaptador de datos de Firebase** (tarjeta 16, PR #51, #55 y #56). Cubre los 15 puertos de
+  entonces (el decimosexto, `passwordReset`, llegó con la tarjeta 85, PR #82;
+  `lib/data/adapters/firebase/ports.ts`) y se monta en `app/providers.tsx` solo con
   `NEXT_PUBLIC_DATA_BACKEND=firebase`; sin la variable la app sigue con el adaptador en memoria y el
   SDK ni se descarga. Lo que en Postgres haría una restricción aquí es una transacción: activar un
   plan archiva el anterior y escribe todo junto (I4), y `archiveExercise` y `deleteWeightLog`
@@ -736,6 +737,37 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   si hoy se registran más series que la última vez, esas filas no llevan referencia; y la
   referencia de fila y la de cabecera dicen lo mismo, así que se puede quitar una si molesta.
 
+- **Histórico de revisiones acotado en Progreso** (tarjeta 86, PR #81). La lista de revisiones de
+  Progreso pintaba todas, una por semana, y la pantalla crecía sin límite. Ahora enseña las **tres
+  parejas de semanas más recientes** (≈ 6 semanas) y, si hay más, un botón «Ver todas las
+  revisiones (N)» despliega el resto en la misma página, con «Ver solo las últimas» para volver a
+  plegarlo; el botón solo sale si hay algo que desplegar. El borrador en curso está siempre en la
+  pareja más reciente, así que nunca se esconde. Elegido con el propietario entre tres opciones
+  (frente a plegar los antiguos o «cargar más» de 3 en 3). Progreso tiene captura aprobada: con un
+  histórico corto, como el de la demo, no cambia nada visible, y el botón aparece de la semana 7 en
+  adelante. **Deuda:** el límite es una constante fija (`RECENT_GROUPS`); no se probó con Firebase
+  real.
+
+- **Recuperación de contraseña** (tarjeta 85, PR #82). «He olvidado mi contraseña», que era un
+  `href="#"`, lleva a `/forgot-password` (escribir el email y recibir el enlace); el enlace del
+  correo abre `/reset-password` (elegir la contraseña nueva), que al guardar vuelve a `/login?reset=1`
+  con el aviso «Contraseña cambiada. Entra con la nueva.». Mismo armazón de dos columnas que el
+  acceso y que aceptar invitación. Decidido con el propietario el 07-10-2026 y escrito en
+  `docs/dominio.md` §12: pantalla propia en lugar de la página alojada por Firebase, el mismo aviso
+  exista o no la cuenta (más una línea fija para el cliente `invitado`) y volver al acceso sin
+  abrir sesión. Puerto nuevo `PasswordResetPort` (`sendPasswordReset`, `checkPasswordResetCode`,
+  `confirmPasswordReset`) con adaptador de Firebase y adaptador de demo
+  (`/reset-password?oobCode=demo`); **`DataPorts` gana `passwordReset`, así que todo adaptador debe
+  implementarlo (BREAKING CHANGE) y el de Firebase pasa de 15 a 16 puertos**. Un email mal escrito se
+  rechaza antes de llamar a Firebase (que lo trata como cuenta inexistente) y una contraseña corta,
+  antes de gastar el código de un solo uso. `emailSchema` pasa a `lib/domain/schemas/primitives.ts`
+  y lo comparten los adaptadores y el esquema de cliente. **Paso manual pendiente:** apuntar la URL
+  de acción de la plantilla «Restablecer contraseña» de Firebase Authentication a `/reset-password`;
+  sin eso el correo lleva a la página de Firebase. **Deuda:** el diseño no tiene captura y es una
+  propuesta sin aprobar; no se probó con un correo real contra el proyecto de Firebase, solo con el
+  emulador y la demo; y conviene tener App Check y las alertas de presupuesto (tarjeta 83) antes de
+  abrir el flujo a usuarios reales, por la cuota diaria de correos.
+
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
   `trainer/`) y #33 (enlace a la revisión desde el panel de control, rama
@@ -756,6 +788,9 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   Blaze de Firebase, o (b) Firebase Storage. El motivo es que con el permiso `drive.file` una app
   solo ve los archivos que ella misma creó, así que el token de un cliente no puede escribir en la
   carpeta del entrenador; y consentimiento del alta con el borrado a petición (31).
+- **Recuperación de contraseña (85), paso manual:** apuntar la URL de acción de la plantilla
+  «Restablecer contraseña» de Firebase Authentication a `/reset-password` (`docs/dominio.md` §12) y
+  probarla con un correo real; es un ajuste de todo el proyecto, sin distinción de entornos.
 - **Protección de rama** en GitHub exigiendo el check `CI` (tarjeta 28, ya hecha): pendiente de
   activar.
 - **Índices compuestos de `reviews`** (tarjeta 71, en «En revisión»): los tres de
@@ -766,8 +801,7 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
 - **Decisiones de dominio pendientes**: los huecos menores de la revisión de errores, H5, H6, H7 y
   H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62).
 - **Pantallas menores**: editar un cliente de baja por URL (63).
-- **Deuda menor con tarjeta**: favicon (19), cifras del panel en una consulta (42) y la lista de
-  revisiones de Progreso, que crece sin límite (86). Resueltas: el nombre accesible de `NumberField` (59, PR
+- **Deuda menor con tarjeta**: favicon (19) y cifras del panel en una consulta (42). Resueltas: el nombre accesible de `NumberField` (59, PR
   #66, etiqueta y campo asociados con `useId`) y `ReviewPort.listSubmittedReviews`, que se quitó
   del puerto con su hook y su clave por no usarlo ninguna pantalla (64, PR #74, **BREAKING
   CHANGE** de puerto): «Revisiones recibidas» lee `listReviewsTracking` filtrado por `enviada`.
