@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 07-10-2026. Corresponde a `main` en `d097ca1` (PR #76). Están en `main` los
+Última actualización: 07-10-2026. Corresponde a `main` en `4f798fb` (PR #79). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad, el adaptador de Firebase y el modo sin conexión del cliente; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
@@ -239,13 +239,15 @@ Fase 5 (navegación):
   - **La rejilla es la de hoy y solo la de hoy** (`dayRecordOn`, con test): vacía si hoy no se ha
     registrado nada, y con la fecha civil de hoy en la zona del entrenador, que es cuando se hizo.
     Así escribir no vacía casillas y borrar nunca toca histórico: desde esta pantalla solo se
-    edita lo de hoy. La vez anterior del mismo día de rutina se enseña de solo lectura bajo cada
-    serie, «última vez: 80 kg × 6», con la fecha completa en el `title`
-    (`latestDayRecord(day, logs, { before: hoy })`, con test).
+    edita lo de hoy. Lo de la última vez se enseña de solo lectura: al principio era la vez
+    anterior del mismo día de rutina, bajo cada serie («última vez: 80 kg × 6»,
+    `latestDayRecord`); desde el 07-10-2026 es **por ejercicio**, en la cabecera y en cada fila
+    (tarjeta 84, PR #79, abajo).
   - **Contador** = «X de Y series registradas hoy». Aquí «hoy» es correcto: son registros fechados
     hoy, no una suposición sobre qué día de rutina toca. La tarjeta añade «Última vez: DD-MM-YYYY».
-  - **Editar registros de otra fecha es deuda anotada**, no implementada: hoy solo se corrige lo
-    del día en curso. Si hace falta, pide pantalla propia (elegir fecha) o edición desde Progreso.
+  - **Editar registros de otra fecha**: la rejilla sigue siendo solo la de hoy, y corregir otro
+    día tiene pantalla propia, `/routine/past`, con un enlace desde Rutina (tarjeta 18, PR #78,
+    abajo). La anotación del 19-09-2026 como deuda queda cerrada.
   - **Día por defecto** = el siguiente al último día con registros, en el orden de la rutina y
     volviendo al primero tras el último; sin registros, el primero (`defaultRoutineDay`, con
     test). **Un cliente que nunca registre verá siempre el Día 1.** Si llega a molestar, la
@@ -702,6 +704,38 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   y se comprobó a 390, 768 y 1280 px con datos temporales, ya revertidos, pero no se vio el estado
   vacío en el navegador ni se probó con Firebase real.
 
+- **Entreno de otro día** (tarjeta 18, PR #78). Pantalla `/routine/past`, en el área de cliente,
+  para corregir o añadir el entreno de una fecha pasada: fecha elegible, pestañas de día de
+  rutina y las mismas filas de serie de Rutina. Se llega desde un enlace bajo la rejilla de Rutina
+  («¿Te saltaste un día? Regístralo»), que sigue siendo solo la de hoy. El primer intento la puso
+  en Progreso, con una sección «Entrenos»; el 07-10-2026 se decidió con el propietario y con Dani
+  que va en Rutina, donde está quien se ha saltado un día, y esa sección se quitó. Sin `?date`
+  abre en ayer; el día de rutina por defecto es el que ya tiene registros esa fecha o, si no, el
+  siguiente al último registrado antes. Sin límite hacia atrás; se rechazan fechas futuras o
+  inexistentes. Sin cambio de puerto (`saveWorkoutLog` y `deleteWorkoutLog` ya recibían la fecha).
+  `ExerciseCard` gana la prop opcional `hint` para el pie de la rejilla. **La pantalla no tiene
+  captura**: reutiliza el layout de Rutina y es una propuesta sin aprobar; Rutina sí la tiene, y
+  solo gana el enlace. **Deuda:** solo se editan líneas de la rutina activa (un registro de una
+  línea ya retirada no se ve en la rejilla); dos pestañas o dispositivos no avisan de conflicto, y
+  gana el último en guardar, igual que en Rutina; no consta prueba con Firebase real.
+
+- **Última vez de cada ejercicio** (tarjeta 84, PR #79). Bajo la prescripción de cada ejercicio de
+  Rutina sale «Última vez (3 oct): 77,5 kg × 8 · 80 kg × 8 · 80 kg × 6», visible sin abrir el
+  registro, y cada fila de serie, al desplegar, enseña lo de esa serie la última vez junto a su
+  estado («✓ guardada»), no en su lugar. Se calcula **por ejercicio**: `lastExerciseRecord`, nuevo
+  en `lib/domain/workout.ts` y con test, devuelve el último día anterior al dado en que se
+  registró, en el día de rutina que fuera. Antes era por día de rutina (`latestDayRecord`): no
+  salía si el ejercicio no estuvo en el último día registrado de ese día de rutina ni si estaba en
+  otro, y desaparecía al guardar la serie. Las líneas que se conservan entre versiones de la
+  rutina mantienen su id (§7), de modo que lo que se perdía era la línea nueva o el ejercicio
+  puesto en otro día. `ExerciseCard` cambia su prop `reference` por `lastTime`; la pantalla de
+  entreno de otro día lo lleva también, contado desde la fecha elegida. `latestDayRecord` sigue en
+  Rutina solo para el «Última vez: DD-MM-YYYY» de la tarjeta lateral. Rutina tiene captura: es una
+  línea nueva en la tarjeta y una segunda en las filas con estado, sin cambiar el layout; queda
+  sin aprobar por quien revise el área de cliente. **Deuda:** no consta prueba con Firebase real;
+  si hoy se registran más series que la última vez, esas filas no llevan referencia; y la
+  referencia de fila y la de cabecera dicen lo mismo, así que se puede quitar una si molesta.
+
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
   `trainer/`) y #33 (enlace a la revisión desde el panel de control, rama
@@ -732,8 +766,8 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
 - **Decisiones de dominio pendientes**: los huecos menores de la revisión de errores, H5, H6, H7 y
   H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62).
 - **Pantallas menores**: editar un cliente de baja por URL (63).
-- **Deuda menor con tarjeta**: editar registros de entreno de otra fecha (18), favicon (19),
-  cifras del panel en una consulta (42). Resueltas: el nombre accesible de `NumberField` (59, PR
+- **Deuda menor con tarjeta**: favicon (19), cifras del panel en una consulta (42) y la lista de
+  revisiones de Progreso, que crece sin límite (86). Resueltas: el nombre accesible de `NumberField` (59, PR
   #66, etiqueta y campo asociados con `useId`) y `ReviewPort.listSubmittedReviews`, que se quitó
   del puerto con su hook y su clave por no usarlo ninguna pantalla (64, PR #74, **BREAKING
   CHANGE** de puerto): «Revisiones recibidas» lee `listReviewsTracking` filtrado por `enviada`.
