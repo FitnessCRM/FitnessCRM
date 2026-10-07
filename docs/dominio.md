@@ -54,6 +54,14 @@ se preguntó).
 **Sugerencia vs. obligación.** Nada es obligatorio para el cliente salvo enviar la revisión, y
 ni eso se impone: la cadencia es orientativa.
 
+Y una quinta, que llega con la biblioteca de alimentos (07-10-2026):
+
+**Declarado vs. calculado.** Las kcal y los tres macros de un menú los escribe el entrenador y se
+guardan: son lo que declara que aporta ese menú y lo que lee el cliente. Lo que suman sus alimentos
+lo calcula la app a partir de los gramos y de la composición de cada uno (§5), y es un apoyo del
+editor: no se guarda, no rellena ni corrige las macros declaradas y no bloquea guardar ni publicar
+(I30).
+
 ---
 
 ## 3. Lenguaje ubicuo
@@ -74,7 +82,8 @@ UI en español, identificadores de código en inglés.
 | Menú | `Menu` | Conjunto de comidas para un tipo de día, con macros propias declaradas por el entrenador. Puede haber varios; uno marcado como sugerido |
 | Tipo de día | `DayType` | `entrenamiento` \| `descanso` |
 | Comida | `Meal` | Bloque del menú: desayuno, comida, merienda, cena |
-| Alimento | `FoodItem` | Alimento con su peso en gramos |
+| Alimento | `Food` | Entrada de la biblioteca: nombre y composición por 100 g. Vive en la copia propia de su autor y en el catálogo común, con el mismo `id` (§4) |
+| Alimento del menú | `FoodItem` | Línea de una comida, con sus gramos. Sale de la biblioteca, con copia congelada del nombre y la composición, o es texto libre |
 | Registro de peso | `WeightLog` | Peso en una fecha, en kg, con nota opcional. Uno por cliente y fecha (I23) |
 | Revisión | `Review` | Corte semanal: fotos + peso + medidas + cuestionario |
 | Semana | `weekNumber` | Entero derivado de la fecha de alta del cliente. Se congela en la revisión |
@@ -109,9 +118,10 @@ directa sin joins — valga RLS o reglas de seguridad.
 | **Client** | Perfil, cadencia orientativa de revisión, fecha de alta | La fecha de alta es el origen de la numeración de semanas |
 | **Membership** | — | Suelto: un cliente tiene un historial, no una membresía |
 | **Exercise** | — | Vive en la biblioteca, se referencia desde las rutinas |
+| **Food** | — | Vive en dos sitios con el mismo `id`: la **copia propia** de su autor, con `trainerId`, y el **catálogo común**, que leen todos los entrenadores. Desde los menús se referencia y se congela |
 | **Routine** | `RoutineDay` → `RoutineDayExercise` | Se edita como un todo |
 | **MacroTargets** | — | Uno por cliente y tipo de día. Independiente del menú |
-| **Menu** | `Meal` → `FoodItem` | Jerarquía que solo se consulta y edita completa |
+| **Menu** | `Meal` → `FoodItem` | Jerarquía que solo se consulta y edita completa. Un `FoodItem` puede apuntar a un `Food`, propio o del catálogo común, y lleva su copia congelada (I29) |
 | **Review** | `ReviewMedia`, `BodyMeasurement`, `QuestionnaireResponse`, feedback | Donde vive la lógica de completitud |
 | **WeightLog** | — | Suelto por diseño: es continuo, la revisión es de corte |
 | **WorkoutLog** | — | Suelto: es un evento del cliente, no parte de la rutina |
@@ -123,7 +133,18 @@ copia al cliente".
 
 **Catálogos: referenciar *y* congelar.** Al contrario que las plantillas, aquí sí hay FK viva
 **y además** copia congelada del texto. Son dos necesidades distintas: la FK sostiene la
-comparación entre revisiones, el texto congelado sostiene la lectura fiel del histórico.
+comparación entre revisiones, el texto congelado sostiene la lectura fiel del histórico. Los
+alimentos del menú siguen la misma regla (I29): el `foodId` dice de qué alimento salió y la copia
+congelada, con qué nombre y composición se puso.
+
+**Alimentos: copia propia y catálogo común.** Un alimento lo crea un entrenador y vive en dos
+sitios con el mismo `id`. La **copia propia** es la fuente de verdad: lleva `trainerId` y cumple I1
+como cualquier otro dato del entrenador. El **catálogo común** es lo que se publica de esa copia
+para que lo lean todos los entrenadores (§7, §12), y solo su autor lo cambia (I28). La biblioteca
+de un entrenador es la unión por `id` de los dos: si un alimento está en ambos, manda la copia
+propia, porque el catálogo puede ir por detrás (`pendiente`, §7). Un alimento es propio si está en
+la copia propia del entrenador; si solo llega del catálogo, es **de otro**, y de su autor no se
+muestra nada más que eso: nunca su identidad. Se admiten nombres duplicados (§11).
 
 ---
 
@@ -137,10 +158,30 @@ comparación entre revisiones, el texto congelado sostiene la lectura fiel del h
   El mismo objeto de valor se usa en dos sitios que no hay que confundir: `MacroTargets` es el
   **objetivo diario del cliente**, y las macros que lleva cada `Menu` —también en las plantillas
   de menú— son **lo que el entrenador declara que aporta ese menú**, informativas para el
-  cliente. Las escribe el entrenador y no se derivan de nada: `FoodItem` solo guarda gramos, sin
-  composición nutricional, así que la app no puede calcular lo que aporta un menú ni contrastarlo
-  con lo declarado. Que las macros de un menú coincidan o no con el objetivo del cliente es
-  criterio del entrenador, y la app ni lo compara ni lo insinúa.
+  cliente. Las escribe el entrenador y no se derivan de nada, tampoco de sus alimentos. La app sí
+  calcula lo que suman los alimentos del menú que tienen composición, pero como apoyo del editor:
+  enseña lo que queda frente a las macros **del propio menú** —también en las plantillas—, avisa
+  si se pasa o se queda corto, y no rellena ni corrige lo declarado ni bloquea guardar o publicar
+  (I30). Decidido el 07-10-2026; antes `FoodItem` solo guardaba gramos y la app no podía calcular
+  lo que aporta un menú. Que las macros de un menú coincidan o no con el objetivo del cliente es
+  criterio del entrenador, y la app ni lo compara ni lo insinúa: lo que queda se mide contra el
+  menú, nunca contra `MacroTargets`.
+- **`Composicion`** — lo que aportan 100 g de un alimento: kcal + proteína / carbohidratos /
+  grasa. Las kcal, un entero mayor o igual que cero (un alimento puede tener 0 kcal; un menú, no);
+  los macros, en gramos, mayores o iguales que cero, y los tres juntos no pasan de 100 g. Ese tope
+  es físico, no un criterio nutricional, y está para cazar erratas. Las cuatro cifras las escribe
+  el entrenador y son obligatorias; como en `Macros`, las kcal no se derivan con 4/4/9 ni se
+  contrastan con los macros.
+- **Alimento del menú (`FoodItem`)** — nombre + gramos (`Cantidad`), de una de dos clases:
+  - **de la biblioteca**: guarda `foodId` y copia congelada del nombre y de la `Composicion` del
+    momento en que se añadió (I29). Aporta gramos × composición / 100. Su nombre es siempre el de
+    la copia congelada: un alimento del menú con otro nombre es de texto libre, sin `foodId` ni
+    composición, porque la composición dejaría de corresponder al nombre. Los gramos se cambian
+    sin perder el vínculo.
+  - **de texto libre**: nombre y gramos, sin composición. No suma.
+- **Redondeo de lo calculado** — lo que aporta un alimento, el subtotal de una comida, la suma de
+  un menú y lo que queda se calculan sin redondear y se redondean solo al presentarlos: kcal a
+  entero, gramos a un decimal.
 - **`Prescripcion`** — series (entero), `repsMin` (entero), `repsMax` (entero o nulo: nulo = reps
   fijas), `rir` (texto libre, admite "2" y "1-2"), `rest` (texto libre, admite "3 min" y "el que
   necesites"), `note` (texto libre opcional).
@@ -163,7 +204,7 @@ marcan y no se reutiliza su número.
 
 | # | Invariante | Dónde se garantiza |
 |---|---|---|
-| I1 | Todo registro pertenece a un único entrenador y solo él lo lee o escribe | Reglas de seguridad de Firestore |
+| I1 | Todo registro pertenece a un único entrenador y solo él lo lee o escribe. El catálogo común de alimentos queda fuera: ver I28 | Reglas de seguridad de Firestore |
 | I2 | Un cliente pertenece a exactamente un entrenador | Reglas de seguridad (la escritura que nombra un cliente exige que sea del mismo entrenador) |
 | I3 | Una rutina solo usa ejercicios de la biblioteca de su mismo entrenador | Validación de dominio + adaptador. Las reglas no recorren la lista de ejercicios de una rutina |
 | I4 | Un cliente tiene como máximo una rutina activa y un juego de macros por tipo de día. De los menús puede haber varios activos por tipo de día, uno de ellos sugerido (§3) | Lógica de dominio + adaptador (transacción al activar). Las reglas no pueden contar documentos activos |
@@ -175,7 +216,7 @@ marcan y no se reutiliza su número.
 | I10 | La comparación de fotos es una acción explícita del entrenador, nunca un estado derivado | Ausencia de automatismo |
 | I11 | El cliente lee su rutina, macros y menú; nunca los escribe | Reglas de seguridad |
 | I12 | Toda respuesta y toda medida conservan enunciado/etiqueta, formato y unidad vigentes cuando se registró su valor. La copia congelada se escribe al registrar el valor por primera vez o al cambiarlo: volver a guardar una revisión no recongela lo que no ha cambiado. Editar el catálogo no altera el histórico. Lo único que puede faltar de una revisión antigua es la **imagen**, que vive fuera de la app (§9) | Columnas congeladas, escritas solo al registrar o cambiar el valor |
-| I13 | Nada de lo que cuelgue histórico se borra: preguntas, tipos de medida y ejercicios se archivan | Soft delete + reglas (ninguna colección con histórico admite `delete`) |
+| I13 | Nada de lo que cuelgue histórico se borra: preguntas, tipos de medida, ejercicios y alimentos se archivan | Soft delete + reglas (ninguna colección con histórico admite `delete`) · en el catálogo común de alimentos, su API (tarjeta 90) |
 | I14 | Las imágenes viven en el Drive del entrenador y **la app no puede borrarlas**: el borrado de las fotos lo hace el entrenador a mano, en su Drive. La app sí borra el resto de los datos del cliente, con una operación explícita por cliente | Fuera de la app (Drive) para las imágenes · lógica de dominio para lo demás |
 | I15 | El formato de una pregunta —tipo y límites de la escala— es inmutable desde que existe la primera respuesta. El enunciado es editable siempre | Lógica de dominio + reglas (bandera `hasResponses` en la pregunta) |
 | I16 | Como máximo una revisión por cliente y número de semana | Id del documento `{clientId}_{semana}`, que las reglas comprueban |
@@ -190,6 +231,9 @@ marcan y no se reutiliza su número.
 | I25 | Un pesaje al que apunta una revisión `enviada`, `vista` o `revisada` no se puede borrar. Rige en el uso normal de la app: el borrado a petición (§7, §9) se lleva a la vez las revisiones y los pesajes del cliente, e I25 no lo impide | Lógica de dominio + adaptador. Las reglas no consultan las revisiones que apuntan a un pesaje |
 | I26 | La unidad de un tipo de medida es inmutable desde la primera medida registrada de ese tipo. Para cambiarla se archiva el tipo y se crea otro. La etiqueta es editable siempre | Lógica de dominio + reglas (bandera `hasMeasurements` en el tipo de medida) |
 | I27 | Un pesaje no admite una fecha posterior a hoy, en la zona del entrenador, ni anterior a la fecha de alta del cliente | Lógica de dominio + adaptador. Las reglas no conocen «hoy» en la zona del entrenador |
+| I28 | Un alimento solo lo edita o archiva el entrenador que lo creó. El catálogo común es de lectura para todos los entrenadores, y de escritura solo para el autor de cada alimento | Reglas de seguridad en la copia propia (por `trainerId`) · la API del catálogo en el catálogo común (tarjeta 90) |
+| I29 | Un alimento del menú que sale de la biblioteca conserva el nombre y la composición con que se añadió. Corregir o archivar el alimento no cambia los menús que ya lo usan, de clientes ni de plantillas; clonar una plantilla copia la copia congelada tal cual, sin refrescarla desde la biblioteca | Copia congelada en el `FoodItem`, escrita solo al añadir el alimento |
+| I30 | Lo que aporta un menú se calcula solo con los alimentos del menú que tienen composición; los de texto libre no suman. El resultado se mide contra las macros del propio menú y avisa —de lo que queda o sobra, y de que hay alimentos que no suman—, pero nunca bloquea guardar ni publicar, ni rellena las macros declaradas | Lógica de dominio (funciones puras) |
 
 Las reglas de seguridad (`firestore.rules`, tarjeta 34) son el sustituto de RLS y llevan un test
 por invariante contra el emulador de Firestore, con su caso negativo. Dos campos **no son del
@@ -216,6 +260,12 @@ congela con el envío**. Que una foto ya no se pueda abrir no reabre la revisió
 "Parcial": lo que se envió, se envió. Decir lo contrario dejaría el histórico a merced de lo que
 pase en un Drive que la app no controla, y una revisión cerrada hace ocho semanas podría cambiar
 de estado sola.
+
+Sobre I28 e I1: la copia propia de un alimento es un registro del entrenador como cualquier otro y
+cumple I1 tal cual —solo él la lee y la escribe—. Lo que leen los demás es el catálogo común, que
+no vive en Firestore (§12) y existe precisamente para eso: es lo que el autor publica para todos,
+sin su identidad. Es la única excepción a la lectura de I1 y es deliberada; la escritura sigue
+siendo solo del autor, en los dos sitios.
 
 Sobre I17: el tope de la tercera pasada ("o hasta que se abre el periodo siguiente") desaparece
 con los periodos. Si el entrenador no abre nunca la revisión, el cliente puede seguir editándola.
@@ -255,6 +305,17 @@ clientes lo tienen prescrito y, si confirma, el ejercicio sale de la biblioteca 
 de esos clientes. **La fila no se borra: se archiva.** Un `WorkoutLog` antiguo tiene que poder
 seguir diciendo qué ejercicio se hizo, que es la misma razón por la que las rutinas se archivan
 en vez de borrarse.
+
+**Alimento** — `activo` → `archivado`
+«Eliminar» un alimento lo archiva (I13): sale de la biblioteca, en la copia propia y en el
+catálogo común, y ya no se puede elegir en un menú. A diferencia del ejercicio, no toca ningún
+menú: los que ya lo usan conservan su copia congelada (I29).
+Aparte, cada alimento tiene un **estado de publicación**: `pendiente` → `publicado`. Crear, editar
+o archivar escribe primero en la copia propia y después publica en el catálogo común. `publicado`
+significa que el catálogo tiene la última versión de la copia propia; mientras no la tiene, el
+alimento está `pendiente`, y cada escritura nueva lo vuelve a dejar así hasta que se publica. Si la
+publicación falla, se queda `pendiente`, su autor lo puede usar ya en sus menús y la app reintenta.
+Es un estado de la copia propia: solo lo ve el autor.
 
 **Entrada de catálogo (pregunta, tipo de medida)** — `activa` → `archivada`
 Nunca se borra: hay histórico colgando. Archivar la saca de las revisiones futuras y de la
@@ -375,13 +436,22 @@ La demo no cubre estas dos cosas y el MVP las necesita:
 2. **Envío del feedback.** El botón "Enviar feedback" existe pero no hay pantalla detrás. Mínimo:
    campo de URL de vídeo, nota de texto y confirmación que pasa la revisión a `revisada`.
 
+La biblioteca de alimentos (07-10-2026) deja abiertas estas, cada una con su tarjeta:
+
+3. **A la API del catálogo común (tarjeta 90).** Qué pasa con los alimentos de un autor que se da
+   de baja o desaparece, que nadie más puede corregir. Si el catálogo nace vacío o precargado.
+   Qué hacer con los nombres duplicados, que hoy se admiten. Y cómo se asegura que la identidad del
+   autor de un alimento no llega a los demás entrenadores, que solo ven «de otro» (§4).
+4. **Tolerancia de «Cuadra» (tarjeta 89).** Cuándo lo que queda de un menú se da por cuadrado.
+   Hoy solo si la diferencia, redondeada como se presenta (§5), es 0.
+
 ---
 
 ## 12. Backend: Firebase para datos y auth, Drive para las imágenes
 
-**Decidido el 29-09-2026.** Los datos y la autenticación van a Firebase. Las imágenes de las
-revisiones **no** van a Firebase Storage: van al Drive del entrenador, una carpeta por cliente
-compartida con la cuenta de Google del cliente (§9).
+**Decidido el 29-09-2026.** Los datos y la autenticación van a Firebase, salvo el catálogo común
+de alimentos (abajo). Las imágenes de las revisiones **no** van a Firebase Storage: van al Drive
+del entrenador, una carpeta por cliente compartida con la cuenta de Google del cliente (§9).
 
 Lo que hasta ahora era el coste hipotético de elegir Firebase pasa a ser trabajo pendiente y
 conviene dejarlo escrito para que nadie lo descubra a mitad del adaptador. La columna "dónde se
@@ -451,3 +521,15 @@ gastar el código.
 Authentication tiene que apuntar a `/reset-password` de la app; es un ajuste de todo el proyecto y
 no distingue entornos. Los correos de recuperación tienen cuota diaria en Firebase Auth y son un
 blanco típico de abuso: App Check y las alertas de presupuesto (tarjeta 83) son lo que lo protege.
+
+### Alimentos: copia propia en Firestore, catálogo común en una API propia
+
+**Decidido el 07-10-2026.** La copia propia de los alimentos de cada entrenador vive en Firestore,
+con sus reglas (I28), como el resto de sus datos. El catálogo común no: lo servirá una API propia
+(tarjeta 90) detrás de su propio puerto, separado del de la copia propia, así que ningún componente
+sabe de dónde llega cada alimento.
+
+Hasta que exista la API, con Firebase el catálogo responde «no disponible»: cada entrenador ve solo
+sus alimentos, y todos se quedan `pendiente` de publicar (§7). Cuando exista vale lo mismo para
+cuando no responda: **un catálogo caído no deja a nadie sin sus alimentos**. El entrenador sigue
+viendo y usando los suyos, y lo pendiente se publica cuando el catálogo vuelve.

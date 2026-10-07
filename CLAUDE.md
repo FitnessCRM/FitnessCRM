@@ -205,7 +205,8 @@ pierde su semántica en algunos navegadores.
 
 **Unidades.** El peso corporal siempre en kg (I18). Cada tipo de medida declara su unidad y el
 valor se guarda en ella, sin conversiones silenciosas. Las kcal las fija el entrenador y se
-guardan junto a los macros: no se derivan con 4/4/9.
+guardan junto a los macros: no se derivan con 4/4/9. La composición de un alimento es siempre por
+100 g; lo que suman los alimentos de un menú es un apoyo del editor y no rellena sus macros.
 
 **Validación.** Un esquema zod por concepto en `lib/domain/schemas`, y es la única fuente de
 verdad. El formulario valida contra él y el futuro backend también.
