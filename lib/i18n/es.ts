@@ -307,6 +307,8 @@ export const es = {
     },
     exercise: {
       unknown: "Ejercicio no disponible",
+      /** Bajo la prescripción: lo que hizo la última vez en este ejercicio. */
+      lastTime: "Última vez",
       video: "Ver vídeo del ejercicio",
       set: "serie",
       sets: "series",

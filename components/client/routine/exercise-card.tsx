@@ -5,10 +5,12 @@ import { useState } from "react";
 import type {
   CivilDate,
   Exercise,
+  ExerciseLastTime,
   Prescription,
   RoutineDayExercise,
   WorkoutLog,
 } from "@/lib/domain";
+import { formatCivilDate, formatNumber, formatShortDate } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 import { SetRow } from "./set-row";
@@ -69,6 +71,7 @@ export function ExerciseCard({
   exercise,
   logs,
   reference,
+  lastTime,
   today,
   defaultOpen,
   hint = t.log.clearHint,
@@ -82,6 +85,8 @@ export function ExerciseCard({
   logs: WorkoutLog[];
   /** Las mismas series en el último día registrado antes de hoy. */
   reference: { logs: WorkoutLog[]; date: CivilDate } | undefined;
+  /** Lo que se hizo la última vez en este ejercicio, en el día de rutina que fuera. Sin él, no hay línea. */
+  lastTime?: ExerciseLastTime | null;
   /** Fecha civil de hoy, para fechar la referencia en la fila. */
   today: CivilDate;
   defaultOpen: boolean;
@@ -106,6 +111,18 @@ export function ExerciseCard({
             {exercise?.name ?? t.exercise.unknown}
           </h2>
           <p className="text-text-muted mt-1 text-[14px]">{prescriptionLine(item.prescription)}</p>
+          {lastTime ? (
+            <p className="text-text-subtle mt-0.5 text-[13px]">
+              {t.exercise.lastTime} (
+              <time dateTime={lastTime.date} title={formatCivilDate(lastTime.date)}>
+                {formatShortDate(lastTime.date, today)}
+              </time>
+              ):{" "}
+              {lastTime.logs
+                .map((l) => `${formatNumber(l.weightKg)} ${es.common.kg} × ${l.reps}`)
+                .join(" · ")}
+            </p>
+          ) : null}
         </div>
         <button
           type="button"

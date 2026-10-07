@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/states";
 import {
   dayRecordOn,
   defaultRoutineDay,
+  lastExerciseRecord,
   latestDayRecord,
   weekNumberOrNull,
   type Exercise,
@@ -177,6 +178,7 @@ function RoutineView({
                   exercise={exercises.get(item.exerciseId)}
                   logs={itemLogs}
                   today={today}
+                  lastTime={lastExerciseRecord(item.exerciseId, logs, today)}
                   reference={
                     previous?.date
                       ? {
