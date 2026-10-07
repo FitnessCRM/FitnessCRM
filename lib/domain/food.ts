@@ -181,7 +181,8 @@ export type LibraryFood = (Food & { origin: "own" }) | (CatalogFood & { origin: 
  * La biblioteca de un entrenador: la unión por `id` de su copia propia y del catálogo común (§4).
  * Si un alimento está en los dos manda la copia propia, porque el catálogo puede ir por detrás
  * (`pendiente`). Es propio si está en la copia propia; si solo llega del catálogo, es de otro.
- * Los archivados no salen, vengan de donde vengan. Primero los propios y después los ajenos, cada
+ * Los archivados no salen, vengan de donde vengan; por eso `own` tiene que traer también los propios
+ * archivados que el catálogo aún pueda servir como activos (los `pendiente`), o saldrían como ajenos. Primero los propios y después los ajenos, cada
  * grupo en el orden en que llega: ordenar es cosa de la pantalla.
  */
 export function mergeFoodLibrary(
