@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { TZ } from "./__tests__/fixtures";
-import { menuSetPeriods, planOverlaps, routinePeriods } from "./plan-periods";
+import {
+  menuSetPeriods,
+  planChangeDays,
+  planDays,
+  planOverlaps,
+  routinePeriods,
+} from "./plan-periods";
 import type { Menu, Routine } from "./schemas";
 
 const routine = (id: string, status: Routine["status"], createdAt: string, updatedAt: string) =>
@@ -101,5 +107,30 @@ describe("when a set of menus was in force", () => {
   it("leaves drafts out", () => {
     const ids = menuSetPeriods(menus, TZ).flatMap((p) => p.menus.map((m) => m.id));
     expect(ids).not.toContain("draft");
+  });
+});
+
+describe("how long a plan was in force and when plans changed", () => {
+  it("counts the days from the start to the end, or to today while it is still in use", () => {
+    expect(planDays({ from: "2026-09-08", to: "2026-09-20" }, "2026-10-06")).toBe(12);
+    expect(planDays({ from: "2026-10-01", to: null }, "2026-10-06")).toBe(5);
+  });
+
+  it("gives 0 for a plan activated and archived the same day", () => {
+    expect(planDays({ from: "2026-09-20", to: "2026-09-20" }, "2026-10-06")).toBe(0);
+  });
+
+  it("lists the days a plan was archived, once each and oldest first", () => {
+    const periods = [
+      { from: "2026-09-08", to: "2026-09-26" },
+      { from: "2026-09-26", to: null },
+      { from: "2026-09-08", to: "2026-09-20" },
+      { from: "2026-09-20", to: "2026-09-26" },
+    ];
+    expect(planChangeDays(periods)).toEqual(["2026-09-20", "2026-09-26"]);
+  });
+
+  it("finds no change when nothing was ever replaced", () => {
+    expect(planChangeDays([{ from: "2026-10-01", to: null }])).toEqual([]);
   });
 });

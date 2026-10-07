@@ -1,4 +1,4 @@
-import { civilDateInTimeZone } from "./week";
+import { civilDateInTimeZone, civilDaysBetween } from "./week";
 import type { CivilDate, DayType, Menu, Routine, TimeZone } from "./schemas";
 
 /**
@@ -32,6 +32,24 @@ export interface MenuSetPeriod extends PlanPeriod {
 /** ¿Se solapa el periodo del plan con los días `start`–`end` (ambos inclusive)? */
 export function planOverlaps(period: PlanPeriod, start: CivilDate, end: CivilDate): boolean {
   return period.from <= end && (period.to === null || period.to >= start);
+}
+
+/**
+ * Días que lleva (o llevó) vigente un plan: de `from` a `to`, o a `today` si sigue en uso. Es la
+ * diferencia entre las dos fechas, así que el día del relevo no cuenta dos veces (el plan que sale
+ * y el que entra lo comparten) y un plan activado y archivado el mismo día da 0.
+ */
+export function planDays(period: PlanPeriod, today: CivilDate): number {
+  return Math.max(0, civilDaysBetween(period.from, period.to ?? today));
+}
+
+/**
+ * Los días en que cambió algún plan: cuando se archivó uno (el que lo sustituye entra ese mismo día,
+ * §7). De más antiguo a más reciente, sin repetir aunque cambien a la vez la rutina y los menús.
+ */
+export function planChangeDays(periods: readonly PlanPeriod[]): CivilDate[] {
+  const days = periods.flatMap((p) => (p.to === null ? [] : [p.to]));
+  return [...new Set(days)].sort();
 }
 
 /**

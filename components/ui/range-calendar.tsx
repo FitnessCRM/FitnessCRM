@@ -17,7 +17,9 @@ const toDate = (year: number, month: number, day: number): CivilDate =>
 /**
  * Calendario mensual para elegir un periodo: un primer toque marca el día de inicio y un segundo el
  * último; un tercero empieza de nuevo. Con un solo toque el periodo es ese día. Semana desde el
- * lunes. `max` bloquea los días posteriores (no hay planes futuros que consultar).
+ * lunes. `max` bloquea los días posteriores (no hay planes futuros que consultar). `marked` pinta un
+ * punto en los días que importan a la pantalla (en «Planes anteriores», los de un cambio de plan);
+ * `markedLabel` es lo que dice el lector de pantalla de ellos, porque el punto solo se ve.
  */
 export function RangeCalendar({
   start,
@@ -25,6 +27,8 @@ export function RangeCalendar({
   onChange,
   max,
   initialMonth,
+  marked,
+  markedLabel,
 }: {
   start: CivilDate | null;
   /** `null` mientras solo hay inicio. */
@@ -33,6 +37,8 @@ export function RangeCalendar({
   max?: CivilDate;
   /** Mes que se enseña al abrir, `YYYY-MM-DD` (se usa su año y su mes). Por defecto, el de `start`. */
   initialMonth?: CivilDate;
+  marked?: ReadonlySet<CivilDate>;
+  markedLabel?: string;
 }) {
   const seed = initialMonth ?? start ?? max ?? "2026-01-01";
   const [year, setYear] = useState(Number(seed.slice(0, 4)));
@@ -93,6 +99,7 @@ export function RangeCalendar({
           const disabled = max !== undefined && date > max;
           const isEdge = date === start || date === rangeEnd;
           const inside = start !== null && rangeEnd !== null && date > start && date < rangeEnd;
+          const isMarked = marked?.has(date) === true;
           return (
             <button
               key={date}
@@ -100,9 +107,9 @@ export function RangeCalendar({
               disabled={disabled}
               onClick={() => pick(date)}
               aria-pressed={isEdge || inside}
-              aria-label={`${day} ${t.months[month - 1]} ${year}`}
+              aria-label={`${day} ${t.months[month - 1]} ${year}${isMarked && markedLabel ? `, ${markedLabel}` : ""}`}
               className={cn(
-                "focus-visible:ring-ring/50 h-10 text-[14px] transition-colors outline-none focus-visible:z-10 focus-visible:ring-[3px]",
+                "focus-visible:ring-ring/50 relative h-10 text-[14px] transition-colors outline-none focus-visible:z-10 focus-visible:ring-[3px]",
                 "rounded-md",
                 isEdge
                   ? "bg-accent text-on-accent font-semibold"
@@ -113,6 +120,15 @@ export function RangeCalendar({
               )}
             >
               {day}
+              {isMarked ? (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "absolute bottom-[5px] left-1/2 size-[5px] -translate-x-1/2 rounded-full",
+                    isEdge ? "bg-on-accent" : "bg-accent-hover",
+                  )}
+                />
+              ) : null}
             </button>
           );
         })}
