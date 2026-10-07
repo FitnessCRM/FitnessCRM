@@ -10,14 +10,15 @@ import {
   menuTotal,
   mergeFoodLibrary,
   renameFoodItem,
-  roundGrams,
   setFoodItemGrams,
 } from "./food";
 import { emptyMacrosDraft } from "./macros";
 import {
   compositionSchema,
+  foodDraftSchema,
   foodItemSchema,
   menuSchema,
+  roundGrams,
   menuTemplateSchema,
   type CatalogFood,
   type Food,
@@ -81,6 +82,57 @@ describe("compositionSchema", () => {
     expect(compositionSchema.safeParse({ ...base, fatG: 0.3 }).success).toBe(true);
     expect(compositionSchema.safeParse({ ...base, fatG: 12.55 }).success).toBe(false);
     expect(compositionSchema.safeParse({ ...base, fatG: -0.1 }).success).toBe(false);
+  });
+});
+
+describe("foodDraftSchema: what the trainer types", () => {
+  const draft = (
+    composition: Partial<{ kcal: number; proteinG: number; carbsG: number; fatG: number }>,
+  ) =>
+    foodDraftSchema.safeParse({
+      name: "Garbanzos cocidos",
+      composition: { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0, ...composition },
+    });
+
+  it("rounds macros with more than one decimal to one decimal", () => {
+    const parsed = draft({ proteinG: 3.55, carbsG: 12.04, fatG: 0.15 });
+    expect(parsed.success && parsed.data.composition).toEqual({
+      kcal: 0,
+      proteinG: 3.6,
+      carbsG: 12,
+      fatG: 0.2,
+    });
+  });
+
+  it("leaves a value with one decimal as it is, and rounding twice changes nothing", () => {
+    const once = draft({ proteinG: 12.5, carbsG: 3.55 });
+    expect(once.success && once.data.composition).toMatchObject({ proteinG: 12.5, carbsG: 3.6 });
+    const twice = once.success && draft(once.data.composition);
+    expect(twice && twice.success && twice.data.composition).toEqual(
+      once.success && once.data.composition,
+    );
+    expect(roundGrams(roundGrams(3.55))).toBe(roundGrams(3.55));
+  });
+
+  it("checks the 100 g cap on the rounded values", () => {
+    expect(33.25 + 33.25 + 33.45).toBeLessThan(100);
+    expect(draft({ proteinG: 33.25, carbsG: 33.25, fatG: 33.45 }).success).toBe(false);
+    expect(draft({ proteinG: 0.2, carbsG: 83.9, fatG: 15.9 }).success).toBe(true);
+  });
+
+  it("does not round kcal: with decimals they are still an error", () => {
+    expect(draft({ kcal: 120.4 }).success).toBe(false);
+    expect(draft({ kcal: 120 }).success).toBe(true);
+  });
+
+  it("keeps rejecting negative macros", () => {
+    expect(draft({ fatG: -0.04 }).success).toBe(false);
+  });
+
+  it("does not round what is stored: a frozen copy with two decimals is still invalid", () => {
+    expect(
+      compositionSchema.safeParse({ kcal: 0, proteinG: 3.55, carbsG: 0, fatG: 0 }).success,
+    ).toBe(false);
   });
 });
 

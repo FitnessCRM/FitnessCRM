@@ -1,5 +1,12 @@
 import type { MacrosDraft } from "./macros";
-import type { CatalogFood, Composition, Food, FoodItem, Meal } from "./schemas";
+import {
+  gramsToTenths,
+  type CatalogFood,
+  type Composition,
+  type Food,
+  type FoodItem,
+  type Meal,
+} from "./schemas";
 import type { NewId } from "./templates";
 
 /* ---------- Alimento del menú: de la biblioteca o de texto libre (§5) ---------- */
@@ -116,17 +123,9 @@ export function countNonCountingItems(menu: { meals: readonly Pick<Meal, "items"
 
 /* ---------- Redondeo al presentar (§5): kcal a entero, gramos a un decimal ---------- */
 
-/** Décimas de gramo, enteras: así se compara y se resta sin error de coma flotante. */
-function gramsToTenths(grams: number): number {
-  return Math.round(grams * 10);
-}
-
+/** Kcal a entero. Los gramos se redondean con `roundGrams`, junto al esquema de la composición. */
 export function roundKcal(kcal: number): number {
   return Math.round(kcal);
-}
-
-export function roundGrams(grams: number): number {
-  return gramsToTenths(grams) / 10;
 }
 
 /* ---------- Lo que queda frente a las macros del menú (I30) ---------- */
