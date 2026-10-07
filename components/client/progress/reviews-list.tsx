@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { EmptyState } from "@/components/ui/states";
 import {
   groupReviewsByWeekPair,
@@ -13,6 +16,13 @@ import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 
 const t = es.screensProgress.reviews;
+
+/**
+ * Parejas de semanas que se ven sin pedir más (≈ 6 semanas). El histórico crece una revisión por
+ * semana y sin tope la pantalla se alarga cada vez más; el resto queda tras «Ver todas». El borrador
+ * en curso está siempre en la pareja más reciente, así que nunca se esconde.
+ */
+const RECENT_GROUPS = 3;
 
 function subtitle(review: Review, logs: WeightLog[], today: CivilDate, timeZone: string) {
   const date = civilDateOf(review.submittedAt ?? review.createdAt, timeZone);
@@ -36,15 +46,17 @@ export function ReviewsList({
   /** Zona del entrenador: el día de un envío se cuenta en ella, no en UTC. */
   timeZone: string;
 }) {
+  const [showAll, setShowAll] = useState(false);
   if (reviews.length === 0) {
     return <EmptyState title={t.emptyTitle} description={t.emptyHint} />;
   }
   const groups = groupReviewsByWeekPair(reviews);
   const newest = groups[0]?.from;
+  const visible = showAll ? groups : groups.slice(0, RECENT_GROUPS);
 
   return (
     <div className="flex flex-col gap-[18px]">
-      {groups.map((group) => (
+      {visible.map((group) => (
         <section key={group.from} className="flex flex-col gap-2.5">
           <h3
             className={cn(
@@ -102,6 +114,16 @@ export function ReviewsList({
           })}
         </section>
       ))}
+      {groups.length > RECENT_GROUPS ? (
+        <button
+          type="button"
+          aria-expanded={showAll}
+          onClick={() => setShowAll((open) => !open)}
+          className="border-border-emphasis text-text-muted hover:border-accent hover:text-text-primary tracking-label focus-visible:ring-ring/50 inline-flex min-h-8 items-center justify-center self-center rounded-full border px-3.5 py-1.5 text-xs uppercase outline-none focus-visible:ring-[3px]"
+        >
+          {showAll ? t.showRecent : t.showAll.replace("{n}", String(reviews.length))}
+        </button>
+      ) : null}
     </div>
   );
 }
