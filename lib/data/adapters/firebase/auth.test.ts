@@ -4,6 +4,7 @@ import type { Client, Trainer } from "@/lib/domain";
 import {
   createFirebaseAuthContext,
   createInvitationPort,
+  createPasswordResetPort,
   createSessionPort,
   type FirebaseAuthContext,
 } from "./auth";
@@ -54,6 +55,18 @@ async function lastLinkFor(email: string): Promise<string> {
   const last = mine.at(-1);
   if (!last) throw new Error(`El emulador no tiene ningún enlace para ${email}`);
   return last.oobLink;
+}
+
+/** El código del último enlace de recuperación que el emulador "envió" a ese correo, si lo hay. */
+async function lastResetCodeFor(email: string): Promise<string | null> {
+  const res = await fetch(`http://${authHost}/emulator/v1/projects/${PROJECT}/oobCodes`);
+  const { oobCodes } = (await res.json()) as {
+    oobCodes: { email: string; requestType: string; oobLink: string }[];
+  };
+  const last = oobCodes
+    .filter((c) => c.email === email && c.requestType === "PASSWORD_RESET")
+    .at(-1);
+  return last ? new URL(last.oobLink).searchParams.get("oobCode") : null;
 }
 
 describe.skipIf(!firestoreHost || !authHost)("adaptador de Firebase · auth", () => {
@@ -213,5 +226,63 @@ describe.skipIf(!firestoreHost || !authHost)("adaptador de Firebase · auth", ()
       code: "session.no_profile",
     });
     expect(ctx.auth.currentUser).toBeNull();
+  });
+
+  it("recover a password: ask for the link, open it and set a new one", async () => {
+    const { createUserWithEmailAndPassword, signInWithEmailAndPassword } =
+      await import("firebase/auth");
+    const account = `recupera${n}-${Date.now()}@hector.test`;
+    await createUserWithEmailAndPassword(ctx.auth, account, "vieja-123");
+    await ctx.auth.signOut();
+
+    const reset = createPasswordResetPort(ctx);
+    await reset.sendPasswordReset(account);
+    const code = await lastResetCodeFor(account);
+    expect(code).toBeTruthy();
+    expect(await reset.checkPasswordResetCode(code as string)).toEqual({ email: account });
+
+    await reset.confirmPasswordReset({ code: code as string, password: "nueva-456" });
+    // No abre sesión: se vuelve a entrar con la nueva, y la vieja ya no vale.
+    expect(ctx.auth.currentUser).toBeNull();
+    await expect(signInWithEmailAndPassword(ctx.auth, account, "vieja-123")).rejects.toBeTruthy();
+    await expect(signInWithEmailAndPassword(ctx.auth, account, "nueva-456")).resolves.toBeTruthy();
+  });
+
+  it("asking for the link of an unknown email resolves like any other and sends nothing", async () => {
+    const reset = createPasswordResetPort(ctx);
+    const stranger = `nadie${n}-${Date.now()}@hector.test`;
+    await expect(reset.sendPasswordReset(stranger)).resolves.toBeUndefined();
+    expect(await lastResetCodeFor(stranger)).toBeNull();
+    await expect(reset.sendPasswordReset("no es un correo")).rejects.toMatchObject({
+      code: "password_reset.invalid_email",
+    });
+  });
+
+  it("a recovery code is used once, a weak password does not spend it and a made-up one is invalid", async () => {
+    const { createUserWithEmailAndPassword } = await import("firebase/auth");
+    const account = `recupera-una-vez${n}-${Date.now()}@hector.test`;
+    await createUserWithEmailAndPassword(ctx.auth, account, "vieja-123");
+    await ctx.auth.signOut();
+
+    const reset = createPasswordResetPort(ctx);
+    await reset.sendPasswordReset(account);
+    const code = (await lastResetCodeFor(account)) as string;
+
+    await expect(reset.confirmPasswordReset({ code, password: "corta" })).rejects.toMatchObject({
+      code: "password_reset.weak_password",
+    });
+    // La contraseña corta se rechazó antes de gastar el código.
+    await expect(reset.checkPasswordResetCode(code)).resolves.toEqual({ email: account });
+
+    await reset.confirmPasswordReset({ code, password: "nueva-456" });
+    await expect(reset.checkPasswordResetCode(code)).rejects.toMatchObject({
+      code: "password_reset.invalid_link",
+    });
+    await expect(reset.confirmPasswordReset({ code, password: "otra-789" })).rejects.toMatchObject({
+      code: "password_reset.invalid_link",
+    });
+    await expect(reset.checkPasswordResetCode("inventado")).rejects.toMatchObject({
+      code: "password_reset.invalid_link",
+    });
   });
 });

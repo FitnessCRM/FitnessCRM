@@ -94,6 +94,53 @@ export const es = {
         toLogin: "Ir al acceso",
       },
     },
+    forgotPassword: {
+      title: "Recupera tu contraseña",
+      subtitle: "Escribe tu email y te enviaremos un enlace para elegir una contraseña nueva.",
+      form: {
+        email: "Email",
+        emailPlaceholder: "tu@email.com",
+        required: "Escribe tu email",
+        submit: "Enviar enlace",
+        submitting: "Enviando…",
+        errorEmail: "Escribe un email válido",
+        errorNetwork: "No se ha podido conectar",
+        back: "Volver al acceso",
+      },
+      /** Se dice lo mismo exista o no la cuenta: no se revela quién usa la app (§12). */
+      sent: {
+        title: "Revisa tu correo",
+        description:
+          "Si existe una cuenta con ese email, te hemos enviado un enlace para elegir una contraseña nueva. Puede tardar unos minutos.",
+        invitedHint:
+          "¿Aún no has creado tu contraseña? Usa el enlace de invitación que te envió tu entrenador.",
+        toLogin: "Volver al acceso",
+      },
+    },
+    resetPassword: {
+      title: "Elige una contraseña nueva",
+      /** `{email}` es el correo de la cuenta, que devuelve la comprobación del enlace. */
+      subtitle: "Escribe la contraseña nueva de {email}.",
+      checking: "Comprobando el enlace…",
+      form: {
+        password: "Contraseña nueva",
+        passwordHint: "Mínimo 6 caracteres",
+        confirm: "Repite la contraseña",
+        required: "Completa todos los campos",
+        submit: "Guardar contraseña",
+        submitting: "Guardando…",
+        errorMismatch: "Las contraseñas no coinciden",
+        errorWeak: "La contraseña debe tener al menos 6 caracteres",
+        errorNetwork: "No se ha podido conectar",
+        retry: "Reintentar",
+      },
+      invalid: {
+        title: "Enlace no válido",
+        description: "El enlace ha caducado o ya se ha usado. Pide uno nuevo.",
+        requestNew: "Pedir otro enlace",
+        toLogin: "Ir al acceso",
+      },
+    },
     login: {
       title: "Entrar",
       subtitle: "Accede con tus credenciales",
@@ -116,6 +163,8 @@ export const es = {
         submit: "Continuar",
         submitting: "Entrando…",
         forgotPassword: "He olvidado mi contraseña",
+        /** Aviso en el acceso al volver de cambiar la contraseña. */
+        resetDone: "Contraseña cambiada. Entra con la nueva.",
         errorInvalid: "Email o contraseña incorrectos",
         errorNoProfile: "Esta cuenta aún no tiene acceso a la app",
         errorNetwork: "No se ha podido conectar",
