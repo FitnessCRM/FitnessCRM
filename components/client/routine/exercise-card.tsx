@@ -70,7 +70,6 @@ export function ExerciseCard({
   item,
   exercise,
   logs,
-  reference,
   lastTime,
   today,
   defaultOpen,
@@ -83,9 +82,10 @@ export function ExerciseCard({
   exercise: Exercise | undefined;
   /** Series de este ejercicio registradas hoy. */
   logs: WorkoutLog[];
-  /** Las mismas series en el último día registrado antes de hoy. */
-  reference: { logs: WorkoutLog[]; date: CivilDate } | undefined;
-  /** Lo que se hizo la última vez en este ejercicio, en el día de rutina que fuera. Sin él, no hay línea. */
+  /**
+   * Lo que se hizo la última vez en este ejercicio, en el día de rutina que fuera: va en la
+   * cabecera y, serie a serie, en cada fila. Sin él, no hay referencia.
+   */
   lastTime?: ExerciseLastTime | null;
   /** Fecha civil de hoy, para fechar la referencia en la fila. */
   today: CivilDate;
@@ -153,7 +153,7 @@ export function ExerciseCard({
           </div>
           {sets.map((setNumber) => {
             const log = logs.find((l) => l.setNumber === setNumber);
-            const previous = reference?.logs.find((l) => l.setNumber === setNumber);
+            const previous = lastTime?.logs.find((l) => l.setNumber === setNumber);
             return (
               <SetRow
                 key={`${setNumber}-${log?.id ?? "none"}-${log?.weightKg}-${log?.reps}`}
@@ -161,7 +161,7 @@ export function ExerciseCard({
                 log={log}
                 today={today}
                 reference={
-                  previous && reference ? { log: previous, date: reference.date } : undefined
+                  previous && lastTime ? { log: previous, date: lastTime.date } : undefined
                 }
                 onSave={(values) => onSave(setNumber, values)}
                 onDelete={onDelete}

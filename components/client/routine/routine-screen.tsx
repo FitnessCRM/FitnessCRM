@@ -179,14 +179,6 @@ function RoutineView({
                   logs={itemLogs}
                   today={today}
                   lastTime={lastExerciseRecord(item.exerciseId, logs, today)}
-                  reference={
-                    previous?.date
-                      ? {
-                          date: previous.date,
-                          logs: previous.logs.filter((l) => l.routineDayExerciseId === item.id),
-                        }
-                      : undefined
-                  }
                   defaultOpen={itemLogs.length > 0 || (record.logs.length === 0 && index === 0)}
                   onSave={(setNumber, values) =>
                     saveLog.mutateAsync({
