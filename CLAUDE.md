@@ -284,7 +284,7 @@ entra. Nunca se commitea `node_modules`, `.next`, `public/sw.js` ni `.env*`.
 ## Equipo
 
 Dos desarrolladores, cada uno con su Claude Code sobre el mismo repo
-(`github.com/danimoreno73/FitnessCRM`).
+(`github.com/FitnessCRM/FitnessCRM`).
 
 **Reparto: por pantallas completas.** Cada uno coge pantallas enteras del panel del entrenador,
 nunca capas de la misma pantalla. Dividir por «uno el dominio, otro la UI» bloquea al segundo
@@ -477,9 +477,11 @@ plan activo no se edita en sitio (§6 y §7); sus treinta hallazgos están cerra
 
 Backend decidido el 29-09-2026 —Firebase para datos y auth, Drive del entrenador para las
 imágenes—, escrito en `docs/dominio.md` §9 y §12. Acceso por correo y contraseña, con invitación
-por enlace de correo (decidido el 03-10-2026, §12). En `main`: auth, invitaciones y entrada por
+por enlace de correo (decidido el 03-10-2026, §12) y recuperación de la contraseña por correo
+(decidida el 07-10-2026, §12; tarjeta 85, PR #82, con la URL de acción de la plantilla por apuntar en
+la consola de Firebase). En `main`: auth, invitaciones y entrada por
 rol (tarjeta 35, PR #44) y reglas de seguridad de Firestore con tests de emulador (tarjeta 34,
-PR #45). El adaptador de datos de Firebase (16) ya está en `main`, cubre los 15 puertos y se monta
+PR #45). El adaptador de datos de Firebase (16) ya está en `main`, cubre los 16 puertos y se monta
 en `providers.tsx` solo con `NEXT_PUBLIC_DATA_BACKEND=firebase`; sin la variable sigue el adaptador
 en memoria. El área de cliente carga y se lee sin conexión, y las escrituras de series y pesos se
 encolan hasta volver la red (tarjetas 81 y 82, PR #57 y #58). Firebase está conectado y probado
