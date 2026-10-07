@@ -9,6 +9,7 @@ import { createMeasurementTypePort, createQuestionnairePort } from "../catalogs"
 import { createClientPort } from "../clients";
 import { createFirebaseContext } from "../context";
 import { createExercisePort } from "../exercises";
+import { createOwnFoodPort } from "../foods";
 import { COLLECTIONS } from "../helpers";
 import { createWeightLogPort, createWorkoutLogPort } from "../logs";
 import { createMembershipPort } from "../memberships";
@@ -56,6 +57,7 @@ describe.skipIf(!emulatorHost)("el adaptador de Firebase bajo las reglas de segu
       await seed(COLLECTIONS.clients, state.clients);
       await seed(COLLECTIONS.memberships, state.memberships);
       await seed(COLLECTIONS.exercises, state.exercises);
+      await seed(COLLECTIONS.foods, state.foods);
       await seed(COLLECTIONS.routines, state.routines);
       await seed(COLLECTIONS.routineTemplates, state.routineTemplates);
       await seed(COLLECTIONS.menus, state.menus);
@@ -173,6 +175,27 @@ describe.skipIf(!emulatorHost)("el adaptador de Firebase bajo las reglas de segu
       const used = state.routines.find((r) => r.status !== "archivado")!.days[0]!.exercises[0]!
         .exerciseId;
       expect((await exercises.archiveExercise(TRAINER_ID, used)).status).toBe("archivado");
+    });
+
+    it("manages its own foods: list, create, edit, publish, archive (I28)", async () => {
+      const foods = createOwnFoodPort(trainer());
+      const own = state.foods.filter((f) => f.status === "activo");
+      expect((await foods.listFoods(TRAINER_ID)).map((f) => f.id).sort()).toEqual(
+        own.map((f) => f.id).sort(),
+      );
+      const draft = {
+        name: "Lentejas cocidas",
+        composition: { kcal: 116, proteinG: 9, carbsG: 20.1, fatG: 0.4 },
+      };
+      const created = await foods.createFood(TRAINER_ID, draft);
+      const edited = await foods.updateFood(TRAINER_ID, created.id, { ...draft, name: "Lentejas" });
+      expect(edited).toMatchObject({ name: "Lentejas", createdAt: created.createdAt });
+      expect(
+        (await foods.markFoodPublished(TRAINER_ID, created.id, edited.updatedAt)).publishStatus,
+      ).toBe("publicado");
+      expect((await foods.archiveFood(TRAINER_ID, created.id)).status).toBe("archivado");
+      expect((await foods.listPendingFoods(TRAINER_ID)).map((f) => f.id)).toContain(created.id);
+      expect(await foods.getFood(TRAINER_ID, "no-existe")).toBeNull();
     });
 
     it("manages the catalogs: create, edit, reorder, archive", async () => {
@@ -412,6 +435,12 @@ describe.skipIf(!emulatorHost)("el adaptador de Firebase bajo las reglas de segu
       // Los borradores y el histórico completo son del entrenador.
       await expect(createRoutinePort(ctx).listRoutines(TRAINER_ID, marta)).rejects.toThrow();
       await expect(createMenuPort(ctx).listMenus(TRAINER_ID, marta)).rejects.toThrow();
+    });
+
+    it("never reads the trainer's foods: the menu carries the frozen copy (I29)", async () => {
+      const foods = createOwnFoodPort(client(CLIENT_IDS.marta));
+      await expect(foods.listFoods(TRAINER_ID)).rejects.toThrow();
+      await expect(foods.getFood(TRAINER_ID, state.foods[0]!.id)).rejects.toThrow();
     });
 
     it("cannot write a plan", async () => {

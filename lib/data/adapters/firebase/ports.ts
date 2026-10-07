@@ -51,7 +51,7 @@ export function createFirebasePorts(options: FirebasePortsOptions): DataPorts {
     clients: createClientPort(ctx),
     memberships: createMembershipPort(ctx),
     exercises: createExercisePort(ctx),
-    ownFoods: createOwnFoodPort(),
+    ownFoods: createOwnFoodPort(ctx),
     foodCatalog: createUnavailableFoodCatalogPort(),
     routines: createRoutinePort(ctx),
     macroTargets: createMacroTargetsPort(ctx),
