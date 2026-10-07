@@ -6,6 +6,7 @@ export * from "./questionnaire";
 export * from "./measurement-type";
 export * from "./review";
 export * from "./templates";
+export * from "./plan-periods";
 export * from "./plan-publish";
 export * from "./routine";
 export * from "./workout";

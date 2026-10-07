@@ -24,6 +24,7 @@ import { ClientInvitationCard } from "./client-invitation-card";
 import { ClientStatusAction } from "./client-status-action";
 import { MembershipCard } from "./membership-card";
 import { MacrosMenuCard, RoutineCard } from "./plan-cards";
+import { PreviousPlansCard } from "./previous-plans-card";
 import { ReviewsHistory } from "./reviews-history";
 
 const MeasurementsCard = dynamic(
@@ -177,6 +178,7 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
               assignHref={assignHref}
             />
           </div>
+          <PreviousPlansCard clientId={clientId} timeZone={trainer.data.timeZone} />
           <WeightEvolutionCard
             title={t.weightTitle}
             points={
