@@ -4,8 +4,6 @@ import { ChevronLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { dayTitle } from "@/components/client/routine/day-summary-card";
-import { ExerciseCard } from "@/components/client/routine/exercise-card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
@@ -32,6 +30,8 @@ import {
 import { todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
+import { dayTitle } from "./day-summary-card";
+import { ExerciseCard } from "./exercise-card";
 
 const t = es.screensWorkoutDay;
 const routineT = es.screensRoutine;
@@ -53,11 +53,11 @@ function isPastOrToday(raw: string, today: CivilDate): boolean {
 }
 
 /**
- * Corregir o añadir el entreno de un día que no es hoy. Es la salida de la deuda anotada en
- * Rutina: allí la rejilla es solo la de hoy (así escribir no vacía casillas ni borrar toca
+ * Corregir o añadir el entreno de un día que no es hoy. Se entra desde Rutina (un enlace bajo la
+ * rejilla), cuya rejilla es solo la de hoy (así escribir no vacía casillas ni borrar toca
  * histórico) y aquí la fecha se elige de forma explícita. Reutiliza las mismas filas de serie.
  */
-export function WorkoutDayScreen() {
+export function PastWorkoutScreen() {
   const clientId = useSessionClientId();
   const trainer = useTrainer();
   const routine = useActiveRoutine(clientId);
@@ -65,7 +65,7 @@ export function WorkoutDayScreen() {
   const header = (
     <>
       <Link
-        href="/progress"
+        href="/routine"
         className="text-text-muted hover:text-text-primary inline-flex min-h-8 items-center gap-1 text-sm"
       >
         <ChevronLeftIcon aria-hidden className="size-4" />

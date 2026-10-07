@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryBoundary } from "@/components/ui/query-boundary";
@@ -201,6 +202,13 @@ function RoutineView({
             })}
           </div>
         )}
+
+        <Link
+          href="/routine/past"
+          className="text-text-muted hover:text-text-primary inline-flex min-h-8 w-fit items-center text-[13px] underline-offset-4 hover:underline max-lg:order-4"
+        >
+          {t.pastLink}
+        </Link>
       </div>
 
       <div className="flex flex-col gap-4 max-lg:contents lg:pt-3.5">

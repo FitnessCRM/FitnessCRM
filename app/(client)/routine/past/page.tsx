@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { WorkoutDayScreen } from "@/components/client/progress/workout-day-screen";
+import { PastWorkoutScreen } from "@/components/client/routine/past-workout-screen";
 import { LoadingState } from "@/components/ui/states";
 import { es } from "@/lib/i18n/es";
 
@@ -9,7 +9,7 @@ export default function Page() {
   // La fecha elegida viaja en la query: Suspense para que la página siga siendo estática.
   return (
     <Suspense fallback={<LoadingState />}>
-      <WorkoutDayScreen />
+      <PastWorkoutScreen />
     </Suspense>
   );
 }
