@@ -888,6 +888,9 @@ export const es = {
       partial: "Parcial",
       emptyTitle: "Sin revisiones todavía",
       emptyHint: "La primera aparecerá cuando empieces tu revisión semanal.",
+      /** `{n}` es el número de revisiones del histórico. */
+      showAll: "Ver todas las revisiones ({n})",
+      showRecent: "Ver solo las últimas",
     },
   },
   /** Registro de un entreno de otra fecha, desde Rutina. */
