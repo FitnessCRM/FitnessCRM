@@ -295,6 +295,8 @@ export const es = {
     week: "Semana",
     day: "Día",
     daysLabel: "Días de la rutina",
+    /** Bajo la rejilla de hoy: entrada a corregir o registrar el entreno de otro día. */
+    pastLink: "¿Te saltaste un día? Regístralo",
     empty: {
       title: "Sin rutina asignada",
       hint: "Tu entrenador todavía no te ha asignado una rutina.",
@@ -885,6 +887,16 @@ export const es = {
       emptyTitle: "Sin revisiones todavía",
       emptyHint: "La primera aparecerá cuando empieces tu revisión semanal.",
     },
+  },
+  /** Registro de un entreno de otra fecha, desde Rutina. */
+  screensWorkoutDay: {
+    eyebrow: "Entrenos",
+    title: "Entreno de otro día",
+    back: "Volver a Rutina",
+    date: "Fecha del entreno",
+    dateInvalid: "Elige una fecha que no sea futura",
+    clearHint: "Vacía los dos campos para quitar una serie. Se guarda al salir de la fila.",
+    summaryLogged: "series registradas ese día",
   },
   /** Datos de un cliente: los comparten el alta y la edición. */
   clientData: {
