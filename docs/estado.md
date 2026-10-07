@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 06-10-2026. Corresponde a `main` en `3727325` (PR #74). Están en `main` los
+Última actualización: 07-10-2026. Corresponde a `main` en `d097ca1` (PR #76). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad, el adaptador de Firebase y el modo sin conexión del cliente; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
@@ -680,6 +680,28 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   ninguno); no consta prueba con Firebase real; si una rutina archivada prescribe un ejercicio
   archivado después, el guardado puede fallar por I3 y el diálogo solo dice que no se pudo crear.
 
+- **Planes anteriores del cliente** (tarjeta 46, PR #76). La tarjeta «Planes anteriores» del detalle
+  de cliente abre un pop-up de solo lectura que se abre con todo el historial: una línea de tiempo
+  (carril de rutina y uno por tipo de día de los menús, solo desde `lg`) y la lista de planes con lo
+  que duró cada uno y la píldora «En uso» en el vigente. «Filtrar por fechas» despliega un
+  calendario (`RangeCalendar`, nuevo en `components/ui`, sin dependencia nueva) que marca con un punto
+  los días en que cambió un plan, destaca esos días en la línea de tiempo y filtra la lista con
+  contadores del tipo «2 de 3». El primer diseño pedía las fechas antes de enseñar nada; este es la
+  propuesta de Dani sobre él, y tampoco hay captura del prototipo: **el pop-up es una propuesta sin
+  aprobar**. El dominio no guarda fecha de activación ni de archivado, así que
+  `lib/domain/plan-periods.ts` las **deduce** (§7: un plan se archiva en el mismo instante en que se
+  activa el siguiente): cada plan archivado va desde el archivado del anterior hasta el suyo, y el
+  primero cuenta desde su creación. Los menús de un tipo de día archivados a la vez salen como un
+  solo plan. Las duraciones son la diferencia entre fechas (el día del relevo no cuenta dos veces) y
+  `planDays` y `planChangeDays` son funciones puras con test. Por debajo de `lg` no se pinta la
+  línea de tiempo, porque a 390 px la columna de etiquetas no deja ancho a las barras, y quedan el
+  filtro y la lista. «Periodo» de la propuesta se escribió «Fechas elegidas»: «periodo» está en el
+  vocabulario prohibido. **Deuda:** un hueco sin plan (el anterior se archivó sin que lo sustituyera
+  otro) no se detecta y una barra continua en la línea de tiempo podría esconderlo; los macros
+  objetivo no se listan (no hay método de listado de archivados); la demo no tiene planes archivados
+  y se comprobó a 390, 768 y 1280 px con datos temporales, ya revertidos, pero no se vio el estado
+  vacío en el navegador ni se probó con Firebase real.
+
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
   `trainer/`) y #33 (enlace a la revisión desde el panel de control, rama
@@ -709,8 +731,7 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   revisión» hasta su cierre.
 - **Decisiones de dominio pendientes**: los huecos menores de la revisión de errores, H5, H6, H7 y
   H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62).
-- **Pantallas menores**: planes anteriores del cliente (46) y editar un
-  cliente de baja por URL (63).
+- **Pantallas menores**: editar un cliente de baja por URL (63).
 - **Deuda menor con tarjeta**: editar registros de entreno de otra fecha (18), favicon (19),
   cifras del panel en una consulta (42). Resueltas: el nombre accesible de `NumberField` (59, PR
   #66, etiqueta y campo asociados con `useId`) y `ReviewPort.listSubmittedReviews`, que se quitó
