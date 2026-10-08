@@ -244,7 +244,10 @@ function FoodSuggestions({
     : library.isError
       ? s.ownError
       : own.length === 0
-        ? s.noOwn
+        ? // Sin texto salen todos los tuyos: si no hay ninguno, no es que no coincidan.
+          query === ""
+          ? s.ownEmpty
+          : s.noOwn
         : null;
   const catalogNote =
     catalog === null

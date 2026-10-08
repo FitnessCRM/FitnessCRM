@@ -558,6 +558,7 @@ export const es = {
         ownLoading: "Cargando tus alimentos…",
         ownError: "No se han podido cargar tus alimentos.",
         noOwn: "Ninguno de tus alimentos coincide.",
+        ownEmpty: "Aún no tienes alimentos. Crea uno o busca en el catálogo común.",
         typeToSearch: "Escribe para buscar también en el catálogo común.",
         catalogLoading: "Buscando en el catálogo común…",
         catalogUnavailable: "El catálogo común no responde: solo tus alimentos.",
