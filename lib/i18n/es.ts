@@ -539,6 +539,59 @@ export const es = {
       },
       noMeals: "Sin comidas en este menú.",
       note: "Nota para el cliente",
+      /** Lo que se lee bajo cada alimento del menú (§5, I30). */
+      item: {
+        empty: "Elige uno de tus alimentos o del catálogo, o escríbelo a mano.",
+        noGrams: "Escribe los gramos para ver lo que aporta.",
+        freeText: "Sin composición · no suma",
+        saveToLibrary: "Guardar en Alimentos",
+      },
+      /** Cifras abreviadas de lo que aporta un alimento o una comida: «297 kcal · P 10,8…». */
+      short: { protein: "P", carbs: "C", fat: "G" },
+      mealSubtotal: "Esta comida:",
+      per100: "por 100 g",
+      /** El desplegable del campo del alimento: tus alimentos y el catálogo común (§4). */
+      suggestions: {
+        label: "Sugerencias de alimentos",
+        own: "Tus alimentos",
+        catalog: "Catálogo común",
+        ownLoading: "Cargando tus alimentos…",
+        ownError: "No se han podido cargar tus alimentos.",
+        noOwn: "Ninguno de tus alimentos coincide.",
+        typeToSearch: "Escribe para buscar también en el catálogo común.",
+        catalogLoading: "Buscando en el catálogo común…",
+        catalogUnavailable: "El catálogo común no responde: solo tus alimentos.",
+        catalogError: "No se ha podido buscar en el catálogo común.",
+        noCatalog: "Nada del catálogo común coincide.",
+        retry: "Reintentar",
+        more: "Ver más del catálogo",
+        loadingMore: "Cargando…",
+        moreError: "No se ha podido cargar más del catálogo común.",
+        create: "+ Crear «{name}» en Alimentos",
+        createEmpty: "+ Nuevo alimento",
+        countOwn: "{n} de tus alimentos",
+        countCatalog: "{n} del catálogo común",
+      },
+      /** Crear un alimento sin salir del menú. */
+      createFood: {
+        description: "Se guarda en tus alimentos y se usa en este menú.",
+        submit: "Guardar y usar",
+      },
+      /** «Lo que llevas»: lo que suman los alimentos frente a lo declarado en el menú (I30). */
+      tally: {
+        title: "Lo que llevas",
+        subtitle: "Frente a lo declarado en este menú",
+        rows: { kcal: "kcal", proteinG: "Proteína", carbsG: "Carbos", fatG: "Grasas" },
+        remaining: "Quedan {amount}",
+        matches: "Cuadra",
+        over: "Te pasas {amount}",
+        noTarget: "Sin cifra declarada",
+        incomplete: "Escribe las kcal y los tres macros del menú para ver cuánto queda.",
+        nonCounting: {
+          one: "{n} alimento escrito a mano no suma.",
+          other: "{n} alimentos escritos a mano no suman.",
+        },
+      },
     },
   },
   screensTemplateEditor: {

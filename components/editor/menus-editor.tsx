@@ -1,26 +1,36 @@
 "use client";
 
 import { XIcon } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { EmptyState } from "@/components/ui/states";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  createFoodItem,
   DAY_TYPES,
   emptyMacrosDraft,
+  foodItemContribution,
   macrosFromDraft,
+  mealSubtotal,
+  setFoodItemGrams,
   setSuggestedMenu,
   type DayType,
+  type Food,
+  type FoodItem,
   type MacrosDraft,
   type Meal,
   type MenuEntryDraft,
 } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
+import { FoodCreateDialog } from "./food-create-dialog";
+import { FoodItemField } from "./food-item-field";
 import { KcalField } from "./kcal-field";
+import { MenuTally } from "./menu-tally";
 import { NumberField } from "./number-field";
+import { nutrientLine } from "./nutrient-line";
 
 const t = es.editor.menu;
 
@@ -43,12 +53,23 @@ function RemoveButton({ label, onClick }: { label: string; onClick: () => void }
   );
 }
 
+/** La fila a la que va el alimento que se crea sin salir del menú. */
+interface CreatingFood {
+  menuId: string;
+  mealId: string;
+  itemId: string;
+  name: string;
+}
+
 /**
  * Menús de una plantilla: varios por tipo de día, uno sugerido por tipo, con sus kcal y macros
- * declaradas y su jerarquía comida → alimento. Controlado y sin datos, como el de rutina: el
- * editor del plan de un cliente puede montarlo igual. Trabaja con borradores: un menú nuevo nace
- * sin kcal ni macros y quien lo monta no puede guardarlo hasta que `fromMenuDrafts` lo dé por
- * completo (§5).
+ * declaradas y su jerarquía comida → alimento. Controlado, como el de rutina: el editor del plan de
+ * un cliente lo monta igual. Trabaja con borradores: un menú nuevo nace sin kcal ni macros y quien
+ * lo monta no puede guardarlo hasta que `fromMenuDrafts` lo dé por completo (§5).
+ *
+ * Los alimentos salen de tu biblioteca o del catálogo común, o se escriben a mano; lo único que lee
+ * datos es su campo, y crear un alimento sin salir del menú. Lo que suman es un apoyo: avisa y no
+ * rellena ni bloquea nada (I30).
  */
 export function MenusEditor({
   menus,
@@ -57,8 +78,29 @@ export function MenusEditor({
   menus: MenuEntryDraft[];
   onChange: (menus: MenuEntryDraft[]) => void;
 }) {
+  const [creating, setCreating] = useState<CreatingFood | null>(null);
   const update = (menuId: string, change: (menu: MenuEntryDraft) => MenuEntryDraft) =>
     onChange(menus.map((menu) => (menu.id === menuId ? change(menu) : menu)));
+
+  // El alimento recién creado pasa a la fila desde la que se creó, con sus gramos y su id (I29).
+  const linkCreated = (food: Food) => {
+    if (!creating) return;
+    const { menuId, mealId, itemId } = creating;
+    update(menuId, (menu) => ({
+      ...menu,
+      meals: menu.meals.map((meal) =>
+        meal.id !== mealId
+          ? meal
+          : {
+              ...meal,
+              items: meal.items.map((item) =>
+                item.id === itemId ? createFoodItem(food, item.grams, () => item.id) : item,
+              ),
+            },
+      ),
+    }));
+    setCreating(null);
+  };
 
   const addMenu = () => {
     const dayType: DayType = "entrenamiento";
@@ -96,9 +138,22 @@ export function MenusEditor({
             onChange={(next) => update(menu.id, () => next)}
             onSuggest={() => onChange(setSuggestedMenu(menus, menu.id))}
             onRemove={() => onChange(menus.filter((m) => m.id !== menu.id))}
+            onCreateFood={(mealId, itemId, name) =>
+              setCreating({ menuId: menu.id, mealId, itemId, name })
+            }
           />
         ))
       )}
+
+      {creating ? (
+        <FoodCreateDialog
+          name={creating.name}
+          onCreated={linkCreated}
+          onOpenChange={(open) => {
+            if (!open) setCreating(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -108,14 +163,21 @@ function MenuCard({
   onChange,
   onSuggest,
   onRemove,
+  onCreateFood,
 }: {
   menu: MenuEntryDraft;
   onChange: (menu: MenuEntryDraft) => void;
   onSuggest: () => void;
   onRemove: () => void;
+  onCreateFood: (mealId: string, itemId: string, name: string) => void;
 }) {
   const setMeal = (mealId: string, change: (meal: Meal) => Meal) =>
     onChange({ ...menu, meals: menu.meals.map((m) => (m.id === mealId ? change(m) : m)) });
+  const setItem = (mealId: string, itemId: string, change: (item: FoodItem) => FoodItem) =>
+    setMeal(mealId, (m) => ({
+      ...m,
+      items: m.items.map((i) => (i.id === itemId ? change(i) : i)),
+    }));
   const setMacros = (change: Partial<MacrosDraft>) =>
     onChange({ ...menu, macros: { ...menu.macros, ...change } });
   // Escrito pero no válido («2.000», «0»): se dice qué pasa; vacío solo cuenta como incompleto.
@@ -206,110 +268,177 @@ function MenuCard({
         ) : null}
       </div>
 
-      {menu.meals.length === 0 ? (
-        <p className="text-text-subtle text-[13px]">{t.noMeals}</p>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {menu.meals.map((meal) => (
-            <div key={meal.id} className="bg-surface-raised flex flex-col gap-2 rounded-lg p-3">
-              <div className="flex items-center gap-1">
-                <Input
-                  value={meal.name}
-                  onChange={(event) =>
-                    setMeal(meal.id, (m) => ({ ...m, name: event.target.value }))
-                  }
-                  aria-label={t.mealName}
-                  placeholder={t.mealPlaceholder}
-                  className="h-9 min-w-0 flex-1 text-[14px] font-semibold"
-                />
-                <RemoveButton
-                  label={t.removeMeal}
-                  onClick={() =>
-                    onChange({ ...menu, meals: menu.meals.filter((m) => m.id !== meal.id) })
-                  }
-                />
-              </div>
-              {meal.items.map((item) => (
-                <div key={item.id} className="flex items-end gap-2">
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <Label className="sr-only">{t.itemName}</Label>
-                    <Input
-                      value={item.name}
-                      onChange={(event) =>
-                        setMeal(meal.id, (m) => ({
-                          ...m,
-                          items: m.items.map((i) =>
-                            i.id === item.id ? { ...i, name: event.target.value } : i,
-                          ),
-                        }))
-                      }
-                      aria-label={t.itemName}
-                      placeholder={t.itemPlaceholder}
-                      className="h-10 text-[14px]"
-                    />
-                  </div>
-                  <NumberField
-                    label={t.grams}
-                    step="any"
-                    value={item.grams}
-                    className="w-24 shrink-0"
-                    onChange={(v) =>
-                      setMeal(meal.id, (m) => ({
-                        ...m,
-                        items: m.items.map((i) => (i.id === item.id ? { ...i, grams: v ?? 0 } : i)),
-                      }))
-                    }
-                  />
-                  <RemoveButton
-                    label={t.removeItem}
-                    onClick={() =>
-                      setMeal(meal.id, (m) => ({
-                        ...m,
-                        items: m.items.filter((i) => i.id !== item.id),
-                      }))
-                    }
-                  />
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="self-start"
-                onClick={() =>
+      {/* Comidas y «Lo que llevas». Desde `xl`, el panel a la derecha; por debajo, arriba y en 2×2:
+          es la referencia contra la que se escribe, así que se ve mientras se añaden alimentos.
+          Fijo en los dos casos mientras se recorren las comidas de este menú. */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start xl:gap-5">
+        <MenuTally
+          macros={menu.macros}
+          meals={menu.meals}
+          className="sticky top-2 z-10 xl:col-start-2 xl:row-start-1"
+        />
+        <div className="flex min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1">
+          {menu.meals.length === 0 ? (
+            <p className="text-text-subtle text-[13px]">{t.noMeals}</p>
+          ) : (
+            menu.meals.map((meal) => (
+              <MealBlock
+                key={meal.id}
+                meal={meal}
+                onName={(name) => setMeal(meal.id, (m) => ({ ...m, name }))}
+                onRemove={() =>
+                  onChange({ ...menu, meals: menu.meals.filter((m) => m.id !== meal.id) })
+                }
+                onItem={(itemId, change) => setItem(meal.id, itemId, change)}
+                onRemoveItem={(itemId) =>
+                  setMeal(meal.id, (m) => ({ ...m, items: m.items.filter((i) => i.id !== itemId) }))
+                }
+                onAddItem={() =>
                   setMeal(meal.id, (m) => ({
                     ...m,
                     items: [...m.items, { id: newId(), name: "", grams: 0 }],
                   }))
                 }
-              >
-                {t.addItem}
-              </Button>
-            </div>
-          ))}
+                onCreateFood={(itemId, name) => onCreateFood(meal.id, itemId, name)}
+              />
+            ))
+          )}
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="self-start"
+            onClick={() =>
+              onChange({ ...menu, meals: [...menu.meals, { id: newId(), name: "", items: [] }] })
+            }
+          >
+            {t.addMeal}
+          </Button>
         </div>
-      )}
-
-      <div className="flex flex-col gap-3">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className="self-start"
-          onClick={() =>
-            onChange({ ...menu, meals: [...menu.meals, { id: newId(), name: "", items: [] }] })
-          }
-        >
-          {t.addMeal}
-        </Button>
-        <Textarea
-          value={menu.note}
-          onChange={(event) => onChange({ ...menu, note: event.target.value })}
-          aria-label={t.note}
-          placeholder={t.note}
-          rows={2}
-        />
       </div>
+
+      <Textarea
+        value={menu.note}
+        onChange={(event) => onChange({ ...menu, note: event.target.value })}
+        aria-label={t.note}
+        placeholder={t.note}
+        rows={2}
+      />
     </section>
+  );
+}
+
+/** Una comida: su nombre, lo que suma y sus alimentos. */
+function MealBlock({
+  meal,
+  onName,
+  onRemove,
+  onItem,
+  onRemoveItem,
+  onAddItem,
+  onCreateFood,
+}: {
+  meal: Meal;
+  onName: (name: string) => void;
+  onRemove: () => void;
+  onItem: (itemId: string, change: (item: FoodItem) => FoodItem) => void;
+  onRemoveItem: (itemId: string) => void;
+  onAddItem: () => void;
+  onCreateFood: (itemId: string, name: string) => void;
+}) {
+  // El subtotal solo cuando algo suma: una comida de texto libre no aporta nada que contar.
+  const adds = meal.items.some((item) => item.composition && item.grams > 0);
+
+  return (
+    <div className="bg-surface-raised flex flex-col gap-2.5 rounded-lg p-3">
+      <div className="flex items-center gap-1">
+        <Input
+          value={meal.name}
+          onChange={(event) => onName(event.target.value)}
+          aria-label={t.mealName}
+          placeholder={t.mealPlaceholder}
+          className="h-9 min-w-0 flex-1 text-[14px] font-semibold"
+        />
+        <RemoveButton label={t.removeMeal} onClick={onRemove} />
+      </div>
+      {adds ? (
+        <p className="text-text-muted -mt-1 pl-0.5 text-xs tabular-nums">
+          {t.mealSubtotal} {nutrientLine(mealSubtotal(meal))}
+        </p>
+      ) : null}
+      {meal.items.map((item) => (
+        <ItemRow
+          key={item.id}
+          item={item}
+          onChange={(next) => onItem(item.id, () => next)}
+          onGrams={(grams) => onItem(item.id, (i) => setFoodItemGrams(i, grams))}
+          onRemove={() => onRemoveItem(item.id)}
+          onCreate={(name) => onCreateFood(item.id, name)}
+        />
+      ))}
+      <Button type="button" variant="ghost" size="sm" className="self-start" onClick={onAddItem}>
+        {t.addItem}
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * Un alimento del menú y, debajo, lo que aporta o, si es texto libre, que no suma y el acceso a
+ * guardarlo en Alimentos. En móvil el nombre ocupa su propia línea y los gramos bajan a la siguiente.
+ */
+function ItemRow({
+  item,
+  onChange,
+  onGrams,
+  onRemove,
+  onCreate,
+}: {
+  item: FoodItem;
+  onChange: (item: FoodItem) => void;
+  onGrams: (grams: number) => void;
+  onRemove: () => void;
+  onCreate: (name: string) => void;
+}) {
+  const infoId = `food-item-info-${item.id}`;
+  const contribution = foodItemContribution(item);
+  const name = item.name.trim();
+
+  return (
+    <div data-food-row className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="min-w-0 basis-full sm:flex-1 sm:basis-auto">
+          <FoodItemField item={item} onChange={onChange} onCreate={onCreate} describedBy={infoId} />
+        </div>
+        <NumberField
+          label={t.grams}
+          step="any"
+          value={item.grams}
+          className="w-24 shrink-0"
+          onChange={(v) => onGrams(v ?? 0)}
+        />
+        <RemoveButton label={t.removeItem} onClick={onRemove} />
+      </div>
+      <div id={infoId} className="flex flex-wrap items-center gap-x-3 pl-0.5 text-xs">
+        {contribution ? (
+          <span className="text-text-muted tabular-nums">
+            {item.grams > 0 ? nutrientLine(contribution) : t.item.noGrams}
+          </span>
+        ) : name === "" ? (
+          <span className="text-text-subtle">{t.item.empty}</span>
+        ) : (
+          <>
+            <span className="text-text-subtle">{t.item.freeText}</span>
+            <button
+              type="button"
+              onClick={() => onCreate(name)}
+              className="text-accent-hover hover:text-accent-emphasis focus-visible:ring-ring/50 min-h-8 rounded-sm underline underline-offset-4 outline-none focus-visible:ring-[3px]"
+            >
+              {t.item.saveToLibrary}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

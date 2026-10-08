@@ -26,9 +26,9 @@ export interface FoodFormValues {
   fatG: number | null;
 }
 
-function valuesOf(food: LibraryFood | null): FoodFormValues {
+function valuesOf(food: LibraryFood | null, initialName: string): FoodFormValues {
   return {
-    name: food?.name ?? "",
+    name: food?.name ?? initialName,
     kcal: food?.composition.kcal ?? null,
     proteinG: food?.composition.proteinG ?? null,
     carbsG: food?.composition.carbsG ?? null,
@@ -78,6 +78,8 @@ const resolveFoodForm: Resolver<FoodFormValues, unknown, FoodDraft> = (values) =
  */
 export function FoodForm({
   food,
+  initialName = "",
+  submitLabel = t.save,
   title,
   isSaving,
   saveError,
@@ -88,6 +90,9 @@ export function FoodForm({
 }: {
   /** `null` = alimento nuevo. */
   food: LibraryFood | null;
+  /** El nombre con que nace uno nuevo: el que ya se había escrito en el menú. */
+  initialName?: string;
+  submitLabel?: string;
   /** El encabezado, que en el `Sheet` tiene que ser su título. */
   title: (text: string) => ReactNode;
   isSaving: boolean;
@@ -100,7 +105,7 @@ export function FoodForm({
 }) {
   const form = useForm<FoodFormValues, unknown, FoodDraft>({
     resolver: resolveFoodForm,
-    defaultValues: valuesOf(food),
+    defaultValues: valuesOf(food, initialName),
   });
   const errors = form.formState.errors;
   const readOnly = food !== null && food.origin !== "own";
@@ -215,7 +220,7 @@ export function FoodForm({
         ) : (
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={isSaving} className="flex-1">
-              {isSaving ? t.saving : t.save}
+              {isSaving ? t.saving : submitLabel}
             </Button>
             {food ? (
               <Button type="button" variant="secondary" onClick={onDelete} disabled={isSaving}>
