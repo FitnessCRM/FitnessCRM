@@ -1017,6 +1017,12 @@ export const es = {
       hint: "Prueba a volver a entrar.",
     },
   },
+  clientAccess: {
+    discharged: {
+      title: "Cuenta dada de baja",
+      hint: "Ya no tienes acceso a la app. Si crees que es un error, habla con tu entrenador.",
+    },
+  },
   screensClientEdit: {
     eyebrow: "Clientes / Editar",
     startDateLockedHint:

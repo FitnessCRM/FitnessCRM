@@ -41,14 +41,27 @@ service cloud.firestore {
         && get(profileRef()).data.trainerId == tid;
     }
 
-    // Cualquier cliente del entrenador `tid`.
+    // Cualquier cliente del entrenador `tid`, esté de baja o no.
     function isClientOfTrainer(tid) {
       return hasProfile() && get(profileRef()).data.role == 'client'
         && get(profileRef()).data.trainerId == tid;
     }
 
-    // El cliente `cid` del entrenador `tid`, y nadie más (I11: solo lo suyo).
+    // El cliente de `tid` que tiene cuenta, y su ficha sigue `activo`. Un cliente de baja no tiene
+    // acceso a la app (docs/dominio.md §7): ni lectura ni escritura.
+    function isActiveClientOfTrainer(tid) {
+      return isClientOfTrainer(tid)
+        && get(/databases/$(database)/documents/clients/$(get(profileRef()).data.clientId)).data.status == 'activo';
+    }
+
+    // El cliente `cid` del entrenador `tid`, y nadie más (I11: solo lo suyo), estando activo.
     function isClient(tid, cid) {
+      return isActiveClientOfTrainer(tid) && get(profileRef()).data.clientId == cid;
+    }
+
+    // Su propia ficha de cliente, esté de baja o no: así la app puede decir que la cuenta está dada
+    // de baja en lugar de quedarse cargando.
+    function isOwnClientRecord(tid, cid) {
       return isClientOfTrainer(tid) && get(profileRef()).data.clientId == cid;
     }
 
@@ -75,6 +88,7 @@ service cloud.firestore {
 
     function probeByClient(id) {
       return resource == null && hasProfile() && get(profileRef()).data.role == 'client'
+        && isActiveClientOfTrainer(get(profileRef()).data.trainerId)
         && id.matches(get(profileRef()).data.clientId + '_.*');
     }
 
@@ -121,7 +135,7 @@ service cloud.firestore {
     // ---------------------------------------------------------------- entrenador
 
     match /trainers/{tid} {
-      allow read: if isTrainer(tid) || isClientOfTrainer(tid);
+      allow read: if isTrainer(tid) || isActiveClientOfTrainer(tid);
       // Solo nombre y zona horaria; el correo y el alta no los cambia la app. No hay alta de
       // entrenadores en la app: la hace el propietario.
       allow update: if isTrainer(tid) && changes().hasOnly(['name', 'timeZone']);
@@ -135,7 +149,7 @@ service cloud.firestore {
       // El entrenador, el propio cliente, y quien acaba de abrir su enlace de invitación (todavía
       // sin `users/{uid}`) lee la ficha a la que invitan con su correo.
       allow read: if isTrainer(resource.data.trainerId)
-        || isClient(resource.data.trainerId, cid)
+        || isOwnClientRecord(resource.data.trainerId, cid)
         || isInvitationRecipient();
 
       // I2: nace de un entrenador y siempre `invitado` (§7).
@@ -193,7 +207,7 @@ service cloud.firestore {
     match /exercises/{id} {
       allow get: if probeByTrainer();
       // El cliente ve el nombre y el vídeo de lo que tiene prescrito.
-      allow read: if isTrainer(resource.data.trainerId) || isClientOfTrainer(resource.data.trainerId);
+      allow read: if isTrainer(resource.data.trainerId) || isActiveClientOfTrainer(resource.data.trainerId);
       allow create: if isTrainer(request.resource.data.trainerId)
         && request.resource.data.id == id
         && request.resource.data.status == 'activo';
@@ -289,7 +303,7 @@ service cloud.firestore {
     // fijan la unidad (I26) y el formato (I15). Nadie las baja.
     match /measurementTypes/{id} {
       allow get: if probeByTrainer();
-      allow read: if isTrainer(resource.data.trainerId) || isClientOfTrainer(resource.data.trainerId);
+      allow read: if isTrainer(resource.data.trainerId) || isActiveClientOfTrainer(resource.data.trainerId);
       allow create: if isTrainer(request.resource.data.trainerId)
         && request.resource.data.id == id
         && request.resource.data.status == 'activa'
@@ -305,7 +319,7 @@ service cloud.firestore {
 
     match /questions/{id} {
       allow get: if probeByTrainer();
-      allow read: if isTrainer(resource.data.trainerId) || isClientOfTrainer(resource.data.trainerId);
+      allow read: if isTrainer(resource.data.trainerId) || isActiveClientOfTrainer(resource.data.trainerId);
       allow create: if isTrainer(request.resource.data.trainerId)
         && request.resource.data.id == id
         && request.resource.data.status == 'activa'
@@ -321,7 +335,7 @@ service cloud.firestore {
 
     // El cliente de ese entrenador solo puede subir la bandera de `false` a `true`, y nada más.
     function setsFlag(flag) {
-      return isClientOfTrainer(resource.data.trainerId)
+      return isActiveClientOfTrainer(resource.data.trainerId)
         && changes().hasOnly([flag])
         && request.resource.data[flag] == true;
     }
