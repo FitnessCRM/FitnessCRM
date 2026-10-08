@@ -284,6 +284,10 @@ recibe por correo, escribe su correo y crea su contraseña (§12).
 La baja conserva el histórico completo, fotos incluidas, sin caducidad. Aparte existe una
 operación de **borrado a petición** que anonimiza el histórico y borra los datos del cliente. Se
 lleva a la vez sus revisiones y sus pesajes, y por eso I25 no la impide.
+**Un cliente dado de baja no admite cambios hasta que se reactive** (decidido el 08-10-2026): no
+se editan sus datos, no se le asignan planes ni se le envía feedback, y no se escribe nada sobre
+él. Lo único que se permite es reactivarlo, que lo devuelve a `activo`. Su histórico sigue
+consultable tal cual.
 **Esa operación no alcanza a las imágenes**: viven en el Drive del entrenador y las borra él a
 mano (I14, §9). Son dos actos distintos y hay que contarlos como tales, porque el segundo puede
 no ocurrir.
