@@ -153,7 +153,7 @@ export function FoodForm({
             <legend className="text-text-subtle tracking-label mb-2 text-[11px] uppercase">
               {t.per100}
             </legend>
-            <div className="grid grid-cols-4 items-end gap-2 max-sm:grid-cols-2">
+            <div className="grid grid-cols-2 items-end gap-3">
               <Controller
                 control={form.control}
                 name="kcal"
