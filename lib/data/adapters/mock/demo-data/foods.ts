@@ -1,4 +1,4 @@
-import type { CatalogFood, Composition, Food } from "@/lib/domain";
+import type { CatalogFoodInput, Composition, Food, SeededFoodSource } from "@/lib/domain";
 import { TRAINER_ID, ts, type DemoDates } from "./common";
 
 /** Otro entrenador de la plataforma: solo existe como autor de alimentos del catálogo común. */
@@ -41,10 +41,38 @@ export const OTHER_FOODS = {
   atun: seed("food-atun-natural", "Atún al natural", [116, 25.5, 0, 1]),
 } as const;
 
-/** Entrada del catálogo común en el adaptador en memoria: guarda el autor para I28, nunca lo da. */
+/**
+ * Alimentos sembrados del catálogo común (§4), sin autor. Traen los macros con dos decimales, como
+ * llegan de USDA y de Open Food Facts: al leerlos se redondean a uno (§5).
+ */
+const SEEDED_FOODS: { source: SeededFoodSource; food: FoodSeed }[] = [
+  {
+    source: "usda",
+    food: seed("usda-arroz-cocido", "Arroz blanco cocido", [130, 2.69, 28.17, 0.28]),
+  },
+  { source: "usda", food: seed("usda-huevo", "Huevo entero crudo", [143, 12.56, 0.72, 9.51]) },
+  { source: "usda", food: seed("usda-platano", "Plátano crudo", [89, 1.09, 22.84, 0.33]) },
+  { source: "usda", food: seed("usda-garbanzos", "Garbanzos cocidos", [164, 8.86, 27.42, 2.59]) },
+  { source: "off", food: seed("off-tortitas-arroz", "Tortitas de arroz", [387, 8.2, 81.55, 2.85]) },
+  { source: "off", food: seed("off-bebida-avena", "Bebida de avena", [46, 0.98, 6.65, 1.52]) },
+  {
+    source: "off",
+    food: seed("off-crema-cacahuete", "Crema de cacahuete", [597, 25.45, 16.33, 49.88]),
+  },
+  // Errata de la fuente: suma 99,95 g, pero redondeado pasa a 100,1 g y no se ofrece (§5).
+  {
+    source: "off",
+    food: seed("off-mezcla-frutos-secos", "Mezcla de frutos secos", [600, 33.35, 33.35, 33.25]),
+  },
+];
+
+/**
+ * Entrada del catálogo común en el adaptador en memoria: guarda el autor para I28, nunca lo da. Un
+ * sembrado no tiene autor. El alimento se guarda como lo sirve el catálogo, sin redondear.
+ */
 export interface CatalogEntry {
-  authorId: string;
-  food: CatalogFood;
+  authorId: string | null;
+  food: CatalogFoodInput;
 }
 
 export function buildFoods(d: DemoDates): { foods: Food[]; catalogFoods: CatalogEntry[] } {
@@ -85,7 +113,7 @@ export function buildFoods(d: DemoDates): { foods: Food[]; catalogFoods: Catalog
   const published = (
     s: FoodSeed,
     authorId = TRAINER_ID,
-    status: CatalogFood["status"] = "activo",
+    status: Food["status"] = "activo",
   ): CatalogEntry => ({
     authorId,
     food: { id: s.id, name: s.name, composition: { ...s.composition }, status, source: "trainer" },
@@ -99,6 +127,10 @@ export function buildFoods(d: DemoDates): { foods: Food[]; catalogFoods: Catalog
     published(seed(OWN_FOODS.merluza.id, OWN_FOODS.merluza.name, [64, 11.8, 0, 1.8])),
     published(AVENA_MIEL, TRAINER_ID, "archivado"),
     ...Object.values(OTHER_FOODS).map((s) => published(s, OTHER_TRAINER_ID)),
+    ...SEEDED_FOODS.map(({ source, food }) => ({
+      authorId: null,
+      food: { ...food, composition: { ...food.composition }, status: "activo" as const, source },
+    })),
   ];
 
   return { foods, catalogFoods };

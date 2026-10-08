@@ -44,7 +44,8 @@ export function useFoods(options: { onlyMine?: boolean } = {}) {
 
   const catalog = useQuery({
     queryKey: queryKeys.foodCatalog(trainerId ?? ""),
-    queryFn: () => ports.foodCatalog.listCatalogFoods(),
+    // Solo la primera página, hasta que la búsqueda paginada llegue a los hooks.
+    queryFn: async () => (await ports.foodCatalog.searchCatalogFoods({})).foods,
     enabled: trainerId !== undefined && !onlyMine,
     // «No disponible» no se reintenta: la pantalla tiene que llegar enseguida a los propios solos.
     retry: (failureCount, error) => !isFoodCatalogUnavailable(error) && failureCount < 1,

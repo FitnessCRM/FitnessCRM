@@ -1,4 +1,4 @@
-import type { CatalogFood, Food, FoodDraft } from "@/lib/domain";
+import type { Food, FoodDraft, FoodSearch, FoodSearchPage } from "@/lib/domain";
 
 /**
  * La copia propia de los alimentos de un entrenador (§4): la fuente de verdad, con `trainerId`, que
@@ -35,8 +35,19 @@ export interface OwnFoodPort {
  * (`food_catalog.unavailable`) y la copia propia sigue funcionando.
  */
 export interface FoodCatalogPort {
-  /** Los alimentos activos de todos los entrenadores, sin nada de su autor. */
-  listCatalogFoods(): Promise<CatalogFood[]>;
+  /**
+   * Busca por nombre en los alimentos activos del catálogo, de todos los entrenadores y sembrados,
+   * sin nada de su autor (§4). Sin distinguir mayúsculas ni tildes, y por relevancia: primero los
+   * que empiezan por el texto, luego los que tienen una palabra que empieza por él y luego los que
+   * lo contienen; a igual relevancia, los sembrados primero. Con el texto vacío, todos por nombre.
+   *
+   * Devuelve una página cada vez: `limit` resultados como mucho (10 si no se dice, 100 como máximo,
+   * `foodSearchSchema`) y el cursor de la siguiente, opaco, o `null` en la última. El catálogo no se
+   * trae nunca entero. Lo que no se puede leer (`parseCatalogFood`) se descarta de la página sin
+   * hacerla fallar, así que una página puede traer menos de `limit` y no ser la última: lo que dice
+   * si hay más es `nextCursor`.
+   */
+  searchCatalogFoods(search: FoodSearch): Promise<FoodSearchPage>;
   /**
    * Publica la versión actual de un alimento de `trainerId`, archivado incluido (así deja de
    * servirse). Solo el autor escribe lo suyo (I28): con un alimento ajeno, `not_found`.
