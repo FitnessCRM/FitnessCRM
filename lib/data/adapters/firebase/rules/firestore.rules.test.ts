@@ -416,6 +416,66 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
     });
   });
 
+  describe("§7 · un cliente dado de baja no tiene acceso: ni lectura ni escritura", () => {
+    const clientBaja = () => as("u-cb"); // c-baja, de T_A, dado de baja
+
+    beforeEach(async () => {
+      await env.withSecurityRulesDisabled(async (ctx) => {
+        const db = ctx.firestore();
+        await setDoc(doc(db, "users", "u-cb"), {
+          role: "client",
+          trainerId: T_A,
+          clientId: "c-baja",
+          email: "c-baja@hector.test",
+        });
+        await setDoc(
+          doc(db, "clients", "c-baja"),
+          client("c-baja", T_A, { status: "dado_de_baja" }),
+        );
+        await setDoc(doc(db, "routines", "r-baja"), {
+          id: "r-baja",
+          trainerId: T_A,
+          clientId: "c-baja",
+          status: "activo",
+          days: [],
+        });
+      });
+    });
+
+    it("reads nothing of the plan, the library or the trainer, but its own record", async () => {
+      await assertSucceeds(getDoc(doc(clientBaja(), "clients", "c-baja")));
+      await assertFails(getDoc(doc(clientBaja(), "routines", "r-baja")));
+      await assertFails(getDoc(doc(clientBaja(), "exercises", "e-a")));
+      await assertFails(getDoc(doc(clientBaja(), "trainers", T_A)));
+    });
+
+    it("writes nothing: no weight, no review, no workout", async () => {
+      await assertFails(
+        setDoc(doc(clientBaja(), "weightLogs", "c-baja_2026-10-08"), {
+          id: "c-baja_2026-10-08",
+          trainerId: T_A,
+          clientId: "c-baja",
+          date: "2026-10-08",
+          weightKg: 70,
+          note: "",
+          createdAt: "2026-10-08T08:00:00.000Z",
+        }),
+      );
+      await assertFails(
+        setDoc(
+          doc(clientBaja(), "reviews", "c-baja_3"),
+          review({ id: "c-baja_3", clientId: "c-baja" }),
+        ),
+      );
+    });
+
+    it("comes back the moment the trainer reactivates it", async () => {
+      await assertFails(getDoc(doc(clientBaja(), "routines", "r-baja")));
+      await assertSucceeds(updateDoc(doc(trainerA(), "clients", "c-baja"), { status: "activo" }));
+      await assertSucceeds(getDoc(doc(clientBaja(), "routines", "r-baja")));
+    });
+  });
+
   describe("I13 · nada con histórico se borra", () => {
     it("neither side deletes clients, exercises, plans, catalogs, reviews or memberships", async () => {
       for (const [name, id] of [
