@@ -1,7 +1,7 @@
 "use client";
 
 import { XIcon } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -185,6 +185,20 @@ function MenuCard({
   const kcalInvalid = kcal !== null && !(Number.isInteger(kcal) && kcal > 0);
   const incomplete = macrosFromDraft(menu.macros) === null;
 
+  // Por debajo de `xl` el panel va fijo arriba, encima de las comidas: lo que recibe el foco con
+  // el teclado no puede quedar tapado por él. Se baja la página lo justo para verlo. Desde `xl` el
+  // panel está a la derecha y no se cruzan.
+  const tallyRef = useRef<HTMLElement>(null);
+  const keepClearOfTally = (event: React.FocusEvent<HTMLElement>) => {
+    const tally = tallyRef.current?.getBoundingClientRect();
+    const field = event.target.getBoundingClientRect();
+    if (!tally || field.right <= tally.left || field.left >= tally.right) return;
+    const gap = 8;
+    if (field.top < tally.bottom + gap && field.bottom > tally.top) {
+      window.scrollBy({ top: field.top - tally.bottom - gap });
+    }
+  };
+
   return (
     <section
       aria-label={menu.name || t.menuName}
@@ -273,11 +287,15 @@ function MenuCard({
           Fijo en los dos casos mientras se recorren las comidas de este menú. */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start xl:gap-5">
         <MenuTally
+          ref={tallyRef}
           macros={menu.macros}
           meals={menu.meals}
           className="sticky top-2 z-10 xl:col-start-2 xl:row-start-1"
         />
-        <div className="flex min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1">
+        <div
+          onFocus={keepClearOfTally}
+          className="flex min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1"
+        >
           {menu.meals.length === 0 ? (
             <p className="text-text-subtle text-[13px]">{t.noMeals}</p>
           ) : (

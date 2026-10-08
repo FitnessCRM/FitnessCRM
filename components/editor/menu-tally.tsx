@@ -1,3 +1,4 @@
+import type { Ref } from "react";
 import {
   menuRemaining,
   menuTotal,
@@ -37,10 +38,12 @@ export function MenuTally({
   macros,
   meals,
   className,
+  ref,
 }: {
   macros: MacrosDraft;
   meals: readonly Pick<Meal, "items">[];
   className?: string;
+  ref?: Ref<HTMLElement>;
 }) {
   const declared = declaredOf(macros);
   const total = menuTotal({ meals });
@@ -55,6 +58,7 @@ export function MenuTally({
 
   return (
     <section
+      ref={ref}
       aria-label={t.title}
       className={cn(
         "border-border-strong bg-background flex flex-col gap-3 rounded-[10px] border p-3 xl:gap-4 xl:p-4",
