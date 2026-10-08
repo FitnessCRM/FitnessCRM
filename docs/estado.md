@@ -781,7 +781,8 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
 
 - **Backend.** Firebase está conectado y se ha probado con el proyecto real (06-10-2026): el
   `users/{uid}` del entrenador está creado, y las reglas de seguridad (tarjeta 34) y los índices de
-  `reviews` están desplegados. Falta, por este orden: decidir cuándo el adaptador de Firebase (16)
+  `reviews` están desplegados. Las reglas se comprobaron con sesión de entrenador contra el proyecto
+  real el 08-10-2026 (tarjeta 34, en «En revisión» hasta fusionar este PR). Falta, por este orden: decidir cuándo el adaptador de Firebase (16)
   pasa a ser el adaptador por defecto de `providers.tsx`; fotos de revisión (17), con la decisión
   de dónde guardarlas **reabierta el 05-10-2026** por el propietario: no se construye nada hasta
   cerrarla. Opciones: (a) el Drive del entrenador con un servidor y su token, que exige el plan
