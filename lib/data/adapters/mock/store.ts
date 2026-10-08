@@ -1,6 +1,7 @@
 import type {
   Client,
   Exercise,
+  Food,
   MacroTargets,
   MeasurementType,
   Membership,
@@ -19,6 +20,7 @@ import type { Session } from "@/lib/data/ports";
 import { measurementTypes, questions } from "./demo-data/catalogs";
 import { CLIENT_IDS, DEMO_TZ, TRAINER_ID, demoDates } from "./demo-data/common";
 import { exercises } from "./demo-data/exercises";
+import { buildFoods, type CatalogEntry } from "./demo-data/foods";
 import { buildNutrition } from "./demo-data/nutrition";
 import { buildOtherReviews, buildWorkoutLogs } from "./demo-data/others";
 import { buildClients, buildMemberships, trainer } from "./demo-data/people";
@@ -32,6 +34,10 @@ export interface MockState {
   clients: Client[];
   memberships: Membership[];
   exercises: Exercise[];
+  /** La copia propia de los alimentos de cada entrenador. */
+  foods: Food[];
+  /** El catálogo común: lo publicado por todos los entrenadores, con su autor para I28. */
+  catalogFoods: CatalogEntry[];
   routines: Routine[];
   macroTargets: MacroTargets[];
   menus: Menu[];
@@ -59,6 +65,7 @@ export function createDemoState(today: CivilDate = demoToday()): MockState {
   const d = demoDates(today);
   const { routineTemplates, routines } = buildRoutines(d);
   const { macroTargets, menus, menuTemplates } = buildNutrition(d);
+  const { foods, catalogFoods } = buildFoods(d);
   return clone({
     // La demo es el entrenador con un cliente a mano: puede recorrer las dos áreas.
     session: { trainerId: TRAINER_ID, clientId: CLIENT_IDS.marta, role: "trainer" },
@@ -66,6 +73,8 @@ export function createDemoState(today: CivilDate = demoToday()): MockState {
     clients: buildClients(d),
     memberships: buildMemberships(d),
     exercises,
+    foods,
+    catalogFoods,
     routines,
     macroTargets,
     menus,
@@ -88,4 +97,5 @@ export interface MockContext {
   reply: <T>(value: T) => Promise<T>;
 }
 
+export type { CatalogEntry };
 export { clone };

@@ -32,7 +32,7 @@ describe.skipIf(!firestoreHost || !authHost)("adaptador de Firebase · composici
     const { state: _state, ...reference } = createMockPorts();
     void _state;
     expect(Object.keys(ports).sort()).toEqual(Object.keys(reference).sort());
-    expect(Object.keys(ports)).toHaveLength(16);
+    expect(Object.keys(ports)).toHaveLength(18);
   });
 
   it("a trainer account logs in and reads its own portfolio through the ports", async () => {

@@ -21,6 +21,8 @@ export const COLLECTIONS = {
   clients: "clients",
   memberships: "memberships",
   exercises: "exercises",
+  /** La copia propia de los alimentos. El catálogo común no vive en Firestore (§12). */
+  foods: "foods",
   routines: "routines",
   macroTargets: "macroTargets",
   menus: "menus",

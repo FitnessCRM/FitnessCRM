@@ -1,21 +1,39 @@
-import type { MacroTargets, Meal, Menu, MenuBody, MenuTemplate } from "@/lib/domain";
+import {
+  createFoodItem,
+  type CatalogFood,
+  type MacroTargets,
+  type Meal,
+  type Menu,
+  type MenuBody,
+  type MenuTemplate,
+} from "@/lib/domain";
 import { CLIENT_IDS, TRAINER_ID, ts, type DemoDates } from "./common";
+import { OTHER_FOODS, OWN_FOODS } from "./foods";
 
-type Food = [name: string, grams: number];
+/**
+ * Un alimento del menú: de texto libre si lleva el nombre, de la biblioteca si lleva el alimento.
+ * Los de la biblioteca salen de `createFoodItem`, con su copia congelada (I29).
+ */
+type Item = [food: string | Pick<CatalogFood, "id" | "name" | "composition">, grams: number];
 
-function meal(prefix: string, name: string, foods: Food[]): Meal {
+function meal(prefix: string, name: string, items: Item[]): Meal {
   return {
     id: `${prefix}-${name.toLowerCase()}`,
     name,
-    items: foods.map(([n, grams], i) => ({
-      id: `${prefix}-${name.toLowerCase()}-${i + 1}`,
-      name: n,
-      grams,
-    })),
+    items: items.map(([food, grams], i) => {
+      const id = `${prefix}-${name.toLowerCase()}-${i + 1}`;
+      return typeof food === "string"
+        ? { id, name: food, grams }
+        : createFoodItem(food, grams, () => id);
+    }),
   };
 }
 
-/** "Menu A — Home style" from client screen, meal by meal. */
+/**
+ * "Menu A — Home style" from client screen, meal by meal. Its food comes from the library (Adrián's
+ * own and someone else's from the shared catalog) except the vegetables, which stay free text and
+ * do not add up (I30).
+ */
 function homeStyleMenuBody(prefix: string): MenuBody {
   return {
     name: "Menú A — Casero",
@@ -25,24 +43,24 @@ function homeStyleMenuBody(prefix: string): MenuBody {
     note: "Puedes intercambiar merluza por cualquier pescado blanco al mismo peso. La fruta de la merienda es libre hasta 150 g.",
     meals: [
       meal(prefix, "Desayuno", [
-        ["Copos de avena", 80],
-        ["Claras de huevo", 200],
-        ["Plátano", 120],
+        [OWN_FOODS.avena, 80],
+        [OWN_FOODS.claras, 200],
+        [OWN_FOODS.platano, 120],
       ]),
       meal(prefix, "Comida", [
-        ["Arroz basmati (en seco)", 110],
-        ["Pechuga de pollo", 180],
-        ["Aceite de oliva", 10],
+        [OWN_FOODS.arroz, 110],
+        [OWN_FOODS.pollo, 180],
+        [OWN_FOODS.aceite, 10],
         ["Verduras variadas", 200],
       ]),
       meal(prefix, "Merienda", [
-        ["Yogur griego 0%", 250],
-        ["Nueces", 25],
+        [OTHER_FOODS.yogur, 250],
+        [OTHER_FOODS.nueces, 25],
       ]),
       meal(prefix, "Cena", [
-        ["Merluza", 200],
-        ["Patata cocida", 300],
-        ["Aceite de oliva", 10],
+        [OWN_FOODS.merluza, 200],
+        [OWN_FOODS.patata, 300],
+        [OWN_FOODS.aceite, 10],
       ]),
     ],
   };

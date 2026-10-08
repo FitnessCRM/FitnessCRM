@@ -1,6 +1,7 @@
 import type { DataPorts } from "@/lib/data/ports";
 import { createMeasurementTypePort, createQuestionnairePort } from "./catalogs";
 import { createExercisePort } from "./exercises";
+import { createFoodCatalogPort, createOwnFoodPort } from "./foods";
 import { createIdFactory } from "./ids";
 import { createInvitationPort } from "./invitations";
 import { createPasswordResetPort } from "./password-reset";
@@ -22,6 +23,8 @@ export interface MockPortsOptions {
   /** Fecha civil de "hoy" para generar los datos de demo. Por defecto, la actual. */
   today?: string;
   now?: () => string;
+  /** El catálogo común de alimentos no responde: para ver la app con el catálogo caído (§12). */
+  foodCatalogDown?: boolean;
 }
 
 /** Adaptador en memoria: implementa todos los puertos sobre un estado mutable en proceso. */
@@ -42,6 +45,8 @@ export function createMockPorts(options: MockPortsOptions = {}): DataPorts & { s
     clients: createClientPort(ctx),
     memberships: createMembershipPort(ctx),
     exercises: createExercisePort(ctx),
+    ownFoods: createOwnFoodPort(ctx),
+    foodCatalog: createFoodCatalogPort(ctx, { down: options.foodCatalogDown }),
     routines: createRoutinePort(ctx),
     macroTargets: createMacroTargetsPort(ctx),
     menus: createMenuPort(ctx),

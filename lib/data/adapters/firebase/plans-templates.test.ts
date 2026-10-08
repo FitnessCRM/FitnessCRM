@@ -1,6 +1,7 @@
-import { doc, setDoc, type Firestore } from "firebase/firestore";
+import { doc, getDoc, setDoc, type Firestore } from "firebase/firestore";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
+  createFoodItem,
   menuBodySchema,
   routineBodySchema,
   type Menu,
@@ -9,6 +10,7 @@ import {
 } from "@/lib/domain";
 import { createDemoState, createMockPorts, type MockState } from "../mock";
 import { CLIENT_IDS, TRAINER_ID } from "../mock/demo-data/common";
+import { OWN_FOODS } from "../mock/demo-data/foods";
 import { createFirestore } from "./config";
 import { createFirebaseContext, type FirebaseContext } from "./context";
 import { COLLECTIONS } from "./helpers";
@@ -71,6 +73,18 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
   };
   const activeRoutine = () =>
     state.routines.find((r) => r.clientId === CLIENT_IDS.marta && r.status === "activo")!;
+
+  /**
+   * Una comida con un alimento de la biblioteca y uno de texto libre (I29, I30): los dos tienen que
+   * ir y volver de Firestore tal cual, y el de texto libre sin `foodId` ni `composition` guardados.
+   */
+  const libraryItem = createFoodItem(OWN_FOODS.avena, 80, () => "fi-lib");
+  const freeTextItem = { id: "fi-free", name: "Café solo", grams: 200 };
+  const mixedMeals = [{ id: "meal-mix", name: "Desayuno", items: [libraryItem, freeTextItem] }];
+  type StoredMeals = { meals: { items: Record<string, unknown>[] }[] };
+  /** El documento tal como quedó en Firestore, sin pasar por el esquema. */
+  const stored = async <T>(name: string, id: string) =>
+    (await getDoc(doc(db, name, id))).data() as T;
 
   describe("lecturas iguales que la referencia", () => {
     it("routines, macros and menus of every client", async () => {
@@ -298,6 +312,22 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
       });
     });
 
+    it("round-trips a library item and a free-text item in the same menu (I29)", async () => {
+      const menus = createMenuPort(ctx);
+      const created = await menus.createMenu(TRAINER_ID, CLIENT_IDS.marta, {
+        ...body(activeMenu()),
+        meals: mixedMeals,
+      });
+      const { items } = (await stored<StoredMeals>(COLLECTIONS.menus, created.id)).meals[0]!;
+      expect(items).toEqual([libraryItem, freeTextItem]);
+      expect(Object.keys(items[1]!).sort()).toEqual(["grams", "id", "name"]);
+      const [read] = (await menus.listMenus(TRAINER_ID, CLIENT_IDS.marta))
+        .filter((m) => m.id === created.id)
+        .map((m) => m.meals[0]!.items);
+      expect(read).toEqual([libraryItem, freeTextItem]);
+      expect(read![1]).not.toHaveProperty("foodId");
+    });
+
     it("archiving removes a menu from the live ones", async () => {
       const menus = createMenuPort(ctx);
       const active = activeMenu();
@@ -340,6 +370,23 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
       await expect(
         templates.saveRoutineTemplate({ ...input, id: "no-existe" }),
       ).rejects.toMatchObject({ code: "not_found" });
+    });
+
+    it("round-trips a library item and a free-text item in a template menu (I29)", async () => {
+      const templates = createTemplatePort(ctx);
+      const source = firstMenuTemplate();
+      const saved = await templates.saveMenuTemplate({
+        trainerId: source.trainerId,
+        description: source.description,
+        name: "Con biblioteca",
+        menus: [{ ...source.menus[0]!, meals: mixedMeals }],
+      });
+      const template = await stored<{ menus: StoredMeals[] }>(COLLECTIONS.menuTemplates, saved.id);
+      const { items } = template.menus[0]!.meals[0]!;
+      expect(items).toEqual([libraryItem, freeTextItem]);
+      expect(Object.keys(items[1]!).sort()).toEqual(["grams", "id", "name"]);
+      const read = (await templates.listMenuTemplates(TRAINER_ID)).find((t) => t.id === saved.id)!;
+      expect(read.menus[0]!.meals[0]!.items).toEqual([libraryItem, freeTextItem]);
     });
 
     it("duplicates with a new id and name", async () => {

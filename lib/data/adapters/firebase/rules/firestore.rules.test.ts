@@ -67,6 +67,18 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
     ...extra,
   });
 
+  const food = (id: string, extra: object = {}) => ({
+    id,
+    trainerId: T_A,
+    name: "Avena",
+    composition: { kcal: 372, proteinG: 13.5, carbsG: 58.7, fatG: 7 },
+    status: "activo",
+    publishStatus: "publicado",
+    createdAt: "2026-09-01T08:00:00.000Z",
+    updatedAt: "2026-09-01T08:00:00.000Z",
+    ...extra,
+  });
+
   const review = (extra: object = {}) => ({
     id: "c-a_3",
     trainerId: T_A,
@@ -162,6 +174,8 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
           name: "Viejo",
           status: "archivado",
         }),
+        put("foods", "f-a", food("f-a")),
+        put("foods", "f-old", food("f-old", { status: "archivado" })),
         put("routines", "r-act", {
           id: "r-act",
           trainerId: T_A,
@@ -270,6 +284,7 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
       for (const [name, id] of [
         ["clients", "no-existe"],
         ["exercises", "no-existe"],
+        ["foods", "no-existe"],
         ["memberships", "no-existe"],
         ["reviews", "no-existe"],
         ["weightLogs", "no-existe"],
@@ -696,6 +711,61 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
         updateDoc(doc(trainerA(), "memberships", "ms-a"), { paymentStatus: "no_pagada" }),
       );
       await assertFails(updateDoc(doc(trainerA(), "memberships", "ms-a"), { clientId: "c-b" }));
+    });
+  });
+
+  describe("I28 · la copia propia de los alimentos, solo de su entrenador", () => {
+    it("the owner reads, creates and edits; another trainer neither reads nor writes", async () => {
+      await assertSucceeds(getDoc(doc(trainerA(), "foods", "f-a")));
+      await assertSucceeds(
+        getDocs(query(collection(trainerA(), "foods"), where("trainerId", "==", T_A))),
+      );
+      await assertSucceeds(setDoc(doc(trainerA(), "foods", "f-new"), food("f-new")));
+      await assertSucceeds(
+        updateDoc(doc(trainerA(), "foods", "f-a"), {
+          name: "Avena fina",
+          publishStatus: "pendiente",
+          updatedAt: "2026-10-01T08:00:00.000Z",
+        }),
+      );
+
+      await assertFails(getDoc(doc(trainerB(), "foods", "f-a")));
+      await assertFails(
+        getDocs(query(collection(trainerB(), "foods"), where("trainerId", "==", T_A))),
+      );
+      await assertFails(updateDoc(doc(trainerB(), "foods", "f-a"), { name: "x" }));
+      await assertFails(
+        setDoc(doc(trainerB(), "foods", "f-b"), food("f-b")), // a nombre de otro entrenador
+      );
+      await assertFails(getDocs(collection(anon(), "foods")));
+    });
+
+    it("no client reads it: their menu already carries the frozen copy (I29)", async () => {
+      await assertFails(getDoc(doc(clientA(), "foods", "f-a")));
+      await assertFails(
+        getDocs(query(collection(clientA(), "foods"), where("trainerId", "==", T_A))),
+      );
+      await assertFails(setDoc(doc(clientA(), "foods", "f-c"), food("f-c")));
+    });
+
+    it("keeps its identity and creation date, and is born active", async () => {
+      await assertFails(updateDoc(doc(trainerA(), "foods", "f-a"), { trainerId: T_B }));
+      await assertFails(updateDoc(doc(trainerA(), "foods", "f-a"), { id: "otro" }));
+      await assertFails(
+        updateDoc(doc(trainerA(), "foods", "f-a"), { createdAt: "2026-10-01T08:00:00.000Z" }),
+      );
+      await assertFails(setDoc(doc(trainerA(), "foods", "f-x"), food("f-y")));
+      await assertFails(
+        setDoc(doc(trainerA(), "foods", "f-z"), food("f-z", { status: "archivado" })),
+      );
+    });
+
+    it("is archived, an archived one never comes back, and nobody deletes (I13)", async () => {
+      await assertSucceeds(updateDoc(doc(trainerA(), "foods", "f-a"), { status: "archivado" }));
+      await assertFails(updateDoc(doc(trainerA(), "foods", "f-old"), { status: "activo" }));
+      await assertFails(deleteDoc(doc(trainerA(), "foods", "f-old")));
+      await assertFails(deleteDoc(doc(trainerB(), "foods", "f-old")));
+      await assertFails(deleteDoc(doc(clientA(), "foods", "f-old")));
     });
   });
 

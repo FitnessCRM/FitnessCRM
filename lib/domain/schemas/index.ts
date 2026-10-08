@@ -4,6 +4,7 @@ export * from "./client";
 export * from "./signup";
 export * from "./membership";
 export * from "./exercise";
+export * from "./food";
 export * from "./plan-status";
 export * from "./catalog";
 export * from "./routine";

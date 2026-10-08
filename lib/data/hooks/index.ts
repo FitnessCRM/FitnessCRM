@@ -3,6 +3,7 @@ export { queryKeys } from "./query-keys";
 export * from "./use-session";
 export * from "./use-clients";
 export * from "./use-library";
+export * from "./use-foods";
 export * from "./use-plans";
 export * from "./use-catalogs";
 export * from "./use-reviews";

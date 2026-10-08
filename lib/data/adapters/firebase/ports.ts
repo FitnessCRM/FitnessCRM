@@ -10,6 +10,8 @@ import { createClientPort } from "./clients";
 import { createFirestore, firebaseConfigFromEnv, type FirebaseConfig } from "./config";
 import { createFirebaseContext } from "./context";
 import { createExercisePort } from "./exercises";
+import { createUnavailableFoodCatalogPort } from "./food-catalog";
+import { createOwnFoodPort } from "./foods";
 import { createWeightLogPort, createWorkoutLogPort } from "./logs";
 import { createMembershipPort } from "./memberships";
 import { createMacroTargetsPort, createMenuPort, createRoutinePort } from "./plans";
@@ -28,7 +30,7 @@ export interface FirebasePortsOptions {
   appName?: string;
 }
 
-/** Los 16 puertos de la aplicación sobre Firestore y Firebase Auth. */
+/** Los 18 puertos de la aplicación: Firestore y Firebase Auth, y el catálogo de alimentos sin API. */
 export function createFirebasePorts(options: FirebasePortsOptions): DataPorts {
   const { config, inviteUrl, emulatorHost, appName } = options;
   const db = createFirestore(config, {
@@ -49,6 +51,8 @@ export function createFirebasePorts(options: FirebasePortsOptions): DataPorts {
     clients: createClientPort(ctx),
     memberships: createMembershipPort(ctx),
     exercises: createExercisePort(ctx),
+    ownFoods: createOwnFoodPort(ctx),
+    foodCatalog: createUnavailableFoodCatalogPort(),
     routines: createRoutinePort(ctx),
     macroTargets: createMacroTargetsPort(ctx),
     menus: createMenuPort(ctx),

@@ -22,6 +22,10 @@ export const queryKeys = {
     ["exercises", trainerId, "ids", ...exerciseIds] as const,
   exerciseUsage: (trainerId: string, exerciseId: string) =>
     ["exercises", trainerId, exerciseId, "usage"] as const,
+  /** La copia propia de los alimentos: los activos y los archivados aún pendientes de publicar. */
+  ownFoods: (trainerId: string) => ["foods", trainerId] as const,
+  /** El catálogo común, tal como lo ve la sesión de ese entrenador. */
+  foodCatalog: (trainerId: string) => ["food-catalog", trainerId] as const,
   routines: (trainerId: string, clientId: string) => ["routines", trainerId, clientId] as const,
   activeRoutine: (trainerId: string, clientId: string) =>
     ["routines", trainerId, clientId, "active"] as const,

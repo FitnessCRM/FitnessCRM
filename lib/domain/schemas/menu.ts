@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { compositionSchema } from "./food";
 import { macrosSchema } from "./macros";
 import { dayTypeSchema, planStatusSchema } from "./plan-status";
 import {
@@ -10,12 +11,24 @@ import {
   tenantFields,
 } from "./primitives";
 
-/** Alimento con su peso en gramos. Sin composición nutricional: el menú es sugerencia pura. */
-export const foodItemSchema = z.object({
-  id: idSchema,
-  name: nonEmptyTextSchema,
-  grams: gramsSchema,
-});
+/**
+ * Alimento del menú (§5), de una de dos clases:
+ * - **de la biblioteca**: `foodId` y copia congelada de la composición del momento en que se añadió
+ *   (I29). `name` es el nombre congelado: con otro nombre deja de ser de la biblioteca.
+ * - **de texto libre**: nombre y gramos, sin `foodId` ni composición. No suma (I30).
+ * Los dos campos van juntos o no va ninguno, así que un menú anterior a la biblioteca sigue valiendo.
+ */
+export const foodItemSchema = z
+  .object({
+    id: idSchema,
+    name: nonEmptyTextSchema,
+    grams: gramsSchema,
+    foodId: idSchema.optional(),
+    composition: compositionSchema.optional(),
+  })
+  .refine((item) => (item.foodId === undefined) === (item.composition === undefined), {
+    message: "Un alimento de la biblioteca lleva foodId y composición; uno de texto libre, ninguno",
+  });
 export type FoodItem = z.infer<typeof foodItemSchema>;
 
 /** Bloque del menú: desayuno, comida, merienda, cena. El nombre lo pone el entrenador. */

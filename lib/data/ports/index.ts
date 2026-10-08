@@ -1,6 +1,7 @@
 import type { MeasurementTypePort, QuestionnairePort } from "./catalogs";
 import type { ClientPort } from "./clients";
 import type { ExercisePort } from "./exercises";
+import type { FoodCatalogPort, OwnFoodPort } from "./foods";
 import type { InvitationPort } from "./invitations";
 import type { MembershipPort } from "./memberships";
 import type { PasswordResetPort } from "./password-reset";
@@ -15,6 +16,7 @@ import type { WorkoutLogPort } from "./workout-logs";
 export type * from "./catalogs";
 export type * from "./clients";
 export type * from "./exercises";
+export type * from "./foods";
 export type * from "./invitations";
 export type * from "./memberships";
 export type * from "./password-reset";
@@ -39,6 +41,10 @@ export type * from "./workout-logs";
  *   entrenador (I3): `routine.exercise_not_in_library`.
  * - El vídeo del feedback es un enlace http(s) (I20): `review.feedback_invalid_url`.
  * - Las identidades (`id`, `trainerId`, `clientId`) no cambian en una edición, lleguen o no.
+ * - Los alimentos (I28): la copia propia solo se lee y se escribe con su `trainerId`, y en el
+ *   catálogo común solo publica su autor; lo ajeno da `not_found`. El catálogo nunca devuelve quién
+ *   es el autor de un alimento. Si no responde, lanza `food_catalog.unavailable` y la copia propia
+ *   sigue respondiendo: ningún adaptador hace depender un puerto del otro.
  */
 export interface DataPorts {
   session: SessionPort;
@@ -48,6 +54,8 @@ export interface DataPorts {
   clients: ClientPort;
   memberships: MembershipPort;
   exercises: ExercisePort;
+  ownFoods: OwnFoodPort;
+  foodCatalog: FoodCatalogPort;
   routines: RoutinePort;
   macroTargets: MacroTargetsPort;
   menus: MenuPort;

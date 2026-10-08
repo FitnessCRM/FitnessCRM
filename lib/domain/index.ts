@@ -2,6 +2,7 @@ export * from "./schemas";
 export * from "./errors";
 export * from "./week";
 export * from "./macros";
+export * from "./food";
 export * from "./questionnaire";
 export * from "./measurement-type";
 export * from "./review";
