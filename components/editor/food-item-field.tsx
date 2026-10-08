@@ -198,7 +198,16 @@ function FoodSuggestions({
     .filter((food) => food.origin === "own")
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
   const fromCatalog = (library.foods ?? []).filter((food) => food.origin !== "own");
-  const catalog = library.catalog;
+  // Lo del catálogo llega unido a tus alimentos, para no repetir lo que ya es tuyo (§4): mientras
+  // no han llegado, del catálogo no hay nada que enseñar todavía, aunque la búsqueda haya vuelto.
+  // Si tus alimentos fallan, manda su «Reintentar» y el catálogo no dice nada.
+  const ownReady = library.foods !== undefined;
+  const catalog =
+    ownReady || library.catalog === null
+      ? library.catalog
+      : library.isError
+        ? "blocked"
+        : "loading";
 
   const ownOptions: Option[] = library.isError
     ? [{ kind: "retryOwn" }]
@@ -246,17 +255,21 @@ function FoodSuggestions({
           ? s.catalogUnavailable
           : catalog === "error"
             ? s.catalogError
-            : fromCatalog.length === 0
-              ? s.noCatalog
-              : library.catalogMore.error
-                ? s.moreError
-                : null;
+            : catalog === "blocked"
+              ? null
+              : fromCatalog.length === 0
+                ? s.noCatalog
+                : library.catalogMore.error
+                  ? s.moreError
+                  : null;
   const summary = [
     library.isPending || library.isError ? ownNote : s.countOwn.replace("{n}", String(own.length)),
     catalog === "available"
       ? s.countCatalog.replace("{n}", String(fromCatalog.length))
       : catalogNote,
-  ].join(" · ");
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   let index = -1;
   const renderOption = (option: Option) => {
