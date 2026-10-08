@@ -138,7 +138,7 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · alimentos", () => {
 describe("catálogo común de alimentos con Firebase", () => {
   it("always answers unavailable until its API exists", async () => {
     const catalog = createUnavailableFoodCatalogPort();
-    await expect(catalog.listCatalogFoods()).rejects.toMatchObject({
+    await expect(catalog.searchCatalogFoods({ text: "avena" })).rejects.toMatchObject({
       code: "food_catalog.unavailable",
     });
     await expect(

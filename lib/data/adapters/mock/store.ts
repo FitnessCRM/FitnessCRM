@@ -36,7 +36,7 @@ export interface MockState {
   exercises: Exercise[];
   /** La copia propia de los alimentos de cada entrenador. */
   foods: Food[];
-  /** El catálogo común: lo publicado por todos los entrenadores, con su autor para I28. */
+  /** El catálogo común: lo publicado por todos los entrenadores, con su autor para I28, y lo sembrado. */
   catalogFoods: CatalogEntry[];
   routines: Routine[];
   macroTargets: MacroTargets[];

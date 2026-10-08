@@ -8,6 +8,7 @@ import {
   retryPendingFoods,
   retryPendingFoodsOnce,
   saveFood,
+  type FoodPorts,
 } from "./food-sync";
 
 const TODAY = "2026-08-29";
@@ -17,6 +18,11 @@ const draft: FoodDraft = {
   name: "Lentejas cocidas",
   composition: { kcal: 116, proteinG: 9, carbsG: 20.1, fatG: 0.4 },
 };
+
+/** La primera página de una búsqueda de lentejas: todas las de estas pruebas caben en ella. */
+async function lentilsInCatalog(ports: FoodPorts) {
+  return (await ports.foodCatalog.searchCatalogFoods({ text: "lentejas" })).foods;
+}
 
 /**
  * Los mismos datos vistos con el catálogo caído y con el catálogo de vuelta: dos juegos de puertos
@@ -50,9 +56,7 @@ describe("saving a food", () => {
       draft: { ...draft, name: "Lentejas" },
     });
     expect(edited.food).toMatchObject({ name: "Lentejas", publishStatus: "publicado" });
-    const inCatalog = (await up.foodCatalog.listCatalogFoods()).find(
-      (f) => f.id === created.food.id,
-    );
+    const inCatalog = (await lentilsInCatalog(up)).find((f) => f.id === created.food.id);
     expect(inCatalog?.name).toBe("Lentejas");
   });
 });
@@ -67,7 +71,7 @@ describe("retrying what is pending", () => {
     const result = await retryPendingFoods(up, TRAINER);
     expect(result).toEqual({ published: pendingBefore, pending: 0, catalogUnavailable: false });
     expect(await up.ownFoods.listPendingFoods(TRAINER)).toEqual([]);
-    expect((await up.foodCatalog.listCatalogFoods()).map((f) => f.id)).toContain(food.id);
+    expect((await lentilsInCatalog(up)).map((f) => f.id)).toContain(food.id);
   });
 
   it("with the catalog down, costs a single failed call however much is pending", async () => {
@@ -125,7 +129,7 @@ describe("publishing an old version", () => {
     // El reintento publica la versión nueva y entonces sí queda publicada.
     await retryPendingFoods(up, TRAINER);
     expect((await up.ownFoods.getFood(TRAINER, v1.id))?.publishStatus).toBe("publicado");
-    expect((await up.foodCatalog.listCatalogFoods()).find((f) => f.id === v1.id)?.name).toBe(
+    expect((await lentilsInCatalog(up)).find((f) => f.id === v1.id)?.name).toBe(
       "Lentejas pardinas",
     );
   });
@@ -141,7 +145,7 @@ describe("archiving a food", () => {
       food: { status: "archivado", publishStatus: "publicado" },
     });
     const own = await listOwnFoodsForLibrary(up, TRAINER);
-    const catalog = await up.foodCatalog.listCatalogFoods();
+    const catalog = await lentilsInCatalog(up);
     expect(catalog.map((f) => f.id)).not.toContain(food.id);
     expect(mergeFoodLibrary(own, catalog).map((f) => f.id)).not.toContain(food.id);
   });
@@ -156,7 +160,7 @@ describe("archiving a food", () => {
     });
     // El catálogo aún lo sirve, pero la unión manda la copia propia, que está archivada (§4).
     const own = await listOwnFoodsForLibrary(up, TRAINER);
-    const catalog = await up.foodCatalog.listCatalogFoods();
+    const catalog = await lentilsInCatalog(up);
     expect(catalog.map((f) => f.id)).toContain(food.id);
     expect(mergeFoodLibrary(own, catalog).map((f) => f.id)).not.toContain(food.id);
   });

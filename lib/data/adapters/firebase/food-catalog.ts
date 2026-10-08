@@ -11,7 +11,7 @@ export function createUnavailableFoodCatalogPort(): FoodCatalogPort {
     throw new FoodCatalogUnavailableError();
   };
   return {
-    listCatalogFoods: unavailable,
+    searchCatalogFoods: unavailable,
     publishFood: unavailable,
   };
 }
