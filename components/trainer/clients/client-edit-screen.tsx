@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -56,6 +57,22 @@ export function ClientEditScreen({ clientId }: { clientId: string }) {
     );
   } else if (!client.data) {
     body = <LoadingState />;
+  } else if (client.data.status === "dado_de_baja") {
+    // Un cliente de baja no admite cambios hasta reactivarse (docs/dominio.md §7): tampoco por URL.
+    body = (
+      <EmptyState
+        title={t.inactive.title}
+        description={t.inactive.hint}
+        action={
+          <Link
+            href={`/clients/${clientId}`}
+            className="text-text-muted hover:text-text-primary inline-flex min-h-8 items-center text-[13px]"
+          >
+            {t.inactive.back}
+          </Link>
+        }
+      />
+    );
   } else {
     body = (
       <ClientEditForm
