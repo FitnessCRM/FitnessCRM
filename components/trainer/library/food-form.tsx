@@ -82,6 +82,7 @@ export function FoodForm({
   isSaving,
   saveError,
   onSubmit,
+  onEdit,
   onDelete,
   onClose,
 }: {
@@ -92,6 +93,8 @@ export function FoodForm({
   isSaving: boolean;
   saveError: boolean;
   onSubmit: (draft: FoodDraft, typed: FoodFormValues) => Promise<unknown>;
+  /** Se ha cambiado algún campo: lo que dijo el último guardado ya no vale. */
+  onEdit: () => void;
   onDelete: () => void;
   onClose: () => void;
 }) {
@@ -123,6 +126,7 @@ export function FoodForm({
       <form
         noValidate
         className="flex flex-col gap-4"
+        onChange={onEdit}
         onSubmit={form.handleSubmit(async (draft) => {
           await onSubmit(draft, form.getValues());
         })}

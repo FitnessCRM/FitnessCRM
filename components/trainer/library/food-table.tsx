@@ -117,7 +117,7 @@ function CatalogGroup({
       {more.error ? (
         <ErrorState message={c.moreError} onRetry={more.loadMore} className="m-3" />
       ) : null}
-      {more.hasMore ? (
+      {more.hasMore && !more.error ? (
         <div className="border-border-subtle border-t p-3">
           <Button
             type="button"

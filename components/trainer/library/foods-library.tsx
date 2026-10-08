@@ -129,6 +129,7 @@ export function FoodsLibrary() {
         isSaving={saveFood.isPending}
         saveError={saveFood.isError}
         onSubmit={save}
+        onEdit={() => setNotice(null)}
         onDelete={() => setConfirming(true)}
         onClose={() => select(null)}
       />
@@ -157,7 +158,7 @@ export function FoodsLibrary() {
               className="h-10 min-w-0 flex-1 basis-[220px] sm:max-w-[380px]"
             />
             <label className="text-text-muted flex min-h-10 cursor-pointer items-center gap-2.5 text-[13px]">
-              <Switch checked={onlyMine} onCheckedChange={setOnlyMine} />
+              <Switch checked={onlyMine} onCheckedChange={setOnlyMine} aria-label={t.onlyMine} />
               {t.onlyMine}
             </label>
           </div>
