@@ -82,7 +82,7 @@ UI en español, identificadores de código en inglés.
 | Menú | `Menu` | Conjunto de comidas para un tipo de día, con macros propias declaradas por el entrenador. Puede haber varios; uno marcado como sugerido |
 | Tipo de día | `DayType` | `entrenamiento` \| `descanso` |
 | Comida | `Meal` | Bloque del menú: desayuno, comida, merienda, cena |
-| Alimento | `Food` | Entrada de la biblioteca: nombre y composición por 100 g. Vive en la copia propia de su autor y en el catálogo común, con el mismo `id` (§4) |
+| Alimento | `Food` | Entrada de la biblioteca: nombre y composición por 100 g. Lo crea un entrenador, y vive en su copia propia y en el catálogo común con el mismo `id`, o llega sembrado de una base de datos pública y vive solo en el catálogo común (§4) |
 | Alimento del menú | `FoodItem` | Línea de una comida, con sus gramos. Sale de la biblioteca, con copia congelada del nombre y la composición, o es texto libre |
 | Registro de peso | `WeightLog` | Peso en una fecha, en kg, con nota opcional. Uno por cliente y fecha (I23) |
 | Revisión | `Review` | Corte semanal: fotos + peso + medidas + cuestionario |
@@ -118,7 +118,7 @@ directa sin joins — valga RLS o reglas de seguridad.
 | **Client** | Perfil, cadencia orientativa de revisión, fecha de alta | La fecha de alta es el origen de la numeración de semanas |
 | **Membership** | — | Suelto: un cliente tiene un historial, no una membresía |
 | **Exercise** | — | Vive en la biblioteca, se referencia desde las rutinas |
-| **Food** | — | Vive en dos sitios con el mismo `id`: la **copia propia** de su autor, con `trainerId`, y el **catálogo común**, que leen todos los entrenadores. Desde los menús se referencia y se congela |
+| **Food** | — | El de un entrenador vive en dos sitios con el mismo `id`: la **copia propia** de su autor, con `trainerId`, y el **catálogo común**, que leen todos los entrenadores; el sembrado, solo en el catálogo común, sin autor. Desde los menús se referencia y se congela |
 | **Routine** | `RoutineDay` → `RoutineDayExercise` | Se edita como un todo |
 | **MacroTargets** | — | Uno por cliente y tipo de día. Independiente del menú |
 | **Menu** | `Meal` → `FoodItem` | Jerarquía que solo se consulta y edita completa. Un `FoodItem` puede apuntar a un `Food`, propio o del catálogo común, y lleva su copia congelada (I29) |
@@ -137,14 +137,21 @@ comparación entre revisiones, el texto congelado sostiene la lectura fiel del h
 alimentos del menú siguen la misma regla (I29): el `foodId` dice de qué alimento salió y la copia
 congelada, con qué nombre y composición se puso.
 
-**Alimentos: copia propia y catálogo común.** Un alimento lo crea un entrenador y vive en dos
-sitios con el mismo `id`. La **copia propia** es la fuente de verdad: lleva `trainerId` y cumple I1
-como cualquier otro dato del entrenador. El **catálogo común** es lo que se publica de esa copia
-para que lo lean todos los entrenadores (§7, §12), y solo su autor lo cambia (I28). La biblioteca
-de un entrenador es la unión por `id` de los dos: si un alimento está en ambos, manda la copia
-propia, porque el catálogo puede ir por detrás (`pendiente`, §7). Un alimento es propio si está en
-la copia propia del entrenador; si solo llega del catálogo, es **de otro**, y de su autor no se
-muestra nada más que eso: nunca su identidad. Se admiten nombres duplicados (§11).
+**Alimentos: copia propia y catálogo común.** Un alimento lo crea un entrenador o llega sembrado.
+El de un entrenador vive en dos sitios con el mismo `id`. La **copia propia** es la fuente de
+verdad: lleva `trainerId` y cumple I1 como cualquier otro dato del entrenador. El **catálogo común**
+es lo que se publica de esa copia para que lo lean todos los entrenadores (§7, §12), y solo su
+autor lo cambia (I28). El catálogo común tiene además alimentos **sembrados** de bases de datos
+públicas (USDA FoodData Central y Open Food Facts): sin autor y de solo lectura para todos los
+entrenadores (decidido el 08-10-2026).
+
+La copia propia se lista entera; el catálogo común no se lista: se busca por texto, por páginas.
+Lo que devuelve la búsqueda se une por `id` con la copia propia, y si un alimento está en las dos
+manda la propia, porque el catálogo puede ir por detrás (`pendiente`, §7). En la biblioteca hay
+tres orígenes: **tuyo**, si está en la copia propia del entrenador; **de otro**, si llega del
+catálogo y es de otro entrenador, del que no se muestra nada más que eso, nunca su identidad; y
+**sembrado**, que se muestra con su fuente. Mostrar la fuente es además la atribución que exige la
+licencia ODbL de Open Food Facts. Se admiten nombres duplicados (§11).
 
 ---
 
@@ -168,10 +175,14 @@ muestra nada más que eso: nunca su identidad. Se admiten nombres duplicados (§
   menú, nunca contra `MacroTargets`.
 - **`Composicion`** — lo que aportan 100 g de un alimento: kcal + proteína / carbohidratos /
   grasa. Las kcal, un entero mayor o igual que cero (un alimento puede tener 0 kcal; un menú, no);
-  los macros, en gramos, mayores o iguales que cero, y los tres juntos no pasan de 100 g. Ese tope
-  es físico, no un criterio nutricional, y está para cazar erratas. Las cuatro cifras las escribe
-  el entrenador y son obligatorias; como en `Macros`, las kcal no se derivan con 4/4/9 ni se
-  contrastan con los macros.
+  con decimales dan error. Los macros, en gramos, mayores o iguales que cero y guardados con un
+  decimal como mucho: lo que escribe el entrenador con más decimales se redondea a uno al
+  guardarlo, y lo que llega del catálogo común con más decimales, a uno al leerlo. Los tres juntos
+  no pasan de 100 g, comprobado sobre los valores ya redondeados; un alimento del catálogo que,
+  redondeado, lo pase no se ofrece. Ese tope es físico, no un criterio nutricional, y está para
+  cazar erratas. Las cuatro cifras son obligatorias: las de un alimento creado por un entrenador
+  las escribe su autor y las de uno sembrado llegan de su fuente. Como en `Macros`, las kcal no se
+  derivan con 4/4/9 ni se contrastan con los macros.
 - **Alimento del menú (`FoodItem`)** — nombre + gramos (`Cantidad`), de una de dos clases:
   - **de la biblioteca**: guarda `foodId` y copia congelada del nombre y de la `Composicion` del
     momento en que se añadió (I29). Aporta gramos × composición / 100. Su nombre es siempre el de
@@ -182,6 +193,10 @@ muestra nada más que eso: nunca su identidad. Se admiten nombres duplicados (§
 - **Redondeo de lo calculado** — lo que aporta un alimento, el subtotal de una comida, la suma de
   un menú y lo que queda se calculan sin redondear y se redondean solo al presentarlos: kcal a
   entero, gramos a un decimal.
+- **Tolerancia de «Cuadra»** — lo que queda de un menú (I30) **cuadra** si la diferencia entre lo
+  declarado y lo que suman sus alimentos, sobre los valores redondeados como se presentan, es como
+  mucho 5 kcal en las kcal y como mucho 1 g en cada macro, límite incluido. Fuera de ese margen se
+  dice lo que queda o lo que sobra, con la diferencia real. Decidido el 08-10-2026.
 - **`Prescripcion`** — series (entero), `repsMin` (entero), `repsMax` (entero o nulo: nulo = reps
   fijas), `rir` (texto libre, admite "2" y "1-2"), `rest` (texto libre, admite "3 min" y "el que
   necesites"), `note` (texto libre opcional).
@@ -263,9 +278,9 @@ de estado sola.
 
 Sobre I28 e I1: la copia propia de un alimento es un registro del entrenador como cualquier otro y
 cumple I1 tal cual —solo él la lee y la escribe—. Lo que leen los demás es el catálogo común, que
-no vive en Firestore (§12) y existe precisamente para eso: es lo que el autor publica para todos,
-sin su identidad. Es la única excepción a la lectura de I1 y es deliberada; la escritura sigue
-siendo solo del autor, en los dos sitios.
+no vive en Firestore (§12) y existe precisamente para eso: es lo que los autores publican para
+todos, sin su identidad, más los alimentos sembrados, de solo lectura (§4). Es la única excepción
+a la lectura de I1 y es deliberada; la escritura sigue siendo solo del autor, en los dos sitios.
 
 Sobre I17: el tope de la tercera pasada ("o hasta que se abre el periodo siguiente") desaparece
 con los periodos. Si el entrenador no abre nunca la revisión, el cliente puede seguir editándola.
@@ -443,11 +458,14 @@ La demo no cubre estas dos cosas y el MVP las necesita:
 La biblioteca de alimentos (07-10-2026) deja abiertas estas, cada una con su tarjeta:
 
 3. **A la API del catálogo común (tarjeta 90).** Qué pasa con los alimentos de un autor que se da
-   de baja o desaparece, que nadie más puede corregir. Si el catálogo nace vacío o precargado.
-   Qué hacer con los nombres duplicados, que hoy se admiten. Y cómo se asegura que la identidad del
-   autor de un alimento no llega a los demás entrenadores, que solo ven «de otro» (§4).
-4. **Tolerancia de «Cuadra» (tarjeta 89).** Cuándo lo que queda de un menú se da por cuadrado.
-   Hoy solo si la diferencia, redondeada como se presenta (§5), es 0.
+   de baja o desaparece, que nadie más puede corregir. ~~Si el catálogo nace vacío o
+   precargado.~~ **Resuelto el 08-10-2026**: nace precargado con los alimentos sembrados (§4). Qué
+   hacer con los nombres duplicados, que hoy se admiten. ~~Y cómo se asegura que la identidad del
+   autor de un alimento no llega a los demás entrenadores, que solo ven «de otro» (§4).~~
+   **Resuelto el 08-10-2026**: comprobado en `FitnessCRM/food-api`, la respuesta de la API no lleva
+   el autor (solo `mine`) y un test de la API lo verifica.
+4. ~~**Tolerancia de «Cuadra» (tarjeta 89).** Cuándo lo que queda de un menú se da por
+   cuadrado.~~ **Cerrado el 08-10-2026**: ver §5.
 
 ---
 
@@ -529,11 +547,12 @@ blanco típico de abuso: App Check y las alertas de presupuesto (tarjeta 83) son
 ### Alimentos: copia propia en Firestore, catálogo común en una API propia
 
 **Decidido el 07-10-2026.** La copia propia de los alimentos de cada entrenador vive en Firestore,
-con sus reglas (I28), como el resto de sus datos. El catálogo común no: lo servirá una API propia
-(tarjeta 90) detrás de su propio puerto, separado del de la copia propia, así que ningún componente
-sabe de dónde llega cada alimento.
+con sus reglas (I28), como el resto de sus datos. El catálogo común no: lo sirve una API propia
+(repositorio `FitnessCRM/food-api`), que ya existe, detrás de su propio puerto, separado del de la
+copia propia, así que ningún componente sabe de dónde llega cada alimento. Falta conectarla a la
+app (tarjeta 90).
 
-Hasta que exista la API, con Firebase el catálogo responde «no disponible»: cada entrenador ve solo
-sus alimentos, y todos se quedan `pendiente` de publicar (§7). Cuando exista vale lo mismo para
-cuando no responda: **un catálogo caído no deja a nadie sin sus alimentos**. El entrenador sigue
-viendo y usando los suyos, y lo pendiente se publica cuando el catálogo vuelve.
+Hasta que la app se conecte a la API, con Firebase el catálogo responde «no disponible»: cada
+entrenador ve solo sus alimentos, y todos se quedan `pendiente` de publicar (§7). Cuando se conecte
+vale lo mismo para cuando no responda: **un catálogo caído no deja a nadie sin sus alimentos**. El
+entrenador sigue viendo y usando los suyos, y lo pendiente se publica cuando el catálogo vuelve.

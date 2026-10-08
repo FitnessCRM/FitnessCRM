@@ -212,7 +212,7 @@ guardan junto a los macros: no se derivan con 4/4/9. La composición de un alime
 verdad. El formulario valida contra él y el futuro backend también.
 
 **Tests.** Vitest sobre el dominio. Antes de darse por terminadas, I5, I9, I12, I15, I17, I22,
-I23, I24, I25, I26 e I27 tienen test. Los componentes no se testean todavía.
+I23, I24, I25, I26, I27, I29 e I30 tienen test. Los componentes no se testean todavía.
 
 **Verificar el entorno antes de concluir.** Antes de dar por buena una comprobación, confirma que
 el entorno mide lo que crees. Ya ha mentido cinco veces:
@@ -482,12 +482,16 @@ por enlace de correo (decidido el 03-10-2026, §12) y recuperación de la contra
 (decidida el 07-10-2026, §12; tarjeta 85, PR #82, con la URL de acción de la plantilla por apuntar en
 la consola de Firebase). En `main`: auth, invitaciones y entrada por
 rol (tarjeta 35, PR #44) y reglas de seguridad de Firestore con tests de emulador (tarjeta 34,
-PR #45). El adaptador de datos de Firebase (16) ya está en `main`, cubre los 16 puertos y se monta
+PR #45). El adaptador de datos de Firebase (16) ya está en `main`, cubre los 18 puertos y se monta
 en `providers.tsx` solo con `NEXT_PUBLIC_DATA_BACKEND=firebase`; sin la variable sigue el adaptador
 en memoria. El área de cliente carga y se lee sin conexión, y las escrituras de series y pesos se
-encolan hasta volver la red (tarjetas 81 y 82, PR #57 y #58). Firebase está conectado y probado
-con el proyecto real (06-10-2026): el `users/{uid}` del entrenador está creado y las reglas y los índices
-de `reviews` están desplegados. Falta decidir cuándo el adaptador de Firebase pasa a ser el de por
-defecto, las fotos de revisión (17, con la decisión de dónde guardarlas reabierta el 05-10-2026) y el consentimiento del
-alta con el borrado a petición (31). Lo pendiente, con su tarjeta, en «Siguiente» de
-`docs/estado.md`. Esta sección se actualiza en el PR de documentación posterior a cada fusión.
+encolan hasta volver la red (tarjetas 81 y 82, PR #57 y #58). La capa de datos de los alimentos
+está en `main` (tarjeta 88, PR #85): dominio, dos puertos (copia propia y catálogo común), adaptador
+en memoria, copia propia en Firestore con sus reglas desplegadas, catálogo común «no disponible» con
+Firebase hasta que la app se conecte a su API (tarjeta 90), y sincronización en los hooks. Firebase
+está conectado y probado con el proyecto real (06-10-2026): el `users/{uid}` del entrenador está
+creado y las reglas y los índices de `reviews` están desplegados. Falta decidir cuándo el adaptador
+de Firebase pasa a ser el de por defecto, las fotos de revisión (17, con la decisión de dónde
+guardarlas reabierta el 05-10-2026) y el consentimiento del alta con el borrado a petición (31). Lo
+pendiente, con su tarjeta, en «Siguiente» de `docs/estado.md`. Esta sección se actualiza en el PR de
+documentación posterior a cada fusión.

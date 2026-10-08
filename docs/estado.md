@@ -1,8 +1,9 @@
 # Estado del proyecto
 
-Última actualización: 07-10-2026. Corresponde a `main` en `d374832` (PR #82). Están en `main` los
+Última actualización: 08-10-2026. Corresponde a `main` en `93fcf07` (PR #89). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
-seguridad, el adaptador de Firebase y el modo sin conexión del cliente; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
+seguridad, el adaptador de Firebase, el modo sin conexión del cliente y la capa de datos de los
+alimentos; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
 ## Cómo se trabajó hasta aquí
 
@@ -769,6 +770,36 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   emulador y la demo; y conviene tener App Check y las alertas de presupuesto (tarjeta 83) antes de
   abrir el flujo a usuarios reales, por la cuota diaria de correos.
 
+- **Capa de datos de los alimentos** (tarjeta 88, PR #85). Sin pantallas: las hace la 89.
+  `docs/dominio.md` §4, §5, §7, §12 e I28–I30.
+  - **Dominio:** `Food` con su composición por 100 g. Los macros llevan un decimal como mucho y lo
+    que escribe el entrenador se redondea a uno; el tope de 100 g se comprueba sobre lo redondeado
+    y en décimas enteras, sin error de coma flotante. `FoodItem` gana `foodId` y la composición
+    congelada, los dos o ninguno, así que los menús anteriores validan sin tocarlos. Funciones
+    puras para lo que aporta un alimento, una comida y un menú, lo que queda frente a las macros del
+    menú y la unión de lo propio con el catálogo. Clonar, duplicar o hacer una plantilla desde un
+    plan conserva la copia congelada: antes copiaban solo nombre y gramos, y rompían I29.
+  - **Puertos:** dos, `OwnFoodPort` (la copia propia) y `FoodCatalogPort` (el catálogo común), y
+    ningún adaptador conoce al otro. `DataPorts` pasa a 18 (**BREAKING CHANGE**). Un catálogo caído
+    lanza `food_catalog.unavailable`. Marcar como publicado recibe la versión publicada
+    (`updatedAt`) y solo surte efecto si sigue siendo la actual.
+  - **Adaptadores:** en memoria, con datos de demo (alimentos propios, uno pendiente, otros de otro
+    entrenador solo en el catálogo, y el menú A con alimentos de biblioteca y uno de texto libre) y
+    la caída del catálogo forzable con `NEXT_PUBLIC_MOCK_FOOD_CATALOG_DOWN=true`. En Firebase, la
+    colección `foods` con transacciones y sus reglas: solo su entrenador la lee y la escribe, ningún
+    cliente la lee, nada se borra y un archivado no vuelve. El catálogo responde siempre «no
+    disponible» hasta que la app se conecte a su API (tarjeta 90).
+  - **Hooks:** la sincronización vive una sola vez en `lib/data/hooks/food-sync.ts`, fuera de
+    React. Guardar y archivar escriben, publican y marcan; si publicar falla, el alimento queda
+    `pendiente` y la mutación no falla. Lo pendiente se reintenta al montar y al volver la red, y
+    con el catálogo caído cada reintento cuesta una sola llamada. La lista propia que se une con el
+    catálogo lleva también los archivados pendientes, para que el catálogo no los devuelva como
+    ajenos.
+  - **Deuda:** los índices de `foods` no están comprobados contra el proyecto real; la versión es
+    `updatedAt`, así que dos escrituras en el mismo milisegundo no se distinguen; el editor de menús
+    renombra sin desvincular el alimento (lo resuelve la 89 con `renameFoodItem`); no se ha visto en
+    el navegador, porque no hay pantallas.
+
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
   `trainer/`) y #33 (enlace a la revisión desde el panel de control, rama
@@ -779,6 +810,17 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
 Las pantallas del cliente y del panel están en `main`. Desde el 21-09-2026 trabajan dos personas
 (sección «Equipo» de `CLAUDE.md`) y este archivo es un resumen curado que se escribe en un PR de
 documentación después de cada fusión. Lo que queda, con su tarjeta:
+
+- **Alimentos**, por este orden:
+  1. **Catálogo por búsqueda y alimentos sembrados (92).** `FoodCatalogPort` pasa de listar a
+     buscar por texto, por páginas, y llegan los sembrados con su fuente (`docs/dominio.md` §4).
+  2. **Pantallas de alimentos (89):** Alimentos en Biblioteca y el cálculo en el editor de menú,
+     con la tolerancia de «Cuadra» (§5).
+  3. **Conectar la API del catálogo común (90).** La API ya existe (`FitnessCRM/food-api`); la
+     tarjeta está bloqueada porque la API no tiene CORS. Hasta entonces, con Firebase todos los
+     alimentos quedan pendientes de publicar.
+
+  Los índices de `foods` no están comprobados contra el proyecto real.
 
 - **Backend.** Firebase está conectado y se ha probado con el proyecto real (06-10-2026): el
   `users/{uid}` del entrenador está creado, y las reglas de seguridad (tarjeta 34) y los índices de
