@@ -591,6 +591,13 @@ export const es = {
           one: "{n} alimento escrito a mano no suma.",
           other: "{n} alimentos escritos a mano no suman.",
         },
+        /** Resumen compacto del móvil: una cifra corta por columna. */
+        strip: {
+          labels: { kcal: "kcal", proteinG: "P", carbsG: "C", fatG: "G" },
+          over: "+{amount}",
+          matches: "✓",
+          noTarget: "—",
+        },
       },
     },
   },

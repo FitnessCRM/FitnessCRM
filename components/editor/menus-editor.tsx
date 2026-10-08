@@ -1,7 +1,7 @@
 "use client";
 
 import { XIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -28,7 +28,7 @@ import { es } from "@/lib/i18n/es";
 import { FoodCreateDialog } from "./food-create-dialog";
 import { FoodItemField } from "./food-item-field";
 import { KcalField } from "./kcal-field";
-import { MenuTally } from "./menu-tally";
+import { MenuTally, MenuTallyStrip } from "./menu-tally";
 import { NumberField } from "./number-field";
 import { nutrientLine } from "./nutrient-line";
 
@@ -185,18 +185,38 @@ function MenuCard({
   const kcalInvalid = kcal !== null && !(Number.isInteger(kcal) && kcal > 0);
   const incomplete = macrosFromDraft(menu.macros) === null;
 
-  // Por debajo de `xl` el panel va fijo arriba, encima de las comidas: lo que recibe el foco con
-  // el teclado no puede quedar tapado por él. Se baja la página lo justo para verlo. Desde `xl` el
-  // panel está a la derecha y no se cruzan.
+  // Por debajo de `sm` el panel completo se lee arriba, sin fijar, y cuando sale de la pantalla
+  // aparece fijo un resumen compacto. Se sabe con `IntersectionObserver`: el panel ha salido por
+  // arriba. Al acabar el menú el resumen se va con él, porque está fijo dentro de sus comidas.
   const tallyRef = useRef<HTMLElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
+  const [stripShown, setStripShown] = useState(false);
+  useEffect(() => {
+    const tally = tallyRef.current;
+    if (!tally) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry) setStripShown(!entry.isIntersecting && entry.boundingClientRect.bottom <= 0);
+    });
+    observer.observe(tally);
+    return () => observer.disconnect();
+  }, []);
+
+  // Lo que recibe el foco con el teclado no puede quedar tapado por lo que esté fijo arriba: el
+  // panel entre `sm` y `xl`, o el resumen por debajo de `sm`. Se baja la página lo justo para verlo.
+  // Desde `xl` el panel está a la derecha y no se cruzan.
   const keepClearOfTally = (event: React.FocusEvent<HTMLElement>) => {
-    const tally = tallyRef.current?.getBoundingClientRect();
     const field = event.target.getBoundingClientRect();
-    if (!tally || field.right <= tally.left || field.left >= tally.right) return;
     const gap = 8;
-    if (field.top < tally.bottom + gap && field.bottom > tally.top) {
-      window.scrollBy({ top: field.top - tally.bottom - gap });
-    }
+    const overlap = Math.max(
+      0,
+      ...[tallyRef.current, stripRef.current].map((element) => {
+        const cover = element?.getBoundingClientRect();
+        if (!cover || field.right <= cover.left || field.left >= cover.right) return 0;
+        if (field.top >= cover.bottom + gap || field.bottom <= cover.top) return 0;
+        return cover.bottom + gap - field.top;
+      }),
+    );
+    if (overlap > 0) window.scrollBy({ top: -overlap });
   };
 
   return (
@@ -282,20 +302,29 @@ function MenuCard({
         ) : null}
       </div>
 
-      {/* Comidas y «Lo que llevas». Desde `xl`, el panel a la derecha; por debajo, arriba y en 2×2:
-          es la referencia contra la que se escribe, así que se ve mientras se añaden alimentos.
-          Fijo en los dos casos mientras se recorren las comidas de este menú. */}
+      {/* Comidas y «Lo que llevas», la referencia contra la que se escribe. Desde `xl`, a la
+          derecha; entre `sm` y `xl`, arriba en 2×2; los dos fijos mientras se recorren las comidas
+          de este menú. Por debajo de `sm` el 2×2 no se fija, que con el teclado abierto no deja
+          sitio, y lo sustituye un resumen de una fila (`MenuTallyStrip`). */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start xl:gap-5">
         <MenuTally
           ref={tallyRef}
           macros={menu.macros}
           meals={menu.meals}
-          className="sticky top-2 z-10 xl:col-start-2 xl:row-start-1"
+          className="z-10 sm:sticky sm:top-2 xl:col-start-2 xl:row-start-1"
         />
         <div
           onFocus={keepClearOfTally}
           className="flex min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1"
         >
+          {/* Sin altura propia, para que aparecer no mueva nada; `-mb-4` deshace el hueco. */}
+          <div className="sticky top-2 z-20 -mb-4 h-0 sm:hidden">
+            {stripShown ? (
+              <div className="absolute inset-x-0 top-0">
+                <MenuTallyStrip ref={stripRef} macros={menu.macros} meals={menu.meals} />
+              </div>
+            ) : null}
+          </div>
           {menu.meals.length === 0 ? (
             <p className="text-text-subtle text-[13px]">{t.noMeals}</p>
           ) : (
