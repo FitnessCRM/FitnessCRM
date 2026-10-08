@@ -1,13 +1,16 @@
 import type { MacrosDraft } from "./macros";
 import {
+  catalogFoodInputSchema,
   gramsToTenths,
   type CatalogFood,
   type Composition,
   type Food,
   type FoodItem,
+  type FoodSource,
   type Meal,
 } from "./schemas";
 import type { NewId } from "./templates";
+import { foldText } from "./text";
 
 /* ---------- Alimento del menú: de la biblioteca o de texto libre (§5) ---------- */
 
@@ -172,28 +175,93 @@ export function menuRemaining(declared: MacrosDraft, total: NutrientTotals): Men
   return result;
 }
 
-/* ---------- Biblioteca: copia propia + catálogo común, unidos por id (§4) ---------- */
-
-/** Un alimento de la biblioteca de un entrenador, marcado como propio o «de otro». */
-export type LibraryFood = (Food & { origin: "own" }) | (CatalogFood & { origin: "other" });
+/* ---------- Lo que llega del catálogo común (§5) ---------- */
 
 /**
- * La biblioteca de un entrenador: la unión por `id` de su copia propia y del catálogo común (§4).
- * Si un alimento está en los dos manda la copia propia, porque el catálogo puede ir por detrás
- * (`pendiente`). Es propio si está en la copia propia; si solo llega del catálogo, es de otro.
- * Los archivados no salen, vengan de donde vengan; por eso `own` tiene que traer también los propios
- * archivados que el catálogo aún pueda servir como activos (los `pendiente`), o saldrían como ajenos. Primero los propios y después los ajenos, cada
- * grupo en el orden en que llega: ordenar es cosa de la pantalla.
+ * Lee un alimento tal como lo sirve el catálogo. Los macros con más de un decimal se redondean a uno,
+ * como lo que escribe el entrenador, y el tope de 100 g se comprueba ya redondeado. `null` si no es
+ * válido: el adaptador lo descarta sin hacer fallar la página entera, porque un alimento del
+ * catálogo que pasa del tope no se ofrece (§5).
+ */
+export function parseCatalogFood(raw: unknown): CatalogFood | null {
+  const result = catalogFoodInputSchema.safeParse(raw);
+  return result.success ? result.data : null;
+}
+
+/* ---------- Búsqueda por nombre (§4) ---------- */
+
+/**
+ * Con menos letras que esto, un nombre solo coincide si empieza por el texto o si tiene una palabra
+ * que empieza por él: como en el catálogo, que con menos de 3 letras no compara trigramas.
+ */
+export const FOOD_SEARCH_MIN_CONTAINS_LENGTH = 3;
+
+/**
+ * Cuánto se parece un nombre al texto buscado, con el mismo criterio con que busca el catálogo común
+ * y sin distinguir mayúsculas ni tildes: 0 si el nombre empieza por el texto, 1 si tiene una palabra
+ * que empieza por él, 2 si lo contiene en otro sitio (solo con 3 letras o más), `null` si no
+ * coincide. Con el texto vacío, todo coincide con 0. La API además encuentra los parecidos
+ * (erratas); esto no, y es la única diferencia.
+ */
+export function foodNameMatchRank(name: string, text: string): 0 | 1 | 2 | null {
+  const query = foldText(text);
+  if (query === "") return 0;
+  const folded = foldText(name);
+  if (folded.startsWith(query)) return 0;
+  if (` ${folded}`.includes(` ${query}`)) return 1;
+  if (query.length >= FOOD_SEARCH_MIN_CONTAINS_LENGTH && folded.includes(query)) return 2;
+  return null;
+}
+
+/** Si un nombre coincide con el texto buscado (`foodNameMatchRank`). Con el texto vacío, siempre. */
+export function matchesFoodName(name: string, text: string): boolean {
+  return foodNameMatchRank(name, text) !== null;
+}
+
+/* ---------- Biblioteca: copia propia + catálogo común, unidos por id (§4) ---------- */
+
+/** La fuente de un alimento sembrado: todas menos `trainer`. */
+export type SeededFoodSource = Exclude<FoodSource, "trainer">;
+
+/**
+ * Un alimento de la biblioteca de un entrenador con su origen (§4): `own` si está en su copia
+ * propia; `other` si solo llega del catálogo y es de otro entrenador, del que no se sabe nada más; y
+ * `seeded` si llega sembrado, con su fuente.
+ */
+export type LibraryFood =
+  | (Food & { origin: "own" })
+  | (CatalogFood & { origin: "other"; source: "trainer" })
+  | (CatalogFood & { origin: "seeded"; source: SeededFoodSource });
+
+function catalogOrigin(food: CatalogFood): LibraryFood {
+  return food.source === "trainer"
+    ? { ...food, source: food.source, origin: "other" }
+    : { ...food, source: food.source, origin: "seeded" };
+}
+
+/**
+ * La biblioteca de un entrenador: la unión por `id` de su copia propia y de lo que llega del
+ * catálogo común (§4). Si un alimento está en los dos manda la copia propia, porque el catálogo puede
+ * ir por detrás (`pendiente`). Los archivados no salen, vengan de donde vengan; por eso `own` tiene
+ * que traer también los propios archivados que el catálogo aún pueda servir como activos (los
+ * `pendiente`), o saldrían como ajenos.
+ *
+ * Con `text`, de la copia propia salen solo los que coinciden (`matchesFoodName`), pero tapa al
+ * catálogo la copia entera: un propio renombrado y aún sin publicar que el catálogo encuentra por su
+ * nombre viejo no vuelve como ajeno. Lo del catálogo no se filtra: ya llega buscado. Primero los
+ * propios y después lo del catálogo, cada grupo en el orden en que llega: ordenar es cosa de la
+ * pantalla.
  */
 export function mergeFoodLibrary(
   own: readonly Food[],
   catalog: readonly CatalogFood[],
+  text = "",
 ): LibraryFood[] {
   const ownIds = new Set(own.map((food) => food.id));
   return [
-    ...own.map((food) => ({ ...food, origin: "own" as const })),
-    ...catalog
-      .filter((food) => !ownIds.has(food.id))
-      .map((food) => ({ ...food, origin: "other" as const })),
+    ...own
+      .filter((food) => matchesFoodName(food.name, text))
+      .map((food) => ({ ...food, origin: "own" as const })),
+    ...catalog.filter((food) => !ownIds.has(food.id)).map(catalogOrigin),
   ].filter((food) => food.status === "activo");
 }

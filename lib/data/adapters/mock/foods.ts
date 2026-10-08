@@ -115,6 +115,7 @@ export function createFoodCatalogPort(
         name: food.name,
         composition: food.composition,
         status: food.status,
+        source: "trainer",
       });
       if (existing) existing.food = published;
       else ctx.state.catalogFoods.push({ authorId: trainerId, food: published });

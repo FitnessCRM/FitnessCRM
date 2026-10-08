@@ -88,7 +88,7 @@ export function buildFoods(d: DemoDates): { foods: Food[]; catalogFoods: Catalog
     status: CatalogFood["status"] = "activo",
   ): CatalogEntry => ({
     authorId,
-    food: { id: s.id, name: s.name, composition: { ...s.composition }, status },
+    food: { id: s.id, name: s.name, composition: { ...s.composition }, status, source: "trainer" },
   });
 
   const catalogFoods: CatalogEntry[] = [

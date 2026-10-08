@@ -134,7 +134,7 @@ describe("FoodCatalogPort (in memory)", () => {
     const catalog = await p.foodCatalog.listCatalogFoods();
     expect(catalog.length).toBeGreaterThan(0);
     for (const food of catalog) {
-      expect(Object.keys(food).sort()).toEqual(["composition", "id", "name", "status"]);
+      expect(Object.keys(food).sort()).toEqual(["composition", "id", "name", "source", "status"]);
       expect(food.status).toBe("activo");
     }
     expect(JSON.stringify(catalog)).not.toContain(OTHER_TRAINER_ID);

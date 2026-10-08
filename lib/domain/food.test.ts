@@ -5,10 +5,13 @@ import {
   countNonCountingItems,
   createFoodItem,
   foodItemContribution,
+  foodNameMatchRank,
+  matchesFoodName,
   mealSubtotal,
   menuRemaining,
   menuTotal,
   mergeFoodLibrary,
+  parseCatalogFood,
   renameFoodItem,
   setFoodItemGrams,
 } from "./food";
@@ -48,6 +51,7 @@ function catalogFood(over: Partial<CatalogFood> = {}): CatalogFood {
     name: "Arroz blanco",
     composition: { kcal: 354, proteinG: 7, carbsG: 79, fatG: 0.6 },
     status: "activo",
+    source: "trainer",
     ...over,
   };
 }
@@ -350,14 +354,88 @@ describe("menuRemaining", () => {
   });
 });
 
+describe("parseCatalogFood", () => {
+  const seeded = {
+    id: "usda-171287",
+    name: "Huevo entero",
+    composition: { kcal: 143, proteinG: 12.56, carbsG: 0.72, fatG: 9.51 },
+    status: "activo",
+    source: "usda",
+  };
+
+  it("rounds a seeded food's macros to one decimal, like what the trainer writes", () => {
+    const food = parseCatalogFood(seeded);
+    expect(food?.composition).toEqual({ kcal: 143, proteinG: 12.6, carbsG: 0.7, fatG: 9.5 });
+    expect(food?.composition.proteinG).toBe(foodDraftSchema.parse(seeded).composition.proteinG);
+  });
+
+  it("drops a food that goes over 100 g once rounded, though it did not before", () => {
+    // 33.35 + 33.35 + 33.25 = 99.95 g; rounded, 33.4 + 33.4 + 33.3 = 100.1 g.
+    const raw = {
+      ...seeded,
+      composition: { kcal: 0, proteinG: 33.35, carbsG: 33.35, fatG: 33.25 },
+    };
+    expect(raw.composition.proteinG + raw.composition.carbsG + raw.composition.fatG).toBeLessThan(
+      100,
+    );
+    expect(parseCatalogFood(raw)).toBeNull();
+  });
+
+  it("drops what does not meet the schema: an unknown source, decimal kcal or no name", () => {
+    expect(parseCatalogFood({ ...seeded, source: "bedca" })).toBeNull();
+    expect(
+      parseCatalogFood({ ...seeded, composition: { ...seeded.composition, kcal: 1.5 } }),
+    ).toBeNull();
+    expect(parseCatalogFood({ ...seeded, name: "" })).toBeNull();
+  });
+});
+
+describe("foodNameMatchRank", () => {
+  it("ignores case and accents: «platano» finds «Plátano»", () => {
+    expect(matchesFoodName("Plátano", "platano")).toBe(true);
+    expect(matchesFoodName("plátano de canarias", "PLÁTANO")).toBe(true);
+    expect(matchesFoodName("Piña", "pina")).toBe(true);
+  });
+
+  it("ranks a name that starts with the text, then one with a word that does, then one that contains it", () => {
+    expect(foodNameMatchRank("Arroz basmati", "arr")).toBe(0);
+    expect(foodNameMatchRank("Tortitas de arroz", "arr")).toBe(1);
+    expect(foodNameMatchRank("Harina de garroba", "arr")).toBe(2);
+    expect(foodNameMatchRank("Pechuga de pollo", "arr")).toBeNull();
+  });
+
+  it("matches inside a word only from 3 letters on, like the catalog", () => {
+    expect(foodNameMatchRank("Harina", "ar")).toBeNull();
+    expect(foodNameMatchRank("Harina", "ari")).toBe(2);
+  });
+
+  it("matches everything with an empty or blank text", () => {
+    expect(foodNameMatchRank("Nueces", "")).toBe(0);
+    expect(foodNameMatchRank("Nueces", "   ")).toBe(0);
+  });
+});
+
 describe("mergeFoodLibrary", () => {
-  it("marks own foods as own and catalog-only foods as someone else's", () => {
-    const library = mergeFoodLibrary([food()], [catalogFood()]);
+  it("marks own foods as own, a trainer's catalog food as someone else's and a seeded one with its source", () => {
+    const library = mergeFoodLibrary(
+      [food()],
+      [
+        catalogFood(),
+        catalogFood({ id: "usda-1", source: "usda" }),
+        catalogFood({ id: "off-1", source: "off" }),
+      ],
+    );
     expect(library.map((f) => [f.id, f.origin])).toEqual([
       ["food-avena", "own"],
       ["food-arroz", "other"],
+      ["usda-1", "seeded"],
+      ["off-1", "seeded"],
     ]);
     expect(library[1]).not.toHaveProperty("trainerId");
+    expect(library.slice(2).map((f) => (f.origin === "seeded" ? f.source : null))).toEqual([
+      "usda",
+      "off",
+    ]);
   });
 
   it("keeps the own copy when a food is in both, because the catalog can lag behind", () => {
@@ -373,5 +451,18 @@ describe("mergeFoodLibrary", () => {
     const stillActive = catalogFood({ id: archived.id });
     const otherArchived = catalogFood({ id: "food-x", status: "archivado" });
     expect(mergeFoodLibrary([archived], [stillActive, otherArchived])).toEqual([]);
+  });
+
+  it("filters the own copy by the text, with the same matching as the catalog", () => {
+    const own = [food(), food({ id: "food-platano", name: "Plátano" })];
+    const library = mergeFoodLibrary(own, [], "platano");
+    expect(library.map((f) => f.id)).toEqual(["food-platano"]);
+  });
+
+  it("covers the catalog with the whole own copy, not just what matches the text", () => {
+    // Renamed and not yet published: the catalog still finds it by its old name.
+    const renamed = food({ name: "Avena integral", publishStatus: "pendiente" });
+    const stale = catalogFood({ id: renamed.id, name: "Copos de avena" });
+    expect(mergeFoodLibrary([renamed], [stale], "copos")).toEqual([]);
   });
 });

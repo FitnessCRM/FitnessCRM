@@ -102,17 +102,58 @@ export const foodSchema = z.object({
 export type Food = z.infer<typeof foodSchema>;
 
 /**
+ * De dónde sale un alimento del catálogo común (§4): `trainer` si lo creó un entrenador; `usda`
+ * (USDA FoodData Central) u `off` (Open Food Facts) si llegó sembrado, sin autor y de solo lectura.
+ */
+export const foodSourceSchema = z.enum(["trainer", "usda", "off"]);
+export type FoodSource = z.infer<typeof foodSourceSchema>;
+
+/**
  * Alimento tal como llega del catálogo común. Sin `trainerId` ni ningún otro dato del autor: de un
- * alimento ajeno solo se sabe que es «de otro» (§4). Sin `publishStatus`, que es de la copia propia.
- * Lleva `status` para que un archivado que el catálogo aún sirva no vuelva a la biblioteca.
+ * alimento ajeno solo se sabe que es «de otro» o, si es sembrado, su fuente (§4). Sin
+ * `publishStatus`, que es de la copia propia. Lleva `status` para que un archivado que el catálogo
+ * aún sirva no vuelva a la biblioteca.
  */
 export const catalogFoodSchema = z.object({
   id: idSchema,
   name: nonEmptyTextSchema,
   composition: compositionSchema,
   status: foodStatusSchema,
+  source: foodSourceSchema,
 });
 export type CatalogFood = z.infer<typeof catalogFoodSchema>;
+
+/**
+ * Alimento tal como lo sirve el catálogo, antes de leerlo: los sembrados traen macros con más de un
+ * decimal. Al validarlo se redondean a uno con el mismo redondeo que lo que escribe el entrenador
+ * (`compositionInputSchema`), y el tope de 100 g se comprueba ya redondeado (§5).
+ */
+export const catalogFoodInputSchema = catalogFoodSchema.extend({
+  composition: compositionInputSchema,
+});
+export type CatalogFoodInput = z.input<typeof catalogFoodInputSchema>;
+
+/** Resultados por página de la búsqueda del catálogo, si no se pide otro número. */
+export const FOOD_SEARCH_DEFAULT_LIMIT = 10;
+/** Lo más que devuelve una página de la búsqueda del catálogo. */
+export const FOOD_SEARCH_MAX_LIMIT = 100;
+
+/**
+ * Una búsqueda en el catálogo común (§4): texto, cursor de la página anterior (opaco, `null` o sin
+ * él para la primera) y cuántos resultados por página. Con el texto vacío, todos.
+ */
+export const foodSearchSchema = z.object({
+  text: z.string().default(""),
+  cursor: z.string().min(1).nullish(),
+  limit: z.number().int().min(1).max(FOOD_SEARCH_MAX_LIMIT).default(FOOD_SEARCH_DEFAULT_LIMIT),
+});
+export type FoodSearch = z.input<typeof foodSearchSchema>;
+
+/** Una página de la búsqueda del catálogo. `nextCursor` es `null` en la última. */
+export interface FoodSearchPage {
+  foods: CatalogFood[];
+  nextCursor: string | null;
+}
 
 /**
  * Lo que escribe el entrenador al crear o editar un alimento. Al validarlo, los macros de la
