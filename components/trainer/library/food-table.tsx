@@ -11,7 +11,7 @@ import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 
 const t = es.screensLibrary.foods;
-const f = t.form;
+const f = es.foodForm;
 
 /** Nombre y cuatro cifras por 100 g. En móvil las cifras se estrechan y el nombre se parte. */
 const ROW_GRID =

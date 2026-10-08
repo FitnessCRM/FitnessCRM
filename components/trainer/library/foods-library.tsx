@@ -15,7 +15,7 @@ import { useArchiveFood, useFoods, useSaveFood } from "@/lib/data/hooks";
 import { formatNumber } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { FoodArchiveDialog } from "./food-archive-dialog";
-import { FoodForm, type FoodFormValues } from "./food-form";
+import { FoodForm, type FoodFormValues } from "@/components/editor/food-form";
 import { FoodTable } from "./food-table";
 import { LibraryHeader, LibraryPanel } from "./library-header";
 
@@ -189,7 +189,7 @@ export function FoodsLibrary() {
                 {status}
               </Card>
             ) : (
-              <EmptyState title={t.form.pickTitle} description={t.form.pickHint} />
+              <EmptyState title={t.panel.pickTitle} description={t.panel.pickHint} />
             )}
           </div>
         ) : (
@@ -248,10 +248,10 @@ function savedNotice(
   published: boolean,
 ): string {
   const rounded = MACROS.filter((macro) => typed[macro] !== saved[macro]).map(
-    (macro) => `${t.form.macroNames[macro]} ${formatNumber(saved[macro])} g`,
+    (macro) => `${t.panel.macroNames[macro]} ${formatNumber(saved[macro])} g`,
   );
-  const base = published ? t.form.saved : t.form.savedPending;
+  const base = published ? t.panel.saved : t.panel.savedPending;
   return rounded.length === 0
     ? base
-    : `${base} ${t.form.rounded.replace("{list}", rounded.join(", "))}`;
+    : `${base} ${t.panel.rounded.replace("{list}", rounded.join(", "))}`;
 }

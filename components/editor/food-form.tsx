@@ -12,7 +12,7 @@ import { ErrorState } from "@/components/ui/states";
 import { foodDraftSchema, type FoodDraft, type LibraryFood } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 
-const t = es.screensLibrary.foods.form;
+const t = es.foodForm;
 
 const MACROS = ["proteinG", "carbsG", "fatG"] as const;
 type MacroKey = (typeof MACROS)[number];
