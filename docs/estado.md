@@ -489,8 +489,9 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
 - **Editar datos del cliente** (`/clients/[clientId]/edit`, tarjeta 43, PR #35). Comparte la
   tarjeta de datos con el alta. La fecha de alta se ve pero no se edita (I22) y el estado tiene
   su propio flujo. La cadencia es un número de días libre. Deuda: qué pasa al cambiar el email
-  cuando las fotos vivan en el Drive (sin tarjeta, afecta a la 35 y la 17); editar un cliente de
-  baja por URL (tarjeta 63).
+  cuando las fotos vivan en el Drive (sin tarjeta, afecta a la 35 y la 17). Un cliente de baja no
+  admite cambios (`docs/dominio.md` §7, PR #87): su página de edición por URL muestra el aviso en
+  vez del formulario (tarjeta 63, PR #88).
 
 - **Baja y reactivación** (`client-status-action.tsx`, tarjeta 44, PR #37). Tarjeta al pie del
   detalle con su diálogo. Decidido con el propietario: la baja no toca plan ni membresía,
@@ -782,7 +783,7 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
 - **Backend.** Firebase está conectado y se ha probado con el proyecto real (06-10-2026): el
   `users/{uid}` del entrenador está creado, y las reglas de seguridad (tarjeta 34) y los índices de
   `reviews` están desplegados. Las reglas se comprobaron con sesión de entrenador contra el proyecto
-  real el 08-10-2026 (tarjeta 34, en «En revisión» hasta fusionar este PR). Falta, por este orden: decidir cuándo el adaptador de Firebase (16)
+  real el 08-10-2026 (tarjeta 34, PR #86). Falta, por este orden: decidir cuándo el adaptador de Firebase (16)
   pasa a ser el adaptador por defecto de `providers.tsx`; fotos de revisión (17), con la decisión
   de dónde guardarlas **reabierta el 05-10-2026** por el propietario: no se construye nada hasta
   cerrarla. Opciones: (a) el Drive del entrenador con un servidor y su token, que exige el plan
@@ -800,8 +801,9 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   no los exige, así que solo se comprueban contra un proyecto real. La tarjeta sigue en «En
   revisión» hasta su cierre.
 - **Decisiones de dominio pendientes**: los huecos menores de la revisión de errores, H5, H6, H7 y
-  H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62).
-- **Pantallas menores**: editar un cliente de baja por URL (63).
+  H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62). La
+  regla de baja ya está en §7 (PR #87); falta comprobar que asignar planes y enviar feedback a un
+  cliente de baja la respetan (tarjeta 61).
 - **Deuda menor con tarjeta**: favicon (19) y cifras del panel en una consulta (42). Resueltas: el nombre accesible de `NumberField` (59, PR
   #66, etiqueta y campo asociados con `useId`) y `ReviewPort.listSubmittedReviews`, que se quitó
   del puerto con su hook y su clave por no usarlo ninguna pantalla (64, PR #74, **BREAKING
