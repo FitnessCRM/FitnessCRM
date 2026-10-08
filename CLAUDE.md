@@ -488,7 +488,8 @@ en memoria. El área de cliente carga y se lee sin conexión, y las escrituras d
 encolan hasta volver la red (tarjetas 81 y 82, PR #57 y #58). La capa de datos de los alimentos
 está en `main` (tarjeta 88, PR #85): dominio, dos puertos (copia propia y catálogo común), adaptador
 en memoria, copia propia en Firestore con sus reglas desplegadas, catálogo común «no disponible» con
-Firebase hasta que la app se conecte a su API (tarjeta 90), y sincronización en los hooks. Firebase
+Firebase hasta que la app se conecte a su API (tarjeta 90), y sincronización en los hooks. El
+catálogo común se busca por texto y por páginas (tarjeta 92, PR #93). Firebase
 está conectado y probado con el proyecto real (06-10-2026): el `users/{uid}` del entrenador está
 creado y las reglas y los índices de `reviews` están desplegados. Falta decidir cuándo el adaptador
 de Firebase pasa a ser el de por defecto, las fotos de revisión (17, con la decisión de dónde

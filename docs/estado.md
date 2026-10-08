@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 08-10-2026. Corresponde a `main` en `93fcf07` (PR #89). Están en `main` los
+Última actualización: 08-10-2026. Corresponde a `main` en `c9eefe0` (PR #93). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad, el adaptador de Firebase, el modo sin conexión del cliente y la capa de datos de los
 alimentos; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
@@ -800,6 +800,37 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
     renombra sin desvincular el alimento (lo resuelve la 89 con `renameFoodItem`); no se ha visto en
     el navegador, porque no hay pantallas.
 
+- **Catálogo de alimentos por búsqueda paginada y alimentos sembrados** (tarjeta 92, PR #93). Sin
+  pantallas: las hace la 89. `docs/dominio.md` §4 y §5.
+  - **Dominio:** `CatalogFood` gana `source` (`trainer`, `usda` u `off`) y la biblioteca tiene tres
+    orígenes: tuyo (`own`), de otro (`other`) y sembrado, con su fuente (`seeded`). Lo que llega del
+    catálogo se lee con `parseCatalogFood`, que redondea los macros a un decimal con el mismo esquema
+    que lo que escribe el entrenador; lo que redondeado pasa de 100 g, o no cumple el esquema, se
+    descarta sin hacer fallar la página. La copia propia se filtra por el texto con el mismo
+    criterio con que busca el catálogo (sin mayúsculas ni tildes; con menos de 3 letras, solo por
+    el principio del nombre o de una palabra), y tapa al catálogo entera, no solo lo que coincide:
+    un propio renombrado y sin publicar no vuelve como ajeno por su nombre viejo.
+  - **Puerto:** `searchCatalogFoods({ text, cursor, limit })` sustituye a `listCatalogFoods()`
+    (**BREAKING CHANGE**) y devuelve una página y el cursor de la siguiente, opaco y `null` en la
+    última: 10 resultados por defecto y 100 como máximo. Ningún método devuelve el catálogo entero.
+    Un cursor que el catálogo no emitió da `food_catalog.invalid_cursor`, que no es «no disponible».
+  - **Adaptadores:** el de memoria ordena como el contrato de la API (empieza por el texto, una
+    palabra empieza por él, lo contiene; a igual relevancia, los sembrados primero; con el texto
+    vacío, todos por nombre), respeta el límite aunque lo tenga todo en memoria y trae sembrados de
+    USDA y Open Food Facts con dos decimales, uno de ellos por encima de 100 g al redondearlo. No
+    imita las erratas de la API. Con Firebase, la búsqueda responde «no disponible» hasta la 90.
+  - **Hooks:** `useFoods({ text, onlyMine })` lista entera la copia propia y busca en el catálogo
+    por páginas: la primera al buscar y la siguiente solo cuando quien lo usa la pide («ver más»).
+    Nada encadena páginas por su cuenta, y si hay más lo dice `nextCursor`, no el tamaño de la
+    página. El catálogo está `loading`, `available`, `unavailable`, `error` (la primera página falló
+    por otra cosa que no es «no disponible») o `null` con «solo los míos»; un «ver más» que falla no
+    esconde lo ya cargado y da su error aparte. La unión de las páginas con la copia propia vive
+    fuera de React, en `lib/data/hooks/food-library.ts`.
+  - **Deuda:** el adaptador de Firebase fija el puerto 8080 del emulador de Firestore, así que con
+    ese puerto ocupado `ports.test.ts` agota el tiempo aunque los emuladores estén en otro (tarjeta
+    95); y la paginación por desplazamiento puede saltarse un alimento si el catálogo cambia entre
+    una página y la siguiente (los repetidos sí se quitan).
+
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
   `trainer/`) y #33 (enlace a la revisión desde el panel de control, rama
@@ -812,13 +843,13 @@ Las pantallas del cliente y del panel están en `main`. Desde el 21-09-2026 trab
 documentación después de cada fusión. Lo que queda, con su tarjeta:
 
 - **Alimentos**, por este orden:
-  1. **Catálogo por búsqueda y alimentos sembrados (92).** `FoodCatalogPort` pasa de listar a
-     buscar por texto, por páginas, y llegan los sembrados con su fuente (`docs/dominio.md` §4).
-  2. **Pantallas de alimentos (89):** Alimentos en Biblioteca y el cálculo en el editor de menú,
+  1. **Pantallas de alimentos (89):** Alimentos en Biblioteca y el cálculo en el editor de menú,
      con la tolerancia de «Cuadra» (§5).
-  3. **Conectar la API del catálogo común (90).** La API ya existe (`FitnessCRM/food-api`); la
+  2. **Conectar la API del catálogo común (90).** La API ya existe (`FitnessCRM/food-api`); la
      tarjeta está bloqueada porque la API no tiene CORS. Hasta entonces, con Firebase todos los
-     alimentos quedan pendientes de publicar.
+     alimentos quedan pendientes de publicar. Además, la implementación de la API no cumple su
+     contrato en el orden con el texto vacío: saca primero los sembrados en vez de todos por nombre.
+     La app sigue el contrato; hay que pedir en `FitnessCRM/food-api` que se alineen.
 
   Los índices de `foods` no están comprobados contra el proyecto real.
 
