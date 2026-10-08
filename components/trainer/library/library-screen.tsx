@@ -1,11 +1,12 @@
 "use client";
 
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PageHeader } from "@/components/ui/page-header";
 import { QueryBoundary } from "@/components/ui/query-boundary";
 import { EmptyState } from "@/components/ui/states";
+import { Tabs } from "@/components/ui/tabs";
 import { canonicalText, type Exercise } from "@/lib/domain";
 import {
   useArchiveExercise,
@@ -19,6 +20,8 @@ import { cn } from "@/lib/utils";
 import { ArchiveDialog } from "./archive-dialog";
 import { ExerciseForm, type ExerciseFormValues } from "./exercise-form";
 import { ExerciseGrid } from "./exercise-grid";
+import { FoodsLibrary } from "./foods-library";
+import { LIBRARY_TABS, LibraryHeader, LibraryPanel, type LibraryTab } from "./library-header";
 
 const t = es.screensLibrary;
 
@@ -29,20 +32,43 @@ function distinct(exercises: Exercise[], field: "muscleGroup" | "equipment"): st
   );
 }
 
+const isLibraryTab = (value: string | null): value is LibraryTab =>
+  LIBRARY_TABS.includes(value as LibraryTab);
+
 /**
- * Pantalla 11 · Biblioteca. Rejilla filtrable a la izquierda y panel de edición a la derecha.
- * «Eliminar» archiva y avisa antes de a quién afecta (I13, §7); el vídeo es enlace externo (I20).
+ * Pantalla 11 · Biblioteca, con dos pestañas: Ejercicios y Alimentos. La activa va en la URL
+ * (`?tab=foods`) para que se pueda enlazar y recargar; sin parámetro, Ejercicios.
  */
 export function LibraryScreen() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const requested = useSearchParams().get("tab");
+  const tab: LibraryTab = isLibraryTab(requested) ? requested : "exercises";
+
+  return (
+    <Tabs
+      value={tab}
+      onValueChange={(next) =>
+        router.replace(next === "exercises" ? pathname : `${pathname}?tab=${next}`, {
+          scroll: false,
+        })
+      }
+      className="gap-6"
+    >
+      {tab === "foods" ? <FoodsLibrary /> : <ExercisesLibrary />}
+    </Tabs>
+  );
+}
+
+/**
+ * Pestaña Ejercicios. Rejilla filtrable a la izquierda y panel de edición a la derecha.
+ * «Eliminar» archiva y avisa antes de a quién afecta (I13, §7); el vídeo es enlace externo (I20).
+ */
+function ExercisesLibrary() {
   const exercises = useExercises();
 
   return (
-    <QueryBoundary
-      query={exercises}
-      isEmpty={() => false}
-      empty={null}
-      loading={<PageHeader title={es.pages.trainer.biblioteca} />}
-    >
+    <QueryBoundary query={exercises} isEmpty={() => false} empty={null} loading={<LibraryHeader />}>
       {(data) => <Library exercises={data} />}
     </QueryBoundary>
   );
@@ -88,16 +114,13 @@ function Library({ exercises }: { exercises: Exercise[] }) {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title={es.pages.trainer.biblioteca}
-        actions={<Button onClick={() => setSelectedId(null)}>{t.newExercise}</Button>}
+    <>
+      <LibraryHeader
+        action={<Button onClick={() => setSelectedId(null)}>{t.newExercise}</Button>}
+        count={`${exercises.length} ${t.count}`}
       />
-      <p className="text-text-muted -mt-4 text-[13px]">
-        {exercises.length} {t.count}
-      </p>
 
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_380px]">
+      <LibraryPanel tab="exercises" className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_380px]">
         <div className="flex min-w-0 flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
             <Input
@@ -151,7 +174,7 @@ function Library({ exercises }: { exercises: Exercise[] }) {
             />
           )}
         </aside>
-      </div>
+      </LibraryPanel>
 
       {confirming && selected ? (
         <ArchiveDialog
@@ -173,7 +196,7 @@ function Library({ exercises }: { exercises: Exercise[] }) {
           }}
         />
       ) : null}
-    </div>
+    </>
   );
 }
 

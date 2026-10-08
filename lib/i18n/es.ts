@@ -798,6 +798,98 @@ export const es = {
         "No se ha podido comprobar quién usa este ejercicio. Vuelve a intentarlo antes de eliminarlo.",
       working: "Eliminando…",
     },
+    tabs: {
+      label: "Secciones de la biblioteca",
+      exercises: "Ejercicios",
+      foods: "Alimentos",
+    },
+    /** Pestaña Alimentos (§4, §5, §7). Lo que no es tuyo se lee; nunca se dice de quién es. */
+    foods: {
+      count: { one: "alimento tuyo", other: "alimentos tuyos" },
+      newFood: "+ Nuevo alimento",
+      search: "Buscar alimento…",
+      onlyMine: "Solo los míos",
+      legend: "Cifras por cada 100 g. P: proteína · C: carbohidratos · G: grasas, en gramos.",
+      columns: {
+        name: "Alimento",
+        kcal: "kcal",
+        protein: "P",
+        carbs: "C",
+        fat: "G",
+      },
+      groups: {
+        own: "Tus alimentos",
+        catalog: "Catálogo común",
+      },
+      ownEmpty: {
+        title: "Aún no tienes alimentos",
+        hint: "Crea el primero y podrás usarlo en tus menús. También puedes buscar en el catálogo común.",
+      },
+      ownNoMatches: "Ninguno de tus alimentos coincide.",
+      catalog: {
+        typeToSearch: "Escribe para buscar también en el catálogo común.",
+        loading: "Buscando en el catálogo común…",
+        noMatches: "Nada del catálogo común coincide.",
+        unavailable: "El catálogo común no responde. Ves solo tus alimentos.",
+        error: "No se ha podido buscar en el catálogo común.",
+        more: "Ver más del catálogo",
+        loadingMore: "Cargando…",
+        moreError: "No se ha podido cargar más del catálogo común.",
+      },
+      form: {
+        newTitle: "Nuevo alimento",
+        editTitle: "Editar alimento",
+        viewTitle: "Alimento",
+        pickTitle: "Alimento",
+        pickHint: "Elige un alimento de la lista o crea uno nuevo.",
+        name: "Nombre",
+        namePlaceholder: "Pechuga de pollo (cruda)",
+        nameRequired: "El nombre no puede quedar vacío.",
+        per100: "Por cada 100 g",
+        kcal: "kcal",
+        protein: "Proteína (g)",
+        carbs: "Carbos (g)",
+        fat: "Grasas (g)",
+        hint: "Las kcal las escribes tú: la app no las calcula a partir de los macros. Los macros se guardan con un decimal.",
+        kcalRequired: "Escribe las kcal. El 0 vale.",
+        kcalWhole: "Las kcal van en número entero, sin puntos ni comas.",
+        macroRequired: "Rellena los tres macros. El 0 vale.",
+        macroNegative: "Los macros no pueden ser negativos.",
+        macrosOver:
+          "Proteína, carbohidratos y grasas juntos no pueden pasar de 100 g por cada 100 g.",
+        menusKeep:
+          "Los menús que ya usan este alimento conservan la composición con la que se añadió.",
+        pendingNote:
+          "Aún no está en el catálogo común. Puedes usarlo ya en tus menús: se publicará solo.",
+        save: "Guardar",
+        saving: "Guardando…",
+        saveError: "No se ha podido guardar el alimento.",
+        delete: "Eliminar",
+        cancel: "Cancelar",
+        close: "Cerrar",
+        saved: "Guardado.",
+        savedPending: "Guardado. Pendiente de publicar en el catálogo común.",
+        rounded: "Se redondeó a un decimal: {list}.",
+        macroNames: {
+          proteinG: "proteína",
+          carbsG: "carbohidratos",
+          fatG: "grasas",
+        },
+        readOnly: {
+          other: "Lo creó otra cuenta. Solo se puede leer.",
+          usda: "Viene de USDA FoodData Central. Solo se puede leer.",
+          off: "Viene de Open Food Facts, con licencia ODbL. Solo se puede leer.",
+        },
+      },
+      archive: {
+        title: "Eliminar alimento",
+        body: "Sale de tu biblioteca y del catálogo común y deja de ofrecerse en los menús. Los menús que ya lo usan no cambian.",
+        confirm: "Eliminar",
+        cancel: "Cancelar",
+        working: "Eliminando…",
+        error: "No se ha podido eliminar el alimento.",
+      },
+    },
   },
   screensMembership: {
     eyebrow: "Tu plan con",
@@ -1422,6 +1514,17 @@ export const es = {
     dayType: { entrenamiento: "Día de entrenamiento", descanso: "Día de descanso" },
     dayTypeShort: { entrenamiento: "entrenamiento", descanso: "descanso" },
     pose: { frente: "Frente", perfil: "Perfil", espalda: "Espalda" },
+    /**
+     * De dónde sale un alimento de la biblioteca (§4). «De otra cuenta»: ni la identidad ni el
+     * género de quien lo creó. La fuente de un sembrado va entera: es la atribución que pide ODbL.
+     */
+    foodOrigin: {
+      own: "Tuyo",
+      other: "De otra cuenta",
+      usda: "USDA",
+      off: "Open Food Facts",
+    },
+    foodPublish: { pendiente: "Pendiente de publicar" },
   },
   dev: {
     kitchenSink: {

@@ -18,6 +18,8 @@ export function NumberField({
   hint,
   placeholder,
   showZero = false,
+  invalid,
+  describedBy,
   className,
 }: {
   label: string;
@@ -29,6 +31,9 @@ export function NumberField({
   /** Texto visible con el campo vacío: en táctil no hay `title`, así que lo que explica un vacío va aquí. */
   placeholder?: string;
   showZero?: boolean;
+  invalid?: boolean;
+  /** Id del mensaje que explica el campo o su error, cuando está fuera del campo. */
+  describedBy?: string;
   className?: string;
 }) {
   const id = useId();
@@ -48,6 +53,8 @@ export function NumberField({
         }
         title={hint}
         placeholder={placeholder}
+        aria-invalid={invalid || undefined}
+        aria-describedby={describedBy}
         onChange={(event) => {
           const raw = event.target.value;
           onChange(raw === "" ? null : Number(raw));
