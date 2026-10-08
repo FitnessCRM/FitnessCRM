@@ -1030,6 +1030,11 @@ export const es = {
       cadenceInvalid: "Escribe un número de días entero y mayor que 0",
       saveFailed: "No se han podido guardar los cambios.",
     },
+    inactive: {
+      title: "Cliente de baja",
+      hint: "Sus datos no se editan mientras esté de baja. Si vuelve, reactívalo desde su ficha.",
+      back: "Volver a la ficha",
+    },
   },
   screensClientSignup: {
     eyebrow: "Clientes / Nuevo",
