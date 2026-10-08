@@ -1,6 +1,7 @@
 import type { FoodCatalogPort, OwnFoodPort } from "@/lib/data/ports";
 import {
   DomainError,
+  FoodCatalogInvalidCursorError,
   FoodCatalogUnavailableError,
   catalogFoodSchema,
   foldText,
@@ -98,7 +99,7 @@ function decodeCursor(cursor: string | null | undefined): number {
     // No es base64: cae en el error de abajo.
   }
   if (!Number.isInteger(offset) || offset < 0 || encodeCursor(offset) !== cursor) {
-    throw new DomainError("food_catalog.invalid_cursor", `Cursor ${cursor} no válido`);
+    throw new FoodCatalogInvalidCursorError(cursor);
   }
   return offset;
 }

@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { mergeFoodLibrary, type FoodDraft, type LibraryFood } from "@/lib/domain";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { FoodDraft, LibraryFood } from "@/lib/domain";
+import {
+  buildFoodLibrary,
+  foodCatalogStatus,
+  nextCatalogCursor,
+  shouldRetryCatalogSearch,
+  type FoodCatalogStatus,
+} from "./food-library";
 import {
   archiveFood,
-  isFoodCatalogUnavailable,
   listOwnFoodsForLibrary,
   retryPendingFoodsOnce,
   saveFood,
@@ -16,24 +22,35 @@ import { usePorts } from "./ports-provider";
 import { queryKeys } from "./query-keys";
 import { useTrainerId } from "./use-session";
 
-/**
- * Cómo está el catálogo común para esta lista. `null` con «solo los míos»: no se consulta.
- * - `loading`: aún no ha respondido.
- * - `available`: la lista lleva también los alimentos de otros.
- * - `unavailable`: no respondió; la lista lleva solo los propios (§12). No es un error de pantalla.
- */
-export type FoodCatalogStatus = "loading" | "available" | "unavailable" | null;
+export type { FoodCatalogStatus } from "./food-library";
+
+/** «Ver más» del catálogo común: la página siguiente solo se pide cuando se llama a `loadMore`. */
+export interface FoodCatalogMore {
+  /** Si el catálogo dio cursor para otra página. No se deduce del tamaño de la página. */
+  hasMore: boolean;
+  /** Pide la página siguiente, una. Sin más páginas o con una ya en camino, no hace nada. */
+  loadMore: () => void;
+  isLoadingMore: boolean;
+  /** El fallo de la última página pedida, o `null`. Lo ya cargado se sigue enseñando. */
+  error: unknown;
+}
 
 /**
- * La biblioteca de alimentos del entrenador: su copia propia unida al catálogo común (§4), cada uno
- * marcado como propio o de otro. Son dos consultas separadas, y un catálogo caído no tumba la lista.
- * La carga y el error de la lista son los de la copia propia. Al montar y al volver la red reintenta
- * publicar lo pendiente.
+ * La biblioteca de alimentos del entrenador para un texto (§4): los suyos que coinciden y lo que
+ * devuelve la búsqueda en el catálogo común, cada uno con su origen (tuyo, de otro, sembrado).
+ *
+ * Son dos consultas separadas. La copia propia se lista entera, con los archivados pendientes, y se
+ * filtra por el texto aquí. El catálogo se busca por páginas con el texto en la clave: la primera al
+ * buscar, y la siguiente solo con `catalogMore.loadMore()`. Al invalidarse tras publicar, TanStack
+ * vuelve a pedir las páginas ya cargadas y ninguna más. Un catálogo caído no tumba la lista. La
+ * carga y el error de la lista son los de la copia propia. Sin espera entre teclas: la pone la
+ * pantalla. Al montar y al volver la red reintenta publicar lo pendiente.
  */
-export function useFoods(options: { onlyMine?: boolean } = {}) {
+export function useFoods(options: { text?: string; onlyMine?: boolean } = {}) {
   const ports = usePorts();
   const trainerId = useTrainerId();
   const onlyMine = options.onlyMine ?? false;
+  const text = (options.text ?? "").trim();
 
   const own = useQuery({
     queryKey: queryKeys.ownFoods(trainerId ?? ""),
@@ -42,28 +59,38 @@ export function useFoods(options: { onlyMine?: boolean } = {}) {
     enabled: trainerId !== undefined,
   });
 
-  const catalog = useQuery({
-    queryKey: queryKeys.foodCatalog(trainerId ?? ""),
-    // Solo la primera página, hasta que la búsqueda paginada llegue a los hooks.
-    queryFn: async () => (await ports.foodCatalog.searchCatalogFoods({})).foods,
-    enabled: trainerId !== undefined && !onlyMine,
-    // «No disponible» no se reintenta: la pantalla tiene que llegar enseguida a los propios solos.
-    retry: (failureCount, error) => !isFoodCatalogUnavailable(error) && failureCount < 1,
+  const searchEnabled = trainerId !== undefined && !onlyMine;
+  const catalog = useInfiniteQuery({
+    queryKey: queryKeys.foodCatalogSearch(trainerId ?? "", text),
+    queryFn: ({ pageParam }) => ports.foodCatalog.searchCatalogFoods({ text, cursor: pageParam }),
+    initialPageParam: null as string | null,
+    getNextPageParam: nextCatalogCursor,
+    enabled: searchEnabled,
+    retry: shouldRetryCatalogSearch,
   });
 
   usePendingFoodsRetry();
 
-  const catalogStatus: FoodCatalogStatus = onlyMine
-    ? null
-    : catalog.isError
-      ? "unavailable"
-      : catalog.isSuccess
-        ? "available"
-        : "loading";
+  const pages = searchEnabled ? (catalog.data?.pages ?? []) : [];
+  const catalogStatus: FoodCatalogStatus = foodCatalogStatus({
+    enabled: searchEnabled,
+    hasPages: pages.length > 0,
+    error: catalog.error,
+  });
 
   const foods: LibraryFood[] | undefined = own.data
-    ? mergeFoodLibrary(own.data, catalogStatus === "available" ? (catalog.data ?? []) : [])
+    ? buildFoodLibrary(own.data, catalogStatus === "available" ? pages : [], text)
     : undefined;
+
+  const hasMore = catalogStatus === "available" && catalog.hasNextPage;
+  const catalogMore: FoodCatalogMore = {
+    hasMore,
+    loadMore: () => {
+      if (hasMore && !catalog.isFetchingNextPage) void catalog.fetchNextPage();
+    },
+    isLoadingMore: catalog.isFetchingNextPage,
+    error: catalog.isFetchNextPageError ? catalog.error : null,
+  };
 
   return {
     foods,
@@ -72,6 +99,7 @@ export function useFoods(options: { onlyMine?: boolean } = {}) {
     error: own.error,
     refetch: own.refetch,
     catalog: catalogStatus,
+    catalogMore,
   };
 }
 
