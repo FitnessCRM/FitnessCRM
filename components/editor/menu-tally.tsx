@@ -127,7 +127,7 @@ function TallyRow({
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+      <div className="flex flex-col xl:flex-row xl:flex-wrap xl:items-baseline xl:justify-between xl:gap-x-2">
         <span className="text-text-subtle tracking-label text-[11px] uppercase">
           {t.rows[nutrient]}
         </span>
