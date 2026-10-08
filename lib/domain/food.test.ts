@@ -332,19 +332,41 @@ describe("menuRemaining", () => {
     expect(remaining.fatG).toEqual({ status: "no_target" });
   });
 
-  it("matches when both round to the same tenth, and not when they read differently", () => {
-    expect(menuRemaining({ ...emptyMacrosDraft(), fatG: 59.9 }, total).fatG).toEqual({
-      status: "matches",
-    });
-    expect(menuRemaining({ ...emptyMacrosDraft(), fatG: 60 }, total).fatG).toEqual({
-      status: "remaining",
-      amount: 0.1,
-    });
+  const kcalAgainst = (sum: number) =>
+    menuRemaining({ ...emptyMacrosDraft(), kcal: 2000 }, { ...total, kcal: sum }).kcal;
+  const proteinAgainst = (sum: number) =>
+    menuRemaining({ ...emptyMacrosDraft(), proteinG: 100 }, { ...total, proteinG: sum }).proteinG;
+
+  it("matches kcal up to 5 off, limit included, on both sides", () => {
+    expect(kcalAgainst(2005)).toEqual({ status: "matches" });
+    expect(kcalAgainst(1995)).toEqual({ status: "matches" });
+  });
+
+  it("reports the real kcal difference from 6 off, on both sides", () => {
+    expect(kcalAgainst(2006)).toEqual({ status: "over", amount: 6 });
+    expect(kcalAgainst(1994)).toEqual({ status: "remaining", amount: 6 });
+  });
+
+  it("measures the kcal margin on the values as they are shown", () => {
+    expect(kcalAgainst(2005.4)).toEqual({ status: "matches" });
+    expect(kcalAgainst(2005.5)).toEqual({ status: "over", amount: 6 });
+  });
+
+  it("matches each macro up to 1 g off, limit included, on both sides", () => {
+    expect(proteinAgainst(101)).toEqual({ status: "matches" });
+    expect(proteinAgainst(99)).toEqual({ status: "matches" });
+    expect(proteinAgainst(101.04)).toEqual({ status: "matches" });
+  });
+
+  it("reports the real macro difference from 1.1 g off, on both sides", () => {
+    expect(proteinAgainst(101.1)).toEqual({ status: "over", amount: 1.1 });
+    expect(proteinAgainst(98.9)).toEqual({ status: "remaining", amount: 1.1 });
+    expect(proteinAgainst(101.06)).toEqual({ status: "over", amount: 1.1 });
   });
 
   it("returns amounts without floating-point noise", () => {
-    const r = menuRemaining({ ...emptyMacrosDraft(), proteinG: 0.3 }, { ...total, proteinG: 0.1 });
-    expect(r.proteinG).toEqual({ status: "remaining", amount: 0.2 });
+    const r = menuRemaining({ ...emptyMacrosDraft(), proteinG: 2.3 }, { ...total, proteinG: 0.1 });
+    expect(r.proteinG).toEqual({ status: "remaining", amount: 2.2 });
     expect(roundGrams(0.1 + 0.2)).toBe(0.3);
   });
 

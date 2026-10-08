@@ -134,12 +134,21 @@ export function roundKcal(kcal: number): number {
 /* ---------- Lo que queda frente a las macros del menú (I30) ---------- */
 
 /**
- * Lo que queda de una cifra del menú. Se compara lo redondeado como se presenta, así que «cuadra»
- * es que las dos cifras se lean iguales (§11, hueco 4). `amount` es siempre positivo, redondeado.
+ * Margen de «Cuadra» (§5): la diferencia máxima, límite incluido, entre lo declarado y lo que suman
+ * los alimentos para dar una cifra por cuadrada. Se mide sobre los valores redondeados como se
+ * presentan. Decidido el 08-10-2026.
+ */
+export const MENU_MATCH_TOLERANCE_KCAL = 5;
+export const MENU_MATCH_TOLERANCE_GRAMS = 1;
+
+/**
+ * Lo que queda de una cifra del menú. Se compara lo redondeado como se presenta, y «cuadra» si la
+ * diferencia no pasa del margen (§5). `amount` es siempre positivo, redondeado: la diferencia real,
+ * no lo que pasa del margen.
  * - `no_target`: el entrenador aún no ha escrito esa cifra del menú.
- * - `remaining`: los alimentos suman menos; quedan `amount`.
+ * - `remaining`: los alimentos suman menos, fuera del margen; quedan `amount`.
  * - `matches`: cuadra.
- * - `over`: los alimentos suman más; se pasa en `amount`.
+ * - `over`: los alimentos suman más, fuera del margen; se pasa en `amount`.
  */
 export type RemainingStatus =
   | { status: "no_target" }
@@ -149,12 +158,17 @@ export type RemainingStatus =
 
 export type MenuRemaining = Record<NutrientKey, RemainingStatus>;
 
-/** Compara en unidades enteras de presentación (kcal o décimas de gramo) y vuelve a la unidad. */
+/**
+ * Compara en unidades enteras de presentación (kcal o décimas de gramo), para que el margen no
+ * dependa de la coma flotante, y vuelve a la unidad.
+ */
 function compareRounded(target: number, total: number, key: NutrientKey): RemainingStatus {
-  const toUnits = key === "kcal" ? roundKcal : gramsToTenths;
-  const fromUnits = key === "kcal" ? (units: number) => units : (units: number) => units / 10;
+  const isKcal = key === "kcal";
+  const toUnits = isKcal ? roundKcal : gramsToTenths;
+  const fromUnits = isKcal ? (units: number) => units : (units: number) => units / 10;
+  const tolerance = toUnits(isKcal ? MENU_MATCH_TOLERANCE_KCAL : MENU_MATCH_TOLERANCE_GRAMS);
   const diff = toUnits(target) - toUnits(total);
-  if (diff === 0) return { status: "matches" };
+  if (Math.abs(diff) <= tolerance) return { status: "matches" };
   return diff > 0
     ? { status: "remaining", amount: fromUnits(diff) }
     : { status: "over", amount: fromUnits(-diff) };
