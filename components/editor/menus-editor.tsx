@@ -70,13 +70,19 @@ interface CreatingFood {
  * Los alimentos salen de tu biblioteca o del catálogo común, o se escriben a mano; lo único que lee
  * datos es su campo, y crear un alimento sin salir del menú. Lo que suman es un apoyo: avisa y no
  * rellena ni bloquea nada (I30).
+ *
+ * Con `showErrors`, quien lo monta pide marcar los nombres vacíos de menú, comida y alimento, que
+ * es lo que el aviso de su pantalla no puede señalar. Kcal y macros no: cada menú ya dice qué le
+ * falta.
  */
 export function MenusEditor({
   menus,
   onChange,
+  showErrors = false,
 }: {
   menus: MenuEntryDraft[];
   onChange: (menus: MenuEntryDraft[]) => void;
+  showErrors?: boolean;
 }) {
   const [creating, setCreating] = useState<CreatingFood | null>(null);
   const update = (menuId: string, change: (menu: MenuEntryDraft) => MenuEntryDraft) =>
@@ -135,6 +141,7 @@ export function MenusEditor({
           <MenuCard
             key={menu.id}
             menu={menu}
+            showErrors={showErrors}
             onChange={(next) => update(menu.id, () => next)}
             onSuggest={() => onChange(setSuggestedMenu(menus, menu.id))}
             onRemove={() => onChange(menus.filter((m) => m.id !== menu.id))}
@@ -160,12 +167,14 @@ export function MenusEditor({
 
 function MenuCard({
   menu,
+  showErrors,
   onChange,
   onSuggest,
   onRemove,
   onCreateFood,
 }: {
   menu: MenuEntryDraft;
+  showErrors: boolean;
   onChange: (menu: MenuEntryDraft) => void;
   onSuggest: () => void;
   onRemove: () => void;
@@ -230,6 +239,7 @@ function MenuCard({
           onChange={(event) => onChange({ ...menu, name: event.target.value })}
           aria-label={t.menuName}
           placeholder={t.menuName}
+          aria-invalid={(showErrors && menu.name.trim() === "") || undefined}
           className="h-10 min-w-0 flex-1 basis-48 text-[14px]"
         />
         <NativeSelect
@@ -332,6 +342,7 @@ function MenuCard({
               <MealBlock
                 key={meal.id}
                 meal={meal}
+                showErrors={showErrors}
                 onName={(name) => setMeal(meal.id, (m) => ({ ...m, name }))}
                 onRemove={() =>
                   onChange({ ...menu, meals: menu.meals.filter((m) => m.id !== meal.id) })
@@ -378,6 +389,7 @@ function MenuCard({
 /** Una comida: su nombre, lo que suma y sus alimentos. */
 function MealBlock({
   meal,
+  showErrors,
   onName,
   onRemove,
   onItem,
@@ -386,6 +398,7 @@ function MealBlock({
   onCreateFood,
 }: {
   meal: Meal;
+  showErrors: boolean;
   onName: (name: string) => void;
   onRemove: () => void;
   onItem: (itemId: string, change: (item: FoodItem) => FoodItem) => void;
@@ -404,6 +417,7 @@ function MealBlock({
           onChange={(event) => onName(event.target.value)}
           aria-label={t.mealName}
           placeholder={t.mealPlaceholder}
+          aria-invalid={(showErrors && meal.name.trim() === "") || undefined}
           className="h-9 min-w-0 flex-1 text-[14px] font-semibold"
         />
         <RemoveButton label={t.removeMeal} onClick={onRemove} />
@@ -417,6 +431,7 @@ function MealBlock({
         <ItemRow
           key={item.id}
           item={item}
+          showErrors={showErrors}
           onChange={(next) => onItem(item.id, () => next)}
           onGrams={(grams) => onItem(item.id, (i) => setFoodItemGrams(i, grams))}
           onRemove={() => onRemoveItem(item.id)}
@@ -436,12 +451,14 @@ function MealBlock({
  */
 function ItemRow({
   item,
+  showErrors,
   onChange,
   onGrams,
   onRemove,
   onCreate,
 }: {
   item: FoodItem;
+  showErrors: boolean;
   onChange: (item: FoodItem) => void;
   onGrams: (grams: number) => void;
   onRemove: () => void;
@@ -455,7 +472,13 @@ function ItemRow({
     <div data-food-row className="flex flex-col gap-1">
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-0 basis-full sm:flex-1 sm:basis-auto">
-          <FoodItemField item={item} onChange={onChange} onCreate={onCreate} describedBy={infoId} />
+          <FoodItemField
+            item={item}
+            onChange={onChange}
+            onCreate={onCreate}
+            describedBy={infoId}
+            invalid={showErrors && name === ""}
+          />
         </div>
         <NumberField
           label={t.grams}

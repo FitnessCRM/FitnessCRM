@@ -529,7 +529,7 @@ export const es = {
       fat: "Grasas (g)",
       kcal: "kcal",
       mealName: "Comida",
-      mealPlaceholder: "Desayuno",
+      mealPlaceholder: "Ej.: Desayuno",
       itemName: "Alimento",
       itemPlaceholder: "Copos de avena",
       grams: "Peso (g)",
