@@ -17,6 +17,7 @@ export function KcalField({
   value,
   onChange,
   invalid,
+  describedBy,
   className,
 }: {
   id: string;
@@ -24,6 +25,8 @@ export function KcalField({
   value: number | null;
   onChange: (value: number | null) => void;
   invalid?: boolean;
+  /** Id del mensaje que explica el campo o su error, cuando está fuera del campo. */
+  describedBy?: string;
   className?: string;
 }) {
   // El texto vive aquí: un número no puede representar «2.000» ni «2,4» mientras se escribe.
@@ -40,6 +43,7 @@ export function KcalField({
         autoComplete="off"
         value={raw}
         aria-invalid={invalid || undefined}
+        aria-describedby={describedBy}
         onChange={(event) => {
           setRaw(event.target.value);
           onChange(

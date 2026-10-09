@@ -539,6 +539,67 @@ export const es = {
       },
       noMeals: "Sin comidas en este menú.",
       note: "Nota para el cliente",
+      /** Lo que se lee bajo cada alimento del menú (§5, I30). */
+      item: {
+        empty: "Elige uno de tus alimentos o del catálogo, o escríbelo a mano.",
+        noGrams: "Escribe los gramos para ver lo que aporta.",
+        freeText: "Sin composición · no suma",
+        saveToLibrary: "Guardar en Alimentos",
+      },
+      /** Cifras abreviadas de lo que aporta un alimento o una comida: «297 kcal · P 10,8…». */
+      short: { protein: "P", carbs: "C", fat: "G" },
+      mealSubtotal: "Esta comida:",
+      per100: "por 100 g",
+      /** El desplegable del campo del alimento: tus alimentos y el catálogo común (§4). */
+      suggestions: {
+        label: "Sugerencias de alimentos",
+        own: "Tus alimentos",
+        catalog: "Catálogo común",
+        ownLoading: "Cargando tus alimentos…",
+        ownError: "No se han podido cargar tus alimentos.",
+        noOwn: "Ninguno de tus alimentos coincide.",
+        ownEmpty: "Aún no tienes alimentos. Crea uno o busca en el catálogo común.",
+        typeToSearch: "Escribe para buscar también en el catálogo común.",
+        catalogLoading: "Buscando en el catálogo común…",
+        catalogUnavailable: "El catálogo común no responde: solo tus alimentos.",
+        catalogError: "No se ha podido buscar en el catálogo común.",
+        noCatalog: "Nada del catálogo común coincide.",
+        retry: "Reintentar",
+        more: "Ver más del catálogo",
+        loadingMore: "Cargando…",
+        moreError: "No se ha podido cargar más del catálogo común.",
+        create: "+ Crear «{name}» en Alimentos",
+        createEmpty: "+ Nuevo alimento",
+        countOwn: "{n} de tus alimentos",
+        countCatalog: "{n} del catálogo común",
+      },
+      /** Crear un alimento sin salir del menú. */
+      createFood: {
+        description: "Se guarda en tus alimentos y se usa en este menú.",
+        submit: "Guardar y usar",
+      },
+      /** «Lo que llevas»: lo que suman los alimentos frente a lo declarado en el menú (I30). */
+      tally: {
+        title: "Lo que llevas",
+        subtitle: "Frente a lo declarado en este menú",
+        rows: { kcal: "kcal", proteinG: "Proteína", carbsG: "Carbos", fatG: "Grasas" },
+        remaining: "Quedan {amount}",
+        matches: "Cuadra",
+        over: "Te pasas {amount}",
+        noTarget: "Sin cifra declarada",
+        incomplete: "Escribe las kcal y los tres macros del menú para ver cuánto queda.",
+        nonCounting: {
+          one: "{n} alimento escrito a mano no suma.",
+          other: "{n} alimentos escritos a mano no suman.",
+        },
+        /** Resumen compacto del móvil: una cifra corta por columna. */
+        strip: {
+          labels: { kcal: "kcal", proteinG: "P", carbsG: "C", fatG: "G" },
+          over: "+{amount}",
+          matches: "✓",
+          noTarget: "—",
+        },
+      },
     },
   },
   screensTemplateEditor: {
@@ -797,6 +858,100 @@ export const es = {
       usageError:
         "No se ha podido comprobar quién usa este ejercicio. Vuelve a intentarlo antes de eliminarlo.",
       working: "Eliminando…",
+    },
+    tabs: {
+      label: "Secciones de la biblioteca",
+      exercises: "Ejercicios",
+      foods: "Alimentos",
+    },
+    /** Pestaña Alimentos (§4, §5, §7). Lo que no es tuyo se lee; nunca se dice de quién es. */
+    foods: {
+      count: { one: "alimento tuyo", other: "alimentos tuyos" },
+      newFood: "+ Nuevo alimento",
+      search: "Buscar alimento…",
+      onlyMine: "Solo los míos",
+      legend: "Cifras por cada 100 g. P: proteína · C: carbohidratos · G: grasas, en gramos.",
+      columns: {
+        name: "Alimento",
+        kcal: "kcal",
+        protein: "P",
+        carbs: "C",
+        fat: "G",
+      },
+      groups: {
+        own: "Tus alimentos",
+        catalog: "Catálogo común",
+      },
+      ownEmpty: {
+        title: "Aún no tienes alimentos",
+        hint: "Crea el primero y podrás usarlo en tus menús. También puedes buscar en el catálogo común.",
+      },
+      ownNoMatches: "Ninguno de tus alimentos coincide.",
+      catalog: {
+        typeToSearch: "Escribe para buscar también en el catálogo común.",
+        loading: "Buscando en el catálogo común…",
+        noMatches: "Nada del catálogo común coincide.",
+        unavailable: "El catálogo común no responde. Ves solo tus alimentos.",
+        error: "No se ha podido buscar en el catálogo común.",
+        more: "Ver más del catálogo",
+        loadingMore: "Cargando…",
+        moreError: "No se ha podido cargar más del catálogo común.",
+      },
+      /** Lo que dice el panel de la Biblioteca alrededor del formulario. */
+      panel: {
+        pickTitle: "Alimento",
+        pickHint: "Elige un alimento de la lista o crea uno nuevo.",
+        saved: "Guardado.",
+        savedPending: "Guardado. Pendiente de publicar en el catálogo común.",
+        rounded: "Se redondeó a un decimal: {list}.",
+        macroNames: {
+          proteinG: "proteína",
+          carbsG: "carbohidratos",
+          fatG: "grasas",
+        },
+      },
+      archive: {
+        title: "Eliminar alimento",
+        body: "Sale de tu biblioteca y del catálogo común y deja de ofrecerse en los menús. Los menús que ya lo usan no cambian.",
+        confirm: "Eliminar",
+        cancel: "Cancelar",
+        working: "Eliminando…",
+        error: "No se ha podido eliminar el alimento.",
+      },
+    },
+  },
+  /** Formulario de un alimento (§5): lo usan la Biblioteca y el editor de menú. */
+  foodForm: {
+    newTitle: "Nuevo alimento",
+    editTitle: "Editar alimento",
+    viewTitle: "Alimento",
+    name: "Nombre",
+    namePlaceholder: "Pechuga de pollo (cruda)",
+    nameRequired: "El nombre no puede quedar vacío.",
+    per100: "Por cada 100 g",
+    kcal: "kcal",
+    protein: "Proteína (g)",
+    carbs: "Carbos (g)",
+    fat: "Grasas (g)",
+    hint: "Las kcal las escribes tú: la app no las calcula a partir de los macros. Los macros se guardan con un decimal.",
+    kcalRequired: "Escribe las kcal. El 0 vale.",
+    kcalWhole: "Las kcal van en número entero, sin puntos ni comas.",
+    macroRequired: "Rellena los tres macros. El 0 vale.",
+    macroNegative: "Los macros no pueden ser negativos.",
+    macrosOver: "Proteína, carbohidratos y grasas juntos no pueden pasar de 100 g por cada 100 g.",
+    menusKeep: "Los menús que ya usan este alimento conservan la composición con la que se añadió.",
+    pendingNote:
+      "Aún no está en el catálogo común. Puedes usarlo ya en tus menús: se publicará solo.",
+    save: "Guardar",
+    saving: "Guardando…",
+    saveError: "No se ha podido guardar el alimento.",
+    delete: "Eliminar",
+    cancel: "Cancelar",
+    close: "Cerrar",
+    readOnly: {
+      other: "Lo creó otra cuenta. Solo se puede leer.",
+      usda: "Viene de USDA FoodData Central. Solo se puede leer.",
+      off: "Viene de Open Food Facts, con licencia ODbL. Solo se puede leer.",
     },
   },
   screensMembership: {
@@ -1422,6 +1577,17 @@ export const es = {
     dayType: { entrenamiento: "Día de entrenamiento", descanso: "Día de descanso" },
     dayTypeShort: { entrenamiento: "entrenamiento", descanso: "descanso" },
     pose: { frente: "Frente", perfil: "Perfil", espalda: "Espalda" },
+    /**
+     * De dónde sale un alimento de la biblioteca (§4). «De otra cuenta»: ni la identidad ni el
+     * género de quien lo creó. La fuente de un sembrado va entera: es la atribución que pide ODbL.
+     */
+    foodOrigin: {
+      own: "Tuyo",
+      other: "De otra cuenta",
+      usda: "USDA",
+      off: "Open Food Facts",
+    },
+    foodPublish: { pendiente: "Pendiente de publicar" },
   },
   dev: {
     kitchenSink: {

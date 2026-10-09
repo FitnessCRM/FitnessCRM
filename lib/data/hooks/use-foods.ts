@@ -100,6 +100,13 @@ export function useFoods(options: { text?: string; onlyMine?: boolean } = {}) {
     refetch: own.refetch,
     catalog: catalogStatus,
     catalogMore,
+    /**
+     * Vuelve a buscar en el catálogo: la primera página si falló, o las ya cargadas. Con «solo los
+     * míos» no hace nada, porque `refetch` de TanStack pide aunque la consulta esté desactivada.
+     */
+    retryCatalog: () => {
+      if (searchEnabled) void catalog.refetch();
+    },
   };
 }
 
