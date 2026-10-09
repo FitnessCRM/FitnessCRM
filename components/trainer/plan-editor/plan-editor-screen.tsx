@@ -188,8 +188,9 @@ function PlanEditor({
   const initialMenus = toMenuDrafts(menus.map(toEntry));
   const [routine, setRoutine] = useState(initialRoutine);
   const [menuDraft, setMenuDraft] = useState(initialMenus);
-  // Se enciende al fallar la publicación y solo se apaga al publicar: editar no lo apaga, para que
-  // cada campo se desmarque al rellenarse y el aviso siga mientras falte algo.
+  // Se enciende al fallar la publicación y se apaga al publicar o al volver todo a lo publicado:
+  // editar no lo apaga, para que cada campo se desmarque al rellenarse y el aviso siga mientras falte
+  // algo.
   const [showErrors, setShowErrors] = useState(false);
 
   const publishRoutine = usePublishRoutine(clientId);
@@ -198,8 +199,12 @@ function PlanEditor({
   const menuTemplates = useMenuTemplates();
   const assign = useAssignTemplate(clientId);
 
-  const routineDirty = JSON.stringify(routine) !== JSON.stringify(initialRoutine);
-  const menusDirty = JSON.stringify(menuDraft) !== JSON.stringify(initialMenus);
+  const isRoutinePublished = (value: RoutineBody) =>
+    JSON.stringify(value) === JSON.stringify(initialRoutine);
+  const areMenusPublished = (value: MenuEntryDraft[]) =>
+    JSON.stringify(value) === JSON.stringify(initialMenus);
+  const routineDirty = !isRoutinePublished(routine);
+  const menusDirty = !areMenusPublished(menuDraft);
   const routinePending = routineDirty || target?.status === "borrador";
   const menusPending = menusDirty || menus.some((m) => m.status === "borrador");
   const dirty = routineDirty || menusDirty;
@@ -215,10 +220,12 @@ function PlanEditor({
 
   const editRoutine = (next: RoutineBody) => {
     setRoutine(next);
+    if (isRoutinePublished(next) && !menusDirty) setShowErrors(false);
     onPublished(false);
   };
   const editMenus = (next: MenuEntryDraft[]) => {
     setMenuDraft(next);
+    if (areMenusPublished(next) && !routineDirty) setShowErrors(false);
     onPublished(false);
   };
 

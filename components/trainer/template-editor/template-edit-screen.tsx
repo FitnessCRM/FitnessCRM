@@ -171,12 +171,16 @@ function RoutineEditor({ template }: { template: RoutineTemplate }) {
   const [draft, setDraft] = useState(template);
   const [showErrors, setShowErrors] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
-  const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
+  const isSaved = (value: RoutineTemplate) => JSON.stringify(value) === JSON.stringify(saved);
+  const dirty = !isSaved(draft);
   useUnsavedGuard(dirty);
   const valid = routineTemplateSchema.safeParse(draft).success;
 
+  // Las marcas duran hasta guardar con éxito o hasta volver a lo guardado: editar no las apaga.
   const update = (change: Partial<RoutineTemplate>) => {
-    setDraft((d) => ({ ...d, ...change }));
+    const next = { ...draft, ...change };
+    setDraft(next);
+    if (isSaved(next)) setShowErrors(false);
     setJustSaved(false);
   };
 
@@ -264,12 +268,16 @@ function MenuEditor({ template }: { template: MenuTemplate }) {
   const [draft, setDraft] = useState(() => toTemplateDraft(template));
   const [showErrors, setShowErrors] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
-  const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
+  const isSaved = (value: MenuTemplateDraft) => JSON.stringify(value) === JSON.stringify(saved);
+  const dirty = !isSaved(draft);
   useUnsavedGuard(dirty);
   const complete = completeTemplate(draft);
 
+  // Las marcas duran hasta guardar con éxito o hasta volver a lo guardado: editar no las apaga.
   const update = (change: Partial<MenuTemplateDraft>) => {
-    setDraft((d) => ({ ...d, ...change }));
+    const next = { ...draft, ...change };
+    setDraft(next);
+    if (isSaved(next)) setShowErrors(false);
     setJustSaved(false);
   };
 
