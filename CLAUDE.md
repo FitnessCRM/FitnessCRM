@@ -211,7 +211,9 @@ guardan junto a los macros: no se derivan con 4/4/9. La composición de un alime
 **Validación.** Un esquema zod por concepto en `lib/domain/schemas`, y es la única fuente de
 verdad. El formulario valida contra él y el futuro backend también.
 
-**Tests.** Vitest sobre el dominio. Antes de darse por terminadas, I5, I9, I12, I15, I17, I22,
+**Tests.** Vitest sobre el dominio y la lógica pura de fuera de él: `lib/**/*.test.ts` y
+`components/**/*.test.ts`, este último solo para funciones puras que viven junto a un componente
+(el renombrado del editor de menú). Antes de darse por terminadas, I5, I9, I12, I15, I17, I22,
 I23, I24, I25, I26, I27, I29 e I30 tienen test. Los componentes no se testean todavía.
 
 **Verificar el entorno antes de concluir.** Antes de dar por buena una comprobación, confirma que
@@ -442,7 +444,8 @@ pnpm test:rules     # reglas de seguridad (`firestore.rules`) contra el emulador
 ```
 
 Los dos `test:*` de Firebase arrancan los emuladores con `firebase-tools` y necesitan **Java**
-(JDK 21). Sin emulador, `pnpm test` salta esos archivos y sigue siendo solo de dominio.
+(JDK 21). Sin emulador, `pnpm test` salta esos archivos y corre el resto: el dominio, el
+adaptador en memoria, los hooks fuera de React y la lógica pura de `components/`.
 `firebase.json` carga las reglas; `firebase.open.json` no, para que el adaptador se pruebe sin
 autenticarse.
 
@@ -489,7 +492,10 @@ encolan hasta volver la red (tarjetas 81 y 82, PR #57 y #58). La capa de datos d
 está en `main` (tarjeta 88, PR #85): dominio, dos puertos (copia propia y catálogo común), adaptador
 en memoria, copia propia en Firestore con sus reglas desplegadas, catálogo común «no disponible» con
 Firebase hasta que la app se conecte a su API (tarjeta 90), y sincronización en los hooks. El
-catálogo común se busca por texto y por páginas (tarjeta 92, PR #93). Firebase
+catálogo común se busca por texto y por páginas (tarjeta 92, PR #93). Las pantallas de alimentos
+también están en `main` (tarjeta 89, PR #95): la pestaña Alimentos de la Biblioteca y, en el
+editor de menú, las sugerencias de alimentos, lo que aporta cada uno y «Lo que llevas» frente a
+las macros del propio menú, comprobadas contra el proyecto real. Firebase
 está conectado y probado con el proyecto real (06-10-2026): el `users/{uid}` del entrenador está
 creado y las reglas y los índices de `reviews` están desplegados. Falta decidir cuándo el adaptador
 de Firebase pasa a ser el de por defecto, las fotos de revisión (17, con la decisión de dónde
