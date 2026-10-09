@@ -531,26 +531,30 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   rejilla con filtros, «Usada en N clientes», duplicar y eliminar avisando de que lo asignado no
   cambia. El uso es un modelo de lectura del puerto, no un campo del dominio, y se cuenta por el
   nombre congelado en cada plan. Deuda: renombrar una plantilla pierde sus usos y dos con el mismo
-  nombre los suman (sin tarjeta); duplicar desde un plan, en la 55 (PR #72, abajo).
+  nombre los suman (tarjeta 69); duplicar desde un plan, en la 55 (PR #72, abajo).
 
 - **Crear y editar plantilla** (`/templates/new`, `/templates/[kind]/[templateId]`, tarjetas 53
   y 54, PR #30). Sin captura: el layout de la 12 sin macros del cliente. Los editores de rutina y
   menú viven en `components/editor/`, controlados y sin datos, para que los use también el editor
   de plan; `NativeSelect` pasó a `components/ui/`. Se reordena con botones, sin arrastrar. Deuda:
   sin aviso al navegar dentro de la app con cambios, sin nota por ejercicio y `<title>` genérico
-  (sin tarjeta).
+  (tarjeta 69).
 
 - **Asignación de plan** (`components/trainer/assignment/`, tarjeta 9, PR #31). Cliente por
   `?clientId=` (sin los de baja); entreno y menú desde plantilla o desde cero, y macros aparte.
   Asignar clona la plantilla como borrador (§4) y lleva al editor. Las kcal son un campo
   obligatorio desde la tarjeta 58. Deuda: asignar dos veces la misma plantilla crea dos
-  borradores, sin aviso (sin tarjeta).
+  borradores, sin aviso (tarjeta 69).
 
 - **Editor de plan** (`components/trainer/plan-editor/`, tarjeta 10, PR #32). Pestañas Rutina y
   Menú sobre los editores de `components/editor/`, «Partir de plantilla» y un solo «Publicar
   cambios». La edición en sitio de la rutina activa que decidió la tarjeta la sustituyó D3
-  (§7): publicar sobre un plan activo crea versión nueva (E27, tarjeta 60). Deuda: lo no
-  publicado vive solo en pantalla (sin tarjeta); en móvil es usable pero largo (≈4.500 px a 390; tarjeta 49, PR #68).
+  (§7): publicar sobre un plan activo crea versión nueva (E27, tarjeta 60). Cerrar o recargar la
+  pestaña con cambios sin publicar avisa (tarjeta 97, PR #97). El aviso es `useUnsavedGuard`,
+  movido a `components/editor/use-unsaved-guard.ts`, y lo comparten el editor de plan y los dos
+  editores de plantilla. Deuda: navegar dentro de la app («← Volver», barra lateral) sigue
+  perdiendo los cambios sin aviso, aquí y en las plantillas, porque `beforeunload` no salta en la
+  navegación del router (tarjeta 69); en móvil es usable pero largo (≈4.500 px a 390; tarjeta 49, PR #68).
 
 - **Alimentos en Biblioteca y cálculo en el editor de menú** (tarjeta 89, PR #95).
   `docs/dominio.md` §4, §5 e I28–I30.
@@ -876,9 +880,8 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
     sembrados en vez de todos por nombre. La app sigue el contrato; hay que pedir en
     `FitnessCRM/food-api` que se alineen.
   - **Lo que dejó la 89, con su tarjeta:** el panel de Ejercicios en Sheet por debajo de `xl`, como
-    el de Alimentos (96); el editor de plan no avisa antes de salir con cambios sin publicar (97); y
-    guardar una plantilla con una comida sin nombre falla sin decir por qué, porque «Desayuno» es
-    solo el placeholder (98, anterior a la 89).
+    el de Alimentos (96), y el fallo sin explicación al guardar una plantilla con una comida sin
+    nombre, porque «Desayuno» es solo el placeholder (98, anterior a la 89).
 
 - **Backend.** Firebase está conectado y se ha probado con el proyecto real (06-10-2026): el
   `users/{uid}` del entrenador está creado, y las reglas de seguridad (tarjeta 34) y los índices de
