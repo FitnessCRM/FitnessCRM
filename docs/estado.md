@@ -536,9 +536,15 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
 - **Crear y editar plantilla** (`/templates/new`, `/templates/[kind]/[templateId]`, tarjetas 53
   y 54, PR #30). Sin captura: el layout de la 12 sin macros del cliente. Los editores de rutina y
   menú viven en `components/editor/`, controlados y sin datos, para que los use también el editor
-  de plan; `NativeSelect` pasó a `components/ui/`. Se reordena con botones, sin arrastrar. Deuda:
-  sin aviso al navegar dentro de la app con cambios, sin nota por ejercicio y `<title>` genérico
-  (tarjeta 69).
+  de plan; `NativeSelect` pasó a `components/ui/`. Se reordena con botones, sin arrastrar. Si el
+  guardado falla, el aviso dice qué falta, con un texto para rutina y otro para menú, y se marcan
+  los nombres vacíos del menú, de cada comida y de cada alimento, y el de la plantilla (tarjeta 98,
+  PR #99). Las marcas siguen hasta guardar con éxito o hasta volver a lo guardado, y cada campo se
+  desmarca en cuanto tiene texto. El texto de ejemplo de la comida es «Ej.: Desayuno». Las marcas
+  del menú las pinta `MenusEditor` con la prop opcional `showErrors`. Deuda: sin aviso al navegar
+  dentro de la app con cambios, sin nota por ejercicio y `<title>` genérico (tarjeta 69); si lo
+  único que falta es el nombre de la plantilla, el aviso general sale igualmente y habla de
+  ejercicios o de menús (tarjeta 100).
 
 - **Asignación de plan** (`components/trainer/assignment/`, tarjeta 9, PR #31). Cliente por
   `?clientId=` (sin los de baja); entreno y menú desde plantilla o desde cero, y macros aparte.
@@ -552,7 +558,9 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   (§7): publicar sobre un plan activo crea versión nueva (E27, tarjeta 60). Cerrar o recargar la
   pestaña con cambios sin publicar avisa (tarjeta 97, PR #97). El aviso es `useUnsavedGuard`,
   movido a `components/editor/use-unsaved-guard.ts`, y lo comparten el editor de plan y los dos
-  editores de plantilla. Deuda: navegar dentro de la app («← Volver», barra lateral) sigue
+  editores de plantilla. Al fallar la publicación, los menús y el nombre de la rutina siguen la
+  misma regla de marcas que las plantillas (tarjeta 98, PR #99).
+  Deuda: navegar dentro de la app («← Volver», barra lateral) sigue
   perdiendo los cambios sin aviso, aquí y en las plantillas, porque `beforeunload` no salta en la
   navegación del router (tarjeta 69); en móvil es usable pero largo (≈4.500 px a 390; tarjeta 49, PR #68).
 
@@ -879,9 +887,8 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
     implementación de la API no cumple su contrato en el orden con el texto vacío: saca primero los
     sembrados en vez de todos por nombre. La app sigue el contrato; hay que pedir en
     `FitnessCRM/food-api` que se alineen.
-  - **Lo que dejó la 89, con su tarjeta:** el panel de Ejercicios en Sheet por debajo de `xl`, como
-    el de Alimentos (96), y el fallo sin explicación al guardar una plantilla con una comida sin
-    nombre, porque «Desayuno» es solo el placeholder (98, anterior a la 89).
+  - **Lo que dejó la 89, con su tarjeta:** el panel de Ejercicios en Sheet por debajo de `xl`,
+    como el de Alimentos (96).
 
 - **Backend.** Firebase está conectado y se ha probado con el proyecto real (06-10-2026): el
   `users/{uid}` del entrenador está creado, y las reglas de seguridad (tarjeta 34) y los índices de
