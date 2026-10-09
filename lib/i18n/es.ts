@@ -622,8 +622,9 @@ export const es = {
     saving: "Guardando…",
     saved: "Guardado",
     saveError: "No se ha podido guardar la plantilla.",
-    invalid:
-      "Revisa la plantilla: cada ejercicio necesita series y repeticiones, cada alimento un nombre y cada menú sus kcal y sus tres macros.",
+    invalidRoutine: "Revisa la plantilla: cada ejercicio necesita series y repeticiones.",
+    invalidMenu:
+      "Revisa la plantilla: cada menú necesita un nombre, sus kcal y sus tres macros, y cada comida y cada alimento, un nombre.",
     unsaved: "Hay cambios sin guardar. Si sales de la pantalla, se pierden.",
     copiedNote:
       "La plantilla se copia al cliente al asignarla: editarla no cambia planes ya asignados.",

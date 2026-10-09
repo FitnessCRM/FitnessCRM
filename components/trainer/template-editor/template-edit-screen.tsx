@@ -136,20 +136,21 @@ function SaveBar({
   dirty,
   isSaving,
   hasError,
-  invalid,
+  invalidMessage,
   justSaved,
   onSave,
 }: {
   dirty: boolean;
   isSaving: boolean;
   hasError: boolean;
-  invalid: boolean;
+  /** Lo que falta para poder guardar, o null si no hay que decir nada. */
+  invalidMessage: string | null;
   justSaved: boolean;
   onSave: () => void;
 }) {
   return (
     <div className="border-border-subtle bg-background/95 sticky bottom-0 z-10 -mx-1 flex flex-col gap-3 border-t px-1 py-4 backdrop-blur">
-      {invalid ? <ErrorState message={t.invalid} /> : null}
+      {invalidMessage ? <ErrorState message={invalidMessage} /> : null}
       {hasError ? <ErrorState message={t.saveError} /> : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p role="status" className="text-text-muted text-[13px]">
@@ -168,24 +169,25 @@ function RoutineEditor({ template }: { template: RoutineTemplate }) {
   const save = useSaveRoutineTemplate();
   const [saved, setSaved] = useState(template);
   const [draft, setDraft] = useState(template);
-  const [invalid, setInvalid] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   useUnsavedGuard(dirty);
+  const valid = routineTemplateSchema.safeParse(draft).success;
 
   const update = (change: Partial<RoutineTemplate>) => {
     setDraft((d) => ({ ...d, ...change }));
-    setInvalid(false);
     setJustSaved(false);
   };
 
   const onSave = async () => {
-    if (!routineTemplateSchema.safeParse(draft).success) {
-      setInvalid(true);
+    if (!valid) {
+      setShowErrors(true);
       return;
     }
     const result = await save.mutateAsync(draft).catch(() => null);
     if (result) {
+      setShowErrors(false);
       setSaved(result);
       setDraft(result);
       setJustSaved(true);
@@ -201,7 +203,7 @@ function RoutineEditor({ template }: { template: RoutineTemplate }) {
         description={draft.description}
         onName={(name) => update({ name })}
         onDescription={(description) => update({ description })}
-        nameInvalid={invalid && draft.name.trim() === ""}
+        nameInvalid={showErrors && draft.name.trim() === ""}
       >
         <div className="flex flex-col gap-2">
           <Label htmlFor="edit-note">{t.note}</Label>
@@ -230,7 +232,7 @@ function RoutineEditor({ template }: { template: RoutineTemplate }) {
         dirty={dirty}
         isSaving={save.isPending}
         hasError={save.isError}
-        invalid={invalid}
+        invalidMessage={showErrors && !valid ? t.invalidRoutine : null}
         justSaved={justSaved}
         onSave={() => void onSave()}
       />
@@ -246,31 +248,39 @@ const toTemplateDraft = (template: MenuTemplate): MenuTemplateDraft => ({
   menus: toMenuDrafts(template.menus),
 });
 
+/**
+ * La plantilla lista para guardar, o null si le falta algo. Un menú sin sus cuatro cifras no se
+ * guarda (§5): `fromMenuDrafts` devuelve null.
+ */
+function completeTemplate(draft: MenuTemplateDraft): MenuTemplate | null {
+  const menus = fromMenuDrafts(draft.menus);
+  const complete = menus ? { ...draft, menus } : null;
+  return complete && menuTemplateSchema.safeParse(complete).success ? complete : null;
+}
+
 function MenuEditor({ template }: { template: MenuTemplate }) {
   const save = useSaveMenuTemplate();
   const [saved, setSaved] = useState(() => toTemplateDraft(template));
   const [draft, setDraft] = useState(() => toTemplateDraft(template));
-  const [invalid, setInvalid] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   useUnsavedGuard(dirty);
+  const complete = completeTemplate(draft);
 
   const update = (change: Partial<MenuTemplateDraft>) => {
     setDraft((d) => ({ ...d, ...change }));
-    setInvalid(false);
     setJustSaved(false);
   };
 
   const onSave = async () => {
-    // Un menú sin sus cuatro cifras no se guarda (§5): `fromMenuDrafts` devuelve null.
-    const menus = fromMenuDrafts(draft.menus);
-    const complete = menus ? { ...draft, menus } : null;
-    if (!complete || !menuTemplateSchema.safeParse(complete).success) {
-      setInvalid(true);
+    if (!complete) {
+      setShowErrors(true);
       return;
     }
     const result = await save.mutateAsync(complete).catch(() => null);
     if (result) {
+      setShowErrors(false);
       setSaved(toTemplateDraft(result));
       setDraft(toTemplateDraft(result));
       setJustSaved(true);
@@ -286,14 +296,18 @@ function MenuEditor({ template }: { template: MenuTemplate }) {
         description={draft.description}
         onName={(name) => update({ name })}
         onDescription={(description) => update({ description })}
-        nameInvalid={invalid && draft.name.trim() === ""}
+        nameInvalid={showErrors && draft.name.trim() === ""}
       />
-      <MenusEditor menus={draft.menus} onChange={(menus) => update({ menus })} />
+      <MenusEditor
+        menus={draft.menus}
+        onChange={(menus) => update({ menus })}
+        showErrors={showErrors}
+      />
       <SaveBar
         dirty={dirty}
         isSaving={save.isPending}
         hasError={save.isError}
-        invalid={invalid}
+        invalidMessage={showErrors && !complete ? t.invalidMenu : null}
         justSaved={justSaved}
         onSave={() => void onSave()}
       />
