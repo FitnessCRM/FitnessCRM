@@ -49,12 +49,15 @@ export function FoodItemField({
   onChange,
   onCreate,
   describedBy,
+  invalid,
 }: {
   item: FoodItem;
   onChange: (item: FoodItem) => void;
   /** Crear un alimento sin salir del menú, con el nombre escrito. */
   onCreate: (name: string) => void;
   describedBy?: string;
+  /** Marca el campo como erróneo, como `aria-invalid` en `Input`. */
+  invalid?: boolean;
 }) {
   const id = useId();
   const listId = `${id}-list`;
@@ -125,6 +128,7 @@ export function FoodItemField({
         aria-autocomplete="list"
         aria-activedescendant={open && active >= 0 ? `${listId}-${active}` : undefined}
         aria-describedby={describedBy}
+        aria-invalid={invalid || undefined}
         autoComplete="off"
         placeholder={t.itemPlaceholder}
         value={text}
@@ -149,6 +153,7 @@ export function FoodItemField({
         className={cn(
           "border-border-emphasis bg-background font-ui text-text-primary placeholder:text-text-subtle h-10 w-full rounded-md border px-3 text-[14px] transition-[color,box-shadow] outline-none",
           "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+          "aria-invalid:border-danger aria-invalid:ring-danger-soft",
         )}
       />
       {open ? (
