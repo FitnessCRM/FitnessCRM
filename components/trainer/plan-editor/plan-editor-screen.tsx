@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { MenusEditor } from "@/components/editor/menus-editor";
 import { RoutineDaysEditor } from "@/components/editor/routine-days-editor";
+import { useUnsavedGuard } from "@/components/editor/use-unsaved-guard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -200,6 +201,7 @@ function PlanEditor({
   const routinePending = routineDirty || target?.status === "borrador";
   const menusPending = menusDirty || menus.some((m) => m.status === "borrador");
   const dirty = routineDirty || menusDirty;
+  useUnsavedGuard(dirty);
   const isPublishing = publishRoutine.isPending || publishMenus.isPending;
 
   const editRoutine = (next: RoutineBody) => {
