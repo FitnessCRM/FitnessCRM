@@ -531,20 +531,20 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   rejilla con filtros, «Usada en N clientes», duplicar y eliminar avisando de que lo asignado no
   cambia. El uso es un modelo de lectura del puerto, no un campo del dominio, y se cuenta por el
   nombre congelado en cada plan. Deuda: renombrar una plantilla pierde sus usos y dos con el mismo
-  nombre los suman (sin tarjeta); duplicar desde un plan, en la 55 (PR #72, abajo).
+  nombre los suman (tarjeta 69); duplicar desde un plan, en la 55 (PR #72, abajo).
 
 - **Crear y editar plantilla** (`/templates/new`, `/templates/[kind]/[templateId]`, tarjetas 53
   y 54, PR #30). Sin captura: el layout de la 12 sin macros del cliente. Los editores de rutina y
   menú viven en `components/editor/`, controlados y sin datos, para que los use también el editor
   de plan; `NativeSelect` pasó a `components/ui/`. Se reordena con botones, sin arrastrar. Deuda:
   sin aviso al navegar dentro de la app con cambios, sin nota por ejercicio y `<title>` genérico
-  (sin tarjeta).
+  (tarjeta 69).
 
 - **Asignación de plan** (`components/trainer/assignment/`, tarjeta 9, PR #31). Cliente por
   `?clientId=` (sin los de baja); entreno y menú desde plantilla o desde cero, y macros aparte.
   Asignar clona la plantilla como borrador (§4) y lleva al editor. Las kcal son un campo
   obligatorio desde la tarjeta 58. Deuda: asignar dos veces la misma plantilla crea dos
-  borradores, sin aviso (sin tarjeta).
+  borradores, sin aviso (tarjeta 69).
 
 - **Editor de plan** (`components/trainer/plan-editor/`, tarjeta 10, PR #32). Pestañas Rutina y
   Menú sobre los editores de `components/editor/`, «Partir de plantilla» y un solo «Publicar
