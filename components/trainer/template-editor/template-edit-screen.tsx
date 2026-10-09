@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { MenusEditor } from "@/components/editor/menus-editor";
 import { RoutineDaysEditor } from "@/components/editor/routine-days-editor";
+import { useUnsavedGuard } from "@/components/editor/use-unsaved-guard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,16 +32,6 @@ import {
 import { es } from "@/lib/i18n/es";
 
 const t = es.screensTemplateEditor;
-
-/** Aviso del navegador al cerrar o recargar con cambios sin guardar. */
-function useUnsavedGuard(dirty: boolean) {
-  useEffect(() => {
-    if (!dirty) return;
-    const handler = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [dirty]);
-}
 
 function BackLink() {
   return (
