@@ -188,7 +188,9 @@ function PlanEditor({
   const initialMenus = toMenuDrafts(menus.map(toEntry));
   const [routine, setRoutine] = useState(initialRoutine);
   const [menuDraft, setMenuDraft] = useState(initialMenus);
-  const [invalid, setInvalid] = useState(false);
+  // Se enciende al fallar la publicación y solo se apaga al publicar: editar no lo apaga, para que
+  // cada campo se desmarque al rellenarse y el aviso siga mientras falte algo.
+  const [showErrors, setShowErrors] = useState(false);
 
   const publishRoutine = usePublishRoutine(clientId);
   const publishMenus = usePublishMenus(clientId);
@@ -204,32 +206,32 @@ function PlanEditor({
   useUnsavedGuard(dirty);
   const isPublishing = publishRoutine.isPending || publishMenus.isPending;
 
+  // Un menú sin sus cuatro cifras no se publica (§5): `fromMenuDrafts` devuelve null.
+  const menuEntries = fromMenuDrafts(menuDraft);
+  const valid =
+    (!routinePending || routineBodySchema.safeParse(routine).success) &&
+    (!menusPending ||
+      (menuEntries !== null && menuTemplateEntrySchema.array().safeParse(menuEntries).success));
+
   const editRoutine = (next: RoutineBody) => {
     setRoutine(next);
-    setInvalid(false);
     onPublished(false);
   };
   const editMenus = (next: MenuEntryDraft[]) => {
     setMenuDraft(next);
-    setInvalid(false);
     onPublished(false);
   };
 
   const onPublish = async () => {
-    // Un menú sin sus cuatro cifras no se publica (§5): `fromMenuDrafts` devuelve null.
-    const menuEntries = fromMenuDrafts(menuDraft);
-    const valid =
-      (!routinePending || routineBodySchema.safeParse(routine).success) &&
-      (!menusPending ||
-        (menuEntries !== null && menuTemplateEntrySchema.array().safeParse(menuEntries).success));
     if (!valid) {
-      setInvalid(true);
+      setShowErrors(true);
       return;
     }
     try {
       if (routinePending) await publishRoutine.mutateAsync({ op, body: routine });
       if (menusPending && menuEntries)
         await publishMenus.mutateAsync({ current: menus, next: menuEntries });
+      setShowErrors(false);
       onPublished(true);
     } catch {
       // El error se pinta desde el estado de las mutaciones.
@@ -285,7 +287,7 @@ function PlanEditor({
       />
 
       {assign.isError ? <ErrorState message={t.templateError} /> : null}
-      {invalid ? <ErrorState message={t.invalid} /> : null}
+      {showErrors && !valid ? <ErrorState message={t.invalid} /> : null}
       {publishRoutine.isError || publishMenus.isError ? <ErrorState message={t.saveError} /> : null}
       <p role="status" className="text-text-muted -mt-2 min-h-5 text-[13px]">
         {dirty ? t.unsaved : published ? t.published : ""}
@@ -310,7 +312,7 @@ function PlanEditor({
               <Input
                 id="plan-routine-name"
                 value={routine.name}
-                aria-invalid={invalid && routine.name.trim() === "" ? true : undefined}
+                aria-invalid={showErrors && routine.name.trim() === "" ? true : undefined}
                 onChange={(event) => editRoutine({ ...routine, name: event.target.value })}
               />
             </div>
@@ -333,7 +335,7 @@ function PlanEditor({
 
         <TabsContent value="menu" className="flex flex-col gap-4">
           <MacrosCard clientId={clientId} targets={targets} />
-          <MenusEditor menus={menuDraft} onChange={editMenus} />
+          <MenusEditor menus={menuDraft} onChange={editMenus} showErrors={showErrors} />
         </TabsContent>
       </Tabs>
     </div>
