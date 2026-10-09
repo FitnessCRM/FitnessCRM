@@ -7,8 +7,10 @@ pasada discrepaban, manda el diseño**: es posterior y responde a peticiones exp
 Estado: dominio cerrado para el MVP. Backend decidido el 29-09-2026: **Firebase para datos y
 auth, y el Drive del entrenador para las imágenes de las revisiones** — ver §12 y §9. El acceso
 es con correo y contraseña, con invitación por enlace de correo (§12, 03-10-2026). Implementados:
-la autenticación y las reglas de seguridad; el adaptador de datos, solo en parte. La app sigue
-montando el adaptador en memoria hasta que el de Firebase cubra todos los puertos.
+la autenticación, las reglas de seguridad y el adaptador de datos de Firebase, que cubre los 18
+puertos: 17 sobre Firestore y Firebase Auth, y el catálogo común de alimentos, que responde «no
+disponible» hasta que la app se conecte a su API (tarjeta 90, §12). La app monta el adaptador en
+memoria salvo con `NEXT_PUBLIC_DATA_BACKEND=firebase`.
 
 ---
 
@@ -148,10 +150,10 @@ entrenadores (decidido el 08-10-2026).
 La copia propia se lista entera; el catálogo común no se lista: se busca por texto, por páginas.
 Lo que devuelve la búsqueda se une por `id` con la copia propia, y si un alimento está en las dos
 manda la propia, porque el catálogo puede ir por detrás (`pendiente`, §7). En la biblioteca hay
-tres orígenes: **tuyo**, si está en la copia propia del entrenador; **de otro**, si llega del
-catálogo y es de otro entrenador, del que no se muestra nada más que eso, nunca su identidad; y
-**sembrado**, que se muestra con su fuente. Mostrar la fuente es además la atribución que exige la
-licencia ODbL de Open Food Facts. Se admiten nombres duplicados (§11).
+tres orígenes: **tuyo**, si está en la copia propia del entrenador; **de otra cuenta**, si llega
+del catálogo y es de otro entrenador, del que no se muestra nada más que eso, nunca su identidad;
+y **sembrado**, que se muestra con su fuente. Mostrar la fuente es además la atribución que exige
+la licencia ODbL de Open Food Facts. Se admiten nombres duplicados (§11).
 
 ---
 
@@ -187,8 +189,10 @@ licencia ODbL de Open Food Facts. Se admiten nombres duplicados (§11).
   - **de la biblioteca**: guarda `foodId` y copia congelada del nombre y de la `Composicion` del
     momento en que se añadió (I29). Aporta gramos × composición / 100. Su nombre es siempre el de
     la copia congelada: un alimento del menú con otro nombre es de texto libre, sin `foodId` ni
-    composición, porque la composición dejaría de corresponder al nombre. Los gramos se cambian
-    sin perder el vínculo.
+    composición, porque la composición dejaría de corresponder al nombre. Mientras se edita el
+    nombre, volver al de la copia congelada recupera el alimento tal como estaba, con su vínculo y
+    su composición; no se vuelve a leer de la biblioteca. Los gramos se cambian sin perder el
+    vínculo.
   - **de texto libre**: nombre y gramos, sin composición. No suma.
 - **Redondeo de lo calculado** — lo que aporta un alimento, el subtotal de una comida, la suma de
   un menú y lo que queda se calculan sin redondear y se redondean solo al presentarlos: kcal a

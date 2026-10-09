@@ -1,9 +1,10 @@
 # Estado del proyecto
 
-Última actualización: 08-10-2026. Corresponde a `main` en `c9eefe0` (PR #93). Están en `main` los
+Última actualización: 09-10-2026. Corresponde a `main` en `de2960c` (PR #95). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
-seguridad, el adaptador de Firebase, el modo sin conexión del cliente y la capa de datos de los
-alimentos; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
+seguridad, el adaptador de Firebase, el modo sin conexión del cliente, la capa de datos de los
+alimentos y sus pantallas; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de
+continuar.
 
 ## Cómo se trabajó hasta aquí
 
@@ -551,6 +552,31 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   (§7): publicar sobre un plan activo crea versión nueva (E27, tarjeta 60). Deuda: lo no
   publicado vive solo en pantalla (sin tarjeta); en móvil es usable pero largo (≈4.500 px a 390; tarjeta 49, PR #68).
 
+- **Alimentos en Biblioteca y cálculo en el editor de menú** (tarjeta 89, PR #95).
+  `docs/dominio.md` §4, §5 e I28–I30.
+  - **Biblioteca:** pestañas Ejercicios y Alimentos, con la activa en la URL (`?tab=foods`). Tus
+    alimentos por nombre; el catálogo común solo se busca, con 300 ms de espera entre teclas y «Ver
+    más». Cada fila dice su origen (Tuyo, De otra cuenta, USDA, Open Food Facts) y si está
+    pendiente de publicar; lo ajeno se abre en solo lectura y «Eliminar» archiva. Panel a la
+    derecha desde `xl` y en Sheet por debajo.
+  - **Editor de menú** (plantillas y editor de plan): el campo del alimento sugiere tus alimentos
+    y el catálogo, admite texto libre («Sin composición · no suma», con «Guardar en Alimentos») y
+    crea alimentos sin salir del menú. Renombrar se calcula desde el alimento tal como estaba al
+    entrar en el campo: volver a su nombre recupera el vínculo y Escape lo restaura. Debajo de cada
+    alimento, lo que aporta; en cada comida, su subtotal; y «Lo que llevas» frente a las macros del
+    propio menú, con la tolerancia de «Cuadra» (5 kcal, 1 g por macro): columna fija desde `xl`,
+    2×2 fijo entre `sm` y `xl`, y en móvil un resumen de una fila que aparece al salir el 2×2.
+    Avisa y no bloquea (I30). Un catálogo caído no impide elegir lo tuyo ni escribir.
+  - **Terreno común:** `FoodForm` vive en `components/editor/` y sus literales en `es.foodForm`;
+    `vitest.config.ts` recoge también `components/**/*.test.ts`, para la lógica pura que vive junto
+    a un componente (el renombrado).
+  - **Comprobado** contra el proyecto real de Firebase (08-10-2026): crear, usar en una plantilla y
+    archivar un alimento, sin `failed-precondition` ni `permission-denied`; `foods` no necesita
+    índice compuesto (sus consultas son solo de igualdad). Y en un iPhone con Safari.
+  - **Aceptado:** en iPhone, con el teclado abierto, el resumen compacto puede quedar por encima de
+    lo visible, porque Safari desplaza lo visible sin mover lo fijo; al cerrar el teclado se ve
+    bien. Sin arreglo ni tarjeta. **No probado:** Firefox.
+
 ### Lo que no es pantalla
 
 - **Un pesaje por cliente y día** (tarjeta 40, PR #19 y #20). I23 en `docs/dominio.md`:
@@ -842,16 +868,17 @@ Las pantallas del cliente y del panel están en `main`. Desde el 21-09-2026 trab
 (sección «Equipo» de `CLAUDE.md`) y este archivo es un resumen curado que se escribe en un PR de
 documentación después de cada fusión. Lo que queda, con su tarjeta:
 
-- **Alimentos**, por este orden:
-  1. **Pantallas de alimentos (89):** Alimentos en Biblioteca y el cálculo en el editor de menú,
-     con la tolerancia de «Cuadra» (§5).
-  2. **Conectar la API del catálogo común (90).** La API ya existe (`FitnessCRM/food-api`); la
-     tarjeta está bloqueada porque la API no tiene CORS. Hasta entonces, con Firebase todos los
-     alimentos quedan pendientes de publicar. Además, la implementación de la API no cumple su
-     contrato en el orden con el texto vacío: saca primero los sembrados en vez de todos por nombre.
-     La app sigue el contrato; hay que pedir en `FitnessCRM/food-api` que se alineen.
-
-  Los índices de `foods` no están comprobados contra el proyecto real.
+- **Alimentos:**
+  - **Conectar la API del catálogo común (90).** La API ya existe (`FitnessCRM/food-api`); la
+    tarjeta está bloqueada porque la API no tiene CORS y porque falta la URL de su despliegue.
+    Hasta entonces, con Firebase todos los alimentos quedan pendientes de publicar. Además, la
+    implementación de la API no cumple su contrato en el orden con el texto vacío: saca primero los
+    sembrados en vez de todos por nombre. La app sigue el contrato; hay que pedir en
+    `FitnessCRM/food-api` que se alineen.
+  - **Lo que dejó la 89, con su tarjeta:** el panel de Ejercicios en Sheet por debajo de `xl`, como
+    el de Alimentos (96); el editor de plan no avisa antes de salir con cambios sin publicar (97); y
+    guardar una plantilla con una comida sin nombre falla sin decir por qué, porque «Desayuno» es
+    solo el placeholder (98, anterior a la 89).
 
 - **Backend.** Firebase está conectado y se ha probado con el proyecto real (06-10-2026): el
   `users/{uid}` del entrenador está creado, y las reglas de seguridad (tarjeta 34) y los índices de
