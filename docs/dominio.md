@@ -7,8 +7,10 @@ pasada discrepaban, manda el diseño**: es posterior y responde a peticiones exp
 Estado: dominio cerrado para el MVP. Backend decidido el 29-09-2026: **Firebase para datos y
 auth, y el Drive del entrenador para las imágenes de las revisiones** — ver §12 y §9. El acceso
 es con correo y contraseña, con invitación por enlace de correo (§12, 03-10-2026). Implementados:
-la autenticación y las reglas de seguridad; el adaptador de datos, solo en parte. La app sigue
-montando el adaptador en memoria hasta que el de Firebase cubra todos los puertos.
+la autenticación, las reglas de seguridad y el adaptador de datos de Firebase, que cubre los 18
+puertos: 17 sobre Firestore y Firebase Auth, y el catálogo común de alimentos, que responde «no
+disponible» hasta que la app se conecte a su API (tarjeta 90, §12). La app monta el adaptador en
+memoria salvo con `NEXT_PUBLIC_DATA_BACKEND=firebase`.
 
 ---
 
