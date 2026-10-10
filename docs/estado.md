@@ -869,6 +869,13 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
     95); y la paginación por desplazamiento puede saltarse un alimento si el catálogo cambia entre
     una página y la siguiente (los repetidos sí se quitan).
 
+- **Revisión con IA en el pre-commit** (PR #101, sin tarjeta). `.husky/pre-commit` corre `gga run`
+  (Gentleman Guardian Angel) después de lint-staged: revisa los archivos staged, enteros, contra
+  las reglas de `AGENTS.md`, que salen de las reglas duras y las convenciones de `CLAUDE.md`. El
+  10-10-2026 la regla 9 deja de exigir comentarios en inglés (tarjeta 102): pueden ir en español o
+  en inglés y la revisión no marca su idioma. **Falta** un `.gga` común en el repo: hoy cada uno
+  revisa con su propia configuración.
+
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
   `trainer/`) y #33 (enlace a la revisión desde el panel de control, rama

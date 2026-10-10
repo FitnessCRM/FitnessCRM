@@ -280,8 +280,13 @@ Hoy la única barrera es el hook `pre-push` de husky (`.husky/pre-push`, se inst
 en GitHub, que no se salta, está pendiente de activar — hasta entonces, el acuerdo es lo único que
 hay.
 
-Pre-commit (husky + lint-staged) pasa ESLint y Prettier sobre lo staged; lo que no pasa no
-entra. Nunca se commitea `node_modules`, `.next`, `public/sw.js` ni `.env*`.
+Pre-commit (husky) da dos pasos, y lo que no pasa no entra. Primero, lint-staged pasa ESLint y
+Prettier sobre lo staged. Después, `gga run` (Gentleman Guardian Angel) revisa con IA los archivos
+staged, enteros, contra las reglas de `AGENTS.md`: un incumplimiento bloquea el commit. `gga` y la
+CLI de su proveedor no se instalan con `pnpm install`: cada uno los instala por su cuenta y elige
+el proveedor con `GGA_PROVIDER` o con su configuración global. Sin `gga` en el PATH, el commit
+falla. `AGENTS.md` repite reglas de este archivo: si se cambia una, se cambian las dos. Nunca se
+commitea `node_modules`, `.next`, `public/sw.js` ni `.env*`.
 
 ---
 
