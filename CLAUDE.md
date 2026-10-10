@@ -160,7 +160,8 @@ aparecen en ninguna pantalla.
 
 **Idioma.** La UI es española, el código es inglés. Nombres de archivos, tipos, funciones,
 variables, ramas y commits en inglés. Todo literal visible sale de `lib/i18n/es.ts`; no hay
-strings sueltos en los componentes.
+strings sueltos en los componentes. Los comentarios pueden ir en español o en inglés: no se
+traducen los que ya existen.
 
 **Ninguna etiqueta sobre una persona lleva género.** Un literal que califique a alguien tiene que
 ser invariable: hay clientes y clientas, y ni se duplica cada etiqueta por género ni se deduce del

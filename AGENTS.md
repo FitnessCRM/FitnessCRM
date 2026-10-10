@@ -28,8 +28,9 @@ hard constraint from `CLAUDE.md` («Reglas duras») or a convention from its
    `HECTOR` must not appear in components, `<title>`, or the manifest.
 8. Labels about a person are invariant: nouns or phrases such as «En activo»,
    not gendered adjectives such as «Activo» or «Invitado».
-9. Identifiers, comments, and commit-related text are in English. Visible
-   copy is in Spanish.
+9. Identifiers, branch names and commit messages are in English. Visible copy
+   is in Spanish. Comments may be in Spanish or English: do not flag the
+   language of a comment.
 
 ## Design
 
