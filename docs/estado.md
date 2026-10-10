@@ -370,6 +370,11 @@ Fase 5 (navegación):
     así que el tipo solo producía relleno. Revisados los demás puertos: era el único con ese vicio.
     `ClientInput` incluía `status` y el adaptador no lo forzaba; desde el alta de cliente
     (tarjeta 6) tampoco lo lleva y el adaptador crea siempre en `invitado`.
+  - **El editor va en un `Sheet` por debajo de `xl`** (tarjeta 96, PR #102). Desde `xl` sigue en
+    la columna derecha; por debajo abre en un `Sheet` lateral, como Alimentos, en vez de quedar
+    debajo de la rejilla. El formulario valida con `exerciseSchema` del dominio, no con una copia,
+    y los mensajes de error salen de `es.ts`. Deuda: el bloque del `Sheet` está repetido entre
+    las dos pestañas (tarjeta 103).
 
 - **Cuestionario y Medidas** (`components/trainer/catalog/`, tarjeta 12, integrada el
   27-09-2026). Las dos pantallas comparten `CatalogList`, el armazón del catálogo ordenable del
@@ -869,6 +874,13 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
     95); y la paginación por desplazamiento puede saltarse un alimento si el catálogo cambia entre
     una página y la siguiente (los repetidos sí se quitan).
 
+- **Revisión con IA en el pre-commit** (PR #101, sin tarjeta). `.husky/pre-commit` corre `gga run`
+  (Gentleman Guardian Angel) después de lint-staged: revisa los archivos staged, enteros, contra
+  las reglas de `AGENTS.md`, que salen de las reglas duras y las convenciones de `CLAUDE.md`. El
+  10-10-2026 la regla 9 deja de exigir comentarios en inglés (tarjeta 102): pueden ir en español o
+  en inglés y la revisión no marca su idioma. **Falta** un `.gga` común en el repo: hoy cada uno
+  revisa con su propia configuración.
+
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
   `trainer/`) y #33 (enlace a la revisión desde el panel de control, rama
@@ -887,8 +899,6 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
     implementación de la API no cumple su contrato en el orden con el texto vacío: saca primero los
     sembrados en vez de todos por nombre. La app sigue el contrato; hay que pedir en
     `FitnessCRM/food-api` que se alineen.
-  - **Lo que dejó la 89, con su tarjeta:** el panel de Ejercicios en Sheet por debajo de `xl`,
-    como el de Alimentos (96).
 
 - **Backend.** Firebase está conectado y se ha probado con el proyecto real (06-10-2026): el
   `users/{uid}` del entrenador está creado, y las reglas de seguridad (tarjeta 34) y los índices de
