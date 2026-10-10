@@ -2,11 +2,15 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { QueryBoundary } from "@/components/ui/query-boundary";
+import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { EmptyState } from "@/components/ui/states";
 import { Tabs } from "@/components/ui/tabs";
+import { useMediaQuery, XL_MEDIA_QUERY } from "@/components/ui/use-media-query";
 import { canonicalText, type Exercise } from "@/lib/domain";
 import {
   useArchiveExercise,
@@ -25,7 +29,7 @@ import { LIBRARY_TABS, LibraryHeader, LibraryPanel, type LibraryTab } from "./li
 
 const t = es.screensLibrary;
 
-/** Valores distintos de un campo de texto libre, para sugerirlos en el formulario y filtrar. */
+/** Distinct values of a free-text field, to suggest them in the form and to filter by them. */
 function distinct(exercises: Exercise[], field: "muscleGroup" | "equipment"): string[] {
   return [...new Set(exercises.map((e) => e[field]).filter(Boolean))].sort((a, b) =>
     a.localeCompare(b),
@@ -36,8 +40,8 @@ const isLibraryTab = (value: string | null): value is LibraryTab =>
   LIBRARY_TABS.includes(value as LibraryTab);
 
 /**
- * Pantalla 11 · Biblioteca, con dos pestañas: Ejercicios y Alimentos. La activa va en la URL
- * (`?tab=foods`) para que se pueda enlazar y recargar; sin parámetro, Ejercicios.
+ * Screen 11 · Library, with two tabs: Exercises and Foods. The active tab lives in the URL
+ * (`?tab=foods`) so it can be linked and reloaded; without the parameter, Exercises.
  */
 export function LibraryScreen() {
   const router = useRouter();
@@ -61,8 +65,8 @@ export function LibraryScreen() {
 }
 
 /**
- * Pestaña Ejercicios. Rejilla filtrable a la izquierda y panel de edición a la derecha.
- * «Eliminar» archiva y avisa antes de a quién afecta (I13, §7); el vídeo es enlace externo (I20).
+ * Exercises tab. Filterable grid on the left and the edit panel on the right.
+ * "Delete" archives and warns first about who it affects (I13, §7); the video is an external link (I20).
  */
 function ExercisesLibrary() {
   const exercises = useExercises();
@@ -77,7 +81,7 @@ function ExercisesLibrary() {
 function Library({ exercises }: { exercises: Exercise[] }) {
   const [search, setSearch] = useState("");
   const [group, setGroup] = useState<string | null>(null);
-  /** `undefined` = nada elegido; `null` = ejercicio nuevo. */
+  /** `undefined` = nothing picked; `null` = new exercise. */
   const [selectedId, setSelectedId] = useState<string | null | undefined>(undefined);
   const [confirming, setConfirming] = useState(false);
 
@@ -87,6 +91,7 @@ function Library({ exercises }: { exercises: Exercise[] }) {
   const selected =
     typeof selectedId === "string" ? exercises.find((e) => e.id === selectedId) : null;
   const usage = useExerciseUsage(confirming && selected ? selected.id : undefined);
+  const wide = useMediaQuery(XL_MEDIA_QUERY);
 
   const groups = distinct(exercises, "muscleGroup");
   const equipment = distinct(exercises, "equipment");
@@ -98,13 +103,13 @@ function Library({ exercises }: { exercises: Exercise[] }) {
   });
 
   const save = async (values: ExerciseFormValues) => {
-    // Grupo y material siguen siendo libres, pero se guardan con la grafía que ya exista: si no,
-    // «pierna» y «Pierna» acaban siendo dos filtros, porque los filtros salen de los datos.
+    // Group and equipment stay free text, but are saved with the spelling that already exists:
+    // otherwise "pierna" and "Pierna" end up as two filters, because filters come from the data.
     const body = {
       name: values.name,
       muscleGroup: canonicalText(values.muscleGroup, groups),
       equipment: canonicalText(values.equipment, equipment),
-      videoUrl: values.videoUrl === "" ? null : values.videoUrl,
+      videoUrl: values.videoUrl,
       description: values.description,
     };
     const saved = selected
@@ -112,6 +117,30 @@ function Library({ exercises }: { exercises: Exercise[] }) {
       : await saveExercise.mutateAsync({ create: body });
     setSelectedId(saved.id);
   };
+
+  // From `xl` the panel sits on the right; below it, in a `Sheet` like Foods, so picking an
+  // exercise on a phone does not mean scrolling past the whole grid.
+  const panel =
+    selectedId === undefined ? null : (
+      <ExerciseForm
+        key={selected?.id ?? "new"}
+        exercise={selected ?? null}
+        groups={groups}
+        equipment={equipment}
+        title={(heading) =>
+          wide ? (
+            <h2 className="section-title">{heading}</h2>
+          ) : (
+            <SheetTitle className="section-title">{heading}</SheetTitle>
+          )
+        }
+        isSaving={saveExercise.isPending}
+        saveError={saveExercise.isError}
+        onSubmit={save}
+        onDelete={() => setConfirming(true)}
+        onCancel={() => setSelectedId(undefined)}
+      />
+    );
 
   return (
     <>
@@ -157,23 +186,38 @@ function Library({ exercises }: { exercises: Exercise[] }) {
           )}
         </div>
 
-        <aside className="flex flex-col gap-4">
-          {selectedId === undefined ? (
-            <EmptyState title={t.form.editTitle} description={t.form.pickHint} />
-          ) : (
-            <ExerciseForm
-              key={selected?.id ?? "new"}
-              exercise={selected ?? null}
-              groups={groups}
-              equipment={equipment}
-              isSaving={saveExercise.isPending}
-              saveError={saveExercise.isError}
-              onSubmit={save}
-              onDelete={() => setConfirming(true)}
-              onCancel={() => setSelectedId(undefined)}
-            />
-          )}
-        </aside>
+        {wide ? (
+          <aside className="flex flex-col gap-4">
+            {panel ? (
+              <Card className="gap-4 px-[22px] py-[22px]">{panel}</Card>
+            ) : (
+              <EmptyState title={t.form.editTitle} description={t.form.pickHint} />
+            )}
+          </aside>
+        ) : (
+          <Sheet
+            open={panel !== null}
+            onOpenChange={(open) => (open ? null : setSelectedId(undefined))}
+          >
+            <SheetContent
+              side="right"
+              aria-describedby={undefined}
+              className="bg-surface w-full max-w-full gap-4 overflow-y-auto px-4 py-5 sm:w-[420px] sm:max-w-[420px] sm:px-6"
+            >
+              <SheetClose asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={es.common.close}
+                  className="self-end"
+                >
+                  <XIcon />
+                </Button>
+              </SheetClose>
+              {panel}
+            </SheetContent>
+          </Sheet>
+        )}
       </LibraryPanel>
 
       {confirming && selected ? (

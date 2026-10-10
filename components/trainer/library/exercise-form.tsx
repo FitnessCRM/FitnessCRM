@@ -2,31 +2,36 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ExternalLinkIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ErrorState } from "@/components/ui/states";
-import { externalUrlSchema, type Exercise } from "@/lib/domain";
+import { exerciseSchema, externalUrlSchema, type Exercise } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 
 const t = es.screensLibrary.form;
 
-/** El vídeo es enlace externo (I20): o una URL completa, o nada. */
-const formSchema = z.object({
-  name: z.string().trim().min(1, t.nameRequired),
-  muscleGroup: z.string().trim(),
-  equipment: z.string().trim(),
-  videoUrl: z
-    .string()
-    .trim()
-    .refine((v) => v === "" || externalUrlSchema.safeParse(v).success, { message: t.videoInvalid }),
-  description: z.string().trim(),
-});
+/**
+ * The rules come from the domain's `exerciseSchema`, so they live in one place. The only step the
+ * form adds is turning "" into null for the video, which is how the domain stores "no video".
+ * Its messages are the domain's, so the field errors below show the Spanish copy instead.
+ */
+const formSchema = exerciseSchema
+  .pick({ name: true, muscleGroup: true, equipment: true, description: true })
+  .extend({
+    videoUrl: z
+      .string()
+      .trim()
+      .transform((value) => (value === "" ? null : value))
+      .pipe(exerciseSchema.shape.videoUrl),
+  });
 
+/** The domain defaults make some fields optional on input; the form always supplies them. */
+type ExerciseFormInput = z.input<typeof formSchema>;
 export type ExerciseFormValues = z.output<typeof formSchema>;
 
 function hostOf(url: string): string {
@@ -38,30 +43,33 @@ function hostOf(url: string): string {
 }
 
 /**
- * Panel de edición. Grupo y material son texto libre en el dominio: el campo sugiere los que ya
- * existen en la biblioteca (datalist) pero no cierra la lista.
+ * Edit panel. Group and equipment are free text in the domain: the field suggests the values
+ * that already exist in the library (datalist) but does not close the list.
  */
 export function ExerciseForm({
   exercise,
   groups,
   equipment,
+  title,
   isSaving,
   saveError,
   onSubmit,
   onDelete,
   onCancel,
 }: {
-  /** `null` = ejercicio nuevo. */
+  /** `null` = new exercise. */
   exercise: Exercise | null;
   groups: string[];
   equipment: string[];
+  /** The host renders the title: inside the `Sheet` it is a `SheetTitle`, not an `h2`. */
+  title: (heading: string) => ReactNode;
   isSaving: boolean;
   saveError: boolean;
   onSubmit: (values: ExerciseFormValues) => Promise<unknown>;
   onDelete: () => void;
   onCancel: () => void;
 }) {
-  const form = useForm<ExerciseFormValues>({
+  const form = useForm<ExerciseFormInput, unknown, ExerciseFormValues>({
     resolver: zodResolver(formSchema),
     values: {
       name: exercise?.name ?? "",
@@ -75,8 +83,8 @@ export function ExerciseForm({
   const videoValid = externalUrlSchema.safeParse(videoUrl.trim()).success;
 
   return (
-    <Card className="gap-4 px-[22px] py-[22px]">
-      <h2 className="section-title">{exercise ? t.editTitle : t.newTitle}</h2>
+    <div className="flex flex-col gap-4">
+      {title(exercise ? t.editTitle : t.newTitle)}
 
       <form
         className="flex flex-col gap-4"
@@ -92,7 +100,7 @@ export function ExerciseForm({
             aria-invalid={!!form.formState.errors.name}
           />
           {form.formState.errors.name ? (
-            <p className="text-danger text-xs">{form.formState.errors.name.message}</p>
+            <p className="text-danger text-xs">{t.nameRequired}</p>
           ) : null}
         </div>
 
@@ -132,16 +140,16 @@ export function ExerciseForm({
           <Input
             id="ex-video"
             inputMode="url"
-            placeholder="https://…"
+            placeholder={t.videoPlaceholder}
             {...form.register("videoUrl")}
             aria-invalid={!!form.formState.errors.videoUrl}
           />
           {form.formState.errors.videoUrl ? (
-            <p className="text-danger text-xs">{form.formState.errors.videoUrl.message}</p>
+            <p className="text-danger text-xs">{t.videoInvalid}</p>
           ) : (
             <p className="text-text-subtle text-xs">{t.videoExternal}</p>
           )}
-          {/* Nunca embebido (I20): un enlace que dice a dónde lleva. */}
+          {/* Never embedded (I20): a link that says where it leads. */}
           {videoValid ? (
             <a
               href={videoUrl.trim()}
@@ -150,7 +158,7 @@ export function ExerciseForm({
               className="text-accent-hover hover:text-accent-emphasis inline-flex items-center gap-1.5 text-[13px] underline-offset-4 hover:underline"
             >
               <ExternalLinkIcon aria-hidden className="size-3.5" />
-              {t.videoOpen} · {hostOf(videoUrl.trim())}
+              {t.videoOpenHost.replace("{host}", hostOf(videoUrl.trim()))}
             </a>
           ) : (
             <p className="text-text-subtle text-[13px]">{t.videoEmpty}</p>
@@ -179,6 +187,6 @@ export function ExerciseForm({
           )}
         </div>
       </form>
-    </Card>
+    </div>
   );
 }
