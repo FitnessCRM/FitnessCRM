@@ -370,6 +370,11 @@ Fase 5 (navegación):
     así que el tipo solo producía relleno. Revisados los demás puertos: era el único con ese vicio.
     `ClientInput` incluía `status` y el adaptador no lo forzaba; desde el alta de cliente
     (tarjeta 6) tampoco lo lleva y el adaptador crea siempre en `invitado`.
+  - **El editor va en un `Sheet` por debajo de `xl`** (tarjeta 96, PR #102). Desde `xl` sigue en
+    la columna derecha; por debajo abre en un `Sheet` lateral, como Alimentos, en vez de quedar
+    debajo de la rejilla. El formulario valida con `exerciseSchema` del dominio, no con una copia,
+    y los mensajes de error salen de `es.ts`. Deuda: el bloque del `Sheet` está repetido entre
+    las dos pestañas (tarjeta 103).
 
 - **Cuestionario y Medidas** (`components/trainer/catalog/`, tarjeta 12, integrada el
   27-09-2026). Las dos pantallas comparten `CatalogList`, el armazón del catálogo ordenable del
@@ -894,8 +899,6 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
     implementación de la API no cumple su contrato en el orden con el texto vacío: saca primero los
     sembrados en vez de todos por nombre. La app sigue el contrato; hay que pedir en
     `FitnessCRM/food-api` que se alineen.
-  - **Lo que dejó la 89, con su tarjeta:** el panel de Ejercicios en Sheet por debajo de `xl`,
-    como el de Alimentos (96).
 
 - **Backend.** Firebase está conectado y se ha probado con el proyecto real (06-10-2026): el
   `users/{uid}` del entrenador está creado, y las reglas de seguridad (tarjeta 34) y los índices de
