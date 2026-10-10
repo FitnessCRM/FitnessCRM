@@ -1,6 +1,6 @@
 /**
- * Todos los literales visibles de la aplicación.
- * El nombre de marca sale ÚNICAMENTE de APP_NAME: cambiar la marca es cambiar esta línea.
+ * All visible literals of the application.
+ * The brand name comes ONLY from APP_NAME: changing the brand means changing this line.
  */
 export const APP_NAME = "HECTOR";
 
@@ -12,28 +12,28 @@ export const es = {
     loading: "Cargando…",
     error: "Algo ha fallado",
     retry: "Reintentar",
-    /** Lo usan la tarjeta de macros (Asignación, Editor de plan) y el editor de menús. */
+    /** Used by the macros card (Assignment, plan editor) and the menu editor. */
     kcalInvalid: "Escribe las kcal sin puntos ni decimales, por ejemplo 2400",
     coachTag: "Coach",
-    /** Cierre de sesión: el botón de la barra del entrenador. */
+    /** Sign-out: the button in the trainer's bar. */
     signOut: {
       action: "Cerrar sesión",
       pending: "Saliendo…",
       failed: "No se ha podido cerrar la sesión.",
     },
     trainerNote: { title: "Nota del entrenador" },
-    /** Lo que se pinta en lugar de un dato que no hay, p. ej. la semana antes del alta (§8). */
+    /** Painted in place of a missing value, e.g. the week before sign-up (§8). */
     none: "—",
-    /** Unidades y abreviaturas que comparten varias pantallas de las dos áreas. */
+    /** Units and abbreviations shared by several screens in both areas. */
     kg: "kg",
     kcal: "kcal",
     week: "Semana",
-    /** «S5»: semana abreviada en ejes y celdas estrechas. */
+    /** "S5": abbreviated week for axes and narrow cells. */
     weekShort: "S",
-    /** Nombre accesible y texto del botón que cierra un diálogo. */
+    /** Accessible name and text of the button that closes a dialog. */
     close: "Cerrar",
   },
-  /** Sin conexión: el aviso del área de cliente y la pantalla de respaldo del service worker. */
+  /** Offline: the client area notice and the service worker fallback screen. */
   offline: {
     banner: "Sin conexión. Se muestran los últimos datos guardados en este dispositivo.",
     title: "Sin conexión",
@@ -45,7 +45,7 @@ export const es = {
     client: "Cliente",
   },
   nav: {
-    /** Nombre accesible del botón de hamburguesa (solo icono, sin texto visible). */
+    /** Accessible name of the menu button (icon only, no visible text). */
     toggle: "Menú",
     trainer: {
       dashboard: "Dashboard",
@@ -107,7 +107,7 @@ export const es = {
         errorNetwork: "No se ha podido conectar",
         back: "Volver al acceso",
       },
-      /** Se dice lo mismo exista o no la cuenta: no se revela quién usa la app (§12). */
+      /** Same message whether or not the account exists: it does not reveal who uses the app (§12). */
       sent: {
         title: "Revisa tu correo",
         description:
@@ -119,7 +119,7 @@ export const es = {
     },
     resetPassword: {
       title: "Elige una contraseña nueva",
-      /** `{email}` es el correo de la cuenta, que devuelve la comprobación del enlace. */
+      /** `{email}` is the account email, returned by the link check. */
       subtitle: "Escribe la contraseña nueva de {email}.",
       checking: "Comprobando el enlace…",
       form: {
@@ -163,7 +163,7 @@ export const es = {
         submit: "Continuar",
         submitting: "Entrando…",
         forgotPassword: "He olvidado mi contraseña",
-        /** Aviso en el acceso al volver de cambiar la contraseña. */
+        /** Notice on sign-in after changing the password. */
         resetDone: "Contraseña cambiada. Entra con la nueva.",
         errorInvalid: "Email o contraseña incorrectos",
         errorNoProfile: "Esta cuenta aún no tiene acceso a la app",
@@ -200,7 +200,7 @@ export const es = {
   screens: {
     weight: {
       eyebrow: "Cuando tú quieras",
-      /** Antes del alta no hay ninguna fecha válida (I27): en vez del formulario, desde cuándo. */
+      /** Before sign-up there is no valid date (I27): instead of the form, since when. */
       notStarted: "Podrás registrar tu peso a partir del {date}, cuando empiece tu seguimiento.",
       intro:
         "Entrada libre y opcional. No hace falta pesarse a diario: puedes apuntarlo cuando quieras o dejarlo para el día de la revisión.",
@@ -215,7 +215,7 @@ export const es = {
         weightRequired: "Escribe tu peso",
         weightInvalid: "El peso debe ser un número en kg, por ejemplo 63,4",
         dateInvalid: "Elige una fecha",
-        /** I27: ni futuro ni antes del alta. `{date}` es la fecha de alta. */
+        /** I27: neither future nor before sign-up. `{date}` is the sign-up date. */
         dateFuture: "La fecha no puede ser posterior a hoy",
         dateBeforeStart: "La fecha no puede ser anterior a tu alta, el {date}",
         saveError: "No se ha podido guardar el pesaje.",
@@ -245,7 +245,7 @@ export const es = {
   },
   screensReview: {
     week: "Semana",
-    /** Antes del alta no hay semana ni revisión (§8). */
+    /** Before sign-up there is no week or review (§8). */
     notStarted: "Tu seguimiento empieza el {date}",
     blocks: {
       photos: "Fotos",
@@ -266,7 +266,7 @@ export const es = {
     weight: {
       title: "Peso de la revisión",
       taken: "Tomado de tu registro del",
-      /** Hay un pesaje más reciente en la ventana: la revisión lo tomará al guardarla (I24). */
+      /** There is a more recent weigh-in in the window: the review will take it when saved (I24). */
       willUpdate: "Al guardar se usará tu registro del {date} · {kg} kg",
       missing: "Sin pesaje esta semana. Regístralo en Peso y aparecerá aquí.",
       goToWeight: "Ir a Peso",
@@ -344,7 +344,7 @@ export const es = {
     week: "Semana",
     day: "Día",
     daysLabel: "Días de la rutina",
-    /** Bajo la rejilla de hoy: entrada a corregir o registrar el entreno de otro día. */
+    /** Below today's grid: entry to correct or log a workout from another day. */
     pastLink: "¿Te saltaste un día? Regístralo",
     empty: {
       title: "Sin rutina asignada",
@@ -356,7 +356,7 @@ export const es = {
     },
     exercise: {
       unknown: "Ejercicio no disponible",
-      /** Bajo la prescripción: lo que hizo la última vez en este ejercicio. */
+      /** Below the prescription: what was done last time in this exercise. */
       lastTime: "Última vez",
       video: "Ver vídeo del ejercicio",
       set: "serie",
@@ -464,7 +464,7 @@ export const es = {
     unit: "Unidad",
     unitRequired: "La unidad no puede quedar vacía",
     unitPlaceholder: "cm",
-    /** I26: la unidad no se cambia desde la primera medida registrada. */
+    /** I26: the unit cannot be changed once the first measurement is recorded. */
     unitLocked:
       "Unidad bloqueada: ya hay medidas registradas. Para cambiarla, archiva la medida y crea otra.",
     add: "+ Añadir medida",
@@ -505,7 +505,7 @@ export const es = {
       repsMin: "Reps mín.",
       repsMax: "Reps máx.",
       repsMaxHint: "Vacío = repeticiones fijas",
-      /** Se ve dentro del campo vacío (en táctil `title` no existe). */
+      /** Shown inside the empty field (on touch, `title` does not exist). */
       repsMaxPlaceholder: "Fijas",
       rir: "RIR",
       rest: "Descanso",
@@ -539,18 +539,18 @@ export const es = {
       },
       noMeals: "Sin comidas en este menú.",
       note: "Nota para el cliente",
-      /** Lo que se lee bajo cada alimento del menú (§5, I30). */
+      /** What is read under each food in the menu (§5, I30). */
       item: {
         empty: "Elige uno de tus alimentos o del catálogo, o escríbelo a mano.",
         noGrams: "Escribe los gramos para ver lo que aporta.",
         freeText: "Sin composición · no suma",
         saveToLibrary: "Guardar en Alimentos",
       },
-      /** Cifras abreviadas de lo que aporta un alimento o una comida: «297 kcal · P 10,8…». */
+      /** Abbreviated figures of what a food or a meal contributes: "297 kcal · P 10,8…". */
       short: { protein: "P", carbs: "C", fat: "G" },
       mealSubtotal: "Esta comida:",
       per100: "por 100 g",
-      /** El desplegable del campo del alimento: tus alimentos y el catálogo común (§4). */
+      /** The food field dropdown: your foods and the shared catalog (§4). */
       suggestions: {
         label: "Sugerencias de alimentos",
         own: "Tus alimentos",
@@ -573,12 +573,12 @@ export const es = {
         countOwn: "{n} de tus alimentos",
         countCatalog: "{n} del catálogo común",
       },
-      /** Crear un alimento sin salir del menú. */
+      /** Create a food without leaving the menu. */
       createFood: {
         description: "Se guarda en tus alimentos y se usa en este menú.",
         submit: "Guardar y usar",
       },
-      /** «Lo que llevas»: lo que suman los alimentos frente a lo declarado en el menú (I30). */
+      /** "What you carry": what the foods add up to versus what the menu declares (I30). */
       tally: {
         title: "Lo que llevas",
         subtitle: "Frente a lo declarado en este menú",
@@ -592,7 +592,7 @@ export const es = {
           one: "{n} alimento escrito a mano no suma.",
           other: "{n} alimentos escritos a mano no suman.",
         },
-        /** Resumen compacto del móvil: una cifra corta por columna. */
+        /** Compact phone summary: one short figure per column. */
         strip: {
           labels: { kcal: "kcal", proteinG: "P", carbsG: "C", fatG: "G" },
           over: "+{amount}",
@@ -632,7 +632,7 @@ export const es = {
     notFound: { title: "Plantilla no encontrada", hint: "Puede que se haya eliminado." },
     sections: { details: "Datos", content: "Contenido" },
   },
-  /** Selector de cliente del panel (`components/trainer/client-picker.tsx`): lo usan Clientes, Membresías y Asignación. */
+  /** Trainer panel client picker (`components/trainer/client-picker.tsx`): used by Clients, Memberships and Assignment. */
   clientPicker: {
     label: "Cliente",
     placeholder: "Buscar cliente…",
@@ -713,14 +713,14 @@ export const es = {
     saveError: "No se han podido publicar los cambios.",
     draftBadge: "Borrador",
     notFound: { title: "Cliente no encontrado", hint: "Puede que se haya eliminado." },
-    /** Cliente de baja: no se le edita ni se le publica un plan (tarjeta 44), como en Asignación. */
+    /** Inactive client: no plan is edited or published for them (card 44), as in Assignment. */
     inactive: {
       title: "Cliente de baja",
       hint: "No se le puede editar ni publicar un plan. Si vuelve, reactívalo desde su ficha.",
     },
     defaultRoutineName: "Rutina de {name}",
   },
-  /** Calendario de rango (`components/ui/range-calendar.tsx`). */
+  /** Date range calendar (`components/ui/range-calendar.tsx`). */
   calendar: {
     weekdays: ["L", "M", "X", "J", "V", "S", "D"],
     months: [
@@ -797,7 +797,7 @@ export const es = {
       pickClient: "Elige un cliente para ver sus planes.",
       name: "Nombre de la plantilla",
       nameRequired: "Ponle un nombre",
-      /** `{name}` lo rellena la pantalla. */
+      /** `{name}` is filled in by the screen. */
       routineName: "{name} (plantilla)",
       menusName: "Menús de {name}",
       create: "Crear plantilla",
@@ -831,8 +831,9 @@ export const es = {
       equipment: "Material",
       videoUrl: "Vídeo (URL)",
       videoInvalid: "Escribe una dirección completa, por ejemplo https://…",
+      videoPlaceholder: "https://…",
+      videoOpenHost: "Abrir el vídeo · {host}",
       videoExternal: "Enlace externo: se abre en una pestaña nueva y la app no aloja el vídeo.",
-      videoOpen: "Abrir el vídeo",
       videoEmpty: "Sin vídeo",
       description: "Descripción / técnica",
       save: "Guardar",
@@ -849,14 +850,14 @@ export const es = {
       intro: "El ejercicio sale de la biblioteca y de los planes vivos. No se borra el histórico:",
       keepsHistory:
         "las rutinas archivadas se quedan como están, así que un entreno registrado sigue diciendo qué ejercicio fue.",
-      /** Activas y borradores: las dos que modifica el archivado. Las archivadas no cuentan. */
+      /** Active and drafts: the two that archiving changes. Archived ones don't count. */
       clients: "Lo tienen en su rutina, activa o en borrador:",
       templates: "Plantillas de rutina afectadas:",
       noUse: "Ningún cliente ni plantilla lo usa ahora mismo.",
       confirm: "Eliminar de la biblioteca",
       cancel: "Cancelar",
       error: "No se ha podido eliminar el ejercicio.",
-      /** Sin saber a quién afecta no se deja confirmar. */
+      /** Confirmation is blocked until we know who it affects. */
       usageError:
         "No se ha podido comprobar quién usa este ejercicio. Vuelve a intentarlo antes de eliminarlo.",
       working: "Eliminando…",
@@ -866,7 +867,7 @@ export const es = {
       exercises: "Ejercicios",
       foods: "Alimentos",
     },
-    /** Pestaña Alimentos (§4, §5, §7). Lo que no es tuyo se lee; nunca se dice de quién es. */
+    /** Foods tab (§4, §5, §7). What isn't yours is read-only; it never says whose it is. */
     foods: {
       count: { one: "alimento tuyo", other: "alimentos tuyos" },
       newFood: "+ Nuevo alimento",
@@ -899,7 +900,7 @@ export const es = {
         loadingMore: "Cargando…",
         moreError: "No se ha podido cargar más del catálogo común.",
       },
-      /** Lo que dice el panel de la Biblioteca alrededor del formulario. */
+      /** What the Library panel says around the form. */
       panel: {
         pickTitle: "Alimento",
         pickHint: "Elige un alimento de la lista o crea uno nuevo.",
@@ -922,7 +923,7 @@ export const es = {
       },
     },
   },
-  /** Formulario de un alimento (§5): lo usan la Biblioteca y el editor de menú. */
+  /** Food form (§5): used by the Library and the menu editor. */
   foodForm: {
     newTitle: "Nuevo alimento",
     editTitle: "Editar alimento",
@@ -996,14 +997,14 @@ export const es = {
       all: "Todas",
       unpaid: "No pagadas",
       expiring: "Caducan pronto",
-      /** `{days}` lo rellena la pantalla con `EXPIRING_SOON_DAYS`. */
+      /** `{days}` is filled in by the screen with `EXPIRING_SOON_DAYS`. */
       expiringHint: "Vigentes que acaban en los próximos {days} días",
     },
     pagination: {
       label: "Paginación",
       previous: "Anterior",
       next: "Siguiente",
-      /** `{page}`, `{pages}` y `{total}` los rellena la pantalla. */
+      /** `{page}`, `{pages}` and `{total}` are filled in by the screen. */
       summary: "Página {page} de {pages} · {total} membresías",
     },
     columns: { client: "Cliente", type: "Tipo", start: "Inicio", end: "Fin", status: "Estado" },
@@ -1028,7 +1029,7 @@ export const es = {
       hint: "Prueba con otro cliente o quita el filtro.",
     },
   },
-  /** Gráficas de `components/charts/`: las usan las dos áreas, así que no cuelgan de una pantalla. */
+  /** Charts from `components/charts/`: used by both areas, so they don't hang off one screen. */
   charts: {
     weight: {
       title: "Evolución de peso",
@@ -1044,7 +1045,7 @@ export const es = {
       noneSelected: "Elige al menos una medida.",
     },
   },
-  /** Vista de solo lectura de una revisión, `components/review/`: la usan las dos áreas. */
+  /** Read-only view of a review, `components/review/`: used by both areas. */
   review: {
     photos: {
       poseLabel: "foto",
@@ -1054,11 +1055,11 @@ export const es = {
       none: "Sin foto",
     },
   },
-  /** Componentes `components/`: literales que comparten varios componentes. */
+  /** `components/` components: literals shared by several components. */
   components: {
     /**
-     * Panel de control. Se aparta de la captura 09 a propósito: «inactivo» no existe (§7, D4), así
-     * que cifras y pestañas usan los tres estados del cliente con sus etiquetas de `status.client`.
+     * Dashboard. Deliberately departs from screenshot 09: "inactive" does not exist (§7, D4), so
+     * figures and tabs use the client's three states with their `status.client` labels.
      */
     dashboard: {
       activeClients: "Clientes en activo",
@@ -1094,12 +1095,12 @@ export const es = {
       partial: "Parcial",
       emptyTitle: "Sin revisiones todavía",
       emptyHint: "La primera aparecerá cuando empieces tu revisión semanal.",
-      /** `{n}` es el número de revisiones del histórico. */
+      /** `{n}` is the number of reviews in the history. */
       showAll: "Ver todas las revisiones ({n})",
       showRecent: "Ver solo las últimas",
     },
   },
-  /** Registro de un entreno de otra fecha, desde Rutina. */
+  /** Log a workout from another date, from Routine. */
   screensWorkoutDay: {
     eyebrow: "Entrenos",
     title: "Entreno de otro día",
@@ -1109,7 +1110,7 @@ export const es = {
     clearHint: "Vacía los dos campos para quitar una serie. Se guarda al salir de la fila.",
     summaryLogged: "series registradas ese día",
   },
-  /** Datos de un cliente: los comparten el alta y la edición. */
+  /** Client data: shared by sign-up and editing. */
   clientData: {
     title: "Datos del cliente",
     firstName: "Nombre",
@@ -1124,7 +1125,7 @@ export const es = {
     startDate: "Fecha de alta",
     startDateHint:
       "Es el origen de la numeración de semanas. Cambiarla después no reetiqueta las revisiones ya enviadas.",
-    /** Se guardan tal cual en `goal` y `level`, que en el dominio son texto libre. */
+    /** Saved as-is in `goal` and `level`, which are free text in the domain. */
     goals: [
       "Recomposición corporal",
       "Pérdida de grasa",
@@ -1142,7 +1143,7 @@ export const es = {
   },
   screensClientProfile: {
     eyebrow: "Tu cuenta",
-    /** Nombre accesible del enlace del avatar que lleva al perfil. */
+    /** Accessible name of the avatar link that goes to the profile. */
     link: "Ver tu perfil",
     data: {
       title: "Tus datos",
@@ -1159,7 +1160,7 @@ export const es = {
       since: "Alta",
       week: "Semana",
       cadence: "Revisión",
-      /** `{days}` lo rellena la pantalla. */
+      /** `{days}` is filled in by the screen. */
       cadenceEvery: { one: "cada día", other: "cada {days} días" },
       trainer: "Tu entrenador",
     },
@@ -1399,7 +1400,7 @@ export const es = {
     editPlan: "Editar plan",
     viewNewReview: "Ver revisión nueva",
     weekLabel: "Semana",
-    /** En la cabecera, en lugar de la semana, si el alta todavía no ha llegado (§8). */
+    /** In the header, in place of the week, if sign-up has not happened yet (§8). */
     startsOn: "Empieza el {date}",
     plan: {
       routineTitle: "Rutina asignada",
@@ -1412,12 +1413,12 @@ export const es = {
       menusPerType: { one: "menú por tipo", other: "menús por tipo" },
       menus: { one: "menú", other: "menús" },
       noMenus: "sin menús",
-      /** Enlace de los vacíos a Asignación, para un cliente que no está de baja. */
+      /** Empty-state link to Assignment, for a client who is not inactive. */
       assign: "Ir a Asignación",
-      /** Bajo las gráficas vacías de un cliente que aún no tiene ningún plan. */
+      /** Below the empty charts of a client who has no plan yet. */
       noPlanHint: "Todavía no tiene plan: asígnale uno para empezar el seguimiento.",
     },
-    /** Planes anteriores: qué plan llevaba el cliente y cuándo cambió, de solo lectura. */
+    /** Previous plans: which plan the client had and when it changed, read-only. */
     previous: {
       title: "Planes anteriores",
       hint: "Consulta qué plan llevaba el cliente antes de cada cambio.",
@@ -1425,12 +1426,12 @@ export const es = {
       dialogDescription:
         "Es solo de lectura: un plan que ya no está en uso no se edita. Las fechas se deducen de cuándo se archivó cada plan.",
       allPlans: "Todos los planes",
-      /** `{from}` es una fecha ya formateada y `{days}` los días ya con su unidad. */
+      /** `{from}` is an already formatted date and `{days}` the days already with their unit. */
       allPlansSince: "Del {from} a hoy · {days}",
-      /** `{from}` y `{to}` son fechas ya formateadas. */
+      /** `{from}` and `{to}` are already formatted dates. */
       plansOfRange: "Planes del {from} al {to}",
       plansOfDay: "Planes del {date}",
-      /** `{n}` y `{total}` los rellena la pantalla. */
+      /** `{n}` and `{total}` are filled in by the screen. */
       inRange: "Planes en uso esos días: {n} de {total}",
       ofTotal: "{n} de {total}",
       filter: "Filtrar por fechas",
@@ -1455,7 +1456,7 @@ export const es = {
       timelineRoutine: "Rutina",
       timelineMenus: { entrenamiento: "Menús · entreno", descanso: "Menús · descanso" },
       today: "Hoy",
-      /** `{name}` lo rellena la pantalla. */
+      /** `{name}` is filled in by the screen. */
       fromTemplate: "Plantilla «{name}»",
       noTemplate: "Sin plantilla",
       inUse: "En uso",
@@ -1490,12 +1491,12 @@ export const es = {
       partial: "parcial",
       emptyTitle: "Sin revisiones todavía",
       emptyHint: "La primera aparecerá cuando el cliente empiece su revisión semanal.",
-      /** Cliente de baja: no se le prometen revisiones. */
+      /** Inactive client: no reviews are promised. */
       emptyHintInactive: "Está de baja: no enviará revisiones mientras no se reactive.",
     },
     notFoundTitle: "Cliente no encontrado",
     notFoundHint: "No existe o no pertenece a tu cartera.",
-    /** Dar de baja y reactivar. `{name}` lo rellena la pantalla. */
+    /** Deactivate and reactivate. `{name}` is filled in by the screen. */
     lifecycle: {
       deactivate: {
         action: "Dar de baja",
@@ -1521,7 +1522,7 @@ export const es = {
       cancel: "Cancelar",
       saving: "Guardando…",
     },
-    /** Invitación pendiente de un cliente que aún no ha entrado. `{email}` lo rellena la pantalla. */
+    /** Pending invitation for a client who has not signed in yet. `{email}` is filled in by the screen. */
     invitation: {
       title: "Invitación pendiente",
       hint: "Aún no ha entrado. Se le envió un enlace a {email}; si no lo encuentra o ha caducado, puedes enviarle otro.",
@@ -1534,11 +1535,11 @@ export const es = {
       title: "Membresía",
       manage: "Gestionar",
       renew: "Renovar",
-      /** `{days}` lo rellena la pantalla. */
+      /** `{days}` is filled in by the screen. */
       daysLeft: { zero: "acaba hoy", one: "queda {days} día", other: "quedan {days} días" },
       none: "Sin membresía vigente",
       noneAtAll: "Sin membresías todavía",
-      /** `{start}` lo rellena la pantalla con la fecha de inicio. */
+      /** `{start}` is filled in by the screen with the start date. */
       upcoming: "Próxima: empieza el {start}",
       overlapHint:
         "Hay membresías de este cliente que se solapan. El cliente ve la que empezó más tarde: corrígelo en Gestionar.",
@@ -1563,7 +1564,7 @@ export const es = {
     },
   },
   status: {
-    /** Califican a una persona: invariables en género (ver «Idioma» en CLAUDE.md). */
+    /** They describe a person: invariant in gender (see "Language" in CLAUDE.md). */
     client: { invitado: "Invitación pendiente", activo: "En activo", dado_de_baja: "Baja" },
     review: { borrador: "En curso", enviada: "Nueva", vista: "Vista", revisada: "Revisada" },
     reviewCompleteness: { complete: "Completa", partial: "Parcial" },
@@ -1580,8 +1581,8 @@ export const es = {
     dayTypeShort: { entrenamiento: "entrenamiento", descanso: "descanso" },
     pose: { frente: "Frente", perfil: "Perfil", espalda: "Espalda" },
     /**
-     * De dónde sale un alimento de la biblioteca (§4). «De otra cuenta»: ni la identidad ni el
-     * género de quien lo creó. La fuente de un sembrado va entera: es la atribución que pide ODbL.
+     * Where a library food comes from (§4). "From another account": neither the identity nor the
+     * gender of whoever created it. A seeded food's full source is shown: it is the attribution ODbL requires.
      */
     foodOrigin: {
       own: "Tuyo",
