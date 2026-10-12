@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 09-10-2026. Corresponde a `main` en `de2960c` (PR #95). Están en `main` los
+Última actualización: 12-10-2026. Corresponde a `main` en `3a7d582` (PR #104). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad, el adaptador de Firebase, el modo sin conexión del cliente, la capa de datos de los
 alimentos y sus pantallas; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de
@@ -881,6 +881,45 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   en inglés y la revisión no marca su idioma. **Falta** un `.gga` común en el repo: hoy cada uno
   revisa con su propia configuración.
 
+- **Siembra del entrenador de demo** (tarjeta 104, PR #104). `pnpm seed:demo` deja en Firebase un
+  entrenador con datos de muestra, para enseñar la app desplegada. No cambia dominio, puertos ni
+  pantallas.
+  - **Qué siembra:** el entrenador se reutiliza si existe —cuenta, `users/{uid}` y `trainers/{id}`
+    no se tocan— y solo se crea lo que le falte. Su biblioteca: 12 ejercicios, 15 alimentos
+    propios, 8 tipos de medida, 5 preguntas, 2 plantillas de rutina y 1 de menú. Dos clientes ya
+    `activo`, Lucas e Irene, con cuenta de correo verificado y su `users/{uid}`, y su historial:
+    membresías, rutina y menús clonados de plantilla, macros objetivo, pesajes, entrenos y
+    revisiones en los cuatro estados. Son 273 documentos. Las revisiones no llevan fotos.
+  - **Cómo se ejecuta:** `--project` es obligatorio y `--key` es la clave de cuenta de servicio,
+    fuera del repo. Sin más, es un dry-run: solo lee y dice qué existe, qué crearía y qué lo
+    impediría. Escribir exige `--apply`. `--trainer-name` y `--time-zone` solo cuentan si falta el
+    `trainers/{id}`; si existe, manda su zona. Las instrucciones están en la cabecera del script.
+  - **Garantías:** solo crea, con `create()`: lo que existe se cuenta y se salta, y una cuenta que
+    ya existe conserva su contraseña. Se niega a ejecutarse contra un proyecto real que no sea el
+    de la app o con una clave dentro del repo, y `--apply` aborta sin escribir si el entrenador ya
+    tiene documentos propios. Todo se valida con los esquemas de `lib/domain` antes de escribirse,
+    porque el SDK de administración salta las reglas de seguridad, y al final se releen y se
+    vuelven a validar los documentos de la siembra y el del entrenador. Las contraseñas temporales
+    se imprimen una vez y no se guardan. Contra los emuladores exige sus dos variables y un
+    proyecto `demo-…`, y no carga ninguna clave.
+  - **Repetible:** los ids son deterministas (`seed-…`) y las fechas salen del día de la primera
+    siembra, que se deduce de los clientes ya escritos; si falla a medias, volver a ejecutarla
+    completa lo que falte sin duplicar.
+  - **Dónde vive:** la entrada es `scripts/seed-demo-trainer.ts` y el código,
+    `lib/data/adapters/firebase/seed/`: los datos son una función pura del entrenador, el día y su
+    zona, construida con las funciones del dominio (`openReview`, `markReviewViewed`,
+    `cloneRoutineTemplate`…) y con sus tests de I3, I4, I5, I9, I12, I16, I22, I23, I24 e I27.
+  - **Dependencias de desarrollo nuevas:** `firebase-admin` y `tsx`, que ejecuta el script. El SDK
+    de administración solo se importa en `lib/data/adapters/firebase/seed/admin.ts`, dentro de la
+    carpeta que la regla 1 de `CLAUDE.md` ya admite; la entrada de `scripts/` carga esa carpeta con
+    un `import()` dinámico, como `app/providers.tsx`.
+  - **Ejecutada una vez contra el proyecto real el 12-10-2026.** La demo es una foto de ese día:
+    las fechas no se refrescan. Sus alimentos están `pendiente` de publicar hasta la tarjeta 90 y
+    sus revisiones no tendrán fotos hasta la 17.
+  - **Deuda:** ni `CLAUDE.md` ni `AGENTS.md` mencionan el script, `tsx`, `scripts/` ni
+    `firebase-admin` (sus reglas 1 y 2, respectivamente, solo nombran `firebase` y `@firebase/*`);
+    va en un PR de documentación aparte.
+
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
   `trainer/`) y #33 (enlace a la revisión desde el panel de control, rama
@@ -924,6 +963,12 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62). La
   regla de baja ya está en §7 (PR #87); falta comprobar que asignar planes y enviar feedback a un
   cliente de baja la respetan (tarjeta 61).
+- **«Revisiones recibidas» marca «Completa» todas las filas (105).** La columna de completitud
+  usa el objeto que devuelve `isReviewComplete` en vez de su `.complete`, así que una revisión
+  parcial también sale «Completa». Se vio al verificar la siembra, cuyas revisiones no tienen
+  fotos.
+- **Pre-commit autocontenido (106).** El hook encuentra `gga` gracias a un archivo de fuera del
+  repo, y desde algunos shells no lo encuentra y el commit falla con `gga: command not found`.
 - **Deuda menor con tarjeta**: favicon (19) y cifras del panel en una consulta (42). Resueltas: el nombre accesible de `NumberField` (59, PR
   #66, etiqueta y campo asociados con `useId`) y `ReviewPort.listSubmittedReviews`, que se quitó
   del puerto con su hook y su clave por no usarlo ninguna pantalla (64, PR #74, **BREAKING
