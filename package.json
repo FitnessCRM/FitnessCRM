@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "prepare": "husky",
     "test:firebase": "pnpm dlx firebase-tools emulators:exec --config firebase.open.json --only firestore,auth --project demo-hector \"vitest run lib/data/adapters/firebase --no-file-parallelism --exclude **/rules/**\"",
-    "test:rules": "pnpm dlx firebase-tools emulators:exec --only firestore --project demo-hector \"vitest run lib/data/adapters/firebase/rules --no-file-parallelism\""
+    "test:rules": "pnpm dlx firebase-tools emulators:exec --only firestore --project demo-hector \"vitest run lib/data/adapters/firebase/rules --no-file-parallelism\"",
+    "seed:demo": "tsx scripts/seed-demo-trainer.ts"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
@@ -46,11 +47,13 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.25",
     "eslint-config-prettier": "^10.1.8",
+    "firebase-admin": "^14.5.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.5.1",
     "prettier": "^3.9.7",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "tw-animate-css": "^1.4.0",
     "typescript": "^5",
     "vitest": "^5.0.1"
