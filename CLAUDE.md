@@ -485,10 +485,10 @@ argumentos y garantías están en la cabecera del script.
 ## Estado
 
 Cimientos terminados (18-09-2026): esqueleto, sistema de diseño, dominio con tests, capa de
-datos con adaptador en memoria y armazón de navegación con las dos áreas. `app/providers.tsx`
-monta todavía el adaptador en memoria y `SessionPort` devuelve una sesión de demo (Adrián como
-entrenador, con Marta a mano para recorrer las dos áreas); el de Firebase existe pero no está
-montado. Los datos de demo se
+datos con adaptador en memoria y armazón de navegación con las dos áreas. Entonces
+`app/providers.tsx` montaba solo el adaptador en memoria, cuyo `SessionPort` devuelve una sesión de
+demo (Adrián como entrenador, con Marta a mano para recorrer las dos áreas); hoy sigue siendo el
+que se monta por defecto, y el de Firebase se cuenta más abajo. Los datos de demo se
 generan relativos a la fecha de hoy (Marta siempre en su semana 5), no con fechas fijas.
 Detalle, decisiones y dudas en `docs/estado.md`.
 
@@ -528,8 +528,15 @@ también están en `main` (tarjeta 89, PR #95): la pestaña Alimentos de la Bibl
 editor de menú, las sugerencias de alimentos, lo que aporta cada uno y «Lo que llevas» frente a
 las macros del propio menú, comprobadas contra el proyecto real. Firebase
 está conectado y probado con el proyecto real (06-10-2026): el `users/{uid}` del entrenador está
-creado y las reglas y los índices de `reviews` están desplegados. Falta decidir cuándo el adaptador
+creado y las reglas y los índices de `reviews` están desplegados. `pnpm seed:demo` siembra en
+Firebase un entrenador de demo con su biblioteca y dos clientes con historial (tarjeta 104, PR
+#104); se ejecutó una vez contra el proyecto real el 12-10-2026 (detalle en `docs/estado.md`).
+Falta decidir cuándo el adaptador
 de Firebase pasa a ser el de por defecto, las fotos de revisión (17, con la decisión de dónde
 guardarlas reabierta el 05-10-2026) y el consentimiento del alta con el borrado a petición (31). Lo
 pendiente, con su tarjeta, en «Siguiente» de `docs/estado.md`. Esta sección se actualiza en el PR de
 documentación posterior a cada fusión.
+
+Pre-commit autocontenido (12-10-2026, tarjeta 106, PR #106): el hook encuentra `gga` y la CLI de su
+proveedor en `.tools/`, sin nada configurado fuera del repo. Está descrito en «Convenciones»,
+dentro de «Commits y ramas».
