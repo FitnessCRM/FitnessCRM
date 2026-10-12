@@ -22,11 +22,14 @@ Estas seis se comprueban antes de dar por buena cualquier tarea.
 1. **El backend es Firebase y su SDK entra solo por `lib/data/adapters/firebase/`.** Firebase
    para los datos y la auth, y el Drive del entrenador para las imágenes de las revisiones
    (`docs/dominio.md` §9 y §12). Detrás de las interfaces de `lib/data/ports/`: ningún componente
-   y ningún hook importa `firebase` ni `@firebase/*`, que es lo que hace que la regla 3 siga
-   siendo cierta con un backend real detrás, y ESLint lo impide (`no-restricted-imports`). No
-   instales ningún otro SDK de backend (`@supabase/*`, un ORM, nada que hable con una base de
-   datos) sin tarjeta. El adaptador se escribe por tarjetas (16 y 35) y `app/providers.tsx` sigue
-   montando el adaptador en memoria hasta que el de Firebase cubra todos los puertos.
+   y ningún hook importa `firebase`, `@firebase/*` ni `firebase-admin`, que es lo que hace que la
+   regla 3 siga siendo cierta con un backend real detrás, y ESLint lo impide
+   (`no-restricted-imports`). El SDK de administración, `firebase-admin`, es dependencia de
+   desarrollo y solo se importa en `lib/data/adapters/firebase/seed/`, para la siembra de la demo:
+   nada de lo que la app sirve lo usa. No instales ningún otro SDK de backend (`@supabase/*`, un
+   ORM, nada que hable con una base de datos) sin tarjeta. El adaptador de Firebase cubre todos
+   los puertos, y `app/providers.tsx` lo monta solo con `NEXT_PUBLIC_DATA_BACKEND=firebase`; sin
+   la variable monta el adaptador en memoria.
 2. **El dominio es puro.** Nada dentro de `lib/domain/` importa React, Next, el DOM ni la red.
    Es TypeScript y zod, y se ejecuta igual en Node, en el navegador y algún día en React Native.
 3. **Los datos entran por el puerto.** Ningún componente llama a una fuente de datos
@@ -100,12 +103,16 @@ lib/
     ports/            interfaces de repositorio
     adapters/mock/    implementación en memoria con datos de demo
     adapters/firebase/  Firestore y Auth: el único sitio que importa el SDK, con sus tests de
-                        emulador (`rules/` para las reglas de seguridad)
+                        emulador (`rules/` para las reglas de seguridad) y la siembra de la
+                        demo (`seed/`, lo único que importa `firebase-admin`)
     hooks/            TanStack Query sobre los puertos
   design/             tokens
   i18n/es.ts          todos los literales visibles
   format.ts           formateadores de fechas y cifras
   session-access.ts   qué área carga cada rol (panel del entrenador o área de cliente)
+scripts/
+  seed-demo-trainer.ts   entrada de `pnpm seed:demo`, con sus instrucciones en la cabecera; la
+                         lógica vive en `lib/data/adapters/firebase/seed/`
 docs/
   dominio.md
   estado.md
@@ -282,11 +289,24 @@ hay.
 
 Pre-commit (husky) da dos pasos, y lo que no pasa no entra. Primero, lint-staged pasa ESLint y
 Prettier sobre lo staged. Después, `gga run` (Gentleman Guardian Angel) revisa con IA los archivos
-staged, enteros, contra las reglas de `AGENTS.md`: un incumplimiento bloquea el commit. `gga` y la
-CLI de su proveedor no se instalan con `pnpm install`: cada uno los instala por su cuenta y elige
-el proveedor con `GGA_PROVIDER` o con su configuración global. Sin `gga` en el PATH, el commit
-falla. `AGENTS.md` repite reglas de este archivo: si se cambia una, se cambian las dos. Nunca se
+staged, enteros, contra las reglas de `AGENTS.md`: un incumplimiento bloquea el commit.
+`AGENTS.md` repite reglas de este archivo: si se cambia una, se cambian las dos. Nunca se
 commitea `node_modules`, `.next`, `public/sw.js` ni `.env*`.
+
+`gga` y la CLI de su proveedor no se instalan con `pnpm install`, y hay dos formas de tenerlos:
+
+- **En el PATH de cada uno**, eligiendo el proveedor con `GGA_PROVIDER` o con la configuración de
+  `gga`. Para quien ya los tiene instalados en su máquina: el hook no le cambia nada.
+- **Dentro del repo, en `.tools/`**, que git ignora. Para quien no quiere instalar nada fuera de
+  esta carpeta. `.tools/gga/` es un clon del repositorio de `gga`, con el ejecutable en `bin/gga`;
+  `.tools/claude/` es una carpeta con un `package.json` que depende de `@anthropic-ai/claude-code`
+  y su `node_modules`. El hook calcula la raíz del repo y, si existen, antepone al PATH
+  `.tools/gga/bin` y `.tools/claude/node_modules/.bin`; si existe esta última y `GGA_PROVIDER` no
+  tiene valor, el proveedor es `claude`.
+
+Para que el hook los encuentre no hace falta ningún archivo de fuera del repo: un
+`~/.config/husky/init.sh` personal que pusiera esas carpetas en el PATH ya no es necesario. Sin
+`.tools/` y sin `gga` en el PATH, el commit sigue fallando.
 
 ---
 
@@ -447,6 +467,7 @@ pnpm lint         # ESLint
 pnpm typecheck    # tsc --noEmit
 pnpm test:firebase  # adaptador de Firebase contra los emuladores de Firestore y Auth
 pnpm test:rules     # reglas de seguridad (`firestore.rules`) contra el emulador de Firestore
+pnpm seed:demo      # siembra del entrenador de demo; solo lee salvo con `--apply`
 ```
 
 Los dos `test:*` de Firebase arrancan los emuladores con `firebase-tools` y necesitan **Java**
@@ -454,6 +475,10 @@ Los dos `test:*` de Firebase arrancan los emuladores con `firebase-tools` y nece
 adaptador en memoria, los hooks fuera de React y la lógica pura de `components/`.
 `firebase.json` carga las reglas; `firebase.open.json` no, para que el adaptador se pruebe sin
 autenticarse.
+
+`seed:demo` ejecuta `scripts/seed-demo-trainer.ts` con `tsx`, que es dependencia de desarrollo.
+Exige `--project` y solo admite el proyecto real de la app, con `--key`, o los emuladores; sus
+argumentos y garantías están en la cabecera del script.
 
 ---
 

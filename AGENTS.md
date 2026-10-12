@@ -8,9 +8,10 @@ hard constraint from `CLAUDE.md` («Reglas duras») or a convention from its
 
 1. `lib/domain/` must not import React, Next, the DOM, or any network code.
    It may only depend on TypeScript and zod.
-2. Firebase SDK imports (`firebase`, `@firebase/*`) appear only under
-   `lib/data/adapters/firebase/`. Any other backend SDK (`@supabase/*`, an ORM,
-   a database client) is a violation.
+2. Firebase SDK imports (`firebase`, `@firebase/*`, `firebase-admin`) appear
+   only under `lib/data/adapters/firebase/`, and `firebase-admin` only under
+   `lib/data/adapters/firebase/seed/`. Any other backend SDK (`@supabase/*`, an
+   ORM, a database client) is a violation.
 3. Components and hooks never call a data source directly. Data goes through
    `lib/data/hooks/`, which talks to the interfaces in `lib/data/ports/`.
 4. `components/client/` and `components/trainer/` never import from each other.

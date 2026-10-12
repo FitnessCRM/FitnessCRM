@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 12-10-2026. Corresponde a `main` en `3a7d582` (PR #104). Están en `main` los
+Última actualización: 12-10-2026. Corresponde a `main` en `19ffdc9` (PR #106). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad, el adaptador de Firebase, el modo sin conexión del cliente, la capa de datos de los
 alimentos y sus pantallas; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de
@@ -916,9 +916,31 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   - **Ejecutada una vez contra el proyecto real el 12-10-2026.** La demo es una foto de ese día:
     las fechas no se refrescan. Sus alimentos están `pendiente` de publicar hasta la tarjeta 90 y
     sus revisiones no tendrán fotos hasta la 17.
-  - **Deuda:** ni `CLAUDE.md` ni `AGENTS.md` mencionan el script, `tsx`, `scripts/` ni
-    `firebase-admin` (sus reglas 1 y 2, respectivamente, solo nombran `firebase` y `@firebase/*`);
-    va en un PR de documentación aparte.
+  - **Documentado** en `CLAUDE.md` (regla 1, «Estructura» y «Comandos») y en la regla 2 de
+    `AGENTS.md`, que ya nombran `firebase-admin`, `tsx`, `scripts/` y `pnpm seed:demo`.
+
+- **Pre-commit autocontenido** (tarjeta 106, PR #106). El hook encuentra `gga` y la CLI de su
+  proveedor dentro del repo, sin nada configurado fuera de él.
+  - **Por qué:** con `gga` y la CLI en `.tools/`, hacía falta un `~/.config/husky/init.sh`
+    personal que los pusiera en el PATH a partir de `$PWD`. Desde algunos shells de Windows git
+    pasa `$PWD` al hook como `D:/…`, los dos puntos parten la entrada del PATH y el commit fallaba
+    con `gga: command not found`.
+  - **Qué cambia:** solo `.husky/pre-commit`. Calcula la raíz del repo en ruta POSIX y, si existen,
+    antepone al PATH `.tools/gga/bin` y `.tools/claude/node_modules/.bin`; con esta última y sin
+    `GGA_PROVIDER` definida, el proveedor es `claude`. El `init.sh` personal ya no hace falta.
+    `.tools/` está en `.gitignore`.
+  - **Qué no cambia:** `pnpm lint-staged` y `gga run`, en ese orden. Sin `.tools/`, el PATH y el
+    proveedor son los de cada uno, y sin `gga` en ningún sitio el commit sigue fallando. Un
+    `GGA_PROVIDER` ya definido no se pisa.
+  - **Cómo se probó:** sin el `init.sh` personal (`XDG_CONFIG_HOME` a una carpeta vacía), con
+    commits reales desde Git Bash y desde PowerShell; con `GGA_PROVIDER` ya definida; sin
+    `.tools/`; y con un banco de `pnpm`, `gga` y `claude` de pega (raíz con espacios, variable
+    vacía, `lint-staged` que falla). El hook anterior falla en ese mismo banco. Solo en Windows.
+  - **Pendiente:** probarlo en macOS o Linux. Documentar cómo se instala cada cosa en `.tools/`
+    —hoy `CLAUDE.md` describe la estructura, no los comandos— y dónde guarda su sesión la CLI,
+    que no se ha comprobado. Y un caso que el hook no distingue: quien tenga la CLI en `.tools/`
+    y otro proveedor en el archivo de configuración de `gga`, no en la variable, verá `claude`,
+    porque la variable gana.
 
 - **PR sin tarjeta.** #14 (nombres de los generadores de datos de demo), #15 (rutas de `app/` a
   inglés), #16 (carpetas `components/cliente/` y `components/entrenador/` a `client/` y
@@ -967,12 +989,12 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   usa el objeto que devuelve `isReviewComplete` en vez de su `.complete`, así que una revisión
   parcial también sale «Completa». Se vio al verificar la siembra, cuyas revisiones no tienen
   fotos.
-- **Pre-commit autocontenido (106).** El hook encuentra `gga` gracias a un archivo de fuera del
-  repo, y desde algunos shells no lo encuentra y el commit falla con `gga: command not found`.
 - **Deuda menor con tarjeta**: favicon (19) y cifras del panel en una consulta (42). Resueltas: el nombre accesible de `NumberField` (59, PR
   #66, etiqueta y campo asociados con `useId`) y `ReviewPort.listSubmittedReviews`, que se quitó
   del puerto con su hook y su clave por no usarlo ninguna pantalla (64, PR #74, **BREAKING
-  CHANGE** de puerto): «Revisiones recibidas» lee `listReviewsTracking` filtrado por `enviada`.
+  CHANGE** de puerto): «Revisiones recibidas» lee `listReviewsTracking` filtrado por `enviada`; y
+  el pre-commit autocontenido (106, PR #106), que encuentra `gga` en `.tools/` sin nada de fuera
+  del repo.
 
 ### Anotado para el panel del entrenador
 
