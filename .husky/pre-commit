@@ -1,2 +1,23 @@
+# `gga` y la CLI de su proveedor no se instalan con `pnpm install`. Quien los tenga dentro del repo,
+# en `.tools/` (fuera de git), no necesita nada más: el hook los encuentra solo. Quien los tenga en
+# su PATH, o use otro proveedor, no nota ningún cambio.
+#
+# La raíz se calcula aquí y en ruta POSIX. `$PWD` puede llegar como `D:/…` según desde dónde se
+# lance el commit, y los dos puntos de la unidad parten la entrada del PATH.
+root="$(cd "$(dirname "$0")/.." && pwd -P)"
+
+if [ -d "$root/.tools/gga/bin" ]; then
+  PATH="$root/.tools/gga/bin:$PATH"
+fi
+
+if [ -d "$root/.tools/claude/node_modules/.bin" ]; then
+  PATH="$root/.tools/claude/node_modules/.bin:$PATH"
+  # Solo por defecto: `gga` da prioridad a esta variable sobre su configuración, así que no se pisa
+  # la de quien ya eligió proveedor.
+  export GGA_PROVIDER="${GGA_PROVIDER:-claude}"
+fi
+
+export PATH
+
 pnpm lint-staged
 gga run
