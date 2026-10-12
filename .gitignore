@@ -48,3 +48,6 @@ public/swe-worker-*.js
 
 # firebase emulator
 *-debug.log
+
+# gga and its provider CLI, installed locally for the pre-commit hook
+.tools/
