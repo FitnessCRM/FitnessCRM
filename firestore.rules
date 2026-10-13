@@ -158,11 +158,20 @@ service cloud.firestore {
         && request.resource.data.status == 'invitado';
 
       allow update: if (isTrainer(resource.data.trainerId) && identityKept()
-          && !changes().hasAny(['createdAt']))
+          && !changes().hasAny(['createdAt'])
+          && trainerChangesStatusValidly())
         || acceptsInvitation();
 
       // El borrado a petición (§7) es otra operación y tendrá su propia tarjeta (31).
       allow delete: if false;
+    }
+
+    // H6 · §7: el entrenador solo da de baja un cliente `activo` y solo reactiva uno `dado_de_baja`.
+    // Cualquier otro cambio de estado se rechaza; mantener el estado no cuenta como cambio.
+    function trainerChangesStatusValidly() {
+      return !changes().hasAny(['status'])
+        || (resource.data.status == 'activo' && request.resource.data.status == 'dado_de_baja')
+        || (resource.data.status == 'dado_de_baja' && request.resource.data.status == 'activo');
     }
 
     // Quien tiene un correo verificado igual al de un cliente que sigue `invitado`.
