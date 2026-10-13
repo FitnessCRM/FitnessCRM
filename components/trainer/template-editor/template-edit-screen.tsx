@@ -174,7 +174,10 @@ function RoutineEditor({ template }: { template: RoutineTemplate }) {
   const isSaved = (value: RoutineTemplate) => JSON.stringify(value) === JSON.stringify(saved);
   const dirty = !isSaved(draft);
   useUnsavedGuard(dirty);
-  const valid = routineTemplateSchema.safeParse(draft).success;
+  const parsed = routineTemplateSchema.safeParse(draft);
+  const valid = parsed.success;
+  // El aviso general habla del contenido; si solo falta el nombre, lo dice el campo (tarjeta 100).
+  const contentInvalid = !parsed.success && hasContentIssue(parsed.error.issues);
 
   // Las marcas duran hasta guardar con éxito o hasta volver a lo guardado: editar no las apaga.
   const update = (change: Partial<RoutineTemplate>) => {
@@ -236,7 +239,7 @@ function RoutineEditor({ template }: { template: RoutineTemplate }) {
         dirty={dirty}
         isSaving={save.isPending}
         hasError={save.isError}
-        invalidMessage={showErrors && !valid ? t.invalidRoutine : null}
+        invalidMessage={showErrors && contentInvalid ? t.invalidRoutine : null}
         justSaved={justSaved}
         onSave={() => void onSave()}
       />
@@ -262,6 +265,19 @@ function completeTemplate(draft: MenuTemplateDraft): MenuTemplate | null {
   return complete && menuTemplateSchema.safeParse(complete).success ? complete : null;
 }
 
+/** Hay algún fallo fuera del nombre de la plantilla. */
+function hasContentIssue(issues: { path: PropertyKey[] }[]): boolean {
+  return issues.some((issue) => issue.path[0] !== "name");
+}
+
+/** Un menú incompleto cuenta como fallo de contenido; el nombre vacío no. */
+function menuContentInvalid(draft: MenuTemplateDraft): boolean {
+  const menus = fromMenuDrafts(draft.menus);
+  if (!menus) return true;
+  const parsed = menuTemplateSchema.safeParse({ ...draft, menus });
+  return !parsed.success && hasContentIssue(parsed.error.issues);
+}
+
 function MenuEditor({ template }: { template: MenuTemplate }) {
   const save = useSaveMenuTemplate();
   const [saved, setSaved] = useState(() => toTemplateDraft(template));
@@ -272,6 +288,8 @@ function MenuEditor({ template }: { template: MenuTemplate }) {
   const dirty = !isSaved(draft);
   useUnsavedGuard(dirty);
   const complete = completeTemplate(draft);
+  // Igual que en la rutina: el aviso general solo cuando falla algo del contenido (tarjeta 100).
+  const contentInvalid = menuContentInvalid(draft);
 
   // Las marcas duran hasta guardar con éxito o hasta volver a lo guardado: editar no las apaga.
   const update = (change: Partial<MenuTemplateDraft>) => {
@@ -315,7 +333,7 @@ function MenuEditor({ template }: { template: MenuTemplate }) {
         dirty={dirty}
         isSaving={save.isPending}
         hasError={save.isError}
-        invalidMessage={showErrors && !complete ? t.invalidMenu : null}
+        invalidMessage={showErrors && contentInvalid ? t.invalidMenu : null}
         justSaved={justSaved}
         onSave={() => void onSave()}
       />
