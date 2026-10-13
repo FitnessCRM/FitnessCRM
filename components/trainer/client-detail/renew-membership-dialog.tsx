@@ -28,7 +28,6 @@ import {
   type MembershipEdit,
 } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
-import { cn } from "@/lib/utils";
 
 const t = es.screensClientDetail.membership.renewDialog;
 

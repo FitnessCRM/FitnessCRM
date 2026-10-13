@@ -18,7 +18,6 @@ import {
   paymentStatusSchema,
 } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
-import { cn } from "@/lib/utils";
 import { ClientDataCard, FieldError } from "./client-data-card";
 
 const t = es.screensClientSignup;
