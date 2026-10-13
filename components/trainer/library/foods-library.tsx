@@ -1,12 +1,10 @@
 "use client";
 
-import { XIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { SheetTitle } from "@/components/ui/sheet";
+import { ErrorState, LoadingState } from "@/components/ui/states";
 import { Switch } from "@/components/ui/switch";
 import { useDebouncedValue } from "@/components/ui/use-debounced-value";
 import { useMediaQuery, XL_MEDIA_QUERY } from "@/components/ui/use-media-query";
@@ -17,6 +15,7 @@ import { es } from "@/lib/i18n/es";
 import { FoodArchiveDialog } from "./food-archive-dialog";
 import { FoodForm, type FoodFormValues } from "@/components/editor/food-form";
 import { FoodTable } from "./food-table";
+import { LibraryEditPanel } from "./library-edit-panel";
 import { LibraryHeader, LibraryPanel } from "./library-header";
 
 const t = es.screensLibrary.foods;
@@ -181,39 +180,15 @@ export function FoodsLibrary() {
           />
         </div>
 
-        {wide ? (
-          <div className="flex flex-col gap-3">
-            {panel ? (
-              <Card className="gap-4 px-[22px] py-[22px]">
-                {panel}
-                {status}
-              </Card>
-            ) : (
-              <EmptyState title={t.panel.pickTitle} description={t.panel.pickHint} />
-            )}
-          </div>
-        ) : (
-          <Sheet open={panel !== null} onOpenChange={(open) => (open ? null : select(null))}>
-            <SheetContent
-              side="right"
-              aria-describedby={undefined}
-              className="bg-surface w-full max-w-full gap-4 overflow-y-auto px-4 py-5 sm:w-[420px] sm:max-w-[420px] sm:px-6"
-            >
-              <SheetClose asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={es.common.close}
-                  className="self-end"
-                >
-                  <XIcon />
-                </Button>
-              </SheetClose>
-              {panel}
-              {status}
-            </SheetContent>
-          </Sheet>
-        )}
+        <LibraryEditPanel
+          wide={wide}
+          open={panel !== null}
+          onClose={() => select(null)}
+          panel={panel}
+          emptyTitle={t.panel.pickTitle}
+          emptyHint={t.panel.pickHint}
+          footer={status}
+        />
       </LibraryPanel>
 
       {confirming && selected?.origin === "own" ? (
