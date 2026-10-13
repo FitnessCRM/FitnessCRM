@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
 import { SheetTitle } from "@/components/ui/sheet";
 import { ErrorState, LoadingState } from "@/components/ui/states";
 import { Switch } from "@/components/ui/switch";
@@ -15,8 +16,7 @@ import { es } from "@/lib/i18n/es";
 import { FoodArchiveDialog } from "./food-archive-dialog";
 import { FoodForm, type FoodFormValues } from "@/components/editor/food-form";
 import { FoodTable } from "./food-table";
-import { LibraryEditPanel } from "./library-edit-panel";
-import { LibraryHeader, LibraryPanel } from "./library-header";
+import { LibraryEditPanel } from "../library/library-edit-panel";
 
 const t = es.screensLibrary.foods;
 
@@ -31,12 +31,13 @@ type Selection = { kind: "new" } | { kind: "food"; food: LibraryFood } | null;
 const byName = (a: LibraryFood, b: LibraryFood) => a.name.localeCompare(b.name, "es");
 
 /**
- * Pestaña Alimentos de la Biblioteca (§4). Los tuyos se listan enteros y por nombre; el catálogo
- * común solo se busca, con texto, y llega por páginas en su orden. Desde `xl`, el panel del alimento
- * va a la derecha; por debajo, en un `Sheet`, porque un formulario no es ni contexto que leer antes
- * ni resumen de lo leído (regla de la columna lateral de `CLAUDE.md`).
+ * Sección Alimentos del panel del entrenador (§4), con su ítem propio en la barra lateral. Los tuyos
+ * se listan enteros y por nombre; el catálogo común solo se busca, con texto, y llega por páginas en
+ * su orden. Desde `xl`, el panel del alimento va a la derecha; por debajo, en un `Sheet`, porque un
+ * formulario no es ni contexto que leer antes ni resumen de lo leído (regla de la columna lateral de
+ * `CLAUDE.md`).
  */
-export function FoodsLibrary() {
+export function FoodsScreen() {
   const [search, setSearch] = useState("");
   const [onlyMine, setOnlyMine] = useState(false);
   const text = useDebouncedValue(search.trim(), SEARCH_DEBOUNCE_MS, (value) => value === "");
@@ -55,12 +56,17 @@ export function FoodsLibrary() {
 
   const ownTotal = allOwn.foods?.length ?? 0;
   const header = (
-    <LibraryHeader
-      action={<Button onClick={() => select({ kind: "new" })}>{t.newFood}</Button>}
-      count={
-        allOwn.foods ? `${ownTotal} ${ownTotal === 1 ? t.count.one : t.count.other}` : undefined
-      }
-    />
+    <>
+      <PageHeader
+        title={es.pages.trainer.alimentos}
+        actions={<Button onClick={() => select({ kind: "new" })}>{t.newFood}</Button>}
+      />
+      {allOwn.foods ? (
+        <p className="text-text-muted -mt-2 text-[13px]">
+          {`${ownTotal} ${ownTotal === 1 ? t.count.one : t.count.other}`}
+        </p>
+      ) : null}
+    </>
   );
 
   function select(next: Selection) {
@@ -74,18 +80,18 @@ export function FoodsLibrary() {
     return (
       <>
         {header}
-        <LibraryPanel tab="foods">
+        <div>
           <LoadingState />
-        </LibraryPanel>
+        </div>
       </>
     );
   if (library.isError || !library.foods)
     return (
       <>
         {header}
-        <LibraryPanel tab="foods">
+        <div>
           <ErrorState onRetry={() => void library.refetch()} />
-        </LibraryPanel>
+        </div>
       </>
     );
 
@@ -142,10 +148,7 @@ export function FoodsLibrary() {
   return (
     <>
       {header}
-      <LibraryPanel
-        tab="foods"
-        className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_380px]"
-      >
+      <div className="grid grid-cols-1 gap-8 outline-none xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="flex min-w-0 flex-col gap-4">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <Input
@@ -189,7 +192,7 @@ export function FoodsLibrary() {
           emptyHint={t.panel.pickHint}
           footer={status}
         />
-      </LibraryPanel>
+      </div>
 
       {confirming && selected?.origin === "own" ? (
         <FoodArchiveDialog

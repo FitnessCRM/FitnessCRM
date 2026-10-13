@@ -19,6 +19,7 @@ const items: { href: string; label: string }[] = [
   { href: "/clients", label: nav.clientes },
   { href: "/reviews", label: nav.revisiones },
   { href: "/library", label: nav.biblioteca },
+  { href: "/foods", label: nav.alimentos },
   { href: "/templates", label: nav.plantillas },
   { href: "/questionnaire", label: nav.cuestionario },
   { href: "/measurements", label: nav.medidas },
