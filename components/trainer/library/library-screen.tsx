@@ -2,12 +2,10 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { QueryBoundary } from "@/components/ui/query-boundary";
-import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { SheetTitle } from "@/components/ui/sheet";
 import { EmptyState } from "@/components/ui/states";
 import { Tabs } from "@/components/ui/tabs";
 import { useMediaQuery, XL_MEDIA_QUERY } from "@/components/ui/use-media-query";
@@ -24,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { ArchiveDialog } from "./archive-dialog";
 import { ExerciseForm, type ExerciseFormValues } from "./exercise-form";
 import { ExerciseGrid } from "./exercise-grid";
+import { LibraryEditPanel } from "./library-edit-panel";
 import { FoodsLibrary } from "./foods-library";
 import { LIBRARY_TABS, LibraryHeader, LibraryPanel, type LibraryTab } from "./library-header";
 
@@ -186,38 +185,14 @@ function Library({ exercises }: { exercises: Exercise[] }) {
           )}
         </div>
 
-        {wide ? (
-          <aside className="flex flex-col gap-4">
-            {panel ? (
-              <Card className="gap-4 px-[22px] py-[22px]">{panel}</Card>
-            ) : (
-              <EmptyState title={t.form.editTitle} description={t.form.pickHint} />
-            )}
-          </aside>
-        ) : (
-          <Sheet
-            open={panel !== null}
-            onOpenChange={(open) => (open ? null : setSelectedId(undefined))}
-          >
-            <SheetContent
-              side="right"
-              aria-describedby={undefined}
-              className="bg-surface w-full max-w-full gap-4 overflow-y-auto px-4 py-5 sm:w-[420px] sm:max-w-[420px] sm:px-6"
-            >
-              <SheetClose asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={es.common.close}
-                  className="self-end"
-                >
-                  <XIcon />
-                </Button>
-              </SheetClose>
-              {panel}
-            </SheetContent>
-          </Sheet>
-        )}
+        <LibraryEditPanel
+          wide={wide}
+          open={panel !== null}
+          onClose={() => setSelectedId(undefined)}
+          panel={panel}
+          emptyTitle={t.form.editTitle}
+          emptyHint={t.form.pickHint}
+        />
       </LibraryPanel>
 
       {confirming && selected ? (
