@@ -208,7 +208,8 @@ la licencia ODbL de Open Food Facts. Se admiten nombres duplicados (§11).
 - **`Cantidad`** — gramos.
 - **`ValorMedido`** — valor + etiqueta congelada + unidad congelada.
 - **`FormatoRespuesta`** — `escala` (con mínimo y máximo, definidos por el entrenador) |
-  `texto`. Los límites de la escala forman parte del formato.
+  `texto`. Los límites de la escala forman parte del formato. El mínimo no puede ser negativo; el
+  máximo no tiene tope fijo (H5, tarjeta 61).
 - **`Cadencia`** — cada N días. Orientativa: alimenta un "te quedan X días" y nada más.
 - **`Pose`** — `frente` | `perfil` | `espalda`. Lista cerrada, no configurable.
 - **`DayType`** — `entrenamiento` | `descanso`.
@@ -309,6 +310,13 @@ baja, y las reglas de seguridad lo impiden aunque se llegue a Firestore directam
 entrenador no admite cambios sobre él** hasta que se reactive: no se editan sus datos, no se le
 asignan planes y no se le envía feedback. Lo único que se permite es reactivarlo, que lo devuelve
 a `activo`, y ver su histórico desde el panel.
+
+**Transiciones válidas del cliente (H6, tarjeta 61).** Solo estas tres; cualquier otra se rechaza:
+`invitado → activo` (primer acceso), `activo → dado_de_baja` (baja) y `dado_de_baja → activo`
+(reactivar). Una invitación que nadie acepta no tiene baja: sigue `invitado`.
+
+**La baja no congela la semana (H7, tarjeta 61).** La numeración de semanas sigue la fecha de
+alta también para un cliente dado de baja (§8).
 **Esa operación no alcanza a las imágenes**: viven en el Drive del entrenador y las borra él a
 mano (I14, §9). Son dos actos distintos y hay que contarlos como tales, porque el segundo puede
 no ocurrir.
@@ -456,7 +464,8 @@ El dominio no debe contener campos "preparados por si acaso" para ninguno de est
 La demo no cubre estas dos cosas y el MVP las necesita:
 
 1. **Pantalla de tipos de medida.** El entrenador fija qué medidas se toman (§1.9), pero la demo
-   solo tiene editor de cuestionario. Va un ítem "Medidas" en la barra lateral, junto a
+   solo tiene editor de cuestionario. Va un ítem "Tipos de medida" en la barra lateral (no
+   «Medidas», H9, tarjeta 61), junto a
    "Cuestionario", con la misma mecánica: lista ordenable, etiqueta, unidad, archivar.
 2. **Envío del feedback.** El botón "Enviar feedback" existe pero no hay pantalla detrás. Mínimo:
    campo de URL de vídeo, nota de texto y confirmación que pasa la revisión a `revisada`.
