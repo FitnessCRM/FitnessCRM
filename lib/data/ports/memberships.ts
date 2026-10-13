@@ -24,7 +24,7 @@ export interface MembershipQuery {
 }
 
 export interface MembershipPage {
-  /** Solo la página pedida. Orden: cliente por nombre y luego inicio descendente. */
+  /** Solo la página pedida. Orden: inicio más reciente primero (`compareMembershipsForList`). */
   rows: MembershipWithClient[];
   /** Cuántas hay por corte dentro del cliente elegido, sin paginar: los contadores de los chips. */
   counts: Record<MembershipStatusFilter, number>;

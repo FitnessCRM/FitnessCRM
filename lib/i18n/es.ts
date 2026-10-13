@@ -999,6 +999,8 @@ export const es = {
       expiring: "Caducan pronto",
       /** `{days}` is filled in by the screen with `EXPIRING_SOON_DAYS`. */
       expiringHint: "Vigentes que acaban en los próximos {days} días",
+      /** `{label}` and `{count}` are filled in by the screen with the cut and its count. */
+      countLabel: "{label} · {count}",
     },
     pagination: {
       label: "Paginación",
