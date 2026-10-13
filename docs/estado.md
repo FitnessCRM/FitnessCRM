@@ -510,8 +510,11 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
 - **Membresías** (`components/trainer/memberships/`, tarjeta 13, PR #18). Una fila por periodo,
   no por cliente como la captura 17: las renovaciones son filas nuevas. Chips Todas / No pagadas
   / Caducan pronto (vigente que acaba en 7 días o menos) y edición en línea. Los solapes se marcan
-  «Solapada» y se avisan sin bloquear, porque el dominio no los prohíbe. Deuda: contadores y
-  solapes se recalculan sobre toda la cartera en cada consulta (sin tarjeta).
+  «Solapada» y se avisan sin bloquear, porque el dominio no los prohíbe. La tabla va paginada de
+  10 en 10 desde el servidor, ordenada por inicio de membresía, más reciente primero (tarjeta 73,
+  PR #118). Los contadores «todas» y «no pagadas» son consultas de conteo; «caducan pronto» se
+  cuenta leyendo solo las membresías que terminan en la ventana, porque no admite un conteo
+  exacto. Requiere desplegar los tres índices de `firestore.indexes.json` antes del backend real.
 
 - **Membresía en el detalle y renovación** (`membership-card.tsx`, `renew-membership-dialog.tsx`,
   tarjetas 45 y 38, PR #36). La vigente, la próxima y aviso de solape; «Gestionar» abre
