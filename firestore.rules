@@ -155,15 +155,23 @@ service cloud.firestore {
       // I2: nace de un entrenador y siempre `invitado` (§7).
       allow create: if isTrainer(request.resource.data.trainerId)
         && request.resource.data.id == cid
-        && request.resource.data.status == 'invitado';
+        && request.resource.data.status == 'invitado'
+        && macrosVisibleIsBool();
 
       allow update: if (isTrainer(resource.data.trainerId) && identityKept()
           && !changes().hasAny(['createdAt'])
-          && trainerChangesStatusValidly())
+          && trainerChangesStatusValidly()
+          && macrosVisibleIsBool())
         || acceptsInvitation();
 
       // El borrado a petición (§7) es otra operación y tendrá su propia tarjeta (31).
       allow delete: if false;
+    }
+
+    // Tarjeta 111: el flag de kcal y macros es un booleano. Ausente, cuenta como `true` (clientes
+    // anteriores al campo), así que solo se rechaza un valor que no sea booleano.
+    function macrosVisibleIsBool() {
+      return request.resource.data.get('macrosVisible', true) is bool;
     }
 
     // H6 · §7: el entrenador solo da de baja un cliente `activo` y solo reactiva uno `dado_de_baja`.
@@ -264,9 +272,18 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // I11 · kcal y macros: el cliente solo lee sus macros objetivo si su ficha no tiene el flag
+    // `macrosVisible` en `false` (tarjeta 111). Ausente cuenta como `true`: los clientes anteriores
+    // al flag lo siguen viendo. Lo que no está aquí —las macros declaradas en `menus`— lo cubre la
+    // tarjeta 111 con su propio cambio de datos (ver docs/dominio.md §6, I11).
+    function clientSeesMacros(cid) {
+      return get(/databases/$(database)/documents/clients/$(cid)).data.get('macrosVisible', true) != false;
+    }
+
     match /macroTargets/{id} {
       allow get: if probeByTrainer();
-      allow read: if isTrainer(resource.data.trainerId) || readableByClient();
+      allow read: if isTrainer(resource.data.trainerId)
+        || (readableByClient() && clientSeesMacros(resource.data.clientId));
       allow create: if isPlanCreate(id);
       allow update: if isPlanUpdate();
       allow delete: if false;

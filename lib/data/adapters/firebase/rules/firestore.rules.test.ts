@@ -146,6 +146,20 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
         }),
         put("clients", "c-a", client("c-a", T_A)),
         put("clients", "c-a2", client("c-a2", T_A)),
+        put("users", "u-csin", {
+          role: "client",
+          trainerId: T_A,
+          clientId: "c-sin",
+          email: "c-sin@hector.test",
+        }),
+        put("clients", "c-sin", client("c-sin", T_A, { macrosVisible: false })),
+        put("macroTargets", "mt-sin", {
+          id: "mt-sin",
+          trainerId: T_A,
+          clientId: "c-sin",
+          status: "activo",
+          dayType: "descanso",
+        }),
         put("clients", "c-b", client("c-b", T_B)),
         put(
           "clients",
@@ -421,6 +435,19 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
       );
       await assertSucceeds(getDoc(doc(clientA(), "menus", "m-act")));
       await assertSucceeds(getDoc(doc(clientA(), "macroTargets", "mt-act")));
+    });
+
+    it("a client whose ficha hides kcal and macros cannot read their macro targets", async () => {
+      const clientSin = () => as("u-csin");
+      await assertFails(getDoc(doc(clientSin(), "macroTargets", "mt-sin")));
+      // Un cliente con el flag por defecto sigue leyendo sus macros.
+      await assertSucceeds(getDoc(doc(clientA(), "macroTargets", "mt-act")));
+    });
+
+    it("a client cannot turn the flag on or off, and the trainer can", async () => {
+      await assertFails(updateDoc(doc(as("u-csin"), "clients", "c-sin"), { macrosVisible: true }));
+      await assertFails(updateDoc(doc(clientA(), "clients", "c-a"), { macrosVisible: false }));
+      await assertSucceeds(updateDoc(doc(trainerA(), "clients", "c-sin"), { macrosVisible: true }));
     });
 
     it("cannot write routine, menu or macros, nor a membership", async () => {

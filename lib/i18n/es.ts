@@ -405,6 +405,9 @@ export const es = {
     menus: {
       suggested: "Sugerido",
       provides: "aporta",
+      /** Abreviaturas de los tres macros en la línea «aporta…» y el separador entre ellas. */
+      macroAbbr: { protein: "P", carbs: "C", fat: "G" },
+      macroSeparator: " · ",
       declared:
         "Macros que declara tu entrenador para este menú. Ni es tu objetivo ni sale de sumar los alimentos: si no cuadran, es su criterio.",
       grams: "g",
