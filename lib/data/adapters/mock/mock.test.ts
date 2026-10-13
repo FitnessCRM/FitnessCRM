@@ -231,7 +231,7 @@ describe("tenancy (I1)", () => {
 describe("memberships", () => {
   const query = { filter: "all", today: TODAY, page: 0, pageSize: 4 } as const;
 
-  it("pages on the server, by client name and then latest start first, with counts for the whole set", async () => {
+  it("pages on the server, latest start first across the whole portfolio, with counts for the whole set", async () => {
     const p = ports().memberships;
     const total = createDemoState(TODAY).memberships.length;
     const first = await p.listMembershipsWithClients(TRAINER, query);
@@ -241,10 +241,8 @@ describe("memberships", () => {
     const rows = [...first.rows, ...second.rows];
     const ids = rows.map((r) => r.membership.id);
     expect(new Set(ids).size).toBe(ids.length);
-    const names = rows.map((r) => `${r.client.firstName} ${r.client.lastName}`);
-    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, "es")));
-    const marta = rows.filter((r) => r.client.id === MARTA).map((r) => r.membership.startDate);
-    expect(marta).toEqual([...marta].sort().reverse());
+    const starts = rows.map((r) => r.membership.startDate);
+    expect(starts).toEqual([...starts].sort().reverse());
   });
 
   it("filters by client and by cut, and the counts follow the client but not the cut", async () => {

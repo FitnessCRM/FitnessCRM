@@ -22,7 +22,7 @@ import { MembershipRow } from "./membership-row";
 const t = es.screensTrainerMemberships;
 
 /** Filas por página, paginadas en el servidor. */
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 10;
 
 /**
  * Pantalla 17 · Membresías. Una fila por membresía —las renovaciones son filas nuevas (§7)—,
@@ -89,7 +89,9 @@ export function MembershipsScreen({ initialClientId }: { initialClientId?: strin
               {chips.map((chip) => (
                 <FilterChip
                   key={chip.key}
-                  label={`${chip.label} · ${data.counts[chip.key]}`}
+                  label={t.filters.countLabel
+                    .replace("{label}", chip.label)
+                    .replace("{count}", String(data.counts[chip.key]))}
                   hint={chip.hint}
                   tone={chip.key === "unpaid" ? "danger" : "neutral"}
                   active={filter === chip.key}

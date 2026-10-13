@@ -8,6 +8,7 @@ import type {
 import {
   DomainError,
   clientSchema,
+  compareMembershipsForList,
   matchesMembershipFilter,
   membershipStanding,
   membershipSchema,
@@ -132,12 +133,7 @@ export function createMembershipPort(ctx: MockContext): MembershipPort {
         const { id, firstName, lastName, status } = client;
         return [{ membership, client: { id, firstName, lastName, status } }];
       });
-      const name = (r: (typeof all)[number]) => `${r.client.firstName} ${r.client.lastName}`;
-      all.sort(
-        (a, b) =>
-          name(a).localeCompare(name(b), "es") ||
-          b.membership.startDate.localeCompare(a.membership.startDate),
-      );
+      all.sort((a, b) => compareMembershipsForList(a.membership, b.membership));
 
       const ofClient = all.filter((r) => !query.clientId || r.client.id === query.clientId);
       const count = (filter: MembershipStatusFilter) =>

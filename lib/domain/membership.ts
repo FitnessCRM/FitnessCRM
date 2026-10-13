@@ -113,6 +113,19 @@ export function matchesMembershipFilter(
 }
 
 /**
+ * Orden de la tabla del entrenador: inicio más reciente primero y, a igualdad, id descendente.
+ * Todos los adaptadores lo usan, así la paginación en servidor y la de memoria dan las mismas filas.
+ */
+export function compareMembershipsForList(
+  a: Pick<Membership, "id" | "startDate">,
+  b: Pick<Membership, "id" | "startDate">,
+): number {
+  if (a.startDate !== b.startDate) return a.startDate < b.startDate ? 1 : -1;
+  if (a.id === b.id) return 0;
+  return a.id < b.id ? 1 : -1;
+}
+
+/**
  * Inicio que se propone para una renovación: el día siguiente al fin de la última membresía del
  * cliente, o hoy si ya venció o no tiene ninguna. Solo propone: el entrenador puede cambiarlo.
  */

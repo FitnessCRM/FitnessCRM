@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  compareMembershipsForList,
   isExpiringSoon,
   membershipEndDate,
   matchesMembershipFilter,
@@ -204,5 +205,23 @@ describe("overlapsAnyMembership", () => {
     expect(
       overlapsAnyMembership(existing, { startDate: "2026-10-01", endDate: "2026-12-31" }),
     ).toBe(false);
+  });
+});
+
+describe("compareMembershipsForList (tarjeta 73: inicio más reciente primero)", () => {
+  const row = (id: string, startDate: string) => ({ id, startDate });
+
+  it("puts the latest start first", () => {
+    const list = [row("a", "2026-01-01"), row("b", "2026-03-01"), row("c", "2026-02-01")];
+    expect(list.sort(compareMembershipsForList).map((r) => r.id)).toEqual(["b", "c", "a"]);
+  });
+
+  it("breaks a tie on the same start by id, descending", () => {
+    const list = [row("a", "2026-01-01"), row("c", "2026-01-01"), row("b", "2026-01-01")];
+    expect(list.sort(compareMembershipsForList).map((r) => r.id)).toEqual(["c", "b", "a"]);
+  });
+
+  it("is zero for the same membership", () => {
+    expect(compareMembershipsForList(row("a", "2026-01-01"), row("a", "2026-01-01"))).toBe(0);
   });
 });

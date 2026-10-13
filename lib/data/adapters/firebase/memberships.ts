@@ -1,10 +1,24 @@
-import { runTransaction, where } from "firebase/firestore";
-import type { MembershipPort } from "@/lib/data/ports";
 import {
+  collection,
+  getCountFromServer,
+  limit,
+  orderBy,
+  query,
+  runTransaction,
+  where,
+  type QueryConstraint,
+} from "firebase/firestore";
+import type { MembershipPage, MembershipPort } from "@/lib/data/ports";
+import {
+  addCivilDays,
   clientSchema,
+  compareMembershipsForList,
+  EXPIRING_SOON_DAYS,
+  isExpiringSoon,
   matchesMembershipFilter,
   membershipSchema,
   overlappingMembershipIds,
+  type Membership,
   type MembershipStatusFilter,
 } from "@/lib/domain";
 import type { FirebaseContext } from "./context";
@@ -13,43 +27,92 @@ import { COLLECTIONS, listOwn, ref, txRequireOwn } from "./helpers";
 const byStartDesc = <T extends { startDate: string }>(a: T, b: T) =>
   b.startDate.localeCompare(a.startDate);
 
+/** `in` admite 30 valores como mucho: las consultas por varios clientes van en trozos. */
+const IN_LIMIT = 30;
+
 export function createMembershipPort(ctx: FirebaseContext): MembershipPort {
   const name = COLLECTIONS.memberships;
-  return {
-    listMembershipsWithClients: async (trainerId, query) => {
-      const clients = await listOwn(ctx, COLLECTIONS.clients, clientSchema, trainerId);
-      // El solape es entre membresías de un mismo cliente: con un cliente elegido basta con las suyas.
-      const owned = await listOwn(
-        ctx,
-        name,
-        membershipSchema,
-        trainerId,
-        ...(query.clientId ? [where("clientId", "==", query.clientId)] : []),
+
+  const ownedBy = (trainerId: string, ...constraints: QueryConstraint[]) =>
+    listOwn(ctx, name, membershipSchema, trainerId, ...constraints);
+
+  // Cuenta de servidor de las membresías del entrenador con un filtro extra. No trae documentos.
+  const countOf = async (trainerId: string, ...constraints: QueryConstraint[]) =>
+    (
+      await getCountFromServer(
+        query(collection(ctx.db, name), where("trainerId", "==", trainerId), ...constraints),
+      )
+    ).data().count;
+
+  // Todas las membresías de estos clientes, para el solape de la página.
+  const membershipsOf = async (trainerId: string, clientIds: string[]) => {
+    const found: Membership[] = [];
+    for (let i = 0; i < clientIds.length; i += IN_LIMIT) {
+      found.push(
+        ...(await ownedBy(trainerId, where("clientId", "in", clientIds.slice(i, i + IN_LIMIT)))),
       );
-      const all = owned.flatMap((membership) => {
-        const client = clients.find((c) => c.id === membership.clientId);
+    }
+    return found;
+  };
+
+  return {
+    listMembershipsWithClients: async (trainerId, q) => {
+      const start = q.page * q.pageSize;
+      const end = start + q.pageSize;
+      const clients = await listOwn(ctx, COLLECTIONS.clients, clientSchema, trainerId);
+
+      let counts: MembershipPage["counts"];
+      let page: Membership[];
+      if (q.clientId) {
+        // El historial de un cliente son pocas filas: se trae entero y se ordena aquí.
+        const mine = (await ownedBy(trainerId, where("clientId", "==", q.clientId))).sort(
+          compareMembershipsForList,
+        );
+        const count = (filter: MembershipStatusFilter) =>
+          mine.filter((m) => matchesMembershipFilter(m, filter, q.today)).length;
+        counts = { all: count("all"), unpaid: count("unpaid"), expiring: count("expiring") };
+        page = mine.filter((m) => matchesMembershipFilter(m, q.filter, q.today)).slice(start, end);
+      } else {
+        // Cartera entera. «Por vencer» no admite una consulta exacta de conteo (la fecha de inicio y la
+        // de fin son dos rangos), así que se leen solo las que terminan en la ventana: son pocas.
+        const ending = await ownedBy(
+          trainerId,
+          where("endDate", ">=", q.today),
+          where("endDate", "<=", addCivilDays(q.today, EXPIRING_SOON_DAYS)),
+        );
+        const expiring = ending
+          .filter((m) => isExpiringSoon(m, q.today))
+          .sort(compareMembershipsForList);
+        const [all, unpaid] = await Promise.all([
+          countOf(trainerId),
+          countOf(trainerId, where("paymentStatus", "==", "no_pagada")),
+        ]);
+        counts = { all, unpaid, expiring: expiring.length };
+
+        if (q.filter === "expiring") {
+          page = expiring.slice(start, end);
+        } else {
+          // Las más recientes hasta el final de la página; la página es lo que cae en [start, end).
+          const cut = q.filter === "unpaid" ? [where("paymentStatus", "==", "no_pagada")] : [];
+          const newest = await ownedBy(trainerId, ...cut, orderBy("startDate", "desc"), limit(end));
+          page = newest.sort(compareMembershipsForList).slice(start, end);
+        }
+      }
+
+      const clientById = new Map(clients.map((c) => [c.id, c]));
+      const rows = page.flatMap((membership) => {
+        const client = clientById.get(membership.clientId);
         if (!client) return [];
         const { id, firstName, lastName, status } = client;
         return [{ membership, client: { id, firstName, lastName, status } }];
       });
-      const fullName = (r: (typeof all)[number]) => `${r.client.firstName} ${r.client.lastName}`;
-      all.sort(
-        (a, b) =>
-          fullName(a).localeCompare(fullName(b), "es") ||
-          b.membership.startDate.localeCompare(a.membership.startDate),
+      // El solape se mira sobre todas las membresías de cada cliente de la página, esté o no en ella.
+      const overlapping = overlappingMembershipIds(
+        await membershipsOf(trainerId, [...new Set(rows.map((r) => r.membership.clientId))]),
       );
-
-      const count = (filter: MembershipStatusFilter) =>
-        all.filter((r) => matchesMembershipFilter(r.membership, filter, query.today)).length;
-      const matching = all.filter((r) =>
-        matchesMembershipFilter(r.membership, query.filter, query.today),
-      );
-      const rows = matching.slice(query.page * query.pageSize, (query.page + 1) * query.pageSize);
-      // El solape se calcula sobre todas las del cliente: la otra puede estar en otra página o filtrada.
-      const overlapping = overlappingMembershipIds(owned);
       return {
         rows,
-        counts: { all: count("all"), unpaid: count("unpaid"), expiring: count("expiring") },
+        counts,
         overlappingIds: rows.map((r) => r.membership.id).filter((id) => overlapping.has(id)),
       };
     },
