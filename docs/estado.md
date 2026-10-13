@@ -985,11 +985,9 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62). La
   regla de baja ya está en §7 (PR #87); falta comprobar que asignar planes y enviar feedback a un
   cliente de baja la respetan (tarjeta 61).
-- **«Revisiones recibidas» marca «Completa» todas las filas (105).** La columna de completitud
-  usa el objeto que devuelve `isReviewComplete` en vez de su `.complete`, así que una revisión
-  parcial también sale «Completa». Se vio al verificar la siembra, cuyas revisiones no tienen
-  fotos.
-- **Deuda menor con tarjeta**: favicon (19) y cifras del panel en una consulta (42). Resueltas: el nombre accesible de `NumberField` (59, PR
+- **Deuda menor con tarjeta**: favicon (19) y cifras del panel en una consulta (42). Resueltas: la columna de completitud de «Revisiones recibidas», que marcaba «Completa» toda
+  revisión porque leía el objeto de `isReviewComplete` en vez de su `.complete` (105, PR #108); el
+  nombre accesible de `NumberField` (59, PR
   #66, etiqueta y campo asociados con `useId`) y `ReviewPort.listSubmittedReviews`, que se quitó
   del puerto con su hook y su clave por no usarlo ninguna pantalla (64, PR #74, **BREAKING
   CHANGE** de puerto): «Revisiones recibidas» lee `listReviewsTracking` filtrado por `enviada`; y
