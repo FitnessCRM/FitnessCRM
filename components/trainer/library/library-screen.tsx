@@ -1,13 +1,11 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QueryBoundary } from "@/components/ui/query-boundary";
 import { SheetTitle } from "@/components/ui/sheet";
 import { EmptyState } from "@/components/ui/states";
-import { Tabs } from "@/components/ui/tabs";
 import { useMediaQuery, XL_MEDIA_QUERY } from "@/components/ui/use-media-query";
 import { canonicalText, type Exercise } from "@/lib/domain";
 import {
@@ -23,8 +21,7 @@ import { ArchiveDialog } from "./archive-dialog";
 import { ExerciseForm, type ExerciseFormValues } from "./exercise-form";
 import { ExerciseGrid } from "./exercise-grid";
 import { LibraryEditPanel } from "./library-edit-panel";
-import { FoodsLibrary } from "./foods-library";
-import { LIBRARY_TABS, LibraryHeader, LibraryPanel, type LibraryTab } from "./library-header";
+import { LibraryHeader } from "./library-header";
 
 const t = es.screensLibrary;
 
@@ -35,39 +32,13 @@ function distinct(exercises: Exercise[], field: "muscleGroup" | "equipment"): st
   );
 }
 
-const isLibraryTab = (value: string | null): value is LibraryTab =>
-  LIBRARY_TABS.includes(value as LibraryTab);
-
 /**
- * Screen 11 · Library, with two tabs: Exercises and Foods. The active tab lives in the URL
- * (`?tab=foods`) so it can be linked and reloaded; without the parameter, Exercises.
- */
-export function LibraryScreen() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const requested = useSearchParams().get("tab");
-  const tab: LibraryTab = isLibraryTab(requested) ? requested : "exercises";
-
-  return (
-    <Tabs
-      value={tab}
-      onValueChange={(next) =>
-        router.replace(next === "exercises" ? pathname : `${pathname}?tab=${next}`, {
-          scroll: false,
-        })
-      }
-      className="gap-6"
-    >
-      {tab === "foods" ? <FoodsLibrary /> : <ExercisesLibrary />}
-    </Tabs>
-  );
-}
-
-/**
- * Exercises tab. Filterable grid on the left and the edit panel on the right.
+ * Screen 11 · Library, exercises only. Los alimentos tienen su sección propia (`/foods`); `/library`
+ * con `?tab=foods` redirige allí desde la página.
+ * Filterable grid on the left and the edit panel on the right.
  * "Delete" archives and warns first about who it affects (I13, §7); the video is an external link (I20).
  */
-function ExercisesLibrary() {
+export function LibraryScreen() {
   const exercises = useExercises();
 
   return (
@@ -148,7 +119,7 @@ function Library({ exercises }: { exercises: Exercise[] }) {
         count={`${exercises.length} ${t.count}`}
       />
 
-      <LibraryPanel tab="exercises" className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_380px]">
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_380px]">
         <div className="flex min-w-0 flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
             <Input
@@ -193,7 +164,7 @@ function Library({ exercises }: { exercises: Exercise[] }) {
           emptyTitle={t.form.editTitle}
           emptyHint={t.form.pickHint}
         />
-      </LibraryPanel>
+      </div>
 
       {confirming && selected ? (
         <ArchiveDialog

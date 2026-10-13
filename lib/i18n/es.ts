@@ -52,6 +52,7 @@ export const es = {
       clientes: "Clientes",
       revisiones: "Revisiones",
       biblioteca: "Biblioteca",
+      alimentos: "Alimentos",
       plantillas: "Plantillas",
       cuestionario: "Cuestionario",
       medidas: "Tipos de medida",
@@ -180,6 +181,7 @@ export const es = {
       editor: "Editor de plan",
       revisionCliente: "Revisión de cliente",
       biblioteca: "Biblioteca",
+      alimentos: "Alimentos",
       plantillas: "Plantillas",
       cuestionario: "Cuestionario de revisión",
       medidas: "Tipos de medida",
@@ -865,12 +867,7 @@ export const es = {
         "No se ha podido comprobar quién usa este ejercicio. Vuelve a intentarlo antes de eliminarlo.",
       working: "Eliminando…",
     },
-    tabs: {
-      label: "Secciones de la biblioteca",
-      exercises: "Ejercicios",
-      foods: "Alimentos",
-    },
-    /** Foods tab (§4, §5, §7). What isn't yours is read-only; it never says whose it is. */
+    /** Sección Alimentos (§4, §5, §7). What isn't yours is read-only; it never says whose it is. */
     foods: {
       count: { one: "alimento tuyo", other: "alimentos tuyos" },
       newFood: "+ Nuevo alimento",
@@ -1141,7 +1138,7 @@ export const es = {
       "Rendimiento",
       "Salud y bienestar",
     ],
-    levels: ["Principiante", "Intermedio", "Avanzado"],
+    levels: ["Principiante", "Nivel medio", "Nivel avanzado"],
     errors: {
       firstNameRequired: "Escribe el nombre",
       lastNameRequired: "Escribe los apellidos",

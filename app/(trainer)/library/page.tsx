@@ -1,14 +1,12 @@
-import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { LibraryScreen } from "@/components/trainer/library/library-screen";
 import { es } from "@/lib/i18n/es";
 
 export const metadata = { title: es.pages.trainer.biblioteca };
 
-// La pestaña activa sale de `useSearchParams`, que en una página estática pide su `Suspense`.
-export default function Page() {
-  return (
-    <Suspense>
-      <LibraryScreen />
-    </Suspense>
-  );
+/** Los alimentos salieron de la Biblioteca: `?tab=foods` (enlaces antiguos) va a su sección. */
+export default async function Page({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const { tab } = await searchParams;
+  if (tab === "foods") redirect("/foods");
+  return <LibraryScreen />;
 }
