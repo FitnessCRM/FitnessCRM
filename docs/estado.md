@@ -869,10 +869,9 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
     por otra cosa que no es «no disponible») o `null` con «solo los míos»; un «ver más» que falla no
     esconde lo ya cargado y da su error aparte. La unión de las páginas con la copia propia vive
     fuera de React, en `lib/data/hooks/food-library.ts`.
-  - **Deuda:** el adaptador de Firebase fija el puerto 8080 del emulador de Firestore, así que con
-    ese puerto ocupado `ports.test.ts` agota el tiempo aunque los emuladores estén en otro (tarjeta
-    95); y la paginación por desplazamiento puede saltarse un alimento si el catálogo cambia entre
-    una página y la siguiente (los repetidos sí se quitan).
+  - **Deuda:** la paginación por desplazamiento puede saltarse un alimento si el catálogo cambia
+    entre una página y la siguiente (los repetidos sí se quitan). El emulador de Firestore ya acepta
+    `host:port` (tarjeta 95, PR #114), así que con el 8080 ocupado basta con cambiar el puerto.
 
 - **Revisión con IA en el pre-commit** (PR #101, sin tarjeta). `.husky/pre-commit` corre `gga run`
   (Gentleman Guardian Angel) después de lint-staged: revisa los archivos staged, enteros, contra
