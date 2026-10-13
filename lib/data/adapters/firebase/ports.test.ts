@@ -23,7 +23,7 @@ describe.skipIf(!firestoreHost || !authHost)("adaptador de Firebase · composici
     ports = createFirebasePorts({
       config: { projectId: "demo-hector", apiKey: "demo-api-key" },
       inviteUrl: "http://localhost:3000/accept-invite",
-      emulatorHost: (firestoreHost as string).split(":")[0],
+      emulatorHost: firestoreHost as string,
       appName: APP,
     });
   });

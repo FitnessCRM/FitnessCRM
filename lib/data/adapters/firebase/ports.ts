@@ -30,18 +30,32 @@ export interface FirebasePortsOptions {
   appName?: string;
 }
 
+/**
+ * `host` o `host:port` de un emulador. Sin puerto, usa el `defaultPort` del emulador; así el
+ * emulador de Firestore puede estar en otro puerto (tarjeta 95) sin cambiar el código.
+ */
+export function parseEmulatorHost(
+  emulatorHost: string,
+  defaultPort: number,
+): { host: string; port: number } {
+  const [host, port] = emulatorHost.split(":");
+  return { host: host ?? emulatorHost, port: port ? Number(port) : defaultPort };
+}
+
 /** Los 18 puertos de la aplicación: Firestore y Firebase Auth, y el catálogo de alimentos sin API. */
 export function createFirebasePorts(options: FirebasePortsOptions): DataPorts {
   const { config, inviteUrl, emulatorHost, appName } = options;
   const db = createFirestore(config, {
     appName,
-    emulator: emulatorHost ? { host: emulatorHost, port: 8080 } : undefined,
+    emulator: emulatorHost ? parseEmulatorHost(emulatorHost, 8080) : undefined,
   });
   const ctx = createFirebaseContext(db);
+  // El puerto de Auth no lo fija esta variable: sigue en 9099.
+  const authHost = emulatorHost?.split(":")[0];
   const authCtx = createFirebaseAuthContext(ctx, {
     appName,
     inviteUrl,
-    emulatorUrl: emulatorHost ? `http://${emulatorHost}:9099` : undefined,
+    emulatorUrl: authHost ? `http://${authHost}:9099` : undefined,
   });
   return {
     session: createSessionPort(authCtx),
