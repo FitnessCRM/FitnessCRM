@@ -463,8 +463,8 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
 - **Menú hamburguesa** (`components/ui/sheet.tsx` y `mobile-nav.tsx`, tarjeta 48, PR #24). Por
   debajo de `lg`, barra superior con hamburguesa en las dos áreas; desde `lg`, sin cambios. El
   área de cliente también lo recibe: su nav con scroll horizontal no se entendía. El panel se
-  cierra con Escape, tocando fuera o navegando. Deuda: no hay botón de cierre visible (sin
-  tarjeta); el responsive del resto del panel se midió en la tarjeta 49 (PR #68).
+  cierra con Escape, tocando fuera, con su botón de cierre o navegando (tarjeta 70, PR #116). El
+  responsive del resto del panel se midió en la tarjeta 49 (PR #68).
 
 - **Panel de control** (`components/trainer/dashboard/`, tarjeta 4, PR #21). Cuatro cifras de
   toda la cartera —no de la página visible—, las cinco últimas revisiones enviadas con «Ver
@@ -484,8 +484,9 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
 - **Detalle de cliente** (`components/trainer/client-detail/`, tarjeta 5, PR #22). Cabecera con
   estado y semana, rutina y macros asignadas, gráficas de `components/charts/` y el histórico por
   pares de semanas. «Ver revisión nueva» solo enlaza: abrirla es lo que la pasa a `vista`. Fuera
-  «Bloque» y la adherencia; un borrador se ve «En curso n/4», sin enlace. Deuda: con un único
-  pesaje la gráfica no pinta nada, también en Progreso (sin tarjeta).
+  «Bloque» y la adherencia; un borrador se ve «En curso n/4», sin enlace. Un valor sin vecinos con
+  dato se pinta como punto en las gráficas de tendencia, así que un único pesaje ya se ve (tarjeta
+  70, PR #116).
 
 - **Alta de cliente** (`/clients/new`, tarjeta 6, PR #26). Datos, membresía inicial obligatoria y
   siguiente paso (detalle o Asignación). El cliente nace siempre `invitado` y la fecha de alta es
@@ -515,9 +516,9 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
 - **Membresía en el detalle y renovación** (`membership-card.tsx`, `renew-membership-dialog.tsx`,
   tarjetas 45 y 38, PR #36). La vigente, la próxima y aviso de solape; «Gestionar» abre
   Membresías filtrada por el cliente. «Renovar» crea una fila nueva: inicio el día siguiente al
-  último fin (hoy si ya pasó) y estado «No pagada» por defecto. Renovar solo existe aquí. Deuda:
-  `ToggleChip` copiado en el alta y en el diálogo, y el filtro de Membresías no actualiza la URL
-  (sin tarjeta).
+  último fin (hoy si ya pasó) y estado «No pagada» por defecto. Renovar solo existe aquí. El
+  `ToggleChip` vive en `components/ui/` desde la tarjeta 70 (PR #116), compartido con el alta.
+  Deuda: el filtro de Membresías no actualiza la URL (sin tarjeta).
 
 - **Revisión de cliente y envío de feedback** (`components/trainer/client-review/`, tarjetas 11 y
   15, PR #27, #28 y #33). Abrir una revisión enviada la pasa a `vista` (I17) y la comparación de
