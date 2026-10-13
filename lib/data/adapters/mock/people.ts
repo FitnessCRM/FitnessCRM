@@ -7,6 +7,7 @@ import type {
 } from "@/lib/data/ports";
 import {
   DomainError,
+  assertClientStatusChange,
   clientSchema,
   compareMembershipsForList,
   matchesMembershipFilter,
@@ -113,6 +114,7 @@ export function createClientPort(ctx: MockContext): ClientPort {
     },
     updateClient: async (trainerId, clientId, changes) => {
       const current = findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
+      if (changes.status) assertClientStatusChange(current.status, changes.status);
       const next = clientSchema.parse({ ...current, ...changes, trainerId, id: clientId });
       return ctx.reply(replaceById(ctx.state.clients, next));
     },

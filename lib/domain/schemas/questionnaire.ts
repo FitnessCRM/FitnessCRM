@@ -12,7 +12,12 @@ import {
  * Los límites forman parte del formato y por tanto de la inmutabilidad de I15.
  */
 export const scaleFormatSchema = z
-  .object({ kind: z.literal("escala"), min: z.int(), max: z.int() })
+  .object({
+    kind: z.literal("escala"),
+    // H5: el mínimo no puede ser negativo; el máximo no tiene tope fijo.
+    min: z.int().min(0, { message: "El mínimo de la escala no puede ser negativo" }),
+    max: z.int(),
+  })
   .refine((f) => f.max > f.min, {
     message: "El máximo de la escala debe ser mayor que el mínimo",
     path: ["max"],
