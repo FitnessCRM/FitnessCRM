@@ -547,9 +547,9 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   PR #99). Las marcas siguen hasta guardar con éxito o hasta volver a lo guardado, y cada campo se
   desmarca en cuanto tiene texto. El texto de ejemplo de la comida es «Ej.: Desayuno». Las marcas
   del menú las pinta `MenusEditor` con la prop opcional `showErrors`. Deuda: sin aviso al navegar
-  dentro de la app con cambios, sin nota por ejercicio y `<title>` genérico (tarjeta 69); si lo
-  único que falta es el nombre de la plantilla, el aviso general sale igualmente y habla de
-  ejercicios o de menús (tarjeta 100).
+  dentro de la app con cambios, sin nota por ejercicio y `<title>` genérico (tarjeta 69). El
+  aviso general de guardar solo sale si falla algo distinto del nombre; si solo falta el nombre,
+  lo marca el campo (tarjeta 100, PR #110).
 
 - **Asignación de plan** (`components/trainer/assignment/`, tarjeta 9, PR #31). Cliente por
   `?clientId=` (sin los de baja); entreno y menú desde plantilla o desde cero, y macros aparte.
