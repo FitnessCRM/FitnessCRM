@@ -373,8 +373,8 @@ Fase 5 (navegación):
   - **El editor va en un `Sheet` por debajo de `xl`** (tarjeta 96, PR #102). Desde `xl` sigue en
     la columna derecha; por debajo abre en un `Sheet` lateral, como Alimentos, en vez de quedar
     debajo de la rejilla. El formulario valida con `exerciseSchema` del dominio, no con una copia,
-    y los mensajes de error salen de `es.ts`. Deuda: el bloque del `Sheet` está repetido entre
-    las dos pestañas (tarjeta 103).
+    y los mensajes de error salen de `es.ts`. El panel lateral y el `Sheet` están en
+    `LibraryEditPanel`, compartido con Alimentos (tarjeta 103, PR #112).
 
 - **Cuestionario y Medidas** (`components/trainer/catalog/`, tarjeta 12, integrada el
   27-09-2026). Las dos pantallas comparten `CatalogList`, el armazón del catálogo ordenable del
