@@ -1281,6 +1281,7 @@ export const es = {
       content: "Contenido",
     },
     weekShort: "S",
+    noSentDate: "—",
     pagination: {
       label: "Paginación de revisiones",
       summary: "Página {page} de {pages} · {total} revisiones",

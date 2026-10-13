@@ -35,7 +35,7 @@ export function ReviewRow({
   const fullName = `${client.firstName} ${client.lastName}`;
   // Día del envío en la zona del entrenador, no en UTC.
   const sentOn = review.submittedAt ? civilDateOf(review.submittedAt, timeZone) : null;
-  const complete = isReviewComplete(review, review.requirements);
+  const complete = isReviewComplete(review, review.requirements).complete;
 
   return (
     <li className="border-border-subtle border-b last:border-b-0">
@@ -71,7 +71,7 @@ export function ReviewRow({
               {formatShortDate(sentOn, today)}
             </time>
           ) : (
-            <span className="text-text-subtle text-[13px]">—</span>
+            <span className="text-text-subtle text-[13px]">{t.noSentDate}</span>
           )}
         </span>
 
