@@ -993,8 +993,10 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
 - **Decisiones de dominio pendientes**: si archivar un ejercicio crea versión nueva de las rutinas
   vivas (62). Los huecos menores H5, H6, H7 y H9 ya están decididos en `dominio.md` (tarjeta 61):
   escala sin mínimo negativo, tres transiciones del cliente, la semana sigue contando en la baja,
-  y «Tipos de medida» / «Mediciones». Su código va en las tarjetas 107, 108 y 109. Falta comprobar
-  que asignar planes y enviar feedback a un cliente de baja la respetan (tarjeta 61).
+  y «Tipos de medida» / «Mediciones». En `main` (#122): la escala no admite mínimo negativo (107) y
+  las etiquetas nuevas (109). Las transiciones del cliente (108) están en el dominio y en los dos
+  adaptadores, pero las reglas de Firestore todavía no las comprueban: esa parte falta. Falta
+  comprobar que asignar planes y enviar feedback a un cliente de baja la respetan (tarjeta 61).
 - **Deuda menor con tarjeta**: favicon (19) y cifras del panel en una consulta (42). Resueltas: la columna de completitud de «Revisiones recibidas», que marcaba «Completa» toda
   revisión porque leía el objeto de `isReviewComplete` en vez de su `.complete` (105, PR #108); el
   nombre accesible de `NumberField` (59, PR
