@@ -4,7 +4,10 @@ import type { CivilDate, Client, ClientStatus, IsoTimestamp, Membership } from "
  * Datos que aporta el entrenador al dar de alta. El resto lo pone el adaptador: `id`, `createdAt`
  * y `status`, porque un cliente nace siempre `invitado` (§7) y pasar a `activo` es otra operación.
  */
-export type ClientInput = Omit<Client, "id" | "createdAt" | "status">;
+/** `macrosVisible` es opcional al crear: sin él, el dominio lo deja en `true` (I11). */
+export type ClientInput = Omit<Client, "id" | "createdAt" | "status" | "macrosVisible"> & {
+  macrosVisible?: boolean;
+};
 export type ClientChanges = Partial<Omit<Client, "id" | "createdAt" | "trainerId">>;
 
 /**

@@ -54,6 +54,7 @@ export function ClientEditForm({
       level: client.level,
       initialNotes: client.initialNotes,
       startDate: client.startDate,
+      macrosVisible: client.macrosVisible,
       reviewEveryDays: String(client.reviewCadence.everyDays),
     },
   });

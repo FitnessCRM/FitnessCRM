@@ -1127,6 +1127,9 @@ export const es = {
     startDate: "Fecha de alta",
     startDateHint:
       "Es el origen de la numeración de semanas. Cambiarla después no reetiqueta las revisiones ya enviadas.",
+    macrosVisible: "El cliente ve sus kcal y macros",
+    macrosVisibleHint:
+      "Si lo desmarcas, no verá sus objetivos diarios ni las kcal y macros de cada menú. El peso por alimento sigue visible.",
     /** Saved as-is in `goal` and `level`, which are free text in the domain. */
     goals: [
       "Recomposición corporal",
@@ -1179,7 +1182,7 @@ export const es = {
   },
   clientAccess: {
     discharged: {
-      title: "Cuenta dada de baja",
+      title: "Cuenta de baja",
       hint: "Ya no tienes acceso a la app. Si crees que es un error, habla con tu entrenador.",
     },
   },

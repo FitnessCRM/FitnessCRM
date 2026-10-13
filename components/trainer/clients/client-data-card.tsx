@@ -3,6 +3,7 @@
 import { Controller, useFormContext } from "react-hook-form";
 import { z } from "zod";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -121,8 +122,39 @@ export function ClientDataCard({
           {startDateHint}
         </p>
       </div>
+      <MacrosVisibleField />
       {children}
     </Card>
+  );
+}
+
+/** Casilla «el cliente ve sus kcal y macros» (I11). Marcada por defecto, como en el dominio. */
+function MacrosVisibleField() {
+  const { control } = useFormContext<ClientDataValues>();
+  return (
+    <Controller
+      control={control}
+      name="macrosVisible"
+      render={({ field }) => (
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id="cd-macros-visible"
+            className="mt-0.5"
+            checked={field.value}
+            onCheckedChange={(checked) => field.onChange(checked === true)}
+            onBlur={field.onBlur}
+            ref={field.ref}
+            aria-describedby="cd-macros-visible-hint"
+          />
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="cd-macros-visible">{t.macrosVisible}</Label>
+            <p id="cd-macros-visible-hint" className="text-text-subtle text-xs">
+              {t.macrosVisibleHint}
+            </p>
+          </div>
+        </div>
+      )}
+    />
   );
 }
 

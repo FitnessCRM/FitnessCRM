@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { client } from "../__tests__/fixtures";
 import {
   clientDataSchema,
+  clientSchema,
   clientSignupSchema,
   macrosSchema,
   membershipEditSchema,
@@ -225,6 +227,14 @@ describe("client data and signup (E21): the forms validate with the domain", () 
     expect(clientDataSchema.safeParse({ ...data, firstName: " " }).success).toBe(false);
     expect(clientDataSchema.safeParse({ ...data, email: "sin arroba" }).success).toBe(false);
     expect(clientDataSchema.safeParse({ ...data, startDate: "02-10-2026" }).success).toBe(false);
+  });
+
+  it("macrosVisible defaults to true when the client has none saved, and the trainer can set it", () => {
+    const legacy: Partial<typeof client> = { ...client };
+    delete legacy.macrosVisible;
+    expect(clientSchema.parse(legacy).macrosVisible).toBe(true);
+    expect(clientDataSchema.parse({ ...data, macrosVisible: false }).macrosVisible).toBe(false);
+    expect(clientDataSchema.safeParse({ ...data, macrosVisible: "no" }).success).toBe(false);
   });
 
   it("signup joins the client data and the initial membership, with the membership's own rules", () => {

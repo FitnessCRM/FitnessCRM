@@ -29,6 +29,7 @@ export const client: Client = {
   status: "activo",
   startDate: "2026-08-01",
   reviewCadence: { everyDays: 7 },
+  macrosVisible: true,
   createdAt: "2026-08-01T08:00:00Z",
 };
 

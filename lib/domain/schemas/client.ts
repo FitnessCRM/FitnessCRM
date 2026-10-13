@@ -32,6 +32,11 @@ export const clientSchema = z.object({
   /** Fecha de alta: origen de la numeración de semanas (§8). Cambiarla no reetiqueta el histórico. */
   startDate: civilDateSchema,
   reviewCadence: cadenceSchema,
+  /**
+   * Si el cliente ve sus kcal y macros (I11). Lo fija el entrenador; por defecto, sí. Un cliente
+   * sin el campo guardado se lee como `true`.
+   */
+  macrosVisible: z.boolean().default(true),
   createdAt: isoTimestampSchema,
 });
 export type Client = z.infer<typeof clientSchema>;
@@ -50,5 +55,6 @@ export const clientDataSchema = clientSchema.pick({
   level: true,
   initialNotes: true,
   startDate: true,
+  macrosVisible: true,
 });
 export type ClientData = z.infer<typeof clientDataSchema>;

@@ -36,6 +36,7 @@ export function ClientEditScreen({ clientId }: { clientId: string }) {
           level: values.level,
           initialNotes: values.initialNotes,
           reviewCadence: { everyDays: Number(values.reviewEveryDays) },
+          macrosVisible: values.macrosVisible,
         },
       });
     } catch (cause) {
