@@ -984,6 +984,11 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   Revisiones fallan con `failed-precondition` con `NEXT_PUBLIC_DATA_BACKEND=firebase`; el emulador
   no los exige, así que solo se comprueban contra un proyecto real. La tarjeta sigue en «En
   revisión» hasta su cierre.
+- **Índices compuestos de `memberships`** (tarjeta 73, PR #118): los tres de
+  `firestore.indexes.json` están en `main` pero **no desplegados**. Hasta que se despliegan, la
+  tabla de Membresías falla con `failed-precondition` con `NEXT_PUBLIC_DATA_BACKEND=firebase`.
+  Comando: `firebase deploy --only firestore:indexes --project fitnesscrm-fb1ef`. Lo ejecuta
+  quien tenga el permiso de despliegue; después se comprueba la tabla contra el proyecto real.
 - **Decisiones de dominio pendientes**: los huecos menores de la revisión de errores, H5, H6, H7 y
   H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62). La
   regla de baja ya está en §7 (PR #87); falta comprobar que asignar planes y enviar feedback a un
