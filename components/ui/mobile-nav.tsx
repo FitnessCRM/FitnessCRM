@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { MenuIcon } from "lucide-react";
+import { MenuIcon, XIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,11 @@ export function MobileNav({
       </SheetTrigger>
       <SheetContent aria-describedby={undefined}>
         <SheetTitle className="sr-only">{label}</SheetTitle>
+        <SheetClose asChild>
+          <Button variant="ghost" size="icon" aria-label={es.common.close} className="self-end">
+            <XIcon />
+          </Button>
+        </SheetClose>
         <div className="px-2">{header}</div>
         <nav aria-label={label} className="flex flex-col gap-0.5">
           {items.map((item) => (

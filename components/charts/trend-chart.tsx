@@ -11,6 +11,9 @@ import {
 } from "recharts";
 import { tokens } from "@/lib/design/tokens";
 import { cn } from "@/lib/utils";
+import { isIsolated, type TrendPoint } from "./trend-points";
+
+export type { TrendPoint };
 
 export interface TrendSeries {
   /** Clave del dato dentro de cada punto. */
@@ -18,13 +21,6 @@ export interface TrendSeries {
   label: string;
   /** Índice en `tokens.chart.series`; 0 es el acento. */
   colorIndex?: number;
-}
-
-export interface TrendPoint {
-  /** Etiqueta del eje X ("S1", "1 ago"). */
-  label: string;
-  /** `null` = hueco: la línea se corta, nunca se interpola (semana saltada, pesaje ausente). */
-  [key: string]: string | number | null;
 }
 
 /**
@@ -81,7 +77,20 @@ export function TrendChart({
                 name={s.label}
                 stroke={color}
                 strokeWidth={i === 0 ? 2.5 : 2}
-                dot={false}
+                dot={(point) =>
+                  isIsolated(data, s.key, point.index ?? -1) ? (
+                    <circle
+                      key={`${s.key}-${point.index}`}
+                      cx={point.cx}
+                      cy={point.cy}
+                      r={4}
+                      fill={color}
+                      stroke="none"
+                    />
+                  ) : (
+                    <g key={`${s.key}-${point.index}`} />
+                  )
+                }
                 activeDot={{ r: 4, fill: color, stroke: "none" }}
                 connectNulls={false}
                 isAnimationActive={false}
