@@ -503,9 +503,10 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
 
 - **Baja y reactivación** (`client-status-action.tsx`, tarjeta 44, PR #37). Tarjeta al pie del
   detalle con su diálogo. Decidido con el propietario: la baja no toca plan ni membresía,
-  reactivar vuelve siempre a «En activo» y se puede dar de baja desde cualquier estado. La baja no
-  borra nada: el borrado a petición es otra operación (tarjeta 31). Deuda: «reactivar» no está en
-  §7 (H6, tarjeta 61); qué bloquea la baja con auth real (tarjetas 34 y 35).
+  reactivar vuelve siempre a «En activo» y solo se da de baja un cliente «En activo» (H6, tarjeta
+  61: una invitación sin aceptar no tiene baja). La baja no
+  borra nada: el borrado a petición es otra operación (tarjeta 31). Deuda: qué bloquea la baja con
+  auth real (tarjetas 34 y 35).
 
 - **Membresías** (`components/trainer/memberships/`, tarjeta 13, PR #18). Una fila por periodo,
   no por cliente como la captura 17: las renovaciones son filas nuevas. Chips Todas / No pagadas
@@ -989,10 +990,11 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   tabla de Membresías falla con `failed-precondition` con `NEXT_PUBLIC_DATA_BACKEND=firebase`.
   Comando: `firebase deploy --only firestore:indexes --project fitnesscrm-fb1ef`. Lo ejecuta
   quien tenga el permiso de despliegue; después se comprueba la tabla contra el proyecto real.
-- **Decisiones de dominio pendientes**: los huecos menores de la revisión de errores, H5, H6, H7 y
-  H9 (tarjeta 61), y si archivar un ejercicio crea versión nueva de las rutinas vivas (62). La
-  regla de baja ya está en §7 (PR #87); falta comprobar que asignar planes y enviar feedback a un
-  cliente de baja la respetan (tarjeta 61).
+- **Decisiones de dominio pendientes**: si archivar un ejercicio crea versión nueva de las rutinas
+  vivas (62). Los huecos menores H5, H6, H7 y H9 ya están decididos en `dominio.md` (tarjeta 61):
+  escala sin mínimo negativo, tres transiciones del cliente, la semana sigue contando en la baja,
+  y «Tipos de medida» / «Mediciones». Su código va en las tarjetas 107, 108 y 109. Falta comprobar
+  que asignar planes y enviar feedback a un cliente de baja la respetan (tarjeta 61).
 - **Deuda menor con tarjeta**: favicon (19) y cifras del panel en una consulta (42). Resueltas: la columna de completitud de «Revisiones recibidas», que marcaba «Completa» toda
   revisión porque leía el objeto de `isReviewComplete` en vez de su `.complete` (105, PR #108); el
   nombre accesible de `NumberField` (59, PR
