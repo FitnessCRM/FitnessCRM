@@ -1,9 +1,10 @@
 # Estado del proyecto
 
-Última actualización: 12-10-2026. Corresponde a `main` en `19ffdc9` (PR #106). Están en `main` los
+Última actualización: 13-10-2026. Corresponde a `main` en `9a25167` (PR #127). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad, el adaptador de Firebase, el modo sin conexión del cliente, la capa de datos de los
-alimentos y sus pantallas; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de
+alimentos y sus pantallas, el flag de kcal y macros por cliente y la sección Alimentos propia; el
+resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de
 continuar.
 
 ## Cómo se trabajó hasta aquí
@@ -576,7 +577,8 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
 
 - **Alimentos en Biblioteca y cálculo en el editor de menú** (tarjeta 89, PR #95).
   `docs/dominio.md` §4, §5 e I28–I30.
-  - **Biblioteca:** pestañas Ejercicios y Alimentos, con la activa en la URL (`?tab=foods`). Tus
+  - **Biblioteca** (hasta la tarjeta 112; después, Alimentos tiene su propia sección, ver abajo):
+    pestañas Ejercicios y Alimentos, con la activa en la URL (`?tab=foods`). Tus
     alimentos por nombre; el catálogo común solo se busca, con 300 ms de espera entre teclas y «Ver
     más». Cada fila dice su origen (Tuyo, De otra cuenta, USDA, Open Food Facts) y si está
     pendiente de publicar; lo ajeno se abre en solo lectura y «Eliminar» archiva. Panel a la
@@ -598,6 +600,20 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   - **Aceptado:** en iPhone, con el teclado abierto, el resumen compacto puede quedar por encima de
     lo visible, porque Safari desplaza lo visible sin mover lo fijo; al cerrar el teclado se ve
     bien. Sin arreglo ni tarjeta. **No probado:** Firefox.
+
+- **Kcal y macros por cliente** (tarjeta 111, PR #125 y #126). `macrosVisible` en la ficha del
+  cliente, por defecto `true`; el entrenador lo marca con un checkbox en el alta y en la edición, y
+  el cliente no lo ve ni lo cambia. La regla de Firestore oculta `macroTargets` con el flag en
+  `false` (tests de emulador). El menú de cliente no pide ni pinta kcal ni macros con el flag
+  apagado, y conserva el peso por alimento. La enmienda a I11 está en `docs/dominio.md` (PR #125).
+  - **Decisiones:** sin migración (el campo ausente cuenta como `true`); el backfill se descartó.
+  - **Pendiente:** las macros declaradas por menú siguen en `menus` sin regla de Firestore.
+    Decisión del propietario (13-10-2026). Separarlas en otro documento sería la única manera de
+    cerrarlo en las reglas.
+- **Alimentos fuera de la Biblioteca** (tarjeta 112, PR #127). Alimentos tiene ruta propia (`/foods`)
+  e ítem en la barra lateral; la Biblioteca queda solo con ejercicios, sin pestañas. `/library?tab=foods`
+  redirige a `/foods`. Los niveles del cliente pasan a «Principiante», «Nivel medio» y «Nivel
+  avanzado», decisión del propietario: lo ya guardado con «Intermedio» o «Avanzado» se conserva.
 
 ### Lo que no es pantalla
 
@@ -957,6 +973,9 @@ Las pantallas del cliente y del panel están en `main`. Desde el 21-09-2026 trab
 (sección «Equipo» de `CLAUDE.md`) y este archivo es un resumen curado que se escribe en un PR de
 documentación después de cada fusión. Lo que queda, con su tarjeta:
 
+- **Kcal y macros por cliente (deuda de la tarjeta 111):** separar las macros declaradas por menú en
+  otro documento, para que las reglas las oculten al cliente con el flag en `false` (ver «Hecho»).
+  Requiere decisión del propietario antes de programarlo.
 - **Alimentos:**
   - **Conectar la API del catálogo común (90).** La API ya existe (`FitnessCRM/food-api`); la
     tarjeta está bloqueada porque la API no tiene CORS y porque falta la URL de su despliegue.
