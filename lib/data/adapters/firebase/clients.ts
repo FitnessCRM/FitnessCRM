@@ -2,6 +2,7 @@ import { limit, orderBy, runTransaction, setDoc, where } from "firebase/firestor
 import { z } from "zod";
 import type { ClientPort, ClientTrackingFilter, ClientTrackingRow } from "@/lib/data/ports";
 import {
+  assertClientStatusChange,
   clientSchema,
   idSchema,
   isoTimestampSchema,
@@ -127,6 +128,7 @@ export function createClientPort(ctx: FirebaseContext): ClientPort {
           trainerId,
           "Cliente",
         );
+        if (changes.status) assertClientStatusChange(current.status, changes.status);
         // La identidad no cambia nunca, lleguen o no en `changes`.
         const next = clientSchema.parse({ ...current, ...changes, trainerId, id: clientId });
         tx.set(docRef, next, { merge: true });
