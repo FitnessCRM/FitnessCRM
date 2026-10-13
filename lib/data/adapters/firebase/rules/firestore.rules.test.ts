@@ -312,6 +312,26 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
     });
   });
 
+  describe("§7 · las tres transiciones del cliente (H6)", () => {
+    it("the trainer discharges an active client and reactivates it", async () => {
+      await assertSucceeds(
+        updateDoc(doc(trainerA(), "clients", "c-a"), { status: "dado_de_baja" }),
+      );
+      await assertSucceeds(updateDoc(doc(trainerA(), "clients", "c-a"), { status: "activo" }));
+    });
+
+    it("the trainer cannot move a client to any other status", async () => {
+      await assertFails(updateDoc(doc(trainerA(), "clients", "c-a"), { status: "invitado" }));
+    });
+
+    it("a discharged client cannot go back to invited", async () => {
+      await assertSucceeds(
+        updateDoc(doc(trainerA(), "clients", "c-a"), { status: "dado_de_baja" }),
+      );
+      await assertFails(updateDoc(doc(trainerA(), "clients", "c-a"), { status: "invitado" }));
+    });
+  });
+
   describe("I1, I2 · cada entrenador, solo lo suyo", () => {
     it("nobody signed in reads or writes anything", async () => {
       await assertFails(getDoc(doc(anon(), "clients", "c-a")));
