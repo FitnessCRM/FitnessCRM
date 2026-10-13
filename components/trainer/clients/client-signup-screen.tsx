@@ -49,6 +49,7 @@ export function ClientSignupScreen() {
         initialNotes: values.initialNotes,
         startDate: values.startDate,
         reviewCadence: { everyDays: DEFAULT_REVIEW_EVERY_DAYS },
+        macrosVisible: values.macrosVisible,
       });
     } catch (cause) {
       setError(t.errors.clientFailed);

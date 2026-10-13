@@ -29,6 +29,7 @@ function client(
     status: "activo",
     startDate,
     reviewCadence: { everyDays: 7 },
+    macrosVisible: true,
     createdAt: ts(startDate),
     ...extra,
   };

@@ -92,6 +92,7 @@ export function buildClients(ctx: SeedContext): Record<ClientKey, Client> {
       status: "activo",
       startDate,
       reviewCadence: { everyDays: 7 },
+      macrosVisible: true,
       createdAt: at(ctx.clock, startDate, "09:30"),
     });
   };

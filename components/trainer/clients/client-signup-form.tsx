@@ -58,6 +58,7 @@ export function ClientSignupForm({
       goal: "",
       level: "",
       initialNotes: "",
+      macrosVisible: true,
       startDate: today,
       membership: {
         type: "trimestral",

@@ -6,7 +6,13 @@ import { QueryBoundary } from "@/components/ui/query-boundary";
 import { EmptyState } from "@/components/ui/states";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DAY_TYPES, type DayType, type MacroTargets, type Menu } from "@/lib/domain";
-import { useActiveMenus, useMacroTargets, useSessionClientId, useTrainer } from "@/lib/data/hooks";
+import {
+  useActiveMenus,
+  useClient,
+  useMacroTargets,
+  useSessionClientId,
+  useTrainer,
+} from "@/lib/data/hooks";
 import { es } from "@/lib/i18n/es";
 import { TrainerNoteCard } from "../trainer-note-card";
 import { MenuCard } from "./menu-card";
@@ -23,7 +29,11 @@ export function MenuScreen() {
   const clientId = useSessionClientId();
   const trainer = useTrainer();
   const menus = useActiveMenus(clientId);
-  const targets = useMacroTargets(clientId);
+  // Tarjeta 111 (I11): sin el flag en `true` no se piden ni se pintan las macros del cliente. Hasta
+  // que llega la ficha tampoco se piden, así la regla de Firestore nunca rechaza la consulta.
+  const client = useClient(clientId);
+  const showMacros = client.data?.macrosVisible === true;
+  const targets = useMacroTargets(showMacros ? clientId : undefined);
   // El tipo de día lo elige el cliente: nada en el dominio dice si hoy toca entrenar.
   const [dayType, setDayType] = useState<DayType>("entrenamiento");
 
@@ -57,17 +67,19 @@ export function MenuScreen() {
             isEmpty={(data) => (data ?? []).filter((m) => m.dayType === dayType).length === 0}
             empty={<EmptyState title={t.menus.empty.title} description={t.menus.empty.hint} />}
           >
-            {(data) => <MenuList menus={data} dayType={dayType} />}
+            {(data) => <MenuList menus={data} dayType={dayType} showMacros={showMacros} />}
           </QueryBoundary>
         </div>
       </div>
 
       <div className="flex flex-col gap-4 max-lg:contents lg:pt-3.5">
-        <div className="max-lg:order-3">
-          <QueryBoundary query={targets} isEmpty={() => false} empty={null}>
-            {(data) => <TargetCard {...splitTargets(data, dayType)} />}
-          </QueryBoundary>
-        </div>
+        {showMacros ? (
+          <div className="max-lg:order-3">
+            <QueryBoundary query={targets} isEmpty={() => false} empty={null}>
+              {(data) => <TargetCard {...splitTargets(data, dayType)} />}
+            </QueryBoundary>
+          </div>
+        ) : null}
         <div className="empty:hidden max-lg:order-4">
           <MenuNote menus={menus.data} dayType={dayType} trainerName={trainer.data?.name} />
         </div>
@@ -84,14 +96,22 @@ function splitTargets(targets: MacroTargets[], dayType: DayType) {
 }
 
 /** El sugerido primero y abierto; los demás, plegados. */
-function MenuList({ menus, dayType }: { menus: Menu[]; dayType: DayType }) {
+function MenuList({
+  menus,
+  dayType,
+  showMacros,
+}: {
+  menus: Menu[];
+  dayType: DayType;
+  showMacros: boolean;
+}) {
   const ofDay = menus
     .filter((m) => m.dayType === dayType)
     .sort((a, b) => Number(b.suggested) - Number(a.suggested));
   return (
     <div className="flex flex-col gap-3">
       {ofDay.map((menu, index) => (
-        <MenuCard key={menu.id} menu={menu} defaultOpen={index === 0} />
+        <MenuCard key={menu.id} menu={menu} defaultOpen={index === 0} showMacros={showMacros} />
       ))}
     </div>
   );

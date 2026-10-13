@@ -16,15 +16,24 @@ const t = es.screensMenu.menus;
 function providesLine(menu: Menu): string {
   const { proteinG, carbsG, fatG } = menu.macros;
   const macros = [
-    `P ${formatNumber(proteinG)}`,
-    `C ${formatNumber(carbsG)}`,
-    `G ${formatNumber(fatG)}`,
+    `${t.macroAbbr.protein} ${formatNumber(proteinG)}`,
+    `${t.macroAbbr.carbs} ${formatNumber(carbsG)}`,
+    `${t.macroAbbr.fat} ${formatNumber(fatG)}`,
   ];
-  return `${t.provides} ${formatInteger(menu.macros.kcal)} ${es.screensMenu.target.kcal} · ${macros.join(" · ")}`;
+  return `${t.provides} ${formatInteger(menu.macros.kcal)} ${es.screensMenu.target.kcal}${t.macroSeparator}${macros.join(t.macroSeparator)}`;
 }
 
 /** Un menú del tipo de día elegido: comidas y alimentos con su peso. Sugerencia, no registro. */
-export function MenuCard({ menu, defaultOpen }: { menu: Menu; defaultOpen: boolean }) {
+export function MenuCard({
+  menu,
+  defaultOpen,
+  showMacros,
+}: {
+  menu: Menu;
+  defaultOpen: boolean;
+  /** Tarjeta 111: sin esto no se pinta ninguna kcal ni macro del menú; el peso por alimento sí. */
+  showMacros: boolean;
+}) {
   const [open, setOpen] = useState(defaultOpen);
   const panelId = `menu-${menu.id}`;
 
@@ -48,9 +57,11 @@ export function MenuCard({ menu, defaultOpen }: { menu: Menu; defaultOpen: boole
             {t.suggested}
           </span>
         ) : null}
-        <span className="text-text-muted ml-auto text-[13px] max-sm:order-last max-sm:ml-0 max-sm:w-full">
-          {providesLine(menu)}
-        </span>
+        {showMacros ? (
+          <span className="text-text-muted ml-auto text-[13px] max-sm:order-last max-sm:ml-0 max-sm:w-full">
+            {providesLine(menu)}
+          </span>
+        ) : null}
         {open ? (
           <ChevronDownIcon aria-hidden className="text-text-muted size-4 shrink-0 max-sm:ml-auto" />
         ) : (
@@ -63,9 +74,11 @@ export function MenuCard({ menu, defaultOpen }: { menu: Menu; defaultOpen: boole
 
       {open ? (
         <div id={panelId} className="flex flex-col gap-4 px-[22px] pb-5">
-          <p className="text-text-subtle border-border-subtle border-t pt-3.5 text-xs leading-snug">
-            {t.declared}
-          </p>
+          {showMacros ? (
+            <p className="text-text-subtle border-border-subtle border-t pt-3.5 text-xs leading-snug">
+              {t.declared}
+            </p>
+          ) : null}
           {menu.meals.map((meal) => (
             <section key={meal.id}>
               <h3 className="text-accent tracking-label mb-1.5 text-[13px] font-semibold uppercase">
