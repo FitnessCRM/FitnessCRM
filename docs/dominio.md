@@ -525,10 +525,14 @@ ese correo, la cuenta recién creada se deshace.
 **Quién es cada cuenta.** Un documento `users/{uid}` con `role` (`trainer` o `client`), `trainerId` y
 `clientId`. No es una entidad del dominio. Lo crea el propio cliente al aceptar la invitación, y las
 reglas lo permiten solo con un correo verificado igual al del cliente invitado; el del entrenador lo
-crea el propietario a mano en la consola, porque no hay alta de entrenadores en la app. No se usan
-*custom claims* porque solo se asignan desde un servidor (SDK de administración, Cloud Functions) y
-el proyecto no lo tiene; se revisará el día que lo tenga. La sesión lleva ese `role`, y es lo que
-decide si se carga el panel del entrenador o el área de cliente.
+crea el propietario a mano en la consola, porque no hay alta de entrenadores en la app. La sesión
+lleva ese `role`, y es lo que decide si se carga el panel del entrenador o el área de cliente.
+
+**Administración de la plataforma.** El panel de administración de la plataforma (repo
+`FitnessAdmin`) entra con un *custom claim* `admin: true` en el token. Lo asigna una persona, una
+vez por cuenta, con el SDK de administración desde un script local (`pnpm set-admin-claim`): no hay
+servidor en producción ni Cloud Functions. Las reglas solo lo usan para dar lectura de `trainers` y
+`clients` (y no de nada más, en especial no de reseñas, pesos ni entrenos). El claim no da escritura.
 
 **Correos.** Firestore compara los correos tal cual y Firebase Auth los guarda en minúsculas. Hasta
 que el esquema los normalice a minúsculas al guardarlos (pendiente: es un cambio de dominio), la
