@@ -36,7 +36,8 @@ service cloud.firestore {
     }
 
     // Administración de la plataforma (docs/dominio.md §12): custom claim `admin: true`, asignado a
-    // mano con el SDK de administración. Solo da lectura de entrenadores y clientes.
+    // mano con el SDK de administración. Da lectura de entrenadores y clientes, y es quien invita a
+    // los entrenadores nuevos (`trainerInvitations`).
     function isPlatformAdmin() {
       return signedIn() && request.auth.token.admin == true;
     }
@@ -118,12 +119,14 @@ service cloud.firestore {
 
     // ---------------------------------------------------------------- cuentas
 
-    // Cada cuenta puede leer su propio puente, y solo se crea al aceptar una invitación: el correo
-    // verificado de la cuenta es el del cliente invitado. Nunca se edita ni se borra desde la app.
-    // El `users/{uid}` de un entrenador lo crea el propietario a mano (la consola salta las reglas).
+    // Cada cuenta puede leer su propio puente, y solo se crea al aceptar una invitación: la de un
+    // cliente (el correo verificado de la cuenta es el del cliente invitado) o la de un entrenador
+    // (la que dejó la administración para ese correo). Nunca se edita ni se borra desde la app.
     match /users/{uid} {
       allow read: if signedIn() && request.auth.uid == uid;
-      allow create: if signedIn() && request.auth.uid == uid && isInvitedClientLink(request.resource.data);
+      allow create: if signedIn() && request.auth.uid == uid
+        && (isInvitedClientLink(request.resource.data)
+          || isInvitedTrainerLink(uid, request.resource.data));
       allow update, delete: if false;
     }
 
@@ -138,14 +141,96 @@ service cloud.firestore {
           == request.auth.token.email.lower();
     }
 
+    // El puente de un entrenador: solo su rol y su id, se crea en el mismo lote que su ficha
+    // (`trainers/{uid}`) y con una invitación de entrenador pendiente para el correo verificado.
+    function isInvitedTrainerLink(uid, d) {
+      return hasVerifiedEmail()
+        && d.keys().hasOnly(['role', 'trainerId'])
+        && d.keys().hasAll(['role', 'trainerId'])
+        && d.role == 'trainer'
+        && d.trainerId == uid
+        && get(trainerInvitationPath()).data.status == 'invitado'
+        && existsAfter(/databases/$(database)/documents/trainers/$(uid));
+    }
+
+    // ---------------------------------------------------------------- invitación de entrenador
+
+    // El alta de un entrenador empieza en la administración: deja `trainerInvitations/{correo}` y
+    // envía al correo un enlace de acceso. El id es el correo en minúsculas, así que las reglas la
+    // encuentran desde el correo verificado del token y no caben dos invitaciones para un correo
+    // (un segundo `set` es una actualización, y la administración no actualiza).
+    function trainerInvitationPath() {
+      return /databases/$(database)/documents/trainerInvitations/$(request.auth.token.email.lower());
+    }
+
+    // Quien abrió el enlace: su correo verificado es el de la invitación.
+    function isTrainerInvitee(email) {
+      return hasVerifiedEmail() && request.auth.token.email.lower() == email;
+    }
+
+    match /trainerInvitations/{email} {
+      allow read: if isPlatformAdmin() || isTrainerInvitee(email);
+      allow create: if isPlatformAdmin() && isValidTrainerInvitation(email, request.resource.data);
+      // Solo la acepta el invitado, al darse de alta (ver `trainers`).
+      allow update: if acceptsTrainerInvitation(email);
+      // La administración retira una invitación pendiente (p. ej., si no pudo enviar el correo);
+      // una aceptada queda como registro del alta.
+      allow delete: if isPlatformAdmin() && resource.data.status == 'invitado';
+    }
+
+    function isValidTrainerInvitation(email, d) {
+      return d.keys().hasOnly(['email', 'name', 'timeZone', 'status', 'createdAt'])
+        && d.keys().hasAll(['email', 'name', 'timeZone', 'status', 'createdAt'])
+        && d.email == email
+        && email == email.lower()
+        && d.name is string && d.name.trim().size() > 0
+        && d.timeZone is string && d.timeZone.trim().size() > 0
+        && d.status == 'invitado'
+        && d.createdAt is string;
+    }
+
+    // Pendiente a `aceptada`, con quién y cuándo, y nada más; en el mismo lote que la ficha del
+    // entrenador.
+    function acceptsTrainerInvitation(email) {
+      return isTrainerInvitee(email)
+        && resource.data.status == 'invitado'
+        && changes().hasOnly(['status', 'trainerId', 'acceptedAt'])
+        && request.resource.data.status == 'aceptada'
+        && request.resource.data.trainerId == request.auth.uid
+        && request.resource.data.acceptedAt is string
+        && existsAfter(/databases/$(database)/documents/trainers/$(request.auth.uid));
+    }
+
     // ---------------------------------------------------------------- entrenador
 
     match /trainers/{tid} {
       allow read: if isTrainer(tid) || isActiveClientOfTrainer(tid) || isPlatformAdmin();
-      // Solo nombre y zona horaria; el correo y el alta no los cambia la app. No hay alta de
-      // entrenadores en la app: la hace el propietario.
+      // Solo nombre y zona horaria; el correo y el alta no los cambia la app.
+      // Solo nombre y zona horaria; el correo y el alta no los cambia la app.
       allow update: if isTrainer(tid) && changes().hasOnly(['name', 'timeZone']);
-      allow create, delete: if false;
+      // El alta la da el propio invitado, con su invitación de entrenador.
+      allow create: if signedIn() && request.auth.uid == tid
+        && signsUpAsInvitedTrainer(tid, request.resource.data);
+      allow delete: if false;
+    }
+
+    // La ficha copia de la invitación pendiente del correo verificado el nombre, el correo y la
+    // zona horaria, y nace en un lote que también crea su puente de entrenador en `users` y deja la
+    // invitación `aceptada`: las tres escrituras salen juntas o no sale ninguna. Sin invitación,
+    // `get` falla y la regla deniega.
+    function signsUpAsInvitedTrainer(tid, d) {
+      let invitation = get(trainerInvitationPath()).data;
+      return hasVerifiedEmail()
+        && d.keys().hasOnly(['id', 'name', 'email', 'timeZone', 'createdAt'])
+        && d.keys().hasAll(['id', 'name', 'email', 'timeZone', 'createdAt'])
+        && d.id == tid
+        && invitation.status == 'invitado'
+        && d.name == invitation.name
+        && d.email == invitation.email
+        && d.timeZone == invitation.timeZone
+        && d.createdAt is string
+        && getAfter(trainerInvitationPath()).data.status == 'aceptada'
+        && getAfter(/databases/$(database)/documents/users/$(tid)).data.role == 'trainer';
     }
 
     // ---------------------------------------------------------------- cliente

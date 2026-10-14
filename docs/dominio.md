@@ -522,17 +522,64 @@ quien lo recibe, porque casi nunca abre el enlace el navegador del entrenador qu
 puede pedir un enlace para cualquier correo, así que, si al aceptar no hay un cliente `invitado` con
 ese correo, la cuenta recién creada se deshace.
 
-**Quién es cada cuenta.** Un documento `users/{uid}` con `role` (`trainer` o `client`), `trainerId` y
-`clientId`. No es una entidad del dominio. Lo crea el propio cliente al aceptar la invitación, y las
-reglas lo permiten solo con un correo verificado igual al del cliente invitado; el del entrenador lo
-crea el propietario a mano en la consola, porque no hay alta de entrenadores en la app. La sesión
-lleva ese `role`, y es lo que decide si se carga el panel del entrenador o el área de cliente.
+**Quién es cada cuenta.** Un documento `users/{uid}` con `role` (`trainer` o `client`), `trainerId` y,
+el de un cliente, `clientId` (y su correo). No es una entidad del dominio. Solo nace al aceptar una
+invitación: lo crea el propio cliente, y las reglas lo permiten solo con un correo verificado igual
+al del cliente invitado; el de un entrenador lo crea el propio entrenador al darse de alta con la
+invitación de la administración (abajo). Nunca se edita ni se borra desde la app. La sesión lleva ese
+`role`, y es lo que decide si se carga el panel del entrenador o el área de cliente. Una cuenta de
+Auth sin `users/{uid}` no es nadie: la app la cierra.
 
 **Administración de la plataforma.** El panel de administración de la plataforma (repo
-`FitnessAdmin`) entra con un *custom claim* `admin: true` en el token. Lo asigna una persona, una
-vez por cuenta, con el SDK de administración desde un script local (`pnpm set-admin-claim`): no hay
-servidor en producción ni Cloud Functions. Las reglas solo lo usan para dar lectura de `trainers` y
-`clients` (y no de nada más, en especial no de reseñas, pesos ni entrenos). El claim no da escritura.
+`FitnessAdmin`) entra con un *custom claim* `admin: true` en el token. Lo asigna una persona, una vez
+por cuenta, con el SDK de administración desde un script local: no hay servidor en producción ni
+Cloud Functions. Las reglas lo usan para dos cosas y nada más: leer `trainers` y `clients` (no
+reseñas, pesos ni entrenos), e invitar entrenadores (crear y retirar invitaciones pendientes en
+`trainerInvitations`). No da ninguna otra escritura.
+
+### Alta de un entrenador: invitación de la administración
+
+**Decidido el 14-10-2026.** Los entrenadores no se dan de alta solos ni los crea nadie a mano: los
+invita la administración, con el mismo mecanismo de enlace que la invitación de un cliente.
+
+1. La administración (FitnessAdmin) escribe `trainerInvitations/{correo}`, con el id en el correo
+   en minúsculas: `{email, name, timeZone, status: 'invitado', createdAt}`. Como `users/{uid}`, no es
+   una entidad del dominio de esta app: su modelo es de la administración, y aquí solo se lee para
+   dar el alta y se marca como aceptada. Después, la administración envía al correo un enlace de
+   acceso que vuelve a `/accept-invite?kind=trainer` de esta app, sin más datos. Si el correo no
+   sale, retira la invitación. Al usar el correo como id, no caben dos invitaciones pendientes para
+   el mismo correo.
+2. El entrenador abre el enlace, vuelve a escribir su correo y elige una contraseña. La página dice
+   que la invitación es de entrenador por `kind=trainer` (`lib/domain/invitation-link.ts`).
+3. Con la cuenta ya creada por el enlace (y el correo, verificado), la app lee la invitación de ese
+   correo y, en **un solo lote**, crea `trainers/{uid}` `{id, name, email, timeZone, createdAt}` con
+   el nombre, el correo y la zona horaria de la invitación, crea `users/{uid}` `{role: 'trainer',
+   trainerId: uid}` y deja la invitación `aceptada` con `trainerId` y `acceptedAt`. El id del
+   entrenador es el `uid` de su cuenta. Entra directo a su panel.
+
+**Lo que se rechaza.** Sin invitación pendiente para el correo (no la hay, o ya se aceptó), no hay
+alta: la cuenta se borra si la acaba de crear el enlace y, si ya existía, solo se cierra la sesión;
+una cuenta anterior al enlace nunca se borra. Si el correo ya es de alguien de la app (ya tiene
+`users/{uid}`, p. ej. un cliente), tampoco hay alta y esa cuenta queda como estaba, sin cambiar su
+contraseña: un correo, una persona. La contraseña corta y el correo distinto del invitado se
+rechazan como en la invitación de un cliente, sin gastar el enlace.
+
+**Las reglas que lo atan.** Todas miran la invitación desde el correo verificado del token
+(`trainerInvitations/{correo del token en minúsculas}`), así que solo el invitado puede leerla y
+aceptarla:
+
+- `trainerInvitations`: la crea y la retira (solo pendiente) la administración, con exactamente esos
+  campos y `status: 'invitado'`; la lee la administración o el invitado; la actualiza solo el
+  invitado, de `invitado` a `aceptada`, cambiando solo `status`, `trainerId` (su `uid`) y
+  `acceptedAt`, y en el mismo lote que crea su ficha.
+- `trainers/{uid}`: la crea solo la cuenta `uid`, con exactamente esos campos, nombre, correo y zona
+  horaria iguales a los de la invitación pendiente, y en el lote que deja la invitación `aceptada` y
+  crea su `users/{uid}` de entrenador.
+- `users/{uid}`: el de un entrenador, solo `role` y `trainerId` (igual a `uid`), con invitación
+  pendiente y su ficha creada en el mismo lote.
+
+Fuera de alcance por ahora: reenviar o cancelar una invitación desde el panel de la administración, y
+la baja de un entrenador.
 
 **Correos.** Firestore compara los correos tal cual y Firebase Auth los guarda en minúsculas. Hasta
 que el esquema los normalice a minúsculas al guardarlos (pendiente: es un cambio de dominio), la

@@ -27,10 +27,27 @@ import { buildClients, buildMemberships, trainer } from "./demo-data/people";
 import { buildDemoClientReviews, buildWeightLogs } from "./demo-data/reviews";
 import { buildRoutines } from "./demo-data/routines";
 
+/**
+ * Invitación de entrenador que deja la administración de la plataforma (docs/dominio.md §12). No es
+ * una entidad del dominio: la escribe otra app, y esta solo la acepta.
+ */
+export interface MockTrainerInvitation {
+  /** En minúsculas, como el id del documento en Firestore. */
+  email: string;
+  name: string;
+  timeZone: string;
+  status: "invitado" | "aceptada";
+  createdAt: string;
+  trainerId?: string;
+  acceptedAt?: string;
+}
+
 /** Todo el estado del adaptador en memoria. Se muta en sitio; los puertos devuelven copias. */
 export interface MockState {
   session: Session;
   trainers: Trainer[];
+  /** La demo no trae ninguna: las añade quien quiera probar el alta de un entrenador. */
+  trainerInvitations: MockTrainerInvitation[];
   clients: Client[];
   memberships: Membership[];
   exercises: Exercise[];
@@ -70,6 +87,7 @@ export function createDemoState(today: CivilDate = demoToday()): MockState {
     // La demo es el entrenador con un cliente a mano: puede recorrer las dos áreas.
     session: { trainerId: TRAINER_ID, clientId: CLIENT_IDS.marta, role: "trainer" },
     trainers: [trainer],
+    trainerInvitations: [],
     clients: buildClients(d),
     memberships: buildMemberships(d),
     exercises,

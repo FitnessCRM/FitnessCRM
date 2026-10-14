@@ -644,6 +644,9 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   pantalla `/accept-invite` sin captura, sobre el layout del login. El alta de cliente envía la
   invitación y, si falla un paso, el reintento repite solo el que falta (antes habría duplicado la
   membresía). `users/{uid}` enlaza cuenta y persona; el del entrenador lo crea el propietario a mano (ya creado, 06-10-2026).
+  Desde el 14-10-2026 los entrenadores nuevos ya no se crean a mano: los invita la administración
+  de la plataforma (`FitnessAdmin`, *custom claim* `admin: true`) y se dan de alta solos desde
+  `/accept-invite?kind=trainer` (`docs/dominio.md` §12, «Alta de un entrenador»).
   El enlace lleva el id del cliente (`?c=`), no su correo. Deuda: los correos no se normalizan a
   minúsculas (cambio de dominio, sin tarjeta); `/login` no redirige a quien ya tiene sesión; el
   cierre de sesión ya está en las dos áreas (tarjetas 50 y 56, PR #61 y #62).
