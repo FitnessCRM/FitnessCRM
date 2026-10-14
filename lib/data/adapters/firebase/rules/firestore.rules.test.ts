@@ -28,7 +28,7 @@ const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
 const T_A = "t-a";
 const T_B = "t-b";
 
-type Claims = { email?: string; email_verified?: boolean };
+type Claims = { email?: string; email_verified?: boolean; admin?: unknown };
 
 describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
   let env: RulesTestEnvironment;
@@ -981,6 +981,223 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
       });
       batch.update(doc(db, "clients", "c-inv"), { status: "activo" });
       await assertSucceeds(batch.commit());
+    });
+  });
+
+  describe("alta de entrenador · la invitación de la plataforma y el alta del invitado", () => {
+    const admin = () => as("u-admin", { admin: true });
+    const NEW = "nueva@hector.test";
+    const USED = "usada@hector.test";
+    const AT = "2026-10-03T08:00:00.000Z";
+
+    const invitation = (email: string, extra: object = {}) => ({
+      email,
+      name: "Nueva",
+      timeZone: "Europe/Madrid",
+      status: "invitado",
+      createdAt: "2026-10-01T08:00:00.000Z",
+      ...extra,
+    });
+
+    // Una invitación pendiente y otra ya aceptada, además de la cartera común.
+    beforeEach(async () => {
+      await env.withSecurityRulesDisabled(async (ctx) => {
+        const db = ctx.firestore();
+        await Promise.all([
+          setDoc(doc(db, "trainerInvitations", NEW), invitation(NEW)),
+          setDoc(
+            doc(db, "trainerInvitations", USED),
+            invitation(USED, { status: "aceptada", trainerId: "u-old", acceptedAt: AT }),
+          ),
+        ]);
+      });
+    });
+
+    type SignUp = {
+      claims?: Claims;
+      trainer?: object;
+      user?: object;
+      accept?: object;
+      skip?: ("trainer" | "user" | "invitation")[];
+    };
+
+    /**
+     * El alta del invitado en un solo lote, como la hará la app: su ficha de entrenador, su puente
+     * en `users` y la invitación aceptada. El correo del token llega con mayúsculas a propósito.
+     */
+    const signUp = (uid: string, opts: SignUp = {}) => {
+      const claims = opts.claims ?? { email: "Nueva@Hector.test" };
+      const db = as(uid, claims);
+      const skip = opts.skip ?? [];
+      const batch = writeBatch(db);
+      if (!skip.includes("trainer")) {
+        batch.set(doc(db, "trainers", uid), {
+          id: uid,
+          name: "Nueva",
+          email: NEW,
+          timeZone: "Europe/Madrid",
+          createdAt: AT,
+          ...opts.trainer,
+        });
+      }
+      if (!skip.includes("user")) {
+        batch.set(doc(db, "users", uid), { role: "trainer", trainerId: uid, ...opts.user });
+      }
+      if (!skip.includes("invitation")) {
+        batch.update(doc(db, "trainerInvitations", (claims.email ?? NEW).toLowerCase()), {
+          status: "aceptada",
+          trainerId: uid,
+          acceptedAt: AT,
+          ...opts.accept,
+        });
+      }
+      return batch.commit();
+    };
+
+    it("the platform admin invites a trainer with a valid invitation", async () => {
+      await assertSucceeds(
+        setDoc(
+          doc(admin(), "trainerInvitations", "otra@hector.test"),
+          invitation("otra@hector.test"),
+        ),
+      );
+    });
+
+    it("nobody else invites: not a trainer, a client, an account without the claim or a guest", async () => {
+      const ref = (db: ReturnType<typeof anon>) =>
+        doc(db, "trainerInvitations", "otra@hector.test");
+      for (const db of [
+        trainerA(),
+        clientA(),
+        as("u-sin"),
+        as("u-falso", { admin: "true" }),
+        anon(),
+      ]) {
+        await assertFails(setDoc(ref(db), invitation("otra@hector.test")));
+      }
+    });
+
+    it("an invitation cannot be overwritten or edited, not even by the admin", async () => {
+      await assertFails(
+        setDoc(doc(admin(), "trainerInvitations", NEW), invitation(NEW, { name: "Otra" })),
+      );
+      await assertFails(updateDoc(doc(admin(), "trainerInvitations", NEW), { status: "aceptada" }));
+    });
+
+    it("refuses an invitation with a bad shape", async () => {
+      const create = (id: string, data: object) =>
+        setDoc(doc(admin(), "trainerInvitations", id), data);
+      const id = "otra@hector.test";
+      await assertFails(create(id, invitation(id, { extra: true })));
+      await assertFails(create(id, invitation(id, { status: "aceptada" })));
+      await assertFails(create(id, invitation("distinta@hector.test")));
+      await assertFails(create("Otra@hector.test", invitation("Otra@hector.test")));
+      await assertFails(create(id, invitation(id, { name: "" })));
+      await assertFails(create(id, invitation(id, { timeZone: "" })));
+      await assertFails(create(id, invitation(id, { createdAt: 1 })));
+      const withoutTimeZone: Record<string, unknown> = invitation(id);
+      delete withoutTimeZone.timeZone;
+      await assertFails(create(id, withoutTimeZone));
+    });
+
+    it("the admin and the invitee read the invitation; nobody else does", async () => {
+      await assertSucceeds(getDoc(doc(admin(), "trainerInvitations", NEW)));
+      await assertSucceeds(getDocs(collection(admin(), "trainerInvitations")));
+      const invitee = as("u-new", { email: "Nueva@Hector.test" });
+      await assertSucceeds(getDoc(doc(invitee, "trainerInvitations", NEW)));
+      await assertFails(getDoc(doc(invitee, "trainerInvitations", USED)));
+      const unverified = as("u-new", { email: NEW, email_verified: false });
+      await assertFails(getDoc(doc(unverified, "trainerInvitations", NEW)));
+      await assertFails(
+        getDoc(doc(as("u-y", { email: "otra@hector.test" }), "trainerInvitations", NEW)),
+      );
+      await assertFails(getDoc(doc(trainerA(), "trainerInvitations", NEW)));
+      await assertFails(getDocs(collection(trainerA(), "trainerInvitations")));
+    });
+
+    it("an account asking for its own missing invitation gets an empty answer", async () => {
+      const db = as("u-z", { email: "nadie@hector.test" });
+      await assertSucceeds(getDoc(doc(db, "trainerInvitations", "nadie@hector.test")));
+    });
+
+    it("the admin deletes a pending invitation, never an accepted one; nobody else deletes", async () => {
+      await assertFails(deleteDoc(doc(trainerA(), "trainerInvitations", NEW)));
+      await assertFails(deleteDoc(doc(as("u-new", { email: NEW }), "trainerInvitations", NEW)));
+      await assertFails(deleteDoc(doc(admin(), "trainerInvitations", USED)));
+      await assertSucceeds(deleteDoc(doc(admin(), "trainerInvitations", NEW)));
+    });
+
+    it("signing up is one batch: trainer record, account link and accepted invitation", async () => {
+      await assertSucceeds(signUp("u-new"));
+      const trainer = as("u-new", { email: NEW });
+      await assertSucceeds(getDoc(doc(trainer, "trainers", "u-new")));
+      await assertSucceeds(getDoc(doc(trainer, "users", "u-new")));
+    });
+
+    it("refuses signing up without a pending invitation or with an unverified email", async () => {
+      await assertFails(signUp("u-new", { claims: { email: "nadie@hector.test" } }));
+      await assertFails(
+        signUp("u-new", { claims: { email: "nadie@hector.test" }, skip: ["invitation"] }),
+      );
+      await assertFails(signUp("u-new", { claims: { email: USED } }));
+      await assertFails(
+        signUp("u-new", { claims: { email: "Nueva@Hector.test", email_verified: false } }),
+      );
+    });
+
+    it("the trainer record matches the invitation exactly", async () => {
+      await assertFails(signUp("u-new", { trainer: { name: "Otra" } }));
+      await assertFails(signUp("u-new", { trainer: { timeZone: "Europe/London" } }));
+      await assertFails(signUp("u-new", { trainer: { email: "otra@hector.test" } }));
+      await assertFails(signUp("u-new", { trainer: { id: "otro" } }));
+      await assertFails(signUp("u-new", { trainer: { createdAt: 1 } }));
+      await assertFails(signUp("u-new", { trainer: { extra: true } }));
+    });
+
+    it("the account link has only the trainer role and its own id", async () => {
+      await assertFails(signUp("u-new", { user: { clientId: null } }));
+      await assertFails(signUp("u-new", { user: { trainerId: T_A } }));
+      await assertFails(signUp("u-new", { user: { role: "client" } }));
+    });
+
+    it("accepting only records who accepted and when", async () => {
+      await assertFails(signUp("u-new", { accept: { name: "Otra" } }));
+      await assertFails(signUp("u-new", { accept: { trainerId: "otro" } }));
+      await assertFails(signUp("u-new", { accept: { status: "invitado" } }));
+      await assertFails(signUp("u-new", { accept: { acceptedAt: 1 } }));
+    });
+
+    it("no write of the sign-up stands alone", async () => {
+      await assertFails(signUp("u-new", { skip: ["trainer", "invitation"] }));
+      await assertFails(signUp("u-new", { skip: ["user", "invitation"] }));
+      await assertFails(signUp("u-new", { skip: ["trainer", "user"] }));
+      await assertFails(signUp("u-new", { skip: ["trainer"] }));
+      await assertFails(signUp("u-new", { skip: ["user"] }));
+      await assertFails(signUp("u-new", { skip: ["invitation"] }));
+    });
+
+    it("the invitee signs up only as themself", async () => {
+      const db = as("u-new", { email: NEW });
+      const batch = writeBatch(db);
+      batch.set(doc(db, "trainers", "u-otro"), {
+        id: "u-otro",
+        name: "Nueva",
+        email: NEW,
+        timeZone: "Europe/Madrid",
+        createdAt: AT,
+      });
+      batch.set(doc(db, "users", "u-otro"), { role: "trainer", trainerId: "u-otro" });
+      batch.update(doc(db, "trainerInvitations", NEW), {
+        status: "aceptada",
+        trainerId: "u-otro",
+        acceptedAt: AT,
+      });
+      await assertFails(batch.commit());
+    });
+
+    it("an accepted invitation cannot be reused", async () => {
+      await assertSucceeds(signUp("u-new"));
+      await assertFails(signUp("u-new2"));
     });
   });
 
