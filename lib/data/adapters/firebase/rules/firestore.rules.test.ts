@@ -983,4 +983,33 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
       await assertSucceeds(batch.commit());
     });
   });
+
+  describe("administración de la plataforma · claim admin, solo lectura de entrenadores y clientes", () => {
+    const admin = () => as("u-admin", { admin: true });
+
+    it("lee todos los entrenadores y todos los clientes, de cualquier entrenador", async () => {
+      await assertSucceeds(getDoc(doc(admin(), "trainers", T_A)));
+      await assertSucceeds(getDoc(doc(admin(), "trainers", T_B)));
+      await assertSucceeds(getDoc(doc(admin(), "clients", "c-a")));
+      await assertSucceeds(getDoc(doc(admin(), "clients", "c-b")));
+    });
+
+    it("no escribe ni en entrenadores ni en clientes", async () => {
+      await assertFails(updateDoc(doc(admin(), "trainers", T_A), { name: "X" }));
+      await assertFails(updateDoc(doc(admin(), "clients", "c-a"), { status: "dado_de_baja" }));
+      await assertFails(setDoc(doc(admin(), "clients", "c-nuevo"), client("c-nuevo", T_A)));
+    });
+
+    it("no abre reseñas, pesos ni registros de entreno", async () => {
+      await assertFails(getDoc(doc(admin(), "reviews", "c-a_3")));
+      await assertFails(getDoc(doc(admin(), "weightLogs", "c-a_2026-09-01")));
+      await assertFails(getDoc(doc(admin(), "workoutLogs", "c-a_2026-09-01")));
+    });
+
+    it("sin el claim, o con admin en otro valor, no lee nada", async () => {
+      await assertFails(getDoc(doc(as("u-sin"), "trainers", T_A)));
+      await assertFails(getDoc(doc(as("u-sin"), "clients", "c-a")));
+      await assertFails(getDoc(doc(as("u-falso", { admin: "true" }), "clients", "c-a")));
+    });
+  });
 });
