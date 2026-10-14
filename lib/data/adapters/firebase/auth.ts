@@ -3,6 +3,7 @@ import {
   confirmPasswordReset,
   connectAuthEmulator,
   deleteUser,
+  getAdditionalUserInfo,
   getAuth,
   isSignInWithEmailLink,
   sendPasswordResetEmail,
@@ -14,10 +15,13 @@ import {
   verifyPasswordResetCode,
   type Auth,
   type User,
+  type UserCredential,
 } from "firebase/auth";
-import { doc, getDoc, writeBatch, type DocumentData } from "firebase/firestore";
+import { doc, getDoc, writeBatch, type DocumentData, type Firestore } from "firebase/firestore";
+import { z } from "zod";
 import type { InvitationPort, PasswordResetPort, Session, SessionPort } from "@/lib/data/ports";
 import { DomainError, clientSchema, emailSchema } from "@/lib/domain";
+import { invitationKind } from "@/lib/domain/invitation-link";
 import type { FirebaseContext } from "./context";
 
 /**
@@ -26,6 +30,12 @@ import type { FirebaseContext } from "./context";
  * primera vez que la cuenta entra. Las reglas de seguridad se apoyan en él.
  */
 const USERS = "users";
+
+/**
+ * Invitaciones de entrenador (docs/dominio.md §12). Las escribe la administración de la plataforma
+ * (FitnessAdmin), con el id en el correo en minúsculas; esta app solo las lee y las acepta.
+ */
+const TRAINER_INVITATIONS = "trainerInvitations";
 
 /** Sesión de nadie: la que devuelve `getSession` sin cuenta abierta, como hacía el mock al salir. */
 const SIGNED_OUT: Session = { trainerId: "", clientId: null, role: null };
@@ -85,10 +95,76 @@ async function resolveSession(ctx: FirebaseAuthContext, user: User): Promise<Ses
     const data = known.data() as DocumentData;
     return { trainerId: data.trainerId, clientId: data.clientId ?? null, role: data.role };
   }
-  // Un entrenador no se enlaza solo: el propietario crea su `users/{uid}` a mano al dar de alta su
-  // cuenta, porque un correo sin verificar no demuestra quién es. Sin ese documento no hay persona.
+  // `users/{uid}` solo nace al aceptar una invitación, de cliente o de entrenador: una cuenta sin él
+  // (un alta que no terminó, un correo que nadie invitó) no es nadie de la cartera.
   await signOut(ctx.auth);
   throw new DomainError("session.no_profile", "La cuenta no corresponde a nadie de la cartera");
+}
+
+/**
+ * Lo que el alta de un entrenador copia de su invitación. Como `users/{uid}`, la invitación no es
+ * una entidad del dominio de esta app (docs/dominio.md §12): su modelo es de la administración
+ * (FitnessAdmin), y aquí solo se comprueba lo que el alta necesita leer de ella.
+ */
+export interface PendingTrainerInvitation {
+  email: string;
+  name: string;
+  timeZone: string;
+}
+
+const pendingTrainerInvitationSchema = z.object({
+  email: z.string(),
+  name: z.string(),
+  timeZone: z.string(),
+  status: z.literal("invitado"),
+});
+
+/**
+ * La invitación de entrenador pendiente de ese correo. `null` si no hay, ya se aceptó, está mal
+ * formada o no se puede leer: en todos los casos no hay alta que dar. Las reglas solo dejan leerla
+ * a quien entra con ese correo verificado (o a la administración).
+ */
+export async function findPendingTrainerInvitation(
+  db: Firestore,
+  email: string,
+): Promise<PendingTrainerInvitation | null> {
+  const snap = await getDoc(doc(db, TRAINER_INVITATIONS, email.trim().toLowerCase())).catch(
+    () => null,
+  );
+  const parsed = snap?.exists() ? pendingTrainerInvitationSchema.safeParse(snap.data()) : null;
+  if (!parsed?.success) return null;
+  const { email: invited, name, timeZone } = parsed.data;
+  return { email: invited, name, timeZone };
+}
+
+/**
+ * Da de alta al entrenador invitado con la cuenta `uid`: su ficha (`trainers/{uid}`, con el nombre,
+ * el correo y la zona horaria de la invitación), su puente (`users/{uid}`) y la invitación
+ * `aceptada`. Un lote, porque las reglas solo aceptan las tres escrituras juntas: o queda dado de
+ * alta del todo, o nada.
+ */
+export async function signUpInvitedTrainer(
+  ctx: FirebaseContext,
+  uid: string,
+  invitation: PendingTrainerInvitation,
+): Promise<Session> {
+  const now = ctx.now();
+  await writeBatch(ctx.db)
+    .set(doc(ctx.db, "trainers", uid), {
+      id: uid,
+      name: invitation.name,
+      email: invitation.email,
+      timeZone: invitation.timeZone,
+      createdAt: now,
+    })
+    .set(doc(ctx.db, USERS, uid), { role: "trainer", trainerId: uid })
+    .update(doc(ctx.db, TRAINER_INVITATIONS, invitation.email), {
+      status: "aceptada",
+      trainerId: uid,
+      acceptedAt: now,
+    })
+    .commit();
+  return { trainerId: uid, clientId: null, role: "trainer" };
 }
 
 export function createSessionPort(ctx: FirebaseAuthContext): SessionPort {
@@ -144,57 +220,107 @@ export function createInvitationPort(ctx: FirebaseAuthContext): InvitationPort {
       if (!isSignInWithEmailLink(ctx.auth, link)) {
         throw new DomainError("invitation.invalid_link", "El enlace no es de invitación");
       }
-      const clientId = invitedClientId(link);
-      if (!clientId) {
-        throw new DomainError("invitation.invalid_link", "El enlace no dice a qué cliente invita");
+      const kind = invitationKind(link);
+      const clientId = kind === "client" ? invitedClientId(link) : null;
+      if (kind === null || (kind === "client" && !clientId)) {
+        throw new DomainError("invitation.invalid_link", "El enlace no dice a quién invita");
       }
       if (password.length < MIN_PASSWORD_LENGTH) {
         throw new DomainError("invitation.weak_password", "La contraseña es demasiado corta");
       }
-      let user: User;
-      try {
-        ({ user } = await signInWithEmailLink(ctx.auth, email.trim(), link));
-      } catch (error) {
-        const code = errorCode(error);
-        if (code === "auth/invalid-email") {
-          throw new DomainError("invitation.email_mismatch", "El correo no es el invitado");
-        }
-        if (code === "auth/invalid-action-code" || code === "auth/expired-action-code") {
-          throw new DomainError("invitation.invalid_link", "El enlace caducó o ya se usó");
-        }
-        throw error;
-      }
-      // Hasta aquí la cuenta existe en Auth, pero solo ahora se puede leer la cartera para saber si
-      // alguien invitó de verdad a este correo: cualquiera puede pedir un enlace para cualquier
-      // dirección. Si el cliente no existe, ya entró o su correo es otro, la cuenta recién creada
-      // se deshace.
-      const clientSnap = await getDoc(doc(ctx.db, "clients", clientId)).catch(() => null);
-      const parsed = clientSnap?.exists()
-        ? clientSchema.safeParse({ ...clientSnap.data(), id: clientSnap.id })
-        : null;
-      const client = parsed?.success ? parsed.data : null;
-      if (
-        !client ||
-        client.status !== "invitado" ||
-        client.email.toLowerCase() !== email.trim().toLowerCase()
-      ) {
-        await deleteUser(user);
-        throw new DomainError("invitation.not_found", "Ningún cliente invitado tiene ese correo");
-      }
-      await updatePassword(user, password);
-      // Un lote: o la cuenta queda enlazada con su cliente y activa, o ninguna de las dos cosas.
-      await writeBatch(ctx.db)
-        .set(doc(ctx.db, USERS, user.uid), {
-          role: "client",
-          trainerId: client.trainerId,
-          clientId: client.id,
-          email: client.email,
-        })
-        .update(doc(ctx.db, "clients", client.id), { status: "activo" })
-        .commit();
-      return { trainerId: client.trainerId, clientId: client.id, role: "client" };
+      const credential = await signInWithInvitationLink(ctx, email, link);
+      return clientId
+        ? acceptClientInvitation(ctx, credential.user, { clientId, email, password })
+        : acceptTrainerInvitation(ctx, credential, password);
     },
   };
+}
+
+/** Entra con el enlace, que es de un solo uso: a partir de aquí ya no se puede volver a usar. */
+async function signInWithInvitationLink(
+  ctx: FirebaseAuthContext,
+  email: string,
+  link: string,
+): Promise<UserCredential> {
+  try {
+    return await signInWithEmailLink(ctx.auth, email.trim(), link);
+  } catch (error) {
+    const code = errorCode(error);
+    if (code === "auth/invalid-email") {
+      throw new DomainError("invitation.email_mismatch", "El correo no es el invitado");
+    }
+    if (code === "auth/invalid-action-code" || code === "auth/expired-action-code") {
+      throw new DomainError("invitation.invalid_link", "El enlace caducó o ya se usó");
+    }
+    throw error;
+  }
+}
+
+/**
+ * El alta de un entrenador invitado por la administración. Cualquiera puede pedir un enlace para
+ * cualquier correo, así que la invitación se busca con el correo ya verificado. Sin invitación
+ * pendiente, la cuenta se deshace si la acaba de crear el enlace; una que ya existía (de otra
+ * persona de la app, o de un alta anterior) solo se cierra, nunca se borra. Si el correo ya es de
+ * alguien de la app, tampoco se toca: ni su contraseña ni su `users/{uid}`.
+ */
+async function acceptTrainerInvitation(
+  ctx: FirebaseAuthContext,
+  credential: UserCredential,
+  password: string,
+): Promise<Session> {
+  const { user } = credential;
+  const isNewAccount = getAdditionalUserInfo(credential)?.isNewUser === true;
+  const invitation = user.email ? await findPendingTrainerInvitation(ctx.db, user.email) : null;
+  if (!invitation) {
+    await (isNewAccount ? deleteUser(user) : signOut(ctx.auth));
+    throw new DomainError(
+      "invitation.not_found",
+      "Ninguna invitación de entrenador pendiente tiene ese correo",
+    );
+  }
+  if ((await getDoc(doc(ctx.db, USERS, user.uid))).exists()) {
+    await signOut(ctx.auth);
+    throw new DomainError("invitation.already_registered", "El correo ya tiene cuenta en la app");
+  }
+  await updatePassword(user, password);
+  return signUpInvitedTrainer(ctx, user.uid, invitation);
+}
+
+/** El primer acceso de un cliente invitado por su entrenador: pasa de `invitado` a `activo`. */
+async function acceptClientInvitation(
+  ctx: FirebaseAuthContext,
+  user: User,
+  { clientId, email, password }: { clientId: string; email: string; password: string },
+): Promise<Session> {
+  // Hasta aquí la cuenta existe en Auth, pero solo ahora se puede leer la cartera para saber si
+  // alguien invitó de verdad a este correo: cualquiera puede pedir un enlace para cualquier
+  // dirección. Si el cliente no existe, ya entró o su correo es otro, la cuenta recién creada
+  // se deshace.
+  const clientSnap = await getDoc(doc(ctx.db, "clients", clientId)).catch(() => null);
+  const parsed = clientSnap?.exists()
+    ? clientSchema.safeParse({ ...clientSnap.data(), id: clientSnap.id })
+    : null;
+  const client = parsed?.success ? parsed.data : null;
+  if (
+    !client ||
+    client.status !== "invitado" ||
+    client.email.toLowerCase() !== email.trim().toLowerCase()
+  ) {
+    await deleteUser(user);
+    throw new DomainError("invitation.not_found", "Ningún cliente invitado tiene ese correo");
+  }
+  await updatePassword(user, password);
+  // Un lote: o la cuenta queda enlazada con su cliente y activa, o ninguna de las dos cosas.
+  await writeBatch(ctx.db)
+    .set(doc(ctx.db, USERS, user.uid), {
+      role: "client",
+      trainerId: client.trainerId,
+      clientId: client.id,
+      email: client.email,
+    })
+    .update(doc(ctx.db, "clients", client.id), { status: "activo" })
+    .commit();
+  return { trainerId: client.trainerId, clientId: client.id, role: "client" };
 }
 
 export function createPasswordResetPort(ctx: FirebaseAuthContext): PasswordResetPort {

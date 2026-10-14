@@ -196,6 +196,159 @@ describe.skipIf(!firestoreHost || !authHost)("adaptador de Firebase · auth", ()
     expect(ctx.auth.currentUser).toBeNull();
   });
 
+  describe("trainer invitation", () => {
+    const TRAINER_INVITE_URL = `${INVITE_URL}?kind=trainer`;
+
+    /** Lo que deja la administración: la invitación y el enlace al correo. */
+    async function inviteTrainer(to: string, status = "invitado"): Promise<string> {
+      await setDoc(doc(db, "trainerInvitations", to.toLowerCase()), {
+        email: to.toLowerCase(),
+        name: "Nueva Entrenadora",
+        timeZone: "America/Mexico_City",
+        status,
+        createdAt: "2026-10-13T08:00:00.000Z",
+      });
+      return sendLink(to);
+    }
+
+    async function sendLink(to: string): Promise<string> {
+      const { sendSignInLinkToEmail } = await import("firebase/auth");
+      await sendSignInLinkToEmail(ctx.auth, to, { url: TRAINER_INVITE_URL, handleCodeInApp: true });
+      return lastLinkFor(to);
+    }
+
+    it("accepting creates the trainer, its users/{uid} and accepts the invitation in one go", async () => {
+      const trainerEmail = `entrena${n}-${Date.now()}@hector.test`;
+      const link = await inviteTrainer(trainerEmail);
+      const invitations = createInvitationPort(ctx);
+      expect(invitations.isInvitationLink(link)).toBe(true);
+
+      const session = await invitations.acceptInvitation({
+        email: trainerEmail,
+        link,
+        password: "secreto-1",
+      });
+      const uid = ctx.auth.currentUser?.uid as string;
+      expect(uid).toBeTruthy();
+      expect(session).toEqual({ trainerId: uid, clientId: null, role: "trainer" });
+
+      const trainer = (await getDoc(doc(db, "trainers", uid))).data();
+      expect(trainer).toEqual({
+        id: uid,
+        name: "Nueva Entrenadora",
+        email: trainerEmail,
+        timeZone: "America/Mexico_City",
+        createdAt: expect.any(String),
+      });
+      expect(Number.isNaN(Date.parse(trainer?.createdAt))).toBe(false);
+      expect((await getDoc(doc(db, "users", uid))).data()).toEqual({
+        role: "trainer",
+        trainerId: uid,
+      });
+      expect((await getDoc(doc(db, "trainerInvitations", trainerEmail))).data()).toMatchObject({
+        status: "aceptada",
+        trainerId: uid,
+        acceptedAt: expect.any(String),
+      });
+
+      // Después entra con correo y contraseña, y la sesión es la de un entrenador.
+      const sessions = createSessionPort(ctx);
+      await sessions.logout();
+      expect(await sessions.login(trainerEmail, "secreto-1")).toEqual(session);
+    });
+
+    it("without a pending invitation the account the link just created is deleted", async () => {
+      const stranger = `sin-invitacion${n}-${Date.now()}@hector.test`;
+      const link = await sendLink(stranger);
+      await expect(
+        createInvitationPort(ctx).acceptInvitation({
+          email: stranger,
+          link,
+          password: "secreto-1",
+        }),
+      ).rejects.toMatchObject({ code: "invitation.not_found" });
+      expect(ctx.auth.currentUser).toBeNull();
+      await expect(createSessionPort(ctx).login(stranger, "secreto-1")).rejects.toMatchObject({
+        code: "session.invalid_credentials",
+      });
+    });
+
+    it("an invitation already accepted is not a pending one", async () => {
+      const trainerEmail = `ya-aceptada${n}-${Date.now()}@hector.test`;
+      const link = await inviteTrainer(trainerEmail, "aceptada");
+      await expect(
+        createInvitationPort(ctx).acceptInvitation({
+          email: trainerEmail,
+          link,
+          password: "secreto-1",
+        }),
+      ).rejects.toMatchObject({ code: "invitation.not_found" });
+      expect(ctx.auth.currentUser).toBeNull();
+      await expect(createSessionPort(ctx).login(trainerEmail, "secreto-1")).rejects.toMatchObject({
+        code: "session.invalid_credentials",
+      });
+    });
+
+    it("without a pending invitation an account that already existed is only signed out", async () => {
+      const { createUserWithEmailAndPassword } = await import("firebase/auth");
+      const existing = `previa${n}-${Date.now()}@hector.test`;
+      await createUserWithEmailAndPassword(ctx.auth, existing, "previa-123");
+      await ctx.auth.signOut();
+      const link = await sendLink(existing);
+      await expect(
+        createInvitationPort(ctx).acceptInvitation({ email: existing, link, password: "otra-456" }),
+      ).rejects.toMatchObject({ code: "invitation.not_found" });
+      expect(ctx.auth.currentUser).toBeNull();
+      // La cuenta sigue ahí, con su contraseña de antes: no tiene persona, pero no se borró.
+      await expect(createSessionPort(ctx).login(existing, "previa-123")).rejects.toMatchObject({
+        code: "session.no_profile",
+      });
+    });
+
+    it("an email that already has an account in the app is not signed up again", async () => {
+      // El correo es el de un cliente que ya aceptó su invitación.
+      const invitations = createInvitationPort(ctx);
+      await invitations.sendInvitation(TRAINER.id, clientId);
+      await invitations.acceptInvitation({
+        email,
+        link: await lastLinkFor(email),
+        password: "cliente-1",
+      });
+      await ctx.auth.signOut();
+
+      const link = await inviteTrainer(email);
+      await expect(
+        invitations.acceptInvitation({ email, link, password: "entrenador-1" }),
+      ).rejects.toMatchObject({ code: "invitation.already_registered" });
+      expect(ctx.auth.currentUser).toBeNull();
+      expect((await getDoc(doc(db, "trainerInvitations", email))).data()?.status).toBe("invitado");
+      // La cuenta del cliente queda como estaba: misma contraseña, misma persona.
+      expect(await createSessionPort(ctx).login(email, "cliente-1")).toEqual({
+        trainerId: TRAINER.id,
+        clientId,
+        role: "client",
+      });
+    });
+
+    it("rejects another email and a weak password without spending the link", async () => {
+      const trainerEmail = `entrena-mal${n}-${Date.now()}@hector.test`;
+      const link = await inviteTrainer(trainerEmail);
+      const invitations = createInvitationPort(ctx);
+      await expect(
+        invitations.acceptInvitation({ email: trainerEmail, link, password: "123" }),
+      ).rejects.toMatchObject({ code: "invitation.weak_password" });
+      await expect(
+        invitations.acceptInvitation({ email: "otra@hector.test", link, password: "secreto-1" }),
+      ).rejects.toMatchObject({ code: "invitation.email_mismatch" });
+      const session = await invitations.acceptInvitation({
+        email: trainerEmail,
+        link,
+        password: "secreto-1",
+      });
+      expect(session.role).toBe("trainer");
+    });
+  });
+
   it("a trainer logs in through the users/{uid} document the owner created for the account", async () => {
     const sessions = createSessionPort(ctx);
     const { createUserWithEmailAndPassword } = await import("firebase/auth");

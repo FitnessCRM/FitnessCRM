@@ -86,6 +86,7 @@ export const es = {
         errorWeak: "La contraseña debe tener al menos 6 caracteres",
         errorEmail: "Ese email no es el de la invitación",
         errorNotFound: "No hay ninguna invitación pendiente para ese email",
+        errorRegistered: `Este correo ya tiene una cuenta en ${APP_NAME}. Inicia sesión o escribe a soporte.`,
         errorNetwork: "No se ha podido conectar",
       },
       invalid: {
@@ -93,6 +94,13 @@ export const es = {
         description:
           "El enlace ha caducado o ya se ha usado. Pide a tu entrenador que te envíe otro.",
         toLogin: "Ir al acceso",
+      },
+      /** Lo que cambia cuando el enlace es la invitación de un entrenador (la envía la administración). */
+      trainer: {
+        subtitle: `Te han invitado a ${APP_NAME} como entrenador. Elige una contraseña para crear tu cuenta.`,
+        errorNotFound: "No hay ninguna invitación de entrenador pendiente para este correo.",
+        invalidDescription:
+          "El enlace ha caducado o ya se ha usado. Escribe a soporte para que te envíen otro.",
       },
     },
     forgotPassword: {

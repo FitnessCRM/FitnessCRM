@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { menuBodySchema, routineBodySchema } from "@/lib/domain";
 import { createDemoState, createMockPorts, type MockState } from "../../mock";
 import { CLIENT_IDS, TRAINER_ID } from "../../mock/demo-data/common";
+import { findPendingTrainerInvitation, signUpInvitedTrainer } from "../auth";
 import { createMeasurementTypePort, createQuestionnairePort } from "../catalogs";
 import { createClientPort } from "../clients";
 import { createFirebaseContext } from "../context";
@@ -466,6 +467,69 @@ describe.skipIf(!emulatorHost)("el adaptador de Firebase bajo las reglas de segu
       expect((await clients.getClient(TRAINER_ID, CLIENT_IDS.marta))?.id).toBe(CLIENT_IDS.marta);
       await expect(clients.getClient(TRAINER_ID, CLIENT_IDS.jorge)).rejects.toThrow();
       await expect(clients.listClients(TRAINER_ID)).rejects.toThrow();
+    });
+  });
+
+  describe("como entrenador invitado", () => {
+    const EMAIL = "nueva@entrena.test";
+    const UID = "u-nueva";
+    const INVITATION = {
+      email: EMAIL,
+      name: "Nueva Entrenadora",
+      timeZone: "America/Mexico_City",
+      status: "invitado",
+      createdAt: "2026-10-02T08:00:00.000Z",
+    };
+
+    /** La cuenta recién creada por el enlace: correo verificado y todavía sin `users/{uid}`. */
+    const invitee = (uid = UID, email = EMAIL) =>
+      createFirebaseContext(
+        env
+          .authenticatedContext(uid, { email, email_verified: true })
+          .firestore() as unknown as Firestore,
+        { now: () => NOW },
+      );
+
+    beforeEach(async () => {
+      await env.withSecurityRulesDisabled(async (admin) => {
+        await setDoc(doc(admin.firestore(), "trainerInvitations", EMAIL), INVITATION);
+      });
+    });
+
+    it("reads its pending invitation and signs up in the one batch the rules accept", async () => {
+      const ctx = invitee();
+      const invitation = await findPendingTrainerInvitation(ctx.db, EMAIL);
+      expect(invitation).toEqual({
+        email: EMAIL,
+        name: INVITATION.name,
+        timeZone: INVITATION.timeZone,
+      });
+      await expect(signUpInvitedTrainer(ctx, UID, invitation!)).resolves.toEqual({
+        trainerId: UID,
+        clientId: null,
+        role: "trainer",
+      });
+      // Ya es entrenador: lee su ficha con el puerto de siempre, y su invitación ya no está pendiente.
+      expect(await createTrainerPort(ctx).getTrainer(UID)).toEqual({
+        id: UID,
+        name: INVITATION.name,
+        email: EMAIL,
+        timeZone: INVITATION.timeZone,
+        createdAt: NOW,
+      });
+      expect(await findPendingTrainerInvitation(ctx.db, EMAIL)).toBeNull();
+    });
+
+    it("another email finds no invitation and cannot sign up with someone else's", async () => {
+      const ctx = invitee("u-intruso", "intruso@entrena.test");
+      expect(await findPendingTrainerInvitation(ctx.db, "intruso@entrena.test")).toBeNull();
+      await expect(
+        signUpInvitedTrainer(ctx, "u-intruso", {
+          email: EMAIL,
+          name: INVITATION.name,
+          timeZone: INVITATION.timeZone,
+        }),
+      ).rejects.toThrow();
     });
   });
 });
