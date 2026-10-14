@@ -984,7 +984,6 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
     });
   });
 
-<<<<<<< HEAD
   describe("alta de entrenador · la invitación de la plataforma y el alta del invitado", () => {
     const admin = () => as("u-admin", { admin: true });
     const NEW = "nueva@hector.test";
@@ -1201,9 +1200,6 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
       await assertFails(signUp("u-new2"));
     });
   });
-
-=======
->>>>>>> origin/main
   describe("administración de la plataforma · claim admin, solo lectura de entrenadores y clientes", () => {
     const admin = () => as("u-admin", { admin: true });
 
