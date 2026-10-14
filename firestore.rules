@@ -35,6 +35,12 @@ service cloud.firestore {
       return signedIn() && exists(profileRef());
     }
 
+    // Administración de la plataforma (docs/dominio.md §12): custom claim `admin: true`, asignado a
+    // mano con el SDK de administración. Solo da lectura de entrenadores y clientes.
+    function isPlatformAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
     // El entrenador `tid`.
     function isTrainer(tid) {
       return hasProfile() && get(profileRef()).data.role == 'trainer'
@@ -135,7 +141,7 @@ service cloud.firestore {
     // ---------------------------------------------------------------- entrenador
 
     match /trainers/{tid} {
-      allow read: if isTrainer(tid) || isActiveClientOfTrainer(tid);
+      allow read: if isTrainer(tid) || isActiveClientOfTrainer(tid) || isPlatformAdmin();
       // Solo nombre y zona horaria; el correo y el alta no los cambia la app. No hay alta de
       // entrenadores en la app: la hace el propietario.
       allow update: if isTrainer(tid) && changes().hasOnly(['name', 'timeZone']);
@@ -150,7 +156,8 @@ service cloud.firestore {
       // sin `users/{uid}`) lee la ficha a la que invitan con su correo.
       allow read: if isTrainer(resource.data.trainerId)
         || isOwnClientRecord(resource.data.trainerId, cid)
-        || isInvitationRecipient();
+        || isInvitationRecipient()
+        || isPlatformAdmin();
 
       // I2: nace de un entrenador y siempre `invitado` (§7).
       allow create: if isTrainer(request.resource.data.trainerId)
