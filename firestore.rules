@@ -36,8 +36,12 @@ service cloud.firestore {
     }
 
     // Administración de la plataforma (docs/dominio.md §12): custom claim `admin: true`, asignado a
+<<<<<<< HEAD
     // mano con el SDK de administración. Da lectura de entrenadores y clientes, y es quien invita a
     // los entrenadores nuevos (`trainerInvitations`).
+=======
+    // mano con el SDK de administración. Solo da lectura de entrenadores y clientes.
+>>>>>>> origin/main
     function isPlatformAdmin() {
       return signedIn() && request.auth.token.admin == true;
     }
@@ -205,7 +209,12 @@ service cloud.firestore {
 
     match /trainers/{tid} {
       allow read: if isTrainer(tid) || isActiveClientOfTrainer(tid) || isPlatformAdmin();
+<<<<<<< HEAD
       // Solo nombre y zona horaria; el correo y el alta no los cambia la app.
+=======
+      // Solo nombre y zona horaria; el correo y el alta no los cambia la app. No hay alta de
+      // entrenadores en la app: la hace el propietario.
+>>>>>>> origin/main
       allow update: if isTrainer(tid) && changes().hasOnly(['name', 'timeZone']);
       // El alta la da el propio invitado, con su invitación de entrenador.
       allow create: if signedIn() && request.auth.uid == tid
