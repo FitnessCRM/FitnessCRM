@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 13-10-2026. Corresponde a `main` en `9a25167` (PR #127). Están en `main` los
+Última actualización: 18-10-2026. Corresponde a `main` en `75b300f` (PR #136). Están en `main` los
 cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
 seguridad, el adaptador de Firebase, el modo sin conexión del cliente, la capa de datos de los
 alimentos y sus pantallas, el flag de kcal y macros por cliente y la sección Alimentos propia; el
@@ -602,14 +602,41 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
     bien. Sin arreglo ni tarjeta. **No probado:** Firefox.
 
 - **Kcal y macros por cliente** (tarjeta 111, PR #125 y #126). `macrosVisible` en la ficha del
-  cliente, por defecto `true`; el entrenador lo marca con un checkbox en el alta y en la edición, y
-  el cliente no lo ve ni lo cambia. La regla de Firestore oculta `macroTargets` con el flag en
+  cliente, por defecto `true`; el entrenador lo marca con un checkbox en el alta y en la edición.
+  Desde la tarjeta 113 también lo cambia el propio cliente, desde su perfil (abajo). La regla de
+  Firestore oculta `macroTargets` con el flag en
   `false` (tests de emulador). El menú de cliente no pide ni pinta kcal ni macros con el flag
   apagado, y conserva el peso por alimento. La enmienda a I11 está en `docs/dominio.md` (PR #125).
   - **Decisiones:** sin migración (el campo ausente cuenta como `true`); el backfill se descartó.
   - **Pendiente:** las macros declaradas por menú siguen en `menus` sin regla de Firestore.
     Decisión del propietario (13-10-2026). Separarlas en otro documento sería la única manera de
     cerrarlo en las reglas.
+- **El cliente también cambia sus kcal y macros** (tarjeta 113, PR #133, #135 y #136).
+  `macrosVisible` sigue siendo un único valor, por defecto `true`, y ahora lo cambian el entrenador,
+  desde la ficha, y el cliente, desde su perfil; gana la última escritura. I11 y la fila Client de
+  §4 lo recogen en `docs/dominio.md` (PR #133).
+  - **Datos** (PR #135): `ClientPort.setMacrosVisible(clientId, visible)` escribe solo ese campo
+    para el cliente de la sesión con la ficha `activo`; si no, `not_found`. El entrenador sigue con
+    `updateClient`. `useSetMacrosVisible` escribe la ficha nueva en la caché de `useClient` y la
+    invalida. En `firestore.rules`, `clientSetsMacrosVisible` deja al cliente activo cambiar solo
+    `macrosVisible` y solo con un booleano; es disjunta con `acceptsInvitation()`, que exige la
+    ficha `invitado` y sigue cambiando solo `status`. Tests de emulador de los dos sentidos, del
+    campo ausente y de los rechazos (otro campo, otro cliente, valor no booleano, `invitado` y
+    `dado_de_baja`).
+  - **Pantallas** (PR #136): tarjeta «Kcal y macros» en el perfil del cliente, con el `Checkbox` de
+    `components/ui/` y sin captura de diseño (repite la estructura de las otras tarjetas del
+    perfil). Mientras guarda, el control se deshabilita y «Guardando…» va en una región
+    `aria-live`; cualquier fallo da el mismo aviso con `role="alert"`. El checkbox del entrenador
+    se queda y su ayuda dice que el cliente también puede cambiarlo. La edición del entrenador solo
+    envía `macrosVisible` si ese campo está `dirty` (`clientEditChanges`, junto al formulario, con
+    test sobre el control de react-hook-form): editar otro dato ya no pisa lo que cambió el
+    cliente con la ficha abierta.
+  - **Deuda:** la escritura del cliente no entra en la cola offline: sin red falla al instante con
+    `network.offline`. Con red a medias, la escritura espera a que vuelva y «Guardando…» no tiene
+    tiempo de espera, por decisión: la escritura se aplicaría después y un error sería falso. Al
+    ocultar las macros, `macroTargets` sigue en la caché persistida del dispositivo hasta que
+    caduca, aunque no se pinte. El fallo de red del hook y el paso de `dirtyFields` del formulario
+    a la pantalla no tienen test: no hay patrón de tests de componentes ni de hooks con React.
 - **Alimentos fuera de la Biblioteca** (tarjeta 112, PR #127). Alimentos tiene ruta propia (`/foods`)
   e ítem en la barra lateral; la Biblioteca queda solo con ejercicios, sin pestañas. `/library?tab=foods`
   redirige a `/foods`. Los niveles del cliente pasan a «Principiante», «Nivel medio» y «Nivel
@@ -939,6 +966,8 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   - **Ejecutada una vez contra el proyecto real el 12-10-2026.** La demo es una foto de ese día:
     las fechas no se refrescan. Sus alimentos están `pendiente` de publicar hasta la tarjeta 90 y
     sus revisiones no tendrán fotos hasta la 17.
+  - **Niveles nuevos** (tarjeta 114, PR #134): el sembrado usa «Nivel medio» y «Nivel avanzado».
+    Los clientes ya sembrados en el proyecto real conservan los viejos, porque el sembrado solo crea.
   - **Documentado** en `CLAUDE.md` (regla 1, «Estructura» y «Comandos») y en la regla 2 de
     `AGENTS.md`, que ya nombran `firebase-admin`, `tsx`, `scripts/` y `pnpm seed:demo`.
 
