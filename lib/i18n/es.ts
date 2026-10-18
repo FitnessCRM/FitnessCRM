@@ -1177,6 +1177,13 @@ export const es = {
       cadenceEvery: { one: "cada día", other: "cada {days} días" },
       trainer: "Tu entrenador",
     },
+    macros: {
+      title: "Kcal y macros",
+      label: "Ver mis kcal y macros",
+      hint: "Si lo desactivas, no verás tus objetivos diarios ni las kcal y macros de cada menú. El peso por alimento sigue visible.",
+      saving: "Guardando…",
+      failed: "No se ha podido guardar. Revisa tu conexión e inténtalo de nuevo.",
+    },
     session: {
       title: "Sesión",
       logout: "Cerrar sesión",
