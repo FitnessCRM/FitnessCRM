@@ -4,9 +4,17 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, QueryBoundary } from "@/components/ui/query-boundary";
-import { useClient, useLogout, useSessionClientId, useTrainer } from "@/lib/data/hooks";
+import {
+  useClient,
+  useLogout,
+  useSessionClientId,
+  useSetMacrosVisible,
+  useTrainer,
+} from "@/lib/data/hooks";
 import { DomainError, weekNumber, type Client, type Trainer } from "@/lib/domain";
 import { formatCivilDate, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
@@ -14,8 +22,9 @@ import { es } from "@/lib/i18n/es";
 const t = es.screensClientProfile;
 
 /**
- * Perfil del cliente. Solo lectura: los datos los edita el entrenador y no hay contraseña que
- * cambiar, porque el acceso es con correo y contraseña y no hay pantalla para cambiarla. Lo único que se hace aquí es cerrar la sesión.
+ * Perfil del cliente. Los datos los edita el entrenador y no hay pantalla para cambiar la
+ * contraseña. Aquí el cliente solo hace dos cosas: enseñar u ocultar sus kcal y macros (I11, que
+ * también puede cambiar el entrenador; gana la última escritura) y cerrar la sesión.
  */
 export function ProfileScreen() {
   const client = useClient(useSessionClientId());
@@ -40,6 +49,50 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <dt className="tracking-label text-text-muted text-xs uppercase sm:pt-0.5">{label}</dt>
       <dd className="min-w-0 text-[15px] break-words">{children}</dd>
     </div>
+  );
+}
+
+/**
+ * Interruptor de kcal y macros. Lo marcado sale de la ficha en caché, sin copia local: el hook
+ * escribe en ella la ficha nueva al guardar. Sin red falla en el acto; si el navegador cree que hay
+ * red pero Firestore no llega, la escritura espera a que vuelva y aquí se ve «Guardando…» todo ese
+ * rato, sin tiempo de espera: la escritura acabaría aplicándose y el error sería falso.
+ */
+function MacrosVisibleCard({ client }: { client: Client }) {
+  const setMacrosVisible = useSetMacrosVisible();
+  const { isPending, isError } = setMacrosVisible;
+  return (
+    <Card className="gap-4 px-[22px] py-[22px]">
+      <h2 className="section-title">{t.macros.title}</h2>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-3">
+          <Checkbox
+            id="pf-macros-visible"
+            checked={client.macrosVisible}
+            disabled={isPending}
+            onCheckedChange={(checked) =>
+              setMacrosVisible.mutate({ clientId: client.id, visible: checked === true })
+            }
+            aria-describedby="pf-macros-visible-hint"
+          />
+          {/* La etiqueta hace de área táctil: 32 px de alto, como pide CLAUDE.md. */}
+          <Label htmlFor="pf-macros-visible" className="min-h-8">
+            {t.macros.label}
+          </Label>
+        </div>
+        <p id="pf-macros-visible-hint" className="text-text-subtle text-xs">
+          {t.macros.hint}
+        </p>
+        <p aria-live="polite" className="text-text-muted text-sm empty:hidden">
+          {isPending ? t.macros.saving : null}
+        </p>
+        {isError ? (
+          <p role="alert" className="text-danger text-sm">
+            {t.macros.failed}
+          </p>
+        ) : null}
+      </div>
+    </Card>
   );
 }
 
@@ -105,6 +158,8 @@ function ProfileView({ client, trainer }: { client: Client; trainer: Trainer | u
           ) : null}
         </dl>
       </Card>
+
+      <MacrosVisibleCard client={client} />
 
       <Card className="gap-4 px-[22px] py-[22px]">
         <h2 className="section-title">{t.session.title}</h2>

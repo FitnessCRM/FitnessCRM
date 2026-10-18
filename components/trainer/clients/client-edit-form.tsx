@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { cadenceSchema, clientDataSchema, type Client } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 import { ClientDataCard, FieldError } from "./client-data-card";
+import type { EditDirtyFields } from "./client-edit-changes";
 
 const t = es.screensClientEdit;
 
@@ -41,7 +42,8 @@ export function ClientEditForm({
   client: Client;
   isSaving: boolean;
   error: string | null;
-  onSubmit: (values: EditValues) => Promise<unknown>;
+  /** `dirty` dice qué campos ha cambiado el entrenador, para no pisar lo que cambie el cliente. */
+  onSubmit: (values: EditValues, dirty: EditDirtyFields) => Promise<unknown>;
 }) {
   const form = useForm<z.input<typeof formSchema>, unknown, EditValues>({
     resolver: zodResolver(formSchema),
@@ -58,7 +60,8 @@ export function ClientEditForm({
       reviewEveryDays: String(client.reviewCadence.everyDays),
     },
   });
-  const { errors } = form.formState;
+  // Leer `dirtyFields` al pintar suscribe el formulario a él (react-hook-form solo sigue lo que se lee).
+  const { errors, dirtyFields } = form.formState;
 
   return (
     <FormProvider {...form}>
@@ -66,7 +69,9 @@ export function ClientEditForm({
         noValidate
         onSubmit={form.handleSubmit(async (values) => {
           // El error lo pinta `error`; aquí solo se evita el rechazo sin capturar.
-          await onSubmit(values).catch(() => undefined);
+          await onSubmit(values, { macrosVisible: dirtyFields.macrosVisible }).catch(
+            () => undefined,
+          );
         })}
         className="flex max-w-3xl flex-col gap-6"
       >
