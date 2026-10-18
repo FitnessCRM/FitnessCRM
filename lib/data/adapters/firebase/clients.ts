@@ -1,6 +1,11 @@
-import { limit, orderBy, runTransaction, setDoc, where } from "firebase/firestore";
+import { limit, orderBy, runTransaction, setDoc, updateDoc, where } from "firebase/firestore";
 import { z } from "zod";
-import type { ClientPort, ClientTrackingFilter, ClientTrackingRow } from "@/lib/data/ports";
+import type {
+  ClientPort,
+  ClientTrackingFilter,
+  ClientTrackingRow,
+  SessionPort,
+} from "@/lib/data/ports";
 import {
   assertClientStatusChange,
   clientSchema,
@@ -12,7 +17,7 @@ import {
   routineSchema,
 } from "@/lib/domain";
 import type { FirebaseContext } from "./context";
-import { COLLECTIONS, listOwn, readOwn, ref, txRequireOwn } from "./helpers";
+import { COLLECTIONS, listOwn, notFound, readOwn, ref, txRequireOwn } from "./helpers";
 
 /**
  * Lo único que el seguimiento necesita de una revisión. No se parsea la revisión entera: es el
@@ -25,7 +30,14 @@ const reviewTrackingFieldsSchema = z.object({
   submittedAt: isoTimestampSchema.nullable(),
 });
 
-export function createClientPort(ctx: FirebaseContext): ClientPort {
+/**
+ * `getSession` dice quién es el cliente de la sesión, para `setMacrosVisible`: la única escritura
+ * del cliente sobre su ficha, aparte de aceptar la invitación. Es la del puerto de sesión.
+ */
+export function createClientPort(
+  ctx: FirebaseContext,
+  getSession: SessionPort["getSession"],
+): ClientPort {
   const name = COLLECTIONS.clients;
   return {
     listClients: (trainerId) => listOwn(ctx, name, clientSchema, trainerId),
@@ -134,5 +146,19 @@ export function createClientPort(ctx: FirebaseContext): ClientPort {
         tx.set(docRef, next, { merge: true });
         return next;
       }),
+
+    // I11: el cliente de la sesión, con su ficha activa, y solo este campo: `updateDoc` y no la
+    // ficha entera, para no pisar lo que el entrenador cambie a la vez. Las reglas lo repiten en el
+    // servidor (`clientSetsMacrosVisible`).
+    setMacrosVisible: async (clientId, visible) => {
+      const session = await getSession();
+      const current =
+        session.clientId === clientId
+          ? await readOwn(ctx, name, clientSchema, session.trainerId, clientId)
+          : null;
+      if (current?.status !== "activo") throw notFound("Cliente", clientId);
+      await updateDoc(ref(ctx, name, clientId), { macrosVisible: visible });
+      return { ...current, macrosVisible: visible };
+    },
   };
 }

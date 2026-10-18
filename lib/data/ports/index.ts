@@ -41,6 +41,11 @@ export type * from "./workout-logs";
  *   entrenador (I3): `routine.exercise_not_in_library`.
  * - El vídeo del feedback es un enlace http(s) (I20): `review.feedback_invalid_url`.
  * - Las identidades (`id`, `trainerId`, `clientId`) no cambian en una edición, lleguen o no.
+ * - Aparte de aceptar la invitación, la única escritura del cliente sobre su ficha es
+ *   `setMacrosVisible` (I11): no recibe
+ *   `trainerId`, sino que la sesión dice quién escribe. Solo vale para el cliente de la sesión, con
+ *   la ficha `activo`, y solo cambia `macrosVisible`; lo demás da `not_found`. Gana la última
+ *   escritura, sea suya o del entrenador.
  * - Los alimentos (I28): la copia propia solo se lee y se escribe con su `trainerId`, y en el
  *   catálogo común solo publica su autor; lo ajeno da `not_found`. El catálogo nunca devuelve quién
  *   es el autor de un alimento. Si no responde, lanza `food_catalog.unavailable` y la copia propia

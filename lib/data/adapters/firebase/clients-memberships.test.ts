@@ -1,6 +1,6 @@
-import { doc, setDoc, type Firestore } from "firebase/firestore";
+import { doc, getDoc, setDoc, type Firestore } from "firebase/firestore";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import type { ClientTrackingFilter, MembershipQuery } from "@/lib/data/ports";
+import type { ClientTrackingFilter, MembershipQuery, Session } from "@/lib/data/ports";
 import { createDemoState, createMockPorts, type MockState } from "../mock";
 import { CLIENT_IDS, TRAINER_ID } from "../mock/demo-data/common";
 import { createClientPort } from "./clients";
@@ -18,6 +18,14 @@ const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
 const TODAY = "2026-10-03";
 const NOW = "2026-10-03T10:00:00.000Z";
 const STRANGER = "t-otra";
+
+/** La sesión que el puerto de sesión resolvería: la del entrenador o la de uno de sus clientes. */
+const sessionOf = (clientId: string | null) => async (): Promise<Session> => ({
+  trainerId: TRAINER_ID,
+  clientId,
+  role: clientId ? "client" : "trainer",
+});
+const asTrainer = sessionOf(null);
 
 describe.skipIf(!emulatorHost)("adaptador de Firebase · clientes y membresías", () => {
   let db: Firestore;
@@ -58,7 +66,7 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · clientes y membresías"
     it("lists the same clients as the reference", async () => {
       const byId = <T extends { id: string }>(items: T[]) =>
         [...items].sort((a, b) => a.id.localeCompare(b.id));
-      const clients = createClientPort(ctx);
+      const clients = createClientPort(ctx, asTrainer);
       expect(byId(await clients.listClients(TRAINER_ID))).toEqual(
         byId(await mock().clients.listClients(TRAINER_ID)),
       );
@@ -66,7 +74,7 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · clientes y membresías"
     });
 
     it("tracking pages match the reference, for every filter and page", async () => {
-      const clients = createClientPort(ctx);
+      const clients = createClientPort(ctx, asTrainer);
       const reference = mock().clients;
       const filters: ClientTrackingFilter[] = ["todos", "invitado", "activo", "dado_de_baja"];
       for (const filter of filters) {
@@ -104,7 +112,7 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · clientes y membresías"
     });
 
     it("a stranger sees an empty portfolio", async () => {
-      const page = await createClientPort(ctx).listClientsTracking(STRANGER, {
+      const page = await createClientPort(ctx, asTrainer).listClientsTracking(STRANGER, {
         filter: "todos",
         today: TODAY,
         page: 0,
@@ -115,14 +123,14 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · clientes y membresías"
     });
 
     it("getClient answers only for its own trainer", async () => {
-      const clients = createClientPort(ctx);
+      const clients = createClientPort(ctx, asTrainer);
       expect((await clients.getClient(TRAINER_ID, CLIENT_IDS.marta))?.id).toBe(CLIENT_IDS.marta);
       expect(await clients.getClient(STRANGER, CLIENT_IDS.marta)).toBeNull();
       expect(await clients.getClient(TRAINER_ID, "no-existe")).toBeNull();
     });
 
     it("a new client is always invited, whatever the input says", async () => {
-      const clients = createClientPort(ctx);
+      const clients = createClientPort(ctx, asTrainer);
       const base = state.clients.find((c) => c.id === CLIENT_IDS.marta)!;
       const input = Object.fromEntries(
         Object.entries(base).filter(([key]) => !["id", "createdAt", "status"].includes(key)),
@@ -135,7 +143,7 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · clientes y membresías"
     });
 
     it("an update keeps the identity and a foreign client cannot be updated", async () => {
-      const clients = createClientPort(ctx);
+      const clients = createClientPort(ctx, asTrainer);
       const updated = await clients.updateClient(TRAINER_ID, CLIENT_IDS.marta, {
         goal: "Fuerza",
         // La identidad no se cambia ni aunque se mande.
@@ -149,6 +157,44 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · clientes y membresías"
       await expect(
         clients.updateClient(STRANGER, CLIENT_IDS.marta, { goal: "x" }),
       ).rejects.toMatchObject({ code: "not_found" });
+    });
+
+    it("the session's client flips their own flag both ways, also when it was missing", async () => {
+      // Una ficha anterior a la tarjeta 111, sin el campo, y con un campo que el esquema no conoce:
+      // si el puerto reescribiera la ficha entera en vez de ese campo, se perdería.
+      const raw = state.clients.find((c) => c.id === CLIENT_IDS.marta)!;
+      const withoutFlag = Object.fromEntries(
+        Object.entries(raw).filter(([key]) => key !== "macrosVisible"),
+      );
+      await setDoc(doc(db, COLLECTIONS.clients, CLIENT_IDS.marta), { ...withoutFlag, legacy: 1 });
+      const clients = createClientPort(ctx, sessionOf(CLIENT_IDS.marta));
+      const read = async () =>
+        (await getDoc(doc(db, COLLECTIONS.clients, CLIENT_IDS.marta))).data();
+
+      const hidden = await clients.setMacrosVisible(CLIENT_IDS.marta, false);
+      expect(hidden).toMatchObject({ id: CLIENT_IDS.marta, macrosVisible: false });
+      expect(await read()).toMatchObject({ macrosVisible: false, legacy: 1, goal: raw.goal });
+      await clients.setMacrosVisible(CLIENT_IDS.marta, true);
+      expect(await read()).toMatchObject({ macrosVisible: true, legacy: 1 });
+    });
+
+    it("only the session's client, and only while active, sets the flag", async () => {
+      const notFound = { code: "not_found" };
+      const asMarta = createClientPort(ctx, sessionOf(CLIENT_IDS.marta));
+      await expect(asMarta.setMacrosVisible(CLIENT_IDS.jorge, false)).rejects.toMatchObject(
+        notFound,
+      );
+      await expect(
+        createClientPort(ctx, asTrainer).setMacrosVisible(CLIENT_IDS.marta, false),
+      ).rejects.toMatchObject(notFound);
+      // Sara sigue `invitado` en este archivo; Lucía está de baja.
+      for (const id of [CLIENT_IDS.sara, CLIENT_IDS.lucia]) {
+        await expect(
+          createClientPort(ctx, sessionOf(id)).setMacrosVisible(id, false),
+        ).rejects.toMatchObject(notFound);
+      }
+      const untouched = await createClientPort(ctx, asTrainer).listClients(TRAINER_ID);
+      expect(untouched.every((c) => c.macrosVisible)).toBe(true);
     });
   });
 

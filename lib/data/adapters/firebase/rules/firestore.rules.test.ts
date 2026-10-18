@@ -444,12 +444,6 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
       await assertSucceeds(getDoc(doc(clientA(), "macroTargets", "mt-act")));
     });
 
-    it("a client cannot turn the flag on or off, and the trainer can", async () => {
-      await assertFails(updateDoc(doc(as("u-csin"), "clients", "c-sin"), { macrosVisible: true }));
-      await assertFails(updateDoc(doc(clientA(), "clients", "c-a"), { macrosVisible: false }));
-      await assertSucceeds(updateDoc(doc(trainerA(), "clients", "c-sin"), { macrosVisible: true }));
-    });
-
     it("cannot write routine, menu or macros, nor a membership", async () => {
       await assertFails(updateDoc(doc(clientA(), "routines", "r-act"), { status: "archivado" }));
       await assertFails(updateDoc(doc(clientA(), "menus", "m-act"), { status: "archivado" }));
@@ -460,6 +454,68 @@ describe.skipIf(!emulatorHost)("reglas de seguridad de Firestore", () => {
         updateDoc(doc(clientA(), "memberships", "ms-a"), { paymentStatus: "no_pagada" }),
       );
       await assertSucceeds(getDoc(doc(clientA(), "memberships", "ms-a")));
+    });
+  });
+
+  describe("I11 · el cliente activo enseña u oculta sus kcal y macros, y nada más", () => {
+    const flag = (db: ReturnType<typeof as>, cid: string, data: object) =>
+      updateDoc(doc(db, "clients", cid), data);
+
+    it("an active client flips their own flag both ways, also when it was missing", async () => {
+      // `c-a` nace sin el campo (anterior a la tarjeta 111); `c-sin` lo tiene en `false`.
+      await assertSucceeds(flag(clientA(), "c-a", { macrosVisible: false }));
+      await assertSucceeds(flag(clientA(), "c-a", { macrosVisible: true }));
+      await assertSucceeds(flag(as("u-csin"), "c-sin", { macrosVisible: true }));
+      await assertSucceeds(flag(as("u-csin"), "c-sin", { macrosVisible: false }));
+    });
+
+    it("only that field, only a boolean, and only on their own record", async () => {
+      await assertFails(flag(clientA(), "c-a", { macrosVisible: false, goal: "x" }));
+      await assertFails(flag(clientA(), "c-a", { macrosVisible: true, status: "dado_de_baja" }));
+      await assertFails(flag(clientA(), "c-a", { goal: "x" }));
+      for (const value of ["no", null, 0]) {
+        await assertFails(flag(clientA(), "c-a", { macrosVisible: value }));
+      }
+      await assertFails(flag(clientA(), "c-a2", { macrosVisible: false })); // otro cliente de T_A
+      await assertFails(flag(clientA(), "c-b", { macrosVisible: false })); // cliente de T_B
+      await assertFails(flag(clientA2(), "c-a", { macrosVisible: false }));
+    });
+
+    it("an invited or unsubscribed client cannot, and accepting still moves only the status", async () => {
+      const recipient = () => as("u-new", { email: "nuevo@hector.test" });
+      await env.withSecurityRulesDisabled(async (ctx) => {
+        const db = ctx.firestore();
+        // Una cuenta ya enlazada a una ficha que sigue `invitado`: el que la ficha no esté
+        // `activo` es lo que la frena, no que le falte `users/{uid}`.
+        await setDoc(doc(db, "users", "u-cinv"), {
+          role: "client",
+          trainerId: T_A,
+          clientId: "c-inv",
+          email: "nuevo@hector.test",
+        });
+        await setDoc(doc(db, "users", "u-cbaja"), {
+          role: "client",
+          trainerId: T_A,
+          clientId: "c-baja",
+          email: "c-baja@hector.test",
+        });
+        await setDoc(
+          doc(db, "clients", "c-baja"),
+          client("c-baja", T_A, { status: "dado_de_baja" }),
+        );
+      });
+      await assertFails(flag(as("u-cinv"), "c-inv", { macrosVisible: false }));
+      await assertFails(flag(recipient(), "c-inv", { macrosVisible: false }));
+      await assertFails(flag(recipient(), "c-inv", { status: "activo", macrosVisible: false }));
+      await assertFails(flag(as("u-cbaja"), "c-baja", { macrosVisible: false }));
+      await assertSucceeds(flag(recipient(), "c-inv", { status: "activo" }));
+    });
+
+    it("the trainer still changes it, and only on their own clients", async () => {
+      await assertSucceeds(flag(trainerA(), "c-sin", { macrosVisible: true }));
+      await assertSucceeds(flag(trainerA(), "c-a", { macrosVisible: false }));
+      await assertFails(flag(trainerA(), "c-a", { macrosVisible: "no" }));
+      await assertFails(flag(trainerB(), "c-a", { macrosVisible: true }));
     });
   });
 

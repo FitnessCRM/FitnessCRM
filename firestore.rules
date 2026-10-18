@@ -14,6 +14,9 @@ rules_version = '2';
 //   (con test)           (una rutina activa por cliente pide una consulta), I5, I9, I12, I24 (qué
 //                        peso se copia), I25 (las reglas no consultan las revisiones de un
 //                        pesaje) e I27 (compara con «hoy» en la zona del entrenador).
+//   I11 deja al cliente dos escrituras sobre su propia ficha y ninguna más: el paso de `invitado` a
+//   `activo` al aceptar la invitación y, ya `activo`, `macrosVisible` (tarjeta 113). Ese campo lo
+//   cambian él y el entrenador, y gana la última escritura.
 //   I8 queda a medias: el cliente no puede tocar el catálogo, pero que una medida apunte a un tipo
 //   del mismo entrenador es del adaptador, por la misma razón que I3.
 //   I28 tiene dos mitades: la copia propia (`foods`) es de su entrenador y nadie más la lee ni la
@@ -254,7 +257,8 @@ service cloud.firestore {
           && !changes().hasAny(['createdAt'])
           && trainerChangesStatusValidly()
           && macrosVisibleIsBool())
-        || acceptsInvitation();
+        || acceptsInvitation()
+        || clientSetsMacrosVisible(cid);
 
       // El borrado a petición (§7) es otra operación y tendrá su propia tarjeta (31).
       allow delete: if false;
@@ -285,6 +289,15 @@ service cloud.firestore {
       return isInvitationRecipient()
         && request.resource.data.status == 'activo'
         && changes().hasOnly(['status']);
+    }
+
+    // Tarjeta 113 (I11): el propio cliente enseña u oculta sus kcal y macros, y no toca nada más.
+    // Disjunta con `acceptsInvitation()`: aquella exige la ficha `invitado` y esta `activo`
+    // (`isClient`), así que ninguna de las dos abre la otra.
+    function clientSetsMacrosVisible(cid) {
+      return isClient(resource.data.trainerId, cid)
+        && changes().hasOnly(['macrosVisible'])
+        && request.resource.data.macrosVisible is bool;
     }
 
     // ---------------------------------------------------------------- membresía
