@@ -46,7 +46,7 @@ export const CLIENT_SPECS: Record<ClientKey, ClientSpec> = {
     lastName: "Navarro",
     email: "daniel2003ml+lucas@gmail.com",
     goal: "Ganancia muscular",
-    level: "Intermedio",
+    level: "Nivel medio",
     startDaysAgo: 40,
   },
   irene: {
@@ -55,7 +55,7 @@ export const CLIENT_SPECS: Record<ClientKey, ClientSpec> = {
     lastName: "Soto",
     email: "daniel2003ml+irene@gmail.com",
     goal: "Pérdida de grasa",
-    level: "Avanzado",
+    level: "Nivel avanzado",
     startDaysAgo: 63,
   },
 };
