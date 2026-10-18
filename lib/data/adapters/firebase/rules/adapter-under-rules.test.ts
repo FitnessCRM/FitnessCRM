@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
 import { doc, setDoc, type Firestore } from "firebase/firestore";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import type { Session } from "@/lib/data/ports";
 import { menuBodySchema, routineBodySchema } from "@/lib/domain";
 import { createDemoState, createMockPorts, type MockState } from "../../mock";
 import { CLIENT_IDS, TRAINER_ID } from "../../mock/demo-data/common";
@@ -99,6 +100,12 @@ describe.skipIf(!emulatorHost)("el adaptador de Firebase bajo las reglas de segu
   };
   const trainer = () => as("u-trainer");
   const client = (id: string) => as(`u-${id}`);
+  /** La sesión que el puerto de sesión resuelve para esa cuenta (`users/{uid}`). */
+  const sessionOf = (clientId: string | null) => async (): Promise<Session> => ({
+    trainerId: TRAINER_ID,
+    clientId,
+    role: clientId ? "client" : "trainer",
+  });
 
   describe("como entrenador", () => {
     it("reads and writes the trainer and the clients", async () => {
@@ -108,7 +115,7 @@ describe.skipIf(!emulatorHost)("el adaptador de Firebase bajo las reglas de segu
         (await createTrainerPort(ctx).updateTrainer(TRAINER_ID, { name: "Adrián V." })).name,
       ).toBe("Adrián V.");
 
-      const clients = createClientPort(ctx);
+      const clients = createClientPort(ctx, sessionOf(null));
       expect((await clients.listClients(TRAINER_ID)).length).toBe(state.clients.length);
       const page = await clients.listClientsTracking(TRAINER_ID, {
         filter: "todos",
@@ -463,10 +470,22 @@ describe.skipIf(!emulatorHost)("el adaptador de Firebase bajo las reglas de segu
     });
 
     it("reads their own record and nobody else's", async () => {
-      const clients = createClientPort(client(CLIENT_IDS.marta));
+      const clients = createClientPort(client(CLIENT_IDS.marta), sessionOf(CLIENT_IDS.marta));
       expect((await clients.getClient(TRAINER_ID, CLIENT_IDS.marta))?.id).toBe(CLIENT_IDS.marta);
       await expect(clients.getClient(TRAINER_ID, CLIENT_IDS.jorge)).rejects.toThrow();
       await expect(clients.listClients(TRAINER_ID)).rejects.toThrow();
+    });
+
+    it("shows or hides their own kcal and macros, and the rules let it through", async () => {
+      const clients = createClientPort(client(CLIENT_IDS.marta), sessionOf(CLIENT_IDS.marta));
+      expect((await clients.setMacrosVisible(CLIENT_IDS.marta, false)).macrosVisible).toBe(false);
+      expect((await clients.getClient(TRAINER_ID, CLIENT_IDS.marta))?.macrosVisible).toBe(false);
+      expect((await clients.setMacrosVisible(CLIENT_IDS.marta, true)).macrosVisible).toBe(true);
+      // De baja lee su ficha, pero no la cambia.
+      const lucia = createClientPort(client(CLIENT_IDS.lucia), sessionOf(CLIENT_IDS.lucia));
+      await expect(lucia.setMacrosVisible(CLIENT_IDS.lucia, false)).rejects.toMatchObject({
+        code: "not_found",
+      });
     });
   });
 

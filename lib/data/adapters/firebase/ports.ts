@@ -57,12 +57,13 @@ export function createFirebasePorts(options: FirebasePortsOptions): DataPorts {
     inviteUrl,
     emulatorUrl: authHost ? `http://${authHost}:9099` : undefined,
   });
+  const session = createSessionPort(authCtx);
   return {
-    session: createSessionPort(authCtx),
+    session,
     invitations: createInvitationPort(authCtx),
     passwordReset: createPasswordResetPort(authCtx),
     trainer: createTrainerPort(ctx),
-    clients: createClientPort(ctx),
+    clients: createClientPort(ctx, session.getSession),
     memberships: createMembershipPort(ctx),
     exercises: createExercisePort(ctx),
     ownFoods: createOwnFoodPort(ctx),

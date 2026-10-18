@@ -118,6 +118,16 @@ export function createClientPort(ctx: MockContext): ClientPort {
       const next = clientSchema.parse({ ...current, ...changes, trainerId, id: clientId });
       return ctx.reply(replaceById(ctx.state.clients, next));
     },
+    // I11: el cliente de la sesión, con su ficha activa, y solo este campo. La sesión de demo navega
+    // las dos áreas (`clientId` es Marta), así que se mira el cliente de la sesión y no su rol.
+    setMacrosVisible: async (clientId, visible) => {
+      const { trainerId, clientId: own } = ctx.state.session;
+      const current = findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
+      if (own !== clientId || current.status !== "activo") {
+        throw new DomainError("not_found", `Cliente ${clientId} no existe`);
+      }
+      return ctx.reply(replaceById(ctx.state.clients, { ...current, macrosVisible: visible }));
+    },
   };
 }
 

@@ -1,6 +1,12 @@
 "use client";
 
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  onlineManager,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import type {
   ClientChanges,
   ClientInput,
@@ -9,6 +15,7 @@ import type {
   MembershipInput,
   MembershipQuery,
 } from "@/lib/data/ports";
+import { DomainError } from "@/lib/domain";
 import { usePorts } from "./ports-provider";
 import { queryKeys } from "./query-keys";
 import { useTrainerId } from "./use-session";
@@ -65,6 +72,30 @@ export function useUpdateClient() {
     mutationFn: ({ clientId, changes }: { clientId: string; changes: ClientChanges }) =>
       ports.clients.updateClient(trainerId!, clientId, changes),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.clients(trainerId!) }),
+  });
+}
+
+/**
+ * El cliente de la sesión enseña u oculta sus kcal y macros (I11). No entra en la cola offline de
+ * `offline-writes.ts`: sin red falla en el acto, en vez de quedarse en pausa, para que la pantalla
+ * lo diga. La ficha nueva entra en la caché y además se invalida, por si el entrenador la cambió.
+ */
+export function useSetMacrosVisible() {
+  const ports = usePorts();
+  const queryClient = useQueryClient();
+  return useMutation({
+    networkMode: "always",
+    mutationFn: ({ clientId, visible }: { clientId: string; visible: boolean }) => {
+      if (!onlineManager.isOnline()) {
+        throw new DomainError("network.offline", "Sin conexión: no se guarda");
+      }
+      return ports.clients.setMacrosVisible(clientId, visible);
+    },
+    onSuccess: (client) => {
+      const key = queryKeys.client(client.trainerId, client.id);
+      queryClient.setQueryData(key, client);
+      return queryClient.invalidateQueries({ queryKey: key });
+    },
   });
 }
 

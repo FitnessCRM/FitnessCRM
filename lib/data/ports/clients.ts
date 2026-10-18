@@ -62,4 +62,10 @@ export interface ClientPort {
   getClient(trainerId: string, clientId: string): Promise<Client | null>;
   createClient(input: ClientInput): Promise<Client>;
   updateClient(trainerId: string, clientId: string, changes: ClientChanges): Promise<Client>;
+  /**
+   * El cliente de la sesión enseña u oculta sus kcal y macros (I11). Escribe solo `macrosVisible`,
+   * sin tocar el resto de la ficha, y solo con la ficha `activo`. Si `clientId` no es el de la
+   * sesión, o su ficha no está `activo`, lanza `not_found`. El entrenador usa `updateClient`.
+   */
+  setMacrosVisible(clientId: string, visible: boolean): Promise<Client>;
 }
