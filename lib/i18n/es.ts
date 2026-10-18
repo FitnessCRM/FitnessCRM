@@ -1137,7 +1137,7 @@ export const es = {
       "Es el origen de la numeración de semanas. Cambiarla después no reetiqueta las revisiones ya enviadas.",
     macrosVisible: "El cliente ve sus kcal y macros",
     macrosVisibleHint:
-      "Si lo desmarcas, no verá sus objetivos diarios ni las kcal y macros de cada menú. El peso por alimento sigue visible.",
+      "Si lo desmarcas, no verá sus objetivos diarios ni las kcal y macros de cada menú. El peso por alimento sigue visible. También puede cambiarlo desde su perfil.",
     /** Saved as-is in `goal` and `level`, which are free text in the domain. */
     goals: [
       "Recomposición corporal",
