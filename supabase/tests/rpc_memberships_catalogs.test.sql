@@ -83,7 +83,7 @@ set local "request.jwt.claims" to '{"sub":"11111111-1111-1111-1111-111111111111"
 select throws_ok(
   $$select public.renew_membership('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'mensual', '2026-03-01', 'pagada')$$,
   'P0001',
-  'client.not_writable',
+  'client.not_found',
   'a trainer cannot renew a membership of another trainer client'
 );
 

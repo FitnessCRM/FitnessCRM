@@ -2,7 +2,7 @@ import type { DataPorts } from "@/lib/data/ports";
 import { createInvitationPort, createPasswordResetPort } from "./auth";
 import { createMeasurementTypePort, createQuestionnairePort } from "./catalogs";
 import { createClientPort } from "./clients";
-import { createSupabaseClient, type SupabaseConfig } from "./client";
+import { createSupabaseClient, type SupabaseClient, type SupabaseConfig } from "./client";
 import { createExercisePort } from "./exercises";
 import { createUnavailableFoodCatalogPort } from "./food-catalog";
 import { createOwnFoodPort } from "./foods";
@@ -18,11 +18,16 @@ export interface SupabasePortsOptions {
   config: SupabaseConfig;
   /** Página de la app que recibe el enlace para recuperar la contraseña, con su origen. */
   passwordResetRedirect: string;
+  /**
+   * Cliente ya creado. Lo usan las pruebas de contrato, que corren en Node: el cliente del navegador
+   * de `@supabase/ssr` necesita cookies y no sirve fuera de él.
+   */
+  client?: SupabaseClient;
 }
 
 /** Los 18 puertos de la aplicación, todos sobre un único cliente de Supabase. */
 export function createSupabasePorts(options: SupabasePortsOptions): DataPorts {
-  const client = createSupabaseClient(options.config);
+  const client = options.client ?? createSupabaseClient(options.config);
   return {
     session: createSessionPort(client),
     invitations: createInvitationPort(client),
