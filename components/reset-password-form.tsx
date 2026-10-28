@@ -16,11 +16,14 @@ const copy = es.pages.resetPassword;
 const MIN_PASSWORD_LENGTH = 6;
 
 /**
- * El código del enlace del correo, o `""` si la dirección no es un enlace de recuperación. Lleva
- * `mode=resetPassword` y `oobCode`; un `mode` distinto es otro correo de Firebase, no este.
+ * El código del enlace del correo, o `""` si la dirección no es un enlace de recuperación. Firebase
+ * lo manda como `oobCode` con `mode=resetPassword` (un `mode` distinto es otro correo); Supabase,
+ * como `token_hash` con `type=recovery`.
  */
 function codeFromLocation(): string {
   const params = new URLSearchParams(window.location.search);
+  const tokenHash = params.get("token_hash");
+  if (tokenHash !== null) return params.get("type") === "recovery" ? tokenHash : "";
   const mode = params.get("mode");
   const code = params.get("oobCode") ?? "";
   return mode !== null && mode !== "resetPassword" ? "" : code;
