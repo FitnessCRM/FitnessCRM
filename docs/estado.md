@@ -1016,16 +1016,18 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
     sembrados en vez de todos por nombre. La app sigue el contrato; hay que pedir en
     `FitnessCRM/food-api` que se alineen.
 
+- **Migración a Supabase (decidida el 28-10-2026, `docs/plan-migracion-supabase.md`).** Datos, auth y
+  fotos de revisión pasan a Supabase; las fotos van a Supabase Storage, acordado con Dani. Fase 0 en
+  curso: este PR de documentación y la dependencia `@supabase/*` en su propia rama. Pendiente con
+  Dani: el texto de consentimiento y el responsable del tratamiento de las fotos. Pendiente del
+  inventario de Firebase (Fase 0.3).
 - **Backend.** Firebase está conectado y se ha probado con el proyecto real (06-10-2026): el
   `users/{uid}` del entrenador está creado, y las reglas de seguridad (tarjeta 34) y los índices de
   `reviews` están desplegados. Las reglas se comprobaron con sesión de entrenador contra el proyecto
   real el 08-10-2026 (tarjeta 34, PR #86). Falta, por este orden: decidir cuándo el adaptador de Firebase (16)
-  pasa a ser el adaptador por defecto de `providers.tsx`; fotos de revisión (17), con la decisión
-  de dónde guardarlas **reabierta el 05-10-2026** por el propietario: no se construye nada hasta
-  cerrarla. Opciones: (a) el Drive del entrenador con un servidor y su token, que exige el plan
-  Blaze de Firebase, o (b) Firebase Storage. El motivo es que con el permiso `drive.file` una app
-  solo ve los archivos que ella misma creó, así que el token de un cliente no puede escribir en la
-  carpeta del entrenador; y consentimiento del alta con el borrado a petición (31).
+  pasa a ser el adaptador por defecto de `providers.tsx`; fotos de revisión (17), ya decididas: van
+  a Supabase Storage (ver la migración arriba); y consentimiento del alta con el borrado a petición
+  (31).
 - **Recuperación de contraseña (85), paso manual:** apuntar la URL de acción de la plantilla
   «Restablecer contraseña» de Firebase Authentication a `/reset-password` (`docs/dominio.md` §12) y
   probarla con un correo real; es un ajuste de todo el proyecto, sin distinción de entornos.
