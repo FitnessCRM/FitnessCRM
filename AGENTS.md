@@ -10,8 +10,9 @@ hard constraint from `CLAUDE.md` («Reglas duras») or a convention from its
    It may only depend on TypeScript and zod.
 2. Firebase SDK imports (`firebase`, `@firebase/*`, `firebase-admin`) appear
    only under `lib/data/adapters/firebase/`, and `firebase-admin` only under
-   `lib/data/adapters/firebase/seed/`. Any other backend SDK (`@supabase/*`, an
-   ORM, a database client) is a violation.
+   `lib/data/adapters/firebase/seed/`. Supabase SDK imports (`@supabase/*`) appear
+   only under `lib/data/adapters/supabase/`. Any other backend SDK (an ORM, a
+   database client) is a violation.
 3. Components and hooks never call a data source directly. Data goes through
    `lib/data/hooks/`, which talks to the interfaces in `lib/data/ports/`.
 4. `components/client/` and `components/trainer/` never import from each other.
