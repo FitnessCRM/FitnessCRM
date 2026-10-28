@@ -206,7 +206,7 @@ select lives_ok(
 select throws_ok(
   $$select public.set_macros_visible('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', false)$$,
   'P0001',
-  'client.not_writable',
+  'client.not_found',
   'a client cannot set macrosVisible on another client'
 );
 

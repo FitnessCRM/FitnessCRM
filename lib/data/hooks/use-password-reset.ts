@@ -14,7 +14,9 @@ export function useSendPasswordReset() {
 
 /**
  * Comprueba el código del enlace de recuperación. Sin `code` no consulta nada. Un código caducado o
- * ya usado no se arregla reintentando, así que no reintenta, y no se guarda: cada visita lo pregunta.
+ * ya usado no se arregla reintentando, así que no reintenta. No se guarda (`gcTime: 0`): cada visita
+ * lo pregunta. `staleTime` infinito evita que StrictMode, al volver a suscribirse, gaste otra vez el
+ * código de Supabase, que es de un solo uso.
  */
 export function useCheckPasswordResetCode(code: string | null) {
   const ports = usePorts();
@@ -24,7 +26,7 @@ export function useCheckPasswordResetCode(code: string | null) {
     enabled: code !== null && code !== "",
     retry: false,
     gcTime: 0,
-    staleTime: 0,
+    staleTime: Infinity,
     refetchOnWindowFocus: false,
   });
 }

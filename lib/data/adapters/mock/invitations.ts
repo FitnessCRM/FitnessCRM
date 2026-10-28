@@ -61,9 +61,19 @@ export function createInvitationPort(ctx: MockContext): InvitationPort {
       return ctx.reply(undefined);
     },
     isInvitationLink: (link) => link.includes("invite="),
-    acceptInvitation: async ({ email, link }) => {
+    // La demo no sabe a quién va el enlace: el correo lo escribe quien lo abre, como con Firebase.
+    readInvitation: async (link) => {
       if (!link.includes("invite=")) {
         throw new DomainError("invitation.invalid_link", "El enlace no es de invitación");
+      }
+      return ctx.reply({ email: null });
+    },
+    acceptInvitation: async ({ link, email }) => {
+      if (!link.includes("invite=")) {
+        throw new DomainError("invitation.invalid_link", "El enlace no es de invitación");
+      }
+      if (email === undefined) {
+        throw new DomainError("invitation.email_required", "Falta el correo de la invitación");
       }
       if (invitationKind(link) === "trainer") return acceptTrainerInvitation(email);
       const client = ctx.state.clients.find(

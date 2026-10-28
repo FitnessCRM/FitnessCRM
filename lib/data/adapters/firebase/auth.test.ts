@@ -153,6 +153,18 @@ describe.skipIf(!firestoreHost || !authHost)("adaptador de Firebase · auth", ()
     expect(session.clientId).toBe(clientId);
   });
 
+  it("the link does not say its email, so without one the accept is refused and the link stays", async () => {
+    const invitations = createInvitationPort(ctx);
+    await invitations.sendInvitation(TRAINER.id, clientId);
+    const link = await lastLinkFor(email);
+    await expect(invitations.readInvitation(link)).resolves.toEqual({ email: null });
+    await expect(
+      invitations.acceptInvitation({ link, password: "secreto-1" }),
+    ).rejects.toMatchObject({ code: "invitation.email_required" });
+    const session = await invitations.acceptInvitation({ email, link, password: "secreto-1" });
+    expect(session.clientId).toBe(clientId);
+  });
+
   it("a link can only be used once", async () => {
     const invitations = createInvitationPort(ctx);
     await invitations.sendInvitation(TRAINER.id, clientId);

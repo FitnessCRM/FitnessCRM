@@ -216,6 +216,8 @@ export function createInvitationPort(ctx: FirebaseAuthContext): InvitationPort {
       });
     },
     isInvitationLink: (link) => isSignInWithEmailLink(ctx.auth, link),
+    // Firebase no guarda el correo en el enlace: lo tiene que escribir quien lo abre.
+    readInvitation: async () => ({ email: null }),
     acceptInvitation: async ({ email, link, password }) => {
       if (!isSignInWithEmailLink(ctx.auth, link)) {
         throw new DomainError("invitation.invalid_link", "El enlace no es de invitación");
@@ -227,6 +229,9 @@ export function createInvitationPort(ctx: FirebaseAuthContext): InvitationPort {
       }
       if (password.length < MIN_PASSWORD_LENGTH) {
         throw new DomainError("invitation.weak_password", "La contraseña es demasiado corta");
+      }
+      if (!email) {
+        throw new DomainError("invitation.email_required", "Falta el correo de la invitación");
       }
       const credential = await signInWithInvitationLink(ctx, email, link);
       return clientId
