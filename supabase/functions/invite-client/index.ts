@@ -6,22 +6,6 @@
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-/** Página de la app que recibe la invitación (`/accept-invite`), sin datos personales. */
-const INVITE_URL = Deno.env.get("INVITE_URL") ?? "";
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": new URL(INVITE_URL).origin,
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-function reply(status: number, body: Record<string, unknown>): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-  });
-}
-
 /** Una fila leída con RLS como quien llama; `null` si no hay ninguna o la consulta falla. */
 async function selectOne<T>(path: string, authorization: string): Promise<T | null> {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -37,7 +21,31 @@ async function selectOne<T>(path: string, authorization: string): Promise<T | nu
 }
 
 Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
+  // `INVITE_URL` es la página de la app que recibe la invitación (`/accept-invite`), sin datos
+  // personales. Se lee aquí y no al cargar el módulo: si falta, la petición responde un error de
+  // configuración en vez de tirar el worker entero.
+  const inviteUrl = Deno.env.get("INVITE_URL") ?? "";
+  let origin: string;
+  try {
+    origin = new URL(inviteUrl).origin;
+  } catch {
+    return new Response(JSON.stringify({ code: "invitation.misconfigured" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+  const reply = (status: number, body: Record<string, unknown>): Response =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
+  if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") return reply(405, { code: "method_not_allowed" });
 
   const body = (await request.json().catch(() => null)) as {
@@ -80,7 +88,7 @@ Deno.serve(async (request) => {
   }
 
   // Única escritura con la clave de servicio: crear la cuenta del invitado y mandar el correo.
-  const redirectTo = `${INVITE_URL}?c=${encodeURIComponent(client.id)}`;
+  const redirectTo = `${inviteUrl}?c=${encodeURIComponent(client.id)}`;
   const invite = await fetch(
     `${SUPABASE_URL}/auth/v1/invite?redirect_to=${encodeURIComponent(redirectTo)}`,
     {
