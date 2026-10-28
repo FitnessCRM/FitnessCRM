@@ -64,14 +64,14 @@ select is((select goal from public.clients where id = 'aaaaaaaa-aaaa-aaaa-aaaa-a
 set local role anon;
 select is((select count(*)::int from public.clients), 0, 'anon sees no clients');
 
--- Admin: trainers yes, clients no.
+-- Admin: trainers and clients, both read-only (§12).
 reset role;
 set local role authenticated;
 set local "request.jwt.claims" to '{"sub":"44444444-4444-4444-4444-444444444444","user_role":"admin"}';
 
 select is((select count(*)::int from public.trainers), 2, 'admin reads all trainers');
 
-select is((select count(*)::int from public.clients), 0, 'admin does not read clients');
+select is((select count(*)::int from public.clients), 3, 'admin reads every client row (§12)');
 
 select * from finish();
 

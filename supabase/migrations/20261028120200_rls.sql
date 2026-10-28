@@ -3,7 +3,7 @@
 --
 -- Writes that touch more than one row or change a client's own data go through RPCs
 -- (Fase 5). Here: a trainer manages their own tenant, a client reads their own row, and
--- admin reads only the trainers table.
+-- admin reads the trainers and the clients, never their reviews, weights or logs (§12).
 
 create or replace function public.current_user_role()
 returns text
@@ -119,6 +119,11 @@ create policy clients_client_select on public.clients
     id = (select public.current_client_id())
     and (select public.current_user_role()) = 'client'
   );
+
+-- Admin reads every client row, for the platform panel (§12). Nothing else of the client.
+create policy clients_admin_select on public.clients
+  for select to authenticated
+  using ((select public.current_user_role()) = 'admin');
 
 create policy clients_trainer_insert on public.clients
   for insert to authenticated
