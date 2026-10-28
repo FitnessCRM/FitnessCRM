@@ -235,15 +235,15 @@ marcan y no se reutiliza su número.
 | I9 | El peso de una revisión sale de un `WeightLog` con fecha dentro de la ventana de la revisión: mientras es editable lo referencia, y desde `vista` guarda su copia (I24) | Lógica de dominio |
 | I10 | La comparación de fotos es una acción explícita del entrenador, nunca un estado derivado | Ausencia de automatismo |
 | I11 | El cliente lee su rutina y su menú, incluido el peso por alimento; nunca los escribe. Sus kcal y macros (objetivo diario y las declaradas por menú) los ve solo si `macrosVisible` no está en `false` en su ficha. Ese valor lo pueden cambiar el entrenador y el propio cliente, y gana la última escritura. El entrenador los ve siempre. Por defecto, `true` | Reglas de seguridad para `macroTargets`, y la que deja al cliente escribir en su ficha solo `macrosVisible`, como booleano y mientras esté `activo`. Las macros declaradas en `menus` no tienen regla: decisión del propietario (13-10-2026), que las deja en la app. La pantalla de cliente no las pide ni pinta con el flag en `false` |
-| I12 | Toda respuesta y toda medida conservan enunciado/etiqueta, formato y unidad vigentes cuando se registró su valor. La copia congelada se escribe al registrar el valor por primera vez o al cambiarlo: volver a guardar una revisión no recongela lo que no ha cambiado. Editar el catálogo no altera el histórico. Lo único que puede faltar de una revisión antigua es la **imagen**, que vive fuera de la app (§9) | Columnas congeladas, escritas solo al registrar o cambiar el valor |
+| I12 | Toda respuesta y toda medida conservan enunciado/etiqueta, formato y unidad vigentes cuando se registró su valor. La copia congelada se escribe al registrar el valor por primera vez o al cambiarlo: volver a guardar una revisión no recongela lo que no ha cambiado. Editar el catálogo no altera el histórico. Lo único que puede faltar de una revisión antigua es la **imagen**, que vive en Storage (§9) | Columnas congeladas, escritas solo al registrar o cambiar el valor |
 | I13 | Nada de lo que cuelgue histórico se borra: preguntas, tipos de medida, ejercicios y alimentos se archivan | Soft delete + reglas (ninguna colección con histórico admite `delete`) · en el catálogo común de alimentos, su API (tarjeta 90) |
-| I14 | Las imágenes viven en el Drive del entrenador y **la app no puede borrarlas**: el borrado de las fotos lo hace el entrenador a mano, en su Drive. La app sí borra el resto de los datos del cliente, con una operación explícita por cliente | Fuera de la app (Drive) para las imágenes · lógica de dominio para lo demás |
+| I14 | Las imágenes viven en Supabase Storage y **se borran con el resto de los datos del cliente**, en su operación explícita por cliente. Si una imagen falta, la app lo dice (§9) | Lógica de dominio (función SQL que devuelve las rutas) · Edge Function · políticas de Storage |
 | I15 | El formato de una pregunta —tipo y límites de la escala— es inmutable desde que existe la primera respuesta. El enunciado es editable siempre | Lógica de dominio + reglas (bandera `hasResponses` en la pregunta) |
 | I16 | Como máximo una revisión por cliente y número de semana | Id del documento `{clientId}_{semana}`, que las reglas comprueban |
 | I17 | El cliente puede editar su revisión hasta que el entrenador la marca como `vista` | Lógica de dominio + reglas (el cliente solo edita en `borrador` y `enviada`) |
 | I18 | El peso corporal se almacena siempre en kg | Validación + reglas (número entre 0 y 400) |
 | ~~I19~~ | ~~Los periodos cerrados no se recalculan al cambiar la periodicidad~~ | **Derogada**: no hay periodos |
-| I20 | El vídeo, tanto de ejercicio como de feedback, es siempre un enlace externo. La app **no aloja vídeo ni imágenes**: las fotos de revisión viven en el Drive del entrenador (§9) | Validación de URL |
+| I20 | El vídeo, tanto de ejercicio como de feedback, es siempre un enlace externo. La app **no aloja vídeo**: las fotos de revisión viven en Supabase Storage (§9) | Validación de URL |
 | I21 | Una membresía registra estado de pago, nunca importes cobrados ni datos de pago | Modelo de datos + reglas (solo existen las claves del modelo) |
 | I22 | `weekNumber` se congela al crear la revisión y no se recalcula nunca | Escritura única + reglas (no cambia tras crearse) |
 | I23 | Como máximo un `WeightLog` por cliente y fecha civil. Registrar un peso en una fecha que ya tiene pesaje **lo actualiza** en lugar de crear otro: conserva su identidad y su fecha de creación (la revisión que lo referencia, I9, no se rompe) y sustituye el peso. La nota se sustituye solo si llega una; si llega vacía, se conserva la anterior | Lógica de dominio + id del documento `{clientId}_{fecha}`, que las reglas comprueban |
@@ -275,11 +275,10 @@ actual. Si el entrenador añade un tipo de medida hoy, las revisiones de ayer no
 estar incompletas. La revisión guarda, al crearse, el conjunto de tipos y preguntas que se le
 exigen.
 
-Y por el mismo motivo, desde que las imágenes viven fuera de la app (§9), **la completitud se
-congela con el envío**. Que una foto ya no se pueda abrir no reabre la revisión ni la vuelve
-"Parcial": lo que se envió, se envió. Decir lo contrario dejaría el histórico a merced de lo que
-pase en un Drive que la app no controla, y una revisión cerrada hace ocho semanas podría cambiar
-de estado sola.
+Y por el mismo motivo, **la completitud se congela con el envío**. Que una foto ya no se pueda abrir
+no reabre la revisión ni la vuelve "Parcial": lo que se envió, se envió. Decir lo contrario dejaría
+el histórico a merced de lo que pase con las fotos después, y una revisión cerrada hace ocho semanas
+podría cambiar de estado sola.
 
 Sobre I28 e I1: la copia propia de un alimento es un registro del entrenador como cualquier otro y
 cumple I1 tal cual —solo él la lee y la escribe—. Lo que leen los demás es el catálogo común, que
@@ -317,9 +316,7 @@ a `activo`, y ver su histórico desde el panel.
 
 **La baja no congela la semana (H7, tarjeta 61).** La numeración de semanas sigue la fecha de
 alta también para un cliente dado de baja (§8).
-**Esa operación no alcanza a las imágenes**: viven en el Drive del entrenador y las borra él a
-mano (I14, §9). Son dos actos distintos y hay que contarlos como tales, porque el segundo puede
-no ocurrir.
+**Esa operación alcanza también a las fotos**: las borra de Storage en la misma operación (I14, §9).
 
 **Rutina / Macros / Menú** — `borrador` → `activo` → `archivado`
 Asignar una rutina nueva archiva la anterior, y lo mismo unos macros nuevos para un tipo de día.
@@ -398,49 +395,40 @@ weekNumber(client, date) = floor((date - client.startDate) / 7 días) + 1
 
 ## 9. Dónde viven las fotos y cómo se borran
 
-**Decidido el 29-09-2026: las imágenes de las revisiones van al Drive del entrenador**, una
-carpeta por cliente compartida con la cuenta de Google de ese cliente. No a Firebase Storage. Los
-datos y la autenticación siguen en Firebase (§12). Conservación indefinida, también tras la baja.
+**Decidido el 28-10-2026, con Dani: las imágenes de las revisiones van a Supabase Storage**, en un
+bucket privado con URLs firmadas (plan de migración, Fase 4). Sustituye a la decisión del 29-09-2026
+(Drive del entrenador), que queda derogada. Los datos y la autenticación también pasan a Supabase
+(§12). Conservación indefinida, también tras la baja.
 
-> **Punto abierto (03-10-2026).** Esta sección suponía que el cliente entra con Google y que su
-> carpeta se comparte con esa cuenta. El acceso es ahora con correo y contraseña (§12), así que
-> **cómo ve el cliente su carpeta queda por decidir** en la tarjeta de las fotos (17): no se decide
-> aquí. Lo que no cambia: la app no puede borrar las fotos y su ausencia es un estado esperado.
+> **Punto abierto.** El texto de consentimiento y quién figura como responsable del tratamiento de
+> las fotos en Storage están por confirmar con Dani (plan de migración, Fase 0.1). Lo que no cambia:
+> la ausencia de una foto es un estado esperado, nunca un hueco roto.
 
-Esto tiene una consecuencia que no se puede suavizar, y de la que cuelga el resto de esta sección:
-**la app no puede borrar las fotos.** No es que delegue el borrado: no tiene la capacidad, porque
-los archivos no son suyos. Viven en una cuenta de Google que la app no administra.
+Con las fotos en Storage, **la app sí puede borrarlas**: son suyas y las gestiona ella. De ahí salen
+cuatro cosas, y las cuatro son del dominio, no de la interfaz:
 
-De ahí salen cuatro cosas, y las cuatro son del dominio, no de la interfaz:
-
-1. **El borrado de las imágenes es un acto manual del entrenador en su Drive.** Si un cliente
-   ejerce su derecho de supresión, alguien tiene que pedírselo al entrenador y el entrenador tiene
-   que entrar en su Drive y borrar la carpeta. Si no lo hace, no ocurre — y la app no puede
-   comprobarlo, ni registrar que ocurrió, ni enseñar que se cumplió.
-2. **El borrado del resto de los datos del cliente sigue siendo de la app**, con su operación
-   explícita por cliente: revisiones, medidas, respuestas, pesajes, registros de entreno. Son dos
-   actos separados y hay que contarlos separados. Dar por hecho que el primero arrastra al segundo
-   es exactamente el error que esta sección existe para evitar. Dentro de esa operación,
-   revisiones y pesajes se van a la vez, así que I25 —que rige en el uso normal de la app— no la
-   impide.
-3. **El texto de consentimiento del alta deja de ser una nota y pasa a ser obligatorio.** Ya no
-   basta con declarar finalidad y plazo: tiene que decir **dónde viven las fotos** (el Drive del
-   entrenador), **quién las custodia** (el entrenador, no la app) y **a quién se le pide el
-   borrado** (al entrenador). Sin eso, el cliente no puede ejercer un derecho que la app no está
-   en condiciones de ejecutar por él.
-4. **La ausencia de una imagen es un estado esperado, no un fallo.** El entrenador puede mover,
-   renombrar o borrar un archivo en su Drive en cualquier momento, y la app se entera al intentar
-   leerlo. Así que **la app tiene que detectar que la imagen no está y decirlo, nunca enseñar un
+1. **El borrado de las fotos es parte de la operación de borrado del cliente.** Una función SQL
+   devuelve las rutas de sus imágenes y una Edge Function borra los objetos; un job periódico limpia
+   los huérfanos que queden si algo falla a medias (plan de migración, Fase 4.5). La app tiene que
+   poder comprobar que las fotos se borraron, no solo lanzar la operación.
+2. **Una sola operación explícita por cliente borra sus fotos y el resto de sus datos**: revisiones,
+   medidas, respuestas, pesajes, registros de entreno. Dentro de esa operación, revisiones y pesajes
+   se van a la vez, así que I25 —que rige en el uso normal de la app— no la impide.
+3. **El texto de consentimiento del alta es obligatorio.** Tiene que decir **dónde viven las fotos**
+   (Supabase Storage), **quién las custodia** y **a quién se le pide el borrado**. El texto concreto
+   queda por confirmar con Dani (Punto abierto, arriba).
+4. **La ausencia de una imagen es un estado esperado, no un fallo.** Una foto puede faltar porque se
+   borró, porque su subida falló o porque su ruta ya no existe, y la app se entera al leerla con una
+   URL firmada. Así que **la app tiene que detectar que la imagen no está y decirlo, nunca enseñar un
    hueco roto**: el mismo patrón que ya usa Ver revisión —un marcador en el sitio de la foto y un
    aviso único explicando por qué falta, no uno por foto—. Lo que no cambia es el resto de la
    revisión: medidas y respuestas siguen congeladas e intactas (I12), y la completitud sigue
    siendo la del envío (I5).
 
-Las fotos de composición corporal son datos personales de categoría sensible bajo el RGPD, y esta
-decisión mueve su custodia fuera de la app. **Esto no es asesoramiento legal, y ahora menos que
-antes**: conviene contrastar con quien lleve la protección de datos del entrenador —antes del
-lanzamiento— tanto el texto de consentimiento como quién figura como responsable del tratamiento
-de unos archivos que están en el Drive personal del entrenador.
+Las fotos de composición corporal son datos personales de categoría sensible bajo el RGPD. **Esto no
+es asesoramiento legal**: conviene contrastar con quien lleve la protección de datos del entrenador
+—antes del lanzamiento— tanto el texto de consentimiento como quién figura como responsable del
+tratamiento de las fotos en Storage.
 
 ---
 
@@ -449,8 +437,8 @@ de unos archivos que están en el Drive personal del entrenador.
 - **Cobro de pagos.** Se registra si una membresía está pagada; el dinero se mueve fuera de la app.
 - **Mensajería y chat.** El feedback del entrenador es un vídeo enlazado y una nota, no una
   conversación.
-- **Alojamiento de vídeo e imágenes.** El vídeo es siempre un enlace externo y las fotos viven en
-  el Drive del entrenador (I20, §9). La app no guarda archivos.
+- **Alojamiento de vídeo.** El vídeo es siempre un enlace externo (I20). Las fotos de revisión son
+  la única imagen que la app guarda, en Supabase Storage (§9).
 - **2FA.** Post-MVP.
 - **Bloques de entrenamiento.** Post-MVP.
 - **Adherencia calculada.** Sin definición clara de la métrica, fuera de la UI.
@@ -484,11 +472,15 @@ La biblioteca de alimentos (07-10-2026) deja abiertas estas, cada una con su tar
 
 ---
 
-## 12. Backend: Firebase para datos y auth, Drive para las imágenes
+## 12. Backend: Supabase para datos, auth y fotos
 
-**Decidido el 29-09-2026.** Los datos y la autenticación van a Firebase, salvo el catálogo común
-de alimentos (abajo). Las imágenes de las revisiones **no** van a Firebase Storage: van al Drive
-del entrenador, una carpeta por cliente compartida con la cuenta de Google del cliente (§9).
+**Decidido el 28-10-2026: migración de Firebase a Supabase.** Los datos, la autenticación y las fotos
+de revisión pasan a Supabase (Postgres con RLS, Auth y Storage), salvo el catálogo común de alimentos
+(abajo). Las fotos van a Supabase Storage (§9). El plan, con sus fases, está en
+`docs/plan-migracion-supabase.md`. Esta sección describe todavía el backend de Firebase hasta que
+cada tarjeta de la migración lo sustituya; sus subsecciones se reescriben con ella.
+
+La decisión del 29-09-2026 (Firebase para datos y auth, Drive para las imágenes) queda derogada.
 
 Lo que hasta ahora era el coste hipotético de elegir Firebase pasa a ser trabajo pendiente y
 conviene dejarlo escrito para que nadie lo descubra a mitad del adaptador. La columna "dónde se
@@ -502,9 +494,9 @@ y qué queda en el adaptador.
 La decisión se implementa por tarjetas. El acceso a datos sigue pasando por las interfaces de
 `lib/data/ports/`, y el SDK de Firebase solo se importa desde `lib/data/adapters/firebase/`
 (ESLint lo impide en cualquier otro sitio). Con el adaptador de datos a medias, la app sigue
-montando el adaptador en memoria. Las interfaces se diseñan sabiendo que detrás hay Firestore y un
-Drive ajeno: en particular, **leer una imagen es una operación que puede fallar por ausencia y
-tiene que poder decirlo** (§9), no una URL que siempre resuelve.
+montando el adaptador en memoria. Las interfaces se diseñan sabiendo que detrás hay una base de datos y un almacenamiento de fotos: en
+particular, **leer una imagen es una operación que puede fallar por ausencia y tiene que poder
+decirlo** (§9), no una URL que siempre resuelve.
 
 ### Acceso: correo y contraseña, con invitación por enlace
 
