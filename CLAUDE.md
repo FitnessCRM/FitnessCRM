@@ -26,8 +26,9 @@ Estas seis se comprueban antes de dar por buena cualquier tarea.
    regla 3 siga siendo cierta con un backend real detrás, y ESLint lo impide
    (`no-restricted-imports`). El SDK de administración, `firebase-admin`, es dependencia de
    desarrollo y solo se importa en `lib/data/adapters/firebase/seed/`, para la siembra de la demo:
-   nada de lo que la app sirve lo usa. No instales ningún otro SDK de backend (`@supabase/*`, un
-   ORM, nada que hable con una base de datos) sin tarjeta. El adaptador de Firebase cubre todos
+   nada de lo que la app sirve lo usa. El SDK de Supabase (`@supabase/*`) solo se importa desde
+   `lib/data/adapters/supabase/`. No instales ningún otro SDK de backend (un ORM, nada que hable con
+   una base de datos) sin tarjeta. El adaptador de Firebase cubre todos
    los puertos, y `app/providers.tsx` lo monta solo con `NEXT_PUBLIC_DATA_BACKEND=firebase`; sin
    la variable monta el adaptador en memoria.
 2. **El dominio es puro.** Nada dentro de `lib/domain/` importa React, Next, el DOM ni la red.
