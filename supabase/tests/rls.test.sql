@@ -1,6 +1,6 @@
 begin;
 
-select plan(9);
+select plan(10);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'trainer-a@test.local'),
@@ -35,6 +35,11 @@ select is((select count(*)::int from public.clients), 2, 'trainer A sees their t
 select is((select count(*)::int from public.clients where id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'), 0, 'trainer A does not see trainer B client');
 
 select is((select count(*)::int from public.exercises), 1, 'trainer A sees their exercise');
+
+-- Exercises are archived, never deleted (I13): the trainer has no delete policy.
+delete from public.exercises where id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
+
+select is((select count(*)::int from public.exercises where id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'), 1, 'trainer A cannot delete an exercise (I13)');
 
 select throws_ok(
   $$insert into public.clients (trainer_id, first_name, last_name, email, start_date, review_every_days)

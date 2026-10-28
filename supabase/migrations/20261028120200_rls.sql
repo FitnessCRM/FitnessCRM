@@ -32,6 +32,54 @@ as $$
   select nullif(auth.jwt() ->> 'client_id', '')::uuid;
 $$;
 
+-- Helpers for the policies of the later migrations: each rule lives in one place.
+
+-- The caller is a trainer and the row belongs to that trainer's tenant.
+create or replace function public.is_trainer_of(tenant uuid)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select (select public.current_user_role()) = 'trainer'
+    and tenant = (select public.current_trainer_id());
+$$;
+
+-- The caller is a client whose ficha is active. A client dado de baja has no access (§7, §12).
+create or replace function public.is_active_client()
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select (select public.current_user_role()) = 'client'
+    and exists (
+      select 1
+      from public.clients c
+      where c.id = (select public.current_client_id())
+        and c.trainer_id = (select public.current_trainer_id())
+        and c.status = 'activo'
+    );
+$$;
+
+-- The caller is the trainer of this client and the client is not dado de baja. A trainer
+-- can still write for a client who is invitado (§7).
+create or replace function public.is_writable_client(client uuid)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select (select public.current_user_role()) = 'trainer'
+    and exists (
+      select 1
+      from public.clients c
+      where c.id = client
+        and c.trainer_id = (select public.current_trainer_id())
+        and c.status <> 'dado_de_baja'
+    );
+$$;
+
 alter table public.trainers enable row level security;
 alter table public.profiles enable row level security;
 alter table public.clients enable row level security;
@@ -93,9 +141,24 @@ create policy clients_trainer_update on public.clients
 -- No delete policy on clients: a client is discharged (dado_de_baja), never deleted through the
 -- API. The explicit per-client erasure is an RPC (§7, Fase 5).
 
--- Exercises: only the trainer who owns them. Clients reach exercises through their routines.
-create policy exercises_trainer_all on public.exercises
-  for all to authenticated
+-- Exercises: only the trainer who owns them. Clients reach exercises through their routines
+-- (exercises_client_select, 20261028120600). No delete policy: exercises are archived (I13).
+create policy exercises_trainer_select on public.exercises
+  for select to authenticated
+  using (
+    trainer_id = (select public.current_trainer_id())
+    and (select public.current_user_role()) = 'trainer'
+  );
+
+create policy exercises_trainer_insert on public.exercises
+  for insert to authenticated
+  with check (
+    trainer_id = (select public.current_trainer_id())
+    and (select public.current_user_role()) = 'trainer'
+  );
+
+create policy exercises_trainer_update on public.exercises
+  for update to authenticated
   using (
     trainer_id = (select public.current_trainer_id())
     and (select public.current_user_role()) = 'trainer'
