@@ -161,7 +161,13 @@ site_url = "http://127.0.0.1:3000"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+additional_redirect_urls = [
+  "https://127.0.0.1:3000",
+  "http://127.0.0.1:3000/accept-invite",
+  "https://127.0.0.1:3000/accept-invite",
+  "http://127.0.0.1:3000/reset-password",
+  "https://127.0.0.1:3000/reset-password",
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -244,10 +250,15 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Enlaces de invitación y de recuperación: llevan el `token_hash` a la página de la app, que lo verifica
+# (lib/data/adapters/supabase/auth.ts). Por eso no sirve la plantilla por defecto, que va al verify de Auth.
+[auth.email.template.invite]
+subject = "Te han invitado"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.recovery]
+subject = "Recupera tu contraseña"
+content_path = "./supabase/templates/recovery.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
@@ -372,6 +383,10 @@ enabled = false
 authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
+
+[functions.invite-client]
+# La función comprueba el token por su cuenta (getUser) antes de tocar nada.
+verify_jwt = false
 
 [edge_runtime]
 enabled = true
