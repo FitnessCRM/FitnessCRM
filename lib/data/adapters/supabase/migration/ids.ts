@@ -32,7 +32,10 @@ export type EntityKind =
   | "routine"
   | "menu"
   | "macro-targets"
-  | "membership";
+  | "membership"
+  | "review"
+  | "weight-log"
+  | "workout-log";
 
 /** El id de un agregado o de una ficha, por su tipo y su id de Firebase. */
 export const entityIdFor = (kind: EntityKind, sourceId: string): string =>
@@ -45,7 +48,7 @@ export const entityIdFor = (kind: EntityKind, sourceId: string): string =>
  */
 export const childIdFor = (
   parentId: string,
-  kind: "day" | "line" | "meal" | "item",
+  kind: "day" | "line" | "meal" | "item" | "measurement" | "response",
   sourceId: string,
 ): string => supabaseIdFor(`${parentId}/${kind}:${sourceId}`);
 

@@ -153,12 +153,9 @@ describe("questionRow", () => {
       status: "activa" as const,
       createdAt: CREATED,
     };
-    expect(questionRow({ ...base, format: { kind: "escala", min: 1, max: 5 } })).toMatchObject({
-      format_kind: "escala",
-      scale_min: 1,
-      scale_max: 5,
-      has_responses: false,
-    });
+    const scale = questionRow({ ...base, format: { kind: "escala", min: 1, max: 5 } });
+    expect(scale).toMatchObject({ format_kind: "escala", scale_min: 1, scale_max: 5 });
+    expect(scale).not.toHaveProperty("has_responses");
     expect(questionRow({ ...base, format: { kind: "texto" } })).toMatchObject({
       format_kind: "texto",
       scale_min: null,

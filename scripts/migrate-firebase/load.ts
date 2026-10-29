@@ -16,8 +16,8 @@
  *
  *   Cuentas de Auth (sin contraseña: restablecen por correo), entrenadores, clientes y perfiles;
  *   catálogos (ejercicios, alimentos, tipos de medida, preguntas); plantillas, rutinas, menús,
- *   objetivos de macros y membresías. Las revisiones, pesajes y registros llegan en la sección
- *   siguiente, con su aprobación.
+ *   objetivos de macros y membresías; pesajes, revisiones (con sus medidas y respuestas) y registros
+ *   de entrenamiento. Las fotos de las revisiones no se cargan (Fase 0.1).
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -28,6 +28,14 @@ import {
   loadCatalogAndPlans,
   type PlanCollection,
 } from "@/lib/data/adapters/supabase/migration/load-catalog-plans";
+import {
+  findLogViolations,
+  LOG_COLLECTIONS,
+  loadReviewsAndLogs,
+  parseLogData,
+  reviewPhotosLeftOut,
+  type LogCollection,
+} from "@/lib/data/adapters/supabase/migration/load-logs";
 import { loadPeople } from "@/lib/data/adapters/supabase/migration/load-people";
 import {
   planPeople,
@@ -73,7 +81,16 @@ async function main(argv: string[], env: NodeJS.ProcessEnv): Promise<number> {
     ]),
   ) as Record<PlanCollection, ExportedDocument[]>;
   const plan = parsePlanData(documents);
-  const problems = findPlanViolations(plan);
+
+  // Registros: pesajes, revisiones y entrenamientos, después de los planes a los que referencian.
+  const logDocuments = Object.fromEntries(
+    LOG_COLLECTIONS.map((name: LogCollection) => [
+      name,
+      readJson<ExportedDocument[]>(exportDir, `${name}.json`),
+    ]),
+  ) as Record<LogCollection, ExportedDocument[]>;
+  const logs = parseLogData(logDocuments);
+  const problems = [...findPlanViolations(plan), ...findLogViolations(logs)];
 
   console.log(`Entrenadores: ${people.trainers.length}`);
   console.log(`Clientes: ${people.clients.length}`);
@@ -84,6 +101,10 @@ async function main(argv: string[], env: NodeJS.ProcessEnv): Promise<number> {
     `Ejercicios ${plan.exercises.length}, alimentos ${plan.foods.length}, ` +
       `rutinas ${plan.routines.length}, menús ${plan.menus.length}, ` +
       `objetivos ${plan.macroTargets.length}, membresías ${plan.memberships.length}`,
+  );
+  console.log(
+    `Pesajes ${logs.weightLogs.length}, revisiones ${logs.reviews.length}, ` +
+      `registros ${logs.workoutLogs.length}. Fotos fuera de la carga: ${reviewPhotosLeftOut(logs)}`,
   );
   if (problems.length > 0) {
     console.error(`Invariantes incumplidos: ${problems.join("; ")}`);
@@ -111,6 +132,12 @@ async function main(argv: string[], env: NodeJS.ProcessEnv): Promise<number> {
   const counts = await loadCatalogAndPlans(plan, target);
   console.log(
     Object.entries(counts)
+      .map(([table, rows]) => `${table} ${rows}`)
+      .join(", "),
+  );
+  const logCounts = await loadReviewsAndLogs(logs, target);
+  console.log(
+    Object.entries(logCounts)
       .map(([table, rows]) => `${table} ${rows}`)
       .join(", "),
   );
