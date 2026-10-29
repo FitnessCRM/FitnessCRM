@@ -14,7 +14,8 @@
  *
  * QUÉ CARGA HOY
  *
- *   Cuentas de Auth (sin contraseña: restablecen por correo), entrenadores, clientes y perfiles;
+ *   Cuentas de Auth (contraseñas de prueba de la instancia local: admin123 para entrenadores,
+ *   cliente123 para clientes; ver `DEV_PASSWORDS`), entrenadores, clientes y perfiles;
  *   catálogos (ejercicios, alimentos, tipos de medida, preguntas); plantillas, rutinas, menús,
  *   objetivos de macros y membresías; pesajes, revisiones (con sus medidas y respuestas) y registros
  *   de entrenamiento. Las fotos de las revisiones no se cargan (Fase 0.1).
@@ -126,7 +127,8 @@ async function main(argv: string[], env: NodeJS.ProcessEnv): Promise<number> {
   const target = { url, serviceKey };
   const report = await loadPeople(people, linkedAccounts, target);
   console.log(
-    `Cuentas creadas: ${report.authUsersCreated}, ya existían: ${report.authUsersSkipped}. ` +
+    `Cuentas creadas: ${report.authUsersCreated}, ya existían: ${report.authUsersSkipped}, ` +
+      `con contraseña de prueba: ${report.passwordsSet}. ` +
       `Entrenadores ${report.trainers}, clientes ${report.clients}, perfiles ${report.profiles}.`,
   );
   const counts = await loadCatalogAndPlans(plan, target);

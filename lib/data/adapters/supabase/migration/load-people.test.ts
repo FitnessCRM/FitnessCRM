@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertLocalUrl, loadPeople } from "./load-people";
+import { assertLocalUrl, DEV_PASSWORDS, loadPeople } from "./load-people";
 import type { PeoplePlan } from "./people";
 
 const URL_LOCAL = "http://127.0.0.1:54321";
@@ -74,7 +74,7 @@ function fakeFetch(existing: string[] = []) {
 }
 
 describe("loadPeople", () => {
-  it("creates each linked auth user with its id, email and no password, before the rows", async () => {
+  it("creates each new linked auth user with its id and email and no password, before the rows", async () => {
     const { calls, fetchFn } = fakeFetch();
     const report = await loadPeople(plan, accounts, {
       url: URL_LOCAL,
@@ -114,13 +114,14 @@ describe("loadPeople", () => {
     expect(report).toEqual({
       authUsersCreated: 2,
       authUsersSkipped: 0,
+      passwordsSet: 0,
       trainers: 1,
       clients: 1,
       profiles: 2,
     });
   });
 
-  it("skips accounts that already exist, so a second run changes nothing in Auth", async () => {
+  it("sets the dev password of accounts that already exist, and creates none of them", async () => {
     const { calls, fetchFn } = fakeFetch([TRAINER, CLIENT_ACCOUNT]);
     const report = await loadPeople(plan, accounts, {
       url: URL_LOCAL,
@@ -130,7 +131,16 @@ describe("loadPeople", () => {
     expect(calls.some((c) => c.method === "POST" && c.url.endsWith("/auth/v1/admin/users"))).toBe(
       false,
     );
-    expect(report.authUsersSkipped).toBe(2);
+    const puts = calls.filter((c) => c.method === "PUT");
+    expect(puts.map((c) => [c.url.replace(URL_LOCAL, ""), c.body])).toEqual([
+      [`/auth/v1/admin/users/${TRAINER}`, { password: DEV_PASSWORDS.trainer }],
+      [`/auth/v1/admin/users/${CLIENT_ACCOUNT}`, { password: DEV_PASSWORDS.client }],
+    ]);
+    expect(report).toMatchObject({ authUsersSkipped: 2, passwordsSet: 2 });
+  });
+
+  it("uses the fixed dev passwords, the trainer's admin123 and the client's cliente123", () => {
+    expect(DEV_PASSWORDS).toEqual({ trainer: "admin123", client: "cliente123" });
   });
 
   it("upserts on the primary key with merge-duplicates and the service key", async () => {
