@@ -13,7 +13,9 @@
     "prepare": "husky",
     "test:firebase": "pnpm dlx firebase-tools emulators:exec --config firebase.open.json --only firestore,auth --project demo-hector \"vitest run lib/data/adapters/firebase --no-file-parallelism --exclude **/rules/**\"",
     "test:rules": "pnpm dlx firebase-tools emulators:exec --only firestore --project demo-hector \"vitest run lib/data/adapters/firebase/rules --no-file-parallelism\"",
-    "seed:demo": "tsx scripts/seed-demo-trainer.ts"
+    "seed:demo": "tsx scripts/seed-demo-trainer.ts",
+    "migrate:firebase:export": "tsx scripts/migrate-firebase/export.ts",
+    "migrate:firebase:load": "tsx scripts/migrate-firebase/load.ts"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",

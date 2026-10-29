@@ -29,7 +29,7 @@ export interface TargetInput {
   repoRoot: string;
 }
 
-function isInside(directory: string, file: string): boolean {
+export function isInside(directory: string, file: string): boolean {
   const relative = path.relative(path.resolve(directory), path.resolve(file));
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
