@@ -1,18 +1,12 @@
 import type { ExportedAccount, PeoplePlan } from "./people";
+import { assertLocalUrl, serviceHeaders, upsertRows, type LoadTarget } from "./rest";
 
 /**
- * Carga de entrenadores, clientes y perfiles en Supabase por la API REST y la de Auth, con `fetch`
- * (sin SDK: el SDK de Supabase solo se importa desde `lib/data/adapters/supabase/`). Las cuentas se
+ * Carga de entrenadores, clientes y perfiles en Supabase, con `fetch` (sin SDK). Las cuentas se
  * crean sin contraseña: cada persona restablece la suya por correo, como se decidió el 29-10-2026.
  */
 
-export interface LoadTarget {
-  /** Base de la API, p. ej. `http://127.0.0.1:54321`. Pasa por `assertLocalUrl` antes de usarla. */
-  url: string;
-  /** Clave de servicio: salta RLS, así que nunca se imprime ni se guarda. */
-  serviceKey: string;
-  fetch?: typeof fetch;
-}
+export { assertLocalUrl };
 
 export interface LoadReport {
   authUsersCreated: number;
@@ -22,21 +16,6 @@ export interface LoadReport {
   profiles: number;
 }
 
-const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost"]);
-
-/** Solo se carga contra la instancia local. Subir a producción es otra decisión, no un parámetro. */
-export function assertLocalUrl(url: string): void {
-  let host: string;
-  try {
-    host = new URL(url).hostname;
-  } catch {
-    throw new Error("La URL de Supabase no es válida.");
-  }
-  if (!LOCAL_HOSTS.has(host)) {
-    throw new Error(`La carga solo corre contra la instancia local, y «${host}» no lo es.`);
-  }
-}
-
 export async function loadPeople(
   plan: PeoplePlan,
   accounts: ExportedAccount[],
@@ -44,11 +23,7 @@ export async function loadPeople(
 ): Promise<LoadReport> {
   assertLocalUrl(target.url);
   const send = target.fetch ?? fetch;
-  const headers = {
-    apikey: target.serviceKey,
-    Authorization: `Bearer ${target.serviceKey}`,
-    "Content-Type": "application/json",
-  };
+  const headers = serviceHeaders(target.serviceKey);
 
   const linked = new Set(plan.profiles.map((profile) => profile.user_id));
   const trainerById = new Map(plan.trainers.map((row) => [row.id, row]));
@@ -86,9 +61,9 @@ export async function loadPeople(
     authUsersCreated += 1;
   }
 
-  await upsert(send, target, "trainers", "id", plan.trainers, headers);
-  await upsert(send, target, "clients", "id", plan.clients, headers);
-  await upsert(send, target, "profiles", "user_id", plan.profiles, headers);
+  await upsertRows(target, "trainers", "id", plan.trainers);
+  await upsertRows(target, "clients", "id", plan.clients);
+  await upsertRows(target, "profiles", "user_id", plan.profiles);
 
   return {
     authUsersCreated,
@@ -97,21 +72,4 @@ export async function loadPeople(
     clients: plan.clients.length,
     profiles: plan.profiles.length,
   };
-}
-
-async function upsert(
-  send: typeof fetch,
-  target: LoadTarget,
-  table: string,
-  key: string,
-  rows: object[],
-  headers: Record<string, string>,
-): Promise<void> {
-  if (rows.length === 0) return;
-  const res = await send(`${target.url}/rest/v1/${table}?on_conflict=${key}`, {
-    method: "POST",
-    headers: { ...headers, Prefer: "resolution=merge-duplicates,return=minimal" },
-    body: JSON.stringify(rows),
-  });
-  if (!res.ok) throw new Error(`REST ${res.status} al escribir ${table}.`);
 }
