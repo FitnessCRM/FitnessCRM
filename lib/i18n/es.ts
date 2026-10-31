@@ -272,6 +272,9 @@ export const es = {
       upload: "Subir",
       replace: "Cambiar",
       hint: "Misma luz, misma hora y misma pose que la semana anterior.",
+      unavailable: "No disponible",
+      unsupported: "Solo se admiten fotos en JPEG, PNG o WebP.",
+      allUploaded: " ✓",
     },
     weight: {
       title: "Peso de la revisión",
@@ -1061,7 +1064,7 @@ export const es = {
       poseLabel: "foto",
       missing: "No disponible",
       missingHint:
-        "Las fotos que faltan se subieron desde un navegador y todavía no se guardan fuera de él.",
+        "Alguna foto no se pudo cargar. Recarga con conexión; si sigue sin aparecer, puede que se haya borrado.",
       none: "Sin foto",
     },
   },
@@ -1373,7 +1376,9 @@ export const es = {
       noPhoto: "Sin foto",
       unavailable: "No disponible",
       noOther: "No hay otra revisión con la que comparar.",
+      separator: "·",
       diffTitle: "Diferencia",
+      diffArrow: "→",
       diffWeight: "peso",
       diffNone: "Sin cifras comunes entre las dos revisiones.",
     },

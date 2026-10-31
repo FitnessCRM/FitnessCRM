@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { toReviewPhotoContentType } from "@/lib/data/ports";
 import {
   applyReviewDraft,
   canClientEditReview,
@@ -79,6 +80,7 @@ function ReviewEditor({ review, persisted, clientId, types, questions, logs }: E
   const [responses, setResponses] = useState<Record<string, number | string>>(() =>
     Object.fromEntries(review.responses.map((r) => [r.questionId, r.value])),
   );
+  const [photoRejected, setPhotoRejected] = useState(false);
 
   // La revisión se abre (persiste y congela requisitos) en la primera edición real, una sola vez.
   const opening = useRef<Promise<Review> | null>(null);
@@ -87,13 +89,6 @@ function ReviewEditor({ review, persisted, clientId, types, questions, logs }: E
     opening.current ??= mutation.mutateAsync({ open: { clientId } }) as Promise<Review>;
     return opening.current;
   };
-
-  // Las fotos son object URL del navegador: se revocan al desmontar.
-  const objectUrls = useRef<string[]>([]);
-  useEffect(() => {
-    const urls = objectUrls.current;
-    return () => urls.forEach((url) => URL.revokeObjectURL(url));
-  }, []);
 
   // Requisitos congelados al abrirla (I5), no el catálogo actual. Etiqueta y formato: primero
   // la copia congelada de la respuesta o medida existente, después el catálogo.
@@ -151,10 +146,14 @@ function ReviewEditor({ review, persisted, clientId, types, questions, logs }: E
     await mutation.mutateAsync({ reviewId: saved.id, submit: true });
   };
   const pickPhoto = async (pose: Pose, file: File) => {
-    const url = URL.createObjectURL(file);
-    objectUrls.current.push(url);
+    const contentType = toReviewPhotoContentType(file.type);
+    setPhotoRejected(contentType === undefined);
+    if (!contentType) return;
     const opened = await ensureOpened();
-    await mutation.mutateAsync({ reviewId: opened.id, media: { pose, url } });
+    await mutation.mutateAsync({
+      reviewId: opened.id,
+      photo: { clientId, pose, file, contentType },
+    });
   };
 
   return (
@@ -169,6 +168,7 @@ function ReviewEditor({ review, persisted, clientId, types, questions, logs }: E
           <PhotosBlock
             media={review.media}
             editable={editable}
+            rejected={photoRejected}
             onPick={(pose, file) => void pickPhoto(pose, file)}
           />
           <WeightBlock weight={shown} next={next} />

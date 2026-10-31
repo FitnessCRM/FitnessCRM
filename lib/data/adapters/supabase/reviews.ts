@@ -1,4 +1,4 @@
-import type { ReviewPort, ReviewTrackingFilter } from "@/lib/data/ports";
+import type { ReviewPhotoContentType, ReviewPort, ReviewTrackingFilter } from "@/lib/data/ports";
 import {
   weekNumberOrNull,
   type Pose,
@@ -13,6 +13,26 @@ import { REVIEW_SELECT, reviewFromRow, type ReviewRow } from "./review-rows";
 import { readClient, timeZoneOf } from "./queries";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Bucket privado de las fotos (migración 20261028120300). */
+const REVIEW_PHOTOS_BUCKET = "review-photos";
+/** Vida de la URL firmada: lo justo para pintar la foto, no para compartirla. */
+const PHOTO_URL_SECONDS = 10 * 60;
+const PHOTO_EXTENSION: Record<ReviewPhotoContentType, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+/** Función que borra las fotos sustituidas (supabase/functions/delete-review-photos). */
+const DELETE_PHOTOS_FUNCTION = "delete-review-photos";
+
+/**
+ * Borra el objeto de la foto que una sustitución ha dejado sin uso. La sustitución ya está guardada,
+ * así que un fallo aquí no la deshace: solo deja la foto huérfana en el bucket, sin mostrarse.
+ */
+async function removeReplacedPhoto(client: SupabaseClient, storagePath: string): Promise<void> {
+  await client.functions.invoke(DELETE_PHOTOS_FUNCTION, { body: { paths: [storagePath] } });
+}
 
 /**
  * Las revisiones. Las escrituras del cliente y del entrenador van por RPC (migración plan_writes y
@@ -142,15 +162,42 @@ export function createReviewPort(client: SupabaseClient): ReviewPort {
       return requireReview(trainerId, reviewId);
     },
 
-    // La URL es la ruta de la foto en Storage. La función devuelve la ruta que sustituye, por si hay
-    // que borrar ese objeto; de momento no se borra aquí.
+    // La ruta sigue la carpeta que comprueban las políticas de Storage: {entrenador}/{cliente}/{revisión}.
+    uploadReviewPhoto: async ({ trainerId, clientId, reviewId, file, contentType }) => {
+      const path = `${trainerId}/${clientId}/${reviewId}/${crypto.randomUUID()}.${PHOTO_EXTENSION[contentType]}`;
+      const { error } = await client.storage
+        .from(REVIEW_PHOTOS_BUCKET)
+        .upload(path, file, { contentType, upsert: false });
+      raise(error);
+      return path;
+    },
+
+    // Un objeto que ya no existe (se borró, o su subida falló) no es un error: devuelve null y la app
+    // enseña «foto no disponible» (§9.4).
+    reviewPhotoUrl: async (storagePath) => {
+      const bucket = client.storage.from(REVIEW_PHOTOS_BUCKET);
+      const { error: infoError } = await bucket.info(storagePath);
+      if (infoError) {
+        if (infoError.statusCode === "404" || infoError.status === 404) return null;
+        raise(infoError);
+      }
+      const { data, error } = await bucket.createSignedUrl(storagePath, PHOTO_URL_SECONDS);
+      raise(error);
+      return data?.signedUrl ?? null;
+    },
+
+    // La URL es la ruta de la foto en Storage. La función devuelve la ruta que sustituye, para borrar
+    // ese objeto después.
     attachReviewMedia: async (trainerId, reviewId, pose: Pose, url) => {
-      const { error } = await client.rpc("attach_review_media", {
+      const { data, error } = await client.rpc("attach_review_media", {
         p_review_id: reviewId,
         p_pose: pose,
         p_storage_path: url,
       });
       raise(error);
+      // La foto que había en esa pose ya no está registrada: se pide que se borre su objeto.
+      const replaced = data as string | null;
+      if (replaced) await removeReplacedPhoto(client, replaced);
       return requireReview(trainerId, reviewId);
     },
 

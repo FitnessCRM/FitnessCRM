@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useReviewPhotos, type PhotoState } from "@/lib/data/hooks";
 import { POSES, type CivilDate, type Pose, type Review, type WeightLog } from "@/lib/domain";
 import { formatShortDate, formatSignedDecimal } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
@@ -43,14 +44,12 @@ export function PhotosTab({
   );
   const other = others.find((r) => r.id === otherId);
   const comparing = mode === "compare" && other !== undefined;
-  // Las fotos que no cargan, por URL: se explica una vez, debajo, como en Ver revisión (§9.4).
-  const [broken, setBroken] = useState<ReadonlySet<string>>(new Set());
-  const markBroken = (url: string) => setBroken((prev) => new Set(prev).add(url));
-  const shown = comparing ? [review, other] : [review];
-  const missing = shown.some((r) => {
-    const url = r.media.find((m) => m.pose === pose)?.url;
-    return url !== undefined && broken.has(url);
-  });
+  const current = useReviewPhotos(review.media);
+  const compared = useReviewPhotos(other?.media ?? []);
+  // Una foto que no se puede cargar se explica una vez, debajo, como en Ver revisión (§9.4).
+  const missing =
+    current[pose].status === "unavailable" ||
+    (comparing && compared[pose].status === "unavailable");
 
   return (
     <>
@@ -83,10 +82,9 @@ export function PhotosTab({
           <Panel
             review={other}
             pose={pose}
+            photo={compared[pose]}
             today={today}
             timeZone={timeZone}
-            broken={broken}
-            onBroken={markBroken}
             header={
               <label className="flex flex-wrap items-center gap-2">
                 <span className="text-text-subtle tracking-label font-display text-[13px] uppercase">
@@ -99,7 +97,7 @@ export function PhotosTab({
                 >
                   {others.map((r) => (
                     <option key={r.id} value={r.id}>
-                      {es.screensReview.week} {r.weekNumber} ·{" "}
+                      {es.screensReview.week} {r.weekNumber} {t.separator}{" "}
                       {formatShortDate(reviewDate(r, timeZone), today)}
                     </option>
                   ))}
@@ -111,10 +109,9 @@ export function PhotosTab({
         <Panel
           review={review}
           pose={pose}
+          photo={current[pose]}
           today={today}
           timeZone={timeZone}
-          broken={broken}
-          onBroken={markBroken}
           current
           large={!comparing}
           header={
@@ -135,27 +132,24 @@ export function PhotosTab({
 function Panel({
   review,
   pose,
+  photo,
   today,
   timeZone,
-  broken,
-  onBroken,
   header,
   current = false,
   large = false,
 }: {
   review: Review;
   pose: Pose;
+  photo: PhotoState;
   today: CivilDate;
   timeZone: string;
-  broken: ReadonlySet<string>;
-  onBroken: (url: string) => void;
   header: ReactNode;
   current?: boolean;
   /** Sola en pantalla, la foto puede crecer más que cuando comparte la fila con otra. */
   large?: boolean;
 }) {
-  const url = review.media.find((m) => m.pose === pose)?.url;
-  const showImage = url !== undefined && !broken.has(url);
+  const url = photo.status === "ready" ? photo.url : undefined;
   const label = `${t.poseLabel} ${es.status.pose[pose].toLowerCase()} · ${es.screensReview.week.toLowerCase()} ${review.weekNumber}`;
   const date = reviewDate(review, timeZone);
 
@@ -164,7 +158,7 @@ function Panel({
       <div className="flex min-h-9 flex-wrap items-center justify-between gap-2">
         {header}
         <p className="text-text-muted text-xs">
-          {es.screensReview.week} {review.weekNumber} ·{" "}
+          {es.screensReview.week} {review.weekNumber} {t.separator}{" "}
           <time dateTime={date}>{formatShortDate(date, today)}</time>
         </p>
       </div>
@@ -175,25 +169,23 @@ function Panel({
             ? "max-lg:max-w-[460px] lg:w-[min(100%,calc(min(80vh,860px)*0.75))]"
             : "lg:w-[min(100%,calc(min(72vh,720px)*0.75))]",
           current ? "border-accent-outline" : "border-border-subtle",
-          !showImage && placeholder,
+          !url && placeholder,
         )}
       >
-        {showImage ? (
-          // La URL es un object URL del navegador (y mañana Drive): no hay loader de next/image.
+        {url !== undefined ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={url}
-            alt={label}
-            onError={() => onBroken(url)}
-            className="size-full object-cover"
-          />
+          <img src={url} alt={label} className="size-full object-cover" />
         ) : (
           <>
             <p className="text-text-muted bg-background/70 rounded px-1.5 text-center font-mono text-xs">
               {label}
             </p>
             <figcaption className="text-text-subtle text-center text-xs">
-              {url === undefined ? t.noPhoto : t.unavailable}
+              {photo.status === "empty"
+                ? t.noPhoto
+                : photo.status === "unavailable"
+                  ? t.unavailable
+                  : null}
             </figcaption>
           </>
         )}
@@ -223,7 +215,9 @@ function Difference({ from, to, logs }: { from: Review; to: Review; logs: Weight
   return (
     <Card className="flex-row flex-wrap items-baseline gap-x-8 gap-y-3 px-[22px] py-4">
       <p className="text-text-subtle tracking-label font-display text-[13px] uppercase">
-        {t.diffTitle} S{older.weekNumber} → S{newer.weekNumber}
+        {t.diffTitle} {es.common.weekShort}
+        {older.weekNumber} {t.diffArrow} {es.common.weekShort}
+        {newer.weekNumber}
       </p>
       {figures.length === 0 ? (
         <p className="text-text-subtle text-[13px]">{t.diffNone}</p>

@@ -151,6 +151,9 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
       }
       return ctx.reply(review);
     },
+    // La demo no tiene Storage: la «ruta» es el blob local, que ya se puede ver.
+    uploadReviewPhoto: async ({ file }) => URL.createObjectURL(file),
+    reviewPhotoUrl: async (storagePath) => storagePath,
     attachReviewMedia: async (trainerId, reviewId, pose, url) => {
       const review = editable(trainerId, reviewId);
       review.media = [

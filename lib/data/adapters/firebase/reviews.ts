@@ -359,6 +359,12 @@ export function createReviewPort(ctx: FirebaseContext): ReviewPort {
       });
     },
 
+    // Las fotos se suben con el adaptador de Supabase; Firebase solo conserva la URL que ya guardó.
+    uploadReviewPhoto: async () => {
+      throw new Error("Las fotos de revisión solo se suben con el adaptador de Supabase.");
+    },
+    reviewPhotoUrl: async (storagePath) => storagePath,
+
     attachReviewMedia: (trainerId, reviewId, pose, url) =>
       runTransaction(ctx.db, async (tx) => {
         const review = await editableIn(tx, trainerId, reviewId);

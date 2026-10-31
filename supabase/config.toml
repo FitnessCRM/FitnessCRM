@@ -389,6 +389,10 @@ allow_dynamic_registration = false
 # La función comprueba el token por su cuenta (getUser) antes de tocar nada.
 verify_jwt = false
 
+[functions.delete-review-photos]
+# Igual que invite-client: comprueba el token por su cuenta y solo borra la carpeta de la cliente.
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
