@@ -6,10 +6,14 @@
  * USO
  *
  *   pnpm migrate:firebase:load --export "C:\<fuera-del-repo>\export" [--apply]
+ *   pnpm migrate:firebase:load --export "C:\<fuera-del-repo>\export" --remote --apply
+ *
+ * Con `--remote` la carga va al proyecto de SUPABASE_URL, que es obligatoria. Las contraseñas de
+ * prueba no se aplican en remoto, y las cuentas que ya existen no se modifican.
  *
  * VARIABLES
  *
- *   SUPABASE_URL                 Por defecto http://127.0.0.1:54321. Solo localhost, por ahora.
+ *   SUPABASE_URL                 Por defecto http://127.0.0.1:54321. Con --remote, obligatoria.
  *   SUPABASE_SERVICE_ROLE_KEY    Obligatoria con --apply. Nunca se imprime ni se escribe en el repo.
  *
  * QUÉ CARGA HOY
@@ -44,7 +48,7 @@ import {
   type ExportedDocument,
 } from "@/lib/data/adapters/supabase/migration/people";
 import { remapPeople } from "@/lib/data/adapters/supabase/migration/remap";
-import { assertLocalUrl } from "@/lib/data/adapters/supabase/migration/rest";
+import { assertTarget } from "@/lib/data/adapters/supabase/migration/rest";
 
 const DEFAULT_URL = "http://127.0.0.1:54321";
 
@@ -62,8 +66,25 @@ async function main(argv: string[], env: NodeJS.ProcessEnv): Promise<number> {
     return 1;
   }
   const apply = argv.includes("--apply");
+  const remote = argv.includes("--remote");
+  const devPasswords = argv.includes("--remote-dev-passwords");
+  if (remote && !env.SUPABASE_URL) {
+    console.error("Con --remote, SUPABASE_URL es obligatoria: no hay destino por defecto.");
+    return 1;
+  }
+  if (devPasswords && !remote) {
+    console.error("--remote-dev-passwords solo tiene sentido junto con --remote.");
+    return 1;
+  }
   const url = env.SUPABASE_URL || DEFAULT_URL;
-  assertLocalUrl(url);
+  assertTarget({ url, remote });
+  if (remote) {
+    console.log(
+      devPasswords
+        ? `Destino REMOTO: ${new URL(url).host}. Se ponen contraseñas de prueba a las cuentas existentes.`
+        : `Destino REMOTO: ${new URL(url).host}. No se aplican contraseñas de prueba.`,
+    );
+  }
 
   // Personas: se planifican primero, porque el resto referencia a sus ids.
   const trainers = readJson<ExportedDocument[]>(exportDir, "trainers.json");
@@ -114,7 +135,7 @@ async function main(argv: string[], env: NodeJS.ProcessEnv): Promise<number> {
 
   if (!apply) {
     console.log(
-      "Simulación: no se ha escrito nada. Añade --apply para cargar en la instancia local.",
+      `Simulación: no se ha escrito nada. Añade --apply para cargar en ${remote ? "el destino remoto" : "la instancia local"}.`,
     );
     return 0;
   }
@@ -124,7 +145,7 @@ async function main(argv: string[], env: NodeJS.ProcessEnv): Promise<number> {
     console.error("Falta SUPABASE_SERVICE_ROLE_KEY.");
     return 1;
   }
-  const target = { url, serviceKey };
+  const target = { url, serviceKey, remote, devPasswords: remote ? devPasswords : undefined };
   const report = await loadPeople(people, linkedAccounts, target);
   console.log(
     `Cuentas creadas: ${report.authUsersCreated}, ya existían: ${report.authUsersSkipped}, ` +

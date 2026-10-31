@@ -22,7 +22,7 @@ import {
   type RoutineTemplate,
 } from "@/lib/domain";
 import type { ExportedDocument } from "./people";
-import { assertLocalUrl, upsertRows, type LoadTarget } from "./rest";
+import { assertTarget, upsertRows, type LoadTarget } from "./rest";
 import {
   exerciseRow,
   foodRow,
@@ -195,7 +195,7 @@ export async function loadCatalogAndPlans(
   data: PlanData,
   target: LoadTarget,
 ): Promise<Record<string, number>> {
-  assertLocalUrl(target.url);
+  assertTarget(target);
   const problems = findPlanViolations(data);
   if (problems.length > 0) {
     throw new Error(`Hay planes que no cumplen los invariantes: ${problems.join("; ")}.`);

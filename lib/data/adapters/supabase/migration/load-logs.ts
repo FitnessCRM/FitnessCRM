@@ -8,7 +8,7 @@ import {
 } from "@/lib/domain";
 import { parseCollection } from "./load-catalog-plans";
 import type { ExportedDocument } from "./people";
-import { assertLocalUrl, upsertRows, type LoadTarget } from "./rest";
+import { assertTarget, upsertRows, type LoadTarget } from "./rest";
 import {
   questionnaireResponseRows,
   reviewMeasurementRows,
@@ -93,7 +93,7 @@ export async function loadReviewsAndLogs(
   data: LogData,
   target: LoadTarget,
 ): Promise<Record<string, number>> {
-  assertLocalUrl(target.url);
+  assertTarget(target);
   const problems = findLogViolations(data);
   if (problems.length > 0) {
     throw new Error(`Hay registros que no cumplen los invariantes: ${problems.join("; ")}.`);

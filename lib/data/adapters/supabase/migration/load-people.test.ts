@@ -171,6 +171,69 @@ describe("loadPeople", () => {
   });
 });
 
+describe("loadPeople against a remote target", () => {
+  const REMOTE = "https://vrddwsnybtketbbmiuvy.supabase.co";
+
+  it("never sets a dev password, and leaves existing accounts untouched", async () => {
+    const { calls, fetchFn } = fakeFetch([TRAINER, CLIENT_ACCOUNT]);
+    const report = await loadPeople(plan, accounts, {
+      url: REMOTE,
+      serviceKey: "service",
+      remote: true,
+      fetch: fetchFn,
+    });
+    expect(calls.some((c) => c.method === "PUT")).toBe(false);
+    expect(calls.some((c) => c.method === "POST" && c.url.endsWith("/auth/v1/admin/users"))).toBe(
+      false,
+    );
+    expect(report).toMatchObject({ authUsersSkipped: 2, passwordsSet: 0 });
+  });
+
+  it("sets the dev passwords on existing accounts only when the target asks for them", async () => {
+    const { calls, fetchFn } = fakeFetch([TRAINER, CLIENT_ACCOUNT]);
+    const report = await loadPeople(plan, accounts, {
+      url: REMOTE,
+      serviceKey: "service",
+      remote: true,
+      devPasswords: true,
+      fetch: fetchFn,
+    });
+    const puts = calls.filter((c) => c.method === "PUT");
+    expect(puts.map((c) => c.body)).toEqual([
+      { password: DEV_PASSWORDS.trainer },
+      { password: DEV_PASSWORDS.client },
+    ]);
+    expect(report).toMatchObject({ authUsersSkipped: 2, passwordsSet: 2 });
+  });
+
+  it("creates new accounts without a password", async () => {
+    const { calls, fetchFn } = fakeFetch();
+    await loadPeople(plan, accounts, {
+      url: REMOTE,
+      serviceKey: "service",
+      remote: true,
+      fetch: fetchFn,
+    });
+    const creates = calls.filter(
+      (c) => c.method === "POST" && c.url.endsWith("/auth/v1/admin/users"),
+    );
+    expect(creates.every((c) => !("password" in (c.body as object)))).toBe(true);
+  });
+
+  it("refuses a remote target that is not https", async () => {
+    const { calls, fetchFn } = fakeFetch();
+    await expect(
+      loadPeople(plan, accounts, {
+        url: "http://vrddwsnybtketbbmiuvy.supabase.co",
+        serviceKey: "service",
+        remote: true,
+        fetch: fetchFn,
+      }),
+    ).rejects.toThrow(/exige una URL https/);
+    expect(calls).toHaveLength(0);
+  });
+});
+
 describe("assertLocalUrl", () => {
   it("accepts localhost and 127.0.0.1, and refuses anything else", () => {
     expect(() => assertLocalUrl("http://127.0.0.1:54321")).not.toThrow();
