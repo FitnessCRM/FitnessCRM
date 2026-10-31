@@ -21,7 +21,7 @@ export type * from "./invitations";
 export type * from "./memberships";
 export type * from "./password-reset";
 export type * from "./plans";
-export type * from "./reviews";
+export * from "./reviews";
 export type * from "./session";
 export type * from "./templates";
 export type * from "./trainer";

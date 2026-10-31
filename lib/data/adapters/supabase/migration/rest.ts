@@ -1,14 +1,22 @@
 /**
  * Escritura en Supabase por la API REST con `fetch`, para los cargadores de la migración (tarjeta
  * 119). Sin SDK: el de Supabase solo se importa desde `lib/data/adapters/supabase/`, y aquí se
- * escribe con la clave de servicio, que salta RLS: por eso solo corre contra la instancia local.
+ * escribe con la clave de servicio, que salta RLS: por eso, salvo destino remoto explícito, solo corre
+ * contra la instancia local.
  */
 
 export interface LoadTarget {
-  /** Base de la API, p. ej. `http://127.0.0.1:54321`. Pasa por `assertLocalUrl` antes de usarla. */
+  /** Base de la API, p. ej. `http://127.0.0.1:54321`. Pasa por `assertTarget` antes de usarla. */
   url: string;
   /** Clave de servicio: nunca se imprime ni se guarda. */
   serviceKey: string;
+  /** Destino remoto. Solo lo activa la CLI con `--remote`; sin esta marca, la carga es local. */
+  remote?: boolean;
+  /**
+   * Pone las contraseñas de prueba a las cuentas que ya existen. Por defecto solo en local; en remoto
+   * hace falta pedirlo con `--remote-dev-passwords`.
+   */
+  devPasswords?: boolean;
   fetch?: typeof fetch;
 }
 
@@ -28,6 +36,21 @@ export function assertLocalUrl(url: string): void {
   if (!LOCAL_HOSTS.has(host)) {
     throw new Error(`La carga solo corre contra la instancia local, y «${host}» no lo es.`);
   }
+}
+
+/** Local por defecto. Remoto solo si el destino lo marca, y entonces exige https. */
+export function assertTarget(target: Pick<LoadTarget, "url" | "remote">): void {
+  if (!target.remote) {
+    assertLocalUrl(target.url);
+    return;
+  }
+  let protocol: string;
+  try {
+    protocol = new URL(target.url).protocol;
+  } catch {
+    throw new Error("La URL de Supabase no es válida.");
+  }
+  if (protocol !== "https:") throw new Error("La carga remota exige una URL https.");
 }
 
 export function serviceHeaders(serviceKey: string): Record<string, string> {

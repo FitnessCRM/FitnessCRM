@@ -36,6 +36,24 @@ export interface ReviewTrackingPage {
   counts: Record<ReviewTrackingFilter, number>;
 }
 
+/** Tipos de imagen que admite el bucket de fotos de revisión (migración 20261028120300). */
+export const REVIEW_PHOTO_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export type ReviewPhotoContentType = (typeof REVIEW_PHOTO_CONTENT_TYPES)[number];
+
+/** El tipo de un archivo elegido, si el bucket lo admite. */
+export function toReviewPhotoContentType(type: string): ReviewPhotoContentType | undefined {
+  return REVIEW_PHOTO_CONTENT_TYPES.find((allowed) => allowed === type);
+}
+
+/** Una foto lista para subir: la carpeta sale de quién la sube y de a qué revisión pertenece. */
+export interface ReviewPhotoUpload {
+  trainerId: string;
+  clientId: string;
+  reviewId: string;
+  file: Blob;
+  contentType: ReviewPhotoContentType;
+}
+
 export interface ReviewPort {
   listClientReviews(trainerId: string, clientId: string): Promise<Review[]>;
   getReview(trainerId: string, reviewId: string): Promise<Review | null>;
@@ -59,6 +77,13 @@ export interface ReviewPort {
     reviewId: string,
     changes: ReviewDraftChanges,
   ): Promise<Review>;
+  /**
+   * Sube la foto a la carpeta de su revisión y devuelve su ruta en Storage. No la registra: después va
+   * `attachReviewMedia` con esa misma ruta.
+   */
+  uploadReviewPhoto(input: ReviewPhotoUpload): Promise<string>;
+  /** URL firmada de corta duración para ver una foto, o `null` si el objeto ya no existe (§9.4). */
+  reviewPhotoUrl(storagePath: string): Promise<string | null>;
   /** Registra una foto de una pose; sustituye la anterior de esa pose si la había. */
   attachReviewMedia(trainerId: string, reviewId: string, pose: Pose, url: string): Promise<Review>;
   submitReview(trainerId: string, reviewId: string): Promise<Review>;

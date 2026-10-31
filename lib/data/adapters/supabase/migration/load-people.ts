@@ -1,5 +1,5 @@
 import type { ExportedAccount, PeoplePlan } from "./people";
-import { assertLocalUrl, serviceHeaders, upsertRows, type LoadTarget } from "./rest";
+import { assertLocalUrl, assertTarget, serviceHeaders, upsertRows, type LoadTarget } from "./rest";
 
 /**
  * Carga de entrenadores, clientes y perfiles en Supabase, con `fetch` (sin SDK).
@@ -28,7 +28,7 @@ export async function loadPeople(
   accounts: ExportedAccount[],
   target: LoadTarget,
 ): Promise<LoadReport> {
-  assertLocalUrl(target.url);
+  assertTarget(target);
   const send = target.fetch ?? fetch;
   const headers = serviceHeaders(target.serviceKey);
 
@@ -47,17 +47,21 @@ export async function loadPeople(
 
     const existing = await send(`${target.url}/auth/v1/admin/users/${account.uid}`, { headers });
     if (existing.ok) {
-      const password = role === "trainer" ? DEV_PASSWORDS.trainer : DEV_PASSWORDS.client;
-      const updated = await send(`${target.url}/auth/v1/admin/users/${account.uid}`, {
-        method: "PUT",
-        headers,
-        body: JSON.stringify({ password }),
-      });
-      if (!updated.ok) {
-        throw new Error(`Auth ${updated.status} al poner la contraseña de ${account.uid}.`);
+      // Una cuenta que ya existe solo recibe contraseña de prueba si el destino lo pide: en remoto, nunca
+      // por defecto.
+      if (target.devPasswords ?? !target.remote) {
+        const password = role === "trainer" ? DEV_PASSWORDS.trainer : DEV_PASSWORDS.client;
+        const updated = await send(`${target.url}/auth/v1/admin/users/${account.uid}`, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({ password }),
+        });
+        if (!updated.ok) {
+          throw new Error(`Auth ${updated.status} al poner la contraseña de ${account.uid}.`);
+        }
+        passwordsSet += 1;
       }
       authUsersSkipped += 1;
-      passwordsSet += 1;
       continue;
     }
     if (existing.status !== 404) {

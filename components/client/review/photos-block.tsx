@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useReviewPhotos, type PhotoState } from "@/lib/data/hooks";
 import { POSES, type Pose, type ReviewMedia } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
@@ -12,29 +13,37 @@ const t = es.screensReview.photos;
 function PhotoSlot({
   pose,
   media,
+  photo,
   editable,
   onPick,
 }: {
   pose: Pose;
   media: ReviewMedia | undefined;
+  photo: PhotoState;
   editable: boolean;
   onPick: (pose: Pose, file: File) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const url = photo.status === "ready" ? photo.url : undefined;
   return (
     <div
       className={cn(
         "border-border-subtle relative flex aspect-[3/4] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-lg border bg-cover bg-center",
-        !media &&
+        !url &&
           "bg-[repeating-linear-gradient(45deg,var(--color-surface-raised),var(--color-surface-raised)_8px,var(--color-surface-overlay)_8px,var(--color-surface-overlay)_16px)]",
       )}
-      style={media ? { backgroundImage: `url(${media.url})` } : undefined}
+      style={url ? { backgroundImage: `url(${url})` } : undefined}
     >
       <span className="text-text-muted bg-background/70 rounded px-1.5 font-mono text-xs">
         {t.poseLabel} {es.status.pose[pose].toLowerCase()}
       </span>
-      {media ? (
+      {photo.status === "ready" ? (
         <span className="text-success bg-background/70 rounded px-1.5 text-[11px]">{t.done}</span>
+      ) : null}
+      {photo.status === "unavailable" ? (
+        <span className="text-text-subtle bg-background/70 rounded px-1.5 text-[11px]">
+          {t.unavailable}
+        </span>
       ) : null}
       {editable ? (
         <>
@@ -64,16 +73,20 @@ function PhotoSlot({
   );
 }
 
-/** Tres poses cerradas (§5). El adaptador guarda una URL; aquí es un object URL del navegador. */
+/** Tres poses cerradas (§5). Cada foto se pide por su ruta en Storage, con una URL firmada. */
 export function PhotosBlock({
   media,
   editable,
+  rejected,
   onPick,
 }: {
   media: ReviewMedia[];
   editable: boolean;
+  /** La última elección no era un formato que admita el bucket. */
+  rejected: boolean;
   onPick: (pose: Pose, file: File) => void;
 }) {
+  const photos = useReviewPhotos(media);
   const uploaded = media.length;
   return (
     <Card className="gap-3.5 p-6 py-6">
@@ -83,7 +96,7 @@ export function PhotosBlock({
           className={cn("text-xs", uploaded === POSES.length ? "text-success" : "text-text-muted")}
         >
           {uploaded} {t.uploaded}
-          {uploaded === POSES.length ? " ✓" : ""}
+          {uploaded === POSES.length ? t.allUploaded : ""}
         </span>
       </CardHeader>
       <CardContent className="flex flex-col gap-3.5 p-0">
@@ -93,12 +106,13 @@ export function PhotosBlock({
               key={pose}
               pose={pose}
               media={media.find((m) => m.pose === pose)}
+              photo={photos[pose]}
               editable={editable}
               onPick={onPick}
             />
           ))}
         </div>
-        <p className="text-text-subtle text-xs">{t.hint}</p>
+        <p className="text-text-subtle text-xs">{rejected ? t.unsupported : t.hint}</p>
       </CardContent>
     </Card>
   );

@@ -1,5 +1,8 @@
 import type { ClientTrackingQuery, MembershipQuery, ReviewTrackingQuery } from "@/lib/data/ports";
 
+/** Primer segmento de las URLs firmadas de fotos: el persistidor no las guarda. */
+export const REVIEW_PHOTO_URL_KEY = "review-photo-url";
+
 /** Claves de TanStack Query. Todas empiezan por el `trainerId` de la sesión salvo la sesión misma. */
 export const queryKeys = {
   session: ["session"] as const,
@@ -55,6 +58,11 @@ export const queryKeys = {
   reviewsTracking: (trainerId: string, query: ReviewTrackingQuery) =>
     ["reviews", trainerId, "tracking", query] as const,
   review: (trainerId: string, reviewId: string) => ["reviews", trainerId, "id", reviewId] as const,
+  /**
+   * La URL firmada de una foto, por su ruta. Empieza por `REVIEW_PHOTO_URL_KEY`: no se guarda en
+   * disco, porque caduca.
+   */
+  reviewPhotoUrl: (storagePath: string) => [REVIEW_PHOTO_URL_KEY, storagePath] as const,
   weightLogs: (trainerId: string, clientId: string) =>
     ["weight-logs", trainerId, clientId] as const,
   workoutLogs: (trainerId: string, clientId: string) =>

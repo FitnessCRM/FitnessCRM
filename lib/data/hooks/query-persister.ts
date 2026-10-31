@@ -1,7 +1,7 @@
 import type { PersistedClient, Persister } from "@tanstack/react-query-persist-client";
 import { del, get, set } from "idb-keyval";
 import type { Query } from "@tanstack/react-query";
-import { queryKeys } from "./query-keys";
+import { queryKeys, REVIEW_PHOTO_URL_KEY } from "./query-keys";
 
 const STORAGE_KEY = "hector-query-cache";
 const WRITE_DELAY_MS = 1000;
@@ -15,7 +15,12 @@ export const PERSIST_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
  * persona. La sesión la resuelve siempre el puerto, que offline la lee de su propio almacén.
  */
 export function shouldPersistQuery(query: Query): boolean {
-  return query.state.status === "success" && query.queryKey[0] !== queryKeys.session[0];
+  const first = query.queryKey[0];
+  return (
+    query.state.status === "success" &&
+    first !== queryKeys.session[0] &&
+    first !== REVIEW_PHOTO_URL_KEY
+  );
 }
 
 /**
