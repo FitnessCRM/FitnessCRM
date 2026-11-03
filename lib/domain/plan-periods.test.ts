@@ -19,6 +19,7 @@ const routine = (id: string, status: Routine["status"], createdAt: string, updat
     days: [],
     status,
     sourceTemplateName: null,
+    sourceTemplateId: null,
     createdAt,
     updatedAt,
   }) satisfies Routine;
@@ -42,6 +43,7 @@ const menu = (
     meals: [],
     status,
     sourceTemplateName: null,
+    sourceTemplateId: null,
     createdAt,
     updatedAt,
   }) satisfies Menu;

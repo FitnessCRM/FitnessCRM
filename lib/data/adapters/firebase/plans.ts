@@ -80,6 +80,7 @@ export function createRoutinePort(ctx: FirebaseContext): RoutinePort {
           clientId,
           status: "borrador",
           sourceTemplateName: null,
+          sourceTemplateId: null,
           createdAt: now,
           updatedAt: now,
         });
@@ -133,6 +134,7 @@ export function createRoutinePort(ctx: FirebaseContext): RoutinePort {
           clientId: current.clientId,
           status: "borrador",
           sourceTemplateName: current.sourceTemplateName,
+          sourceTemplateId: current.sourceTemplateId,
           createdAt: now,
           updatedAt: now,
         });
@@ -261,6 +263,7 @@ export function createMenuPort(ctx: FirebaseContext): MenuPort {
           clientId,
           status: "borrador",
           sourceTemplateName: null,
+          sourceTemplateId: null,
           createdAt: now,
           updatedAt: now,
         });
@@ -305,6 +308,7 @@ export function createMenuPort(ctx: FirebaseContext): MenuPort {
           clientId: current.clientId,
           status: "borrador",
           sourceTemplateName: current.sourceTemplateName,
+          sourceTemplateId: current.sourceTemplateId,
           createdAt: now,
           updatedAt: now,
         });

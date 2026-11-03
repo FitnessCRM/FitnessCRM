@@ -127,6 +127,7 @@ export function buildRoutines(d: DemoDates): {
       days: hyper5dDays("r-marta"),
       status: "activo",
       sourceTemplateName: "Hiper 5d v3",
+      sourceTemplateId: "rt-hiper-5d-v3",
       createdAt: ts(d.martaStart),
       updatedAt: ts(d.daysAgo(5)),
     },

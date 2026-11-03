@@ -14,6 +14,7 @@ const routine: Routine = {
   name: "Fuerza A",
   note: "Calienta bien",
   sourceTemplateName: null,
+  sourceTemplateId: null,
   createdAt: CREATED,
   updatedAt: CREATED,
   days: [
@@ -48,6 +49,7 @@ const menu: Menu = {
   macros: { kcal: 2200, proteinG: 160, carbsG: 220, fatG: 70 },
   note: "",
   sourceTemplateName: null,
+  sourceTemplateId: null,
   createdAt: CREATED,
   updatedAt: CREATED,
   meals: [

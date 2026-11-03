@@ -159,6 +159,7 @@ export function buildNutrition(d: DemoDates): {
     ...body,
     status: "activo",
     sourceTemplateName: "Definición 2.400",
+    sourceTemplateId: "mnt-definicion-2400",
     createdAt: ts(d.martaStart),
     updatedAt: ts(d.martaStart),
   });

@@ -156,6 +156,7 @@ describe("foodItemSchema", () => {
       note: "",
       status: "activo",
       sourceTemplateName: null,
+      sourceTemplateId: null,
       createdAt: NOW,
       updatedAt: NOW,
     };

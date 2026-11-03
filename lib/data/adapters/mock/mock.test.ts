@@ -456,6 +456,7 @@ describe("flows", () => {
     expect(draft).toMatchObject({
       status: "borrador",
       sourceTemplateName: active.sourceTemplateName,
+      sourceTemplateId: active.sourceTemplateId,
     });
     await p.routines.activateRoutine(TRAINER, draft.id);
     const all = await p.routines.listRoutines(TRAINER, MARTA);
@@ -881,6 +882,7 @@ describe("writes are tenant-scoped (I1, I2): one cross-tenant case per method (E
       clientId: MARTA,
       status: "borrador",
       sourceTemplateName: null,
+      sourceTemplateId: null,
       createdAt: `${TODAY}T08:00:00Z`,
       updatedAt: `${TODAY}T08:00:00Z`,
     });

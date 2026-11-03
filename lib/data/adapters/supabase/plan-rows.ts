@@ -19,7 +19,7 @@ const isoOf = (value: string) => new Date(value).toISOString();
  * claves foráneas de las tablas hijas apuntan solo al padre, así que PostgREST los embebe sin ambigüedad.
  */
 export const ROUTINE_SELECT = `
-  id, trainer_id, client_id, status, name, note, source_template_name, created_at, updated_at,
+  id, trainer_id, client_id, status, name, note, source_template_name, source_template_id, created_at, updated_at,
   routine_days (
     id, day_number, label, position,
     routine_day_exercises (id, exercise_id, position, sets, reps_min, reps_max, rir, rest, note)
@@ -28,7 +28,7 @@ export const ROUTINE_SELECT = `
 
 export const MENU_SELECT = `
   id, trainer_id, client_id, status, name, day_type, suggested, kcal, protein_g, carbs_g, fat_g,
-  note, source_template_name, created_at, updated_at,
+  note, source_template_name, source_template_id, created_at, updated_at,
   meals (
     id, name, position,
     menu_items (id, name, grams, position, food_id, kcal, protein_g, carbs_g, fat_g)
@@ -72,6 +72,7 @@ export interface RoutineRow {
   name: string;
   note: string;
   source_template_name: string | null;
+  source_template_id: string | null;
   created_at: string;
   updated_at: string;
   routine_days: RoutineDayRow[];
@@ -110,6 +111,7 @@ export interface MenuRow {
   fat_g: number;
   note: string;
   source_template_name: string | null;
+  source_template_id: string | null;
   created_at: string;
   updated_at: string;
   meals: MealRow[];
@@ -179,6 +181,7 @@ export function routineFromRow(row: RoutineRow): Routine {
       })),
     })),
     sourceTemplateName: row.source_template_name,
+    sourceTemplateId: row.source_template_id,
     createdAt: isoOf(row.created_at),
     updatedAt: isoOf(row.updated_at),
   });
@@ -222,6 +225,7 @@ export function menuFromRow(row: MenuRow): Menu {
     })),
     note: row.note,
     sourceTemplateName: row.source_template_name,
+    sourceTemplateId: row.source_template_id,
     createdAt: isoOf(row.created_at),
     updatedAt: isoOf(row.updated_at),
   });

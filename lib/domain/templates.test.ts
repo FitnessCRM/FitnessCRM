@@ -6,6 +6,7 @@ import {
   cloneRoutineTemplate,
   countTemplateDayTypes,
   countTemplateExercises,
+  templateUseCount,
   duplicateMenuTemplate,
   duplicateRoutineTemplate,
   menusToTemplateContent,
@@ -170,6 +171,7 @@ describe("a template made from a client's plan", () => {
     ],
     status: "archivado",
     sourceTemplateName: "Hiper 5d v3",
+    sourceTemplateId: null,
     createdAt: NOW,
     updatedAt: NOW,
   };
@@ -188,6 +190,7 @@ describe("a template made from a client's plan", () => {
     ],
     status: "archivado",
     sourceTemplateName: null,
+    sourceTemplateId: null,
     createdAt: NOW,
     updatedAt: NOW,
     ...over,
@@ -237,5 +240,34 @@ describe("a template made from a client's plan", () => {
     expect(() => menusToTemplateContent([], { newId: idFactory("n"), name: "x" })).toThrow(
       expect.objectContaining({ code: "template.no_menus" }),
     );
+  });
+});
+
+describe("E8 · template uses are counted by id", () => {
+  const plan = (
+    clientId: string,
+    sourceTemplateId: string | null,
+    sourceTemplateName = "Hiper",
+  ) => ({
+    clientId,
+    sourceTemplateId,
+    sourceTemplateName,
+  });
+
+  it("counts clients with a plan cloned from the template, whatever its name now", () => {
+    const plans = [plan("c1", "t1"), plan("c1", "t1"), plan("c2", "t1", "Viejo nombre")];
+    expect(templateUseCount("t1", plans)).toBe(2);
+  });
+
+  it("does not add up two templates with the same name, nor plans without id", () => {
+    const plans = [plan("c1", "t1"), plan("c2", "t2"), plan("c3", null)];
+    expect(templateUseCount("t1", plans)).toBe(1);
+    expect(templateUseCount("t2", plans)).toBe(1);
+  });
+
+  it("stores the template id when cloning", () => {
+    const ctx = { trainerId: "t", clientId: "c", newId: () => "x", now: NOW };
+    expect(cloneRoutineTemplate(routineTemplate, ctx).sourceTemplateId).toBe(routineTemplate.id);
+    expect(cloneMenuTemplate(menuTemplate, ctx)[0]?.sourceTemplateId).toBe(menuTemplate.id);
   });
 });

@@ -62,6 +62,8 @@ export const menuSchema = menuBodySchema.extend({
   clientId: idSchema,
   status: planStatusSchema,
   sourceTemplateName: z.string().nullable(),
+  /** Id de la plantilla de origen (E8), como en la rutina. */
+  sourceTemplateId: z.string().nullable().default(null),
   createdAt: isoTimestampSchema,
   updatedAt: isoTimestampSchema,
 });

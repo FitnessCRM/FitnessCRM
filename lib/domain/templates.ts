@@ -34,6 +34,7 @@ export function cloneRoutineTemplate(template: RoutineTemplate, ctx: CloneContex
     })),
     status: "borrador",
     sourceTemplateName: template.name,
+    sourceTemplateId: template.id,
     createdAt: ctx.now,
     updatedAt: ctx.now,
   };
@@ -57,6 +58,7 @@ export function cloneMenuTemplate(template: MenuTemplate, ctx: CloneContext): Me
     })),
     status: "borrador",
     sourceTemplateName: template.name,
+    sourceTemplateId: template.id,
     createdAt: ctx.now,
     updatedAt: ctx.now,
   }));
@@ -227,4 +229,19 @@ export function setSuggestedMenu<T extends { id: string; dayType: string; sugges
   return menus.map((m) =>
     m.dayType === chosen.dayType ? { ...m, suggested: m.id === menuId } : m,
   );
+}
+
+/**
+ * Usos de una plantilla (E8): cuántos clientes tienen algún plan clonado de ella, en cualquier
+ * estado. Se cuenta por `sourceTemplateId`, nunca por nombre: renombrar la plantilla no pierde sus
+ * usos y dos plantillas con el mismo nombre no los suman. Una plantilla de menú clona varios menús
+ * en cada asignación, por eso se cuentan clientes y no planes. Los planes anteriores a E8 no tienen
+ * id y no cuentan.
+ */
+export function templateUseCount(
+  templateId: string,
+  plans: readonly { clientId: string; sourceTemplateId: string | null }[],
+): number {
+  return new Set(plans.filter((p) => p.sourceTemplateId === templateId).map((p) => p.clientId))
+    .size;
 }

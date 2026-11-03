@@ -15,6 +15,7 @@ const menu = (id: string, over: Partial<Menu> = {}): Menu => ({
   note: "",
   status: "activo",
   sourceTemplateName: null,
+  sourceTemplateId: null,
   createdAt: NOW,
   updatedAt: NOW,
   ...over,

@@ -18,6 +18,7 @@ function routine(id: string, exerciseIds: string[]): Routine {
     note: "",
     status: "activo",
     sourceTemplateName: null,
+    sourceTemplateId: null,
     createdAt: NOW,
     updatedAt: NOW,
     days: [
