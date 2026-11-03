@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/states";
 import {
   groupReviewsByWeekPair,
   isReviewComplete,
+  recentReviews,
   reviewWeight,
   type CivilDate,
   type Review,
@@ -16,13 +17,6 @@ import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 
 const t = es.screensProgress.reviews;
-
-/**
- * Parejas de semanas que se ven sin pedir más (≈ 6 semanas). El histórico crece una revisión por
- * semana y sin tope la pantalla se alarga cada vez más; el resto queda tras «Ver todas». El borrador
- * en curso está siempre en la pareja más reciente, así que nunca se esconde.
- */
-const RECENT_GROUPS = 3;
 
 function subtitle(review: Review, logs: WeightLog[], today: CivilDate, timeZone: string) {
   const date = civilDateOf(review.submittedAt ?? review.createdAt, timeZone);
@@ -50,13 +44,15 @@ export function ReviewsList({
   if (reviews.length === 0) {
     return <EmptyState title={t.emptyTitle} description={t.emptyHint} />;
   }
-  const groups = groupReviewsByWeekPair(reviews);
+  // Sin pedir más, las últimas 6 semanas (E13): el histórico crece una revisión por semana y sin
+  // tope la pantalla se alarga cada vez más. El resto queda tras «Ver todas».
+  const recent = recentReviews(reviews);
+  const groups = groupReviewsByWeekPair(showAll ? reviews : recent);
   const newest = groups[0]?.from;
-  const visible = showAll ? groups : groups.slice(0, RECENT_GROUPS);
 
   return (
     <div className="flex flex-col gap-[18px]">
-      {visible.map((group) => (
+      {groups.map((group) => (
         <section key={group.from} className="flex flex-col gap-2.5">
           <h3
             className={cn(
@@ -114,7 +110,7 @@ export function ReviewsList({
           })}
         </section>
       ))}
-      {groups.length > RECENT_GROUPS ? (
+      {reviews.length > recent.length ? (
         <button
           type="button"
           aria-expanded={showAll}

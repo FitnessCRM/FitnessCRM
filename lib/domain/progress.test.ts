@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { measurementType, review } from "./__tests__/fixtures";
-import { groupReviewsByWeekPair, measurementSeries, weekPair } from "./progress";
+import { groupReviewsByWeekPair, measurementSeries, recentReviews, weekPair } from "./progress";
 import type { BodyMeasurement } from "./schemas";
 
 const bm = (typeId: string, value: number, label = typeId, unit = "cm"): BodyMeasurement => ({
@@ -78,5 +78,25 @@ describe("week pairs (§8 presentation)", () => {
     ]);
     expect(groups[1]?.reviews.map((r) => r.weekNumber)).toEqual([4]);
     expect(groups[2]?.reviews.map((r) => r.weekNumber)).toEqual([2, 1]);
+  });
+});
+
+describe("recentReviews (E13)", () => {
+  const weeks = (rs: { weekNumber: number }[]) => rs.map((r) => r.weekNumber);
+
+  it("keeps the six weeks ending at the newest review, newest included", () => {
+    const all = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((w) => review({ id: `r${w}`, weekNumber: w }));
+    expect(weeks(recentReviews(all))).toEqual([4, 5, 6, 7, 8, 9]);
+  });
+
+  it("counts skipped weeks as weeks, not as rows", () => {
+    const all = [1, 2, 8, 12].map((w) => review({ id: `r${w}`, weekNumber: w }));
+    expect(weeks(recentReviews(all))).toEqual([8, 12]);
+  });
+
+  it("never leaves the list empty when the client stopped sending", () => {
+    const all = [1, 2].map((w) => review({ id: `r${w}`, weekNumber: w }));
+    expect(weeks(recentReviews(all))).toEqual([1, 2]);
+    expect(recentReviews([])).toEqual([]);
   });
 });

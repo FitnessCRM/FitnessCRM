@@ -84,3 +84,17 @@ export function groupReviewsByWeekPair(reviews: readonly Review[]): ReviewWeekGr
     .map((g) => ({ ...g, reviews: [...g.reviews].sort((a, b) => b.weekNumber - a.weekNumber) }))
     .sort((a, b) => b.from - a.from);
 }
+
+/** Semanas que la lista de revisiones de Progreso enseña sin pedir más (E13). */
+export const RECENT_REVIEW_WEEKS = 6;
+
+/**
+ * Revisiones de las últimas `weeks` semanas, contadas hacia atrás desde la revisión más reciente,
+ * ella incluida (E13). Se cuenta desde la más reciente y no desde hoy para que la lista nunca quede
+ * vacía cuando el cliente lleva semanas sin enviar; y el borrador en curso, si lo hay, es siempre la
+ * más reciente, así que nunca se esconde. Las semanas saltadas cuentan: no hay fila, pero sí semana.
+ */
+export function recentReviews(reviews: readonly Review[], weeks = RECENT_REVIEW_WEEKS): Review[] {
+  const newest = reviews.reduce((max, r) => Math.max(max, r.weekNumber), 0);
+  return reviews.filter((r) => r.weekNumber > newest - weeks);
+}
