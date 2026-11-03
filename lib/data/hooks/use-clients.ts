@@ -76,6 +76,20 @@ export function useUpdateClient() {
 }
 
 /**
+ * Borrado a petición de un cliente de baja (E11, I14). Al acabar, el cliente ya no existe: se
+ * olvidan todas las consultas del entrenador, que podían contenerlo.
+ */
+export function useEraseClient() {
+  const ports = usePorts();
+  const queryClient = useQueryClient();
+  const trainerId = useTrainerId();
+  return useMutation({
+    mutationFn: (clientId: string) => ports.clients.eraseClient(trainerId!, clientId),
+    onSuccess: () => queryClient.invalidateQueries(),
+  });
+}
+
+/**
  * El cliente de la sesión enseña u oculta sus kcal y macros (I11). No entra en la cola offline de
  * `offline-writes.ts`: sin red falla en el acto, en vez de quedarse en pausa, para que la pantalla
  * lo diga. La ficha nueva entra en la caché y además se invalida, por si el entrenador la cambió.

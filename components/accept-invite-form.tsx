@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAcceptInvitation, useIsInvitationLink, useReadInvitation } from "@/lib/data/hooks";
-import { DomainError } from "@/lib/domain";
+import { CONSENT_VERSION, DomainError } from "@/lib/domain";
 import { invitationKind } from "@/lib/domain/invitation-link";
 import { es } from "@/lib/i18n/es";
 import { homePath } from "@/lib/session-access";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -32,6 +33,8 @@ function messageFor(error: unknown, forTrainer: boolean): string {
         return forTrainer ? copy.trainer.errorNotFound : copy.form.errorNotFound;
       case "invitation.already_registered":
         return copy.form.errorRegistered;
+      case "invitation.consent_required":
+        return copy.form.errorConsent;
     }
   }
   return copy.form.errorNetwork;
@@ -49,6 +52,8 @@ export function AcceptInviteForm() {
   const [typedEmail, setTypedEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  // C1 (I33): la invitación de un cliente no se acepta sin el texto de consentimiento.
+  const [consented, setConsented] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Leer el enlace lo gasta: en el modo estricto de desarrollo el efecto corre dos veces.
   const started = useRef(false);
@@ -81,11 +86,13 @@ export function AcceptInviteForm() {
     const email = knownEmail ?? typedEmail;
     if (!email || !password || !confirm) return setError(copy.form.required);
     if (password !== confirm) return setError(copy.form.errorMismatch);
+    if (!forTrainer && !consented) return setError(copy.form.errorConsent);
     accept(
       {
         link: window.location.href,
         password,
         email: knownEmail === null ? typedEmail : undefined,
+        consentVersion: forTrainer ? undefined : CONSENT_VERSION,
       },
       {
         onSuccess: (session) => router.push(homePath(session)),
@@ -177,6 +184,40 @@ export function AcceptInviteForm() {
               disabled={isPending}
             />
           </div>
+
+          {forTrainer ? null : (
+            <section
+              aria-labelledby="consent-title"
+              className="border-border-subtle bg-surface space-y-3 rounded-lg border p-4"
+            >
+              <h2
+                id="consent-title"
+                className="font-display tracking-label text-[13px] font-bold uppercase"
+              >
+                {copy.consent.title}
+              </h2>
+              <div className="text-text-muted max-h-48 space-y-2 overflow-y-auto text-xs leading-relaxed">
+                {copy.consent.paragraphs.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </div>
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="consent"
+                  checked={consented}
+                  onCheckedChange={(value) => setConsented(value === true)}
+                  disabled={isPending}
+                  className="mt-0.5"
+                />
+                <Label
+                  htmlFor="consent"
+                  className="text-text-primary text-xs leading-snug tracking-normal normal-case"
+                >
+                  {copy.consent.accept}
+                </Label>
+              </div>
+            </section>
+          )}
 
           {error && (
             <div role="alert" className="bg-danger-soft text-danger rounded-lg p-3 text-sm">
