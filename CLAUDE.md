@@ -475,7 +475,16 @@ pnpm typecheck    # tsc --noEmit
 pnpm test:firebase  # adaptador de Firebase contra los emuladores de Firestore y Auth
 pnpm test:rules     # reglas de seguridad (`firestore.rules`) contra el emulador de Firestore
 pnpm seed:demo      # siembra del entrenador de demo; solo lee salvo con `--apply`
+supabase start      # Supabase local (necesita Docker)
+supabase db reset   # rehace la base local desde supabase/migrations/
+supabase test db    # tests pgTAP de supabase/tests/
 ```
+
+Con Supabase local arrancado, `pnpm test` corre también el contrato del adaptador de Supabase si
+tiene `SUPABASE_TEST_URL`, `SUPABASE_TEST_ANON_KEY` y `SUPABASE_TEST_SERVICE_ROLE_KEY` (las da
+`supabase status -o env`); la CI lo hace así. Los tests del webhook de Stripe
+(`supabase/functions/_shared/*.test.ts`) firman eventos de ejemplo con un secreto generado en el
+propio test: ninguna clave.
 
 Los dos `test:*` de Firebase arrancan los emuladores con `firebase-tools` y necesitan **Java**
 (JDK 21). Sin emulador, `pnpm test` salta esos archivos y corre el resto: el dominio, el
@@ -547,3 +556,15 @@ documentación posterior a cada fusión.
 Pre-commit autocontenido (12-10-2026, tarjeta 106, PR #106): el hook encuentra `gga` y la CLI de su
 proveedor en `.tools/`, sin nada configurado fuera del repo. Está descrito en «Convenciones»,
 dentro de «Commits y ramas».
+
+Migración a Supabase decidida el 28-10-2026 (`docs/dominio.md` §12, `docs/plan-migracion-supabase.md`):
+en `main` el esquema con RLS, Storage y Edge Functions, el adaptador con los 18 puertos, la
+exportación de Firebase y el cargador (PR #137–#145). Firebase sigue en producción hasta la Fase 9.
+
+Tanda de noviembre (03-11-2026, tarjeta 120, una rama y un PR): CI con Supabase y Node 24; deuda de
+Progreso y de plantillas y editores; archivar un ejercicio versiona las rutinas activas; email del
+cliente único; macros del menú ocultas en la base de datos; consentimiento al aceptar la invitación
+(**borrador pendiente de validar**) y borrado a petición; tarifas de membresía y cobro en línea con
+Stripe Connect en Edge Functions (solo modo test, sin claves en el repo); favicon. Lo nuevo existe en
+el adaptador en memoria y en el de Supabase; con Firebase responde «no disponible». Detalle en
+`docs/estado.md`.
