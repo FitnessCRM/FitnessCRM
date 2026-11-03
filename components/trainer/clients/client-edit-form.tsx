@@ -75,7 +75,12 @@ export function ClientEditForm({
         })}
         className="flex max-w-3xl flex-col gap-6"
       >
-        <ClientDataCard lockStartDate startDateHint={t.startDateLockedHint}>
+        <ClientDataCard
+          lockStartDate
+          startDateHint={t.startDateLockedHint}
+          lockEmail={client.status !== "invitado"}
+          emailHint={client.status === "invitado" ? t.emailResendHint : t.emailLockedHint}
+        >
           <div className="flex flex-col gap-1.5 sm:max-w-[50%]">
             <Label htmlFor="ce-cadence">{t.cadence.label}</Label>
             <Input
