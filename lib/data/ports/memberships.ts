@@ -1,4 +1,10 @@
-import type { CivilDate, Client, Membership, MembershipStatusFilter } from "@/lib/domain";
+import type {
+  CivilDate,
+  Client,
+  Membership,
+  MembershipRate,
+  MembershipStatusFilter,
+} from "@/lib/domain";
 
 /**
  * El registro manual (S6): el precio y el id del pago solo los pone un pago en línea confirmado
@@ -52,4 +58,11 @@ export interface MembershipPort {
     membershipId: string,
     changes: MembershipChanges,
   ): Promise<Membership>;
+  /**
+   * Las cuatro tarifas del entrenador (E1), en el orden de los tipos; las que no tienen fila llegan
+   * inactivas y sin precio. Las lee también su cliente, para elegir qué pagar.
+   */
+  listRates(trainerId: string): Promise<MembershipRate[]>;
+  /** Guarda la tarifa de un tipo (E1). Solo el entrenador; el precio, en céntimos enteros (E3). */
+  saveRate(rate: MembershipRate): Promise<MembershipRate>;
 }

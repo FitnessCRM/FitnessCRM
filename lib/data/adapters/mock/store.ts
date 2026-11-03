@@ -1,4 +1,5 @@
 import type {
+  MembershipRate,
   Client,
   Exercise,
   Food,
@@ -50,6 +51,8 @@ export interface MockState {
   trainerInvitations: MockTrainerInvitation[];
   clients: Client[];
   memberships: Membership[];
+  /** Tarifas del entrenador (E1). */
+  membershipRates: MembershipRate[];
   exercises: Exercise[];
   /** La copia propia de los alimentos de cada entrenador. */
   foods: Food[];
@@ -90,6 +93,12 @@ export function createDemoState(today: CivilDate = demoToday()): MockState {
     trainerInvitations: [],
     clients: buildClients(d),
     memberships: buildMemberships(d),
+    // Demo: mensual y trimestral se pueden pagar; semestral está desactivada y anual, sin precio.
+    membershipRates: [
+      { trainerId: TRAINER_ID, type: "mensual", active: true, priceCents: 4900 },
+      { trainerId: TRAINER_ID, type: "trimestral", active: true, priceCents: 12900 },
+      { trainerId: TRAINER_ID, type: "semestral", active: false, priceCents: 23900 },
+    ],
     exercises,
     foods,
     catalogFoods,

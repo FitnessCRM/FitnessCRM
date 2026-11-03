@@ -1,5 +1,13 @@
 import type { MembershipChanges, MembershipPort } from "@/lib/data/ports";
-import { addCivilDays, DomainError, EXPIRING_SOON_DAYS, membershipEditSchema } from "@/lib/domain";
+import {
+  addCivilDays,
+  DomainError,
+  EXPIRING_SOON_DAYS,
+  membershipEditSchema,
+  membershipRateSchema,
+  ratesByType,
+  type MembershipRate,
+} from "@/lib/domain";
 import type { SupabaseClient } from "./client";
 import { notFoundError, raise } from "./errors";
 import { countOf, membershipsCount, membershipsQuery, rowsOf } from "./queries";
@@ -19,6 +27,21 @@ function membershipColumns(changes: MembershipChanges) {
     ...(changes.paymentStatus !== undefined && { payment_status: changes.paymentStatus }),
   };
 }
+
+interface RateRow {
+  trainer_id: string;
+  type: string;
+  active: boolean;
+  price_cents: number | null;
+}
+
+const rateFromRow = (row: RateRow): MembershipRate =>
+  membershipRateSchema.parse({
+    trainerId: row.trainer_id,
+    type: row.type,
+    active: row.active,
+    priceCents: row.price_cents,
+  });
 
 export function createMembershipPort(client: SupabaseClient): MembershipPort {
   /**
@@ -135,6 +158,38 @@ export function createMembershipPort(client: SupabaseClient): MembershipPort {
       raise(error);
       if (!data) throw notFoundError("Membresía");
       return membershipFromRow(data as MembershipRow);
+    },
+
+    // E1: las cuatro, en orden; una sin fila es inactiva y sin precio. RLS deja al cliente solo las
+    // de su entrenador que se pueden pagar.
+    listRates: async (trainerId) => {
+      const rows = await rowsOf(
+        client
+          .from("membership_rates")
+          .select("trainer_id, type, active, price_cents")
+          .eq("trainer_id", trainerId),
+        rateFromRow,
+      );
+      return ratesByType(trainerId, rows);
+    },
+
+    saveRate: async (rate) => {
+      const data = membershipRateSchema.parse(rate);
+      const { data: row, error } = await client
+        .from("membership_rates")
+        .upsert(
+          {
+            trainer_id: data.trainerId,
+            type: data.type,
+            active: data.active,
+            price_cents: data.priceCents,
+          },
+          { onConflict: "trainer_id,type" },
+        )
+        .select("trainer_id, type, active, price_cents")
+        .single();
+      raise(error);
+      return rateFromRow(row as RateRow);
     },
   };
 }

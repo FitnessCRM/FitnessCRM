@@ -16,7 +16,9 @@ import {
   compareMembershipsForList,
   matchesMembershipFilter,
   membershipStanding,
+  membershipRateSchema,
   membershipSchema,
+  ratesByType,
   overlappingMembershipIds,
   type MembershipStatusFilter,
 } from "@/lib/domain";
@@ -221,6 +223,18 @@ export function createMembershipPort(ctx: MockContext): MembershipPort {
         clientId: current.clientId,
       });
       return ctx.reply(replaceById(ctx.state.memberships, next));
+    },
+    listRates: async (trainerId) =>
+      ctx.reply(ratesByType(trainerId, own(ctx.state.membershipRates, trainerId))),
+    saveRate: async (rate) => {
+      const next = membershipRateSchema.parse(rate);
+      ctx.state.membershipRates = [
+        ...ctx.state.membershipRates.filter(
+          (r) => !(r.trainerId === next.trainerId && r.type === next.type),
+        ),
+        next,
+      ];
+      return ctx.reply(next);
     },
   };
 }

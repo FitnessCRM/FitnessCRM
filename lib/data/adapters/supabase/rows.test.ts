@@ -115,6 +115,8 @@ describe("membershipFromRow", () => {
       startDate: "2026-09-01",
       endDate: "2026-11-30",
       paymentStatus: "pagada",
+      priceCents: null,
+      onlinePaymentId: null,
       createdAt: "2026-08-28T18:30:00.000Z",
     });
   });

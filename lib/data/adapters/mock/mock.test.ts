@@ -412,6 +412,23 @@ describe("flows", () => {
     expect((await p.exercises.getExercise(TRAINER, "ex-press-banca"))?.status).toBe("archivado");
   });
 
+  it("lists the four rates and saves one (E1)", async () => {
+    const p = ports();
+    const rates = await p.memberships.listRates(TRAINER);
+    expect(rates.map((r) => r.type)).toEqual(["mensual", "trimestral", "semestral", "anual"]);
+    expect(rates[3]).toMatchObject({ active: false, priceCents: null });
+    await p.memberships.saveRate({
+      trainerId: TRAINER,
+      type: "anual",
+      active: true,
+      priceCents: 44900,
+    });
+    expect((await p.memberships.listRates(TRAINER))[3]).toMatchObject({
+      active: true,
+      priceCents: 44900,
+    });
+  });
+
   it("erases a discharged client and everything that hangs from them (E11)", async () => {
     const p = ports();
     await expect(p.clients.eraseClient(TRAINER, MARTA)).rejects.toMatchObject({
