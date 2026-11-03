@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { NOW } from "./__tests__/fixtures";
+import { declaredMacros } from "./macros";
 import { planMenuPublish, routinePublishOp } from "./plan-publish";
 import type { Menu, MenuTemplateEntry } from "./schemas";
 
@@ -25,7 +26,7 @@ const entry = (m: Menu, over: Partial<MenuTemplateEntry> = {}): MenuTemplateEntr
   name: m.name,
   dayType: m.dayType,
   suggested: m.suggested,
-  macros: m.macros,
+  macros: declaredMacros(m),
   meals: m.meals,
   note: m.note,
   ...over,

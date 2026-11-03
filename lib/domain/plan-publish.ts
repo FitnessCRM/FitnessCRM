@@ -1,3 +1,4 @@
+import { declaredMacros } from "./macros";
 import { DAY_TYPES } from "./schemas";
 import type { DayType, Menu, MenuTemplateEntry, Routine } from "./schemas";
 
@@ -51,7 +52,7 @@ function sameBody(entry: MenuTemplateEntry, menu: Menu): boolean {
     name: menu.name,
     dayType: menu.dayType,
     suggested: menu.suggested,
-    macros: menu.macros,
+    macros: declaredMacros(menu),
     meals: menu.meals,
     note: menu.note,
   };

@@ -21,6 +21,7 @@ import {
   latestDayRecord,
   reviewWeight,
   weekNumber,
+  declaredMacros,
 } from "@/lib/domain";
 import { createDemoState, createMockPorts, demoToday } from "./index";
 
@@ -540,9 +541,28 @@ describe("flows", () => {
     const dayType = active[0]!.dayType;
     const set = active.filter((m) => m.dayType === dayType);
     const target = set[0]!;
-    const { id, trainerId, clientId, status, sourceTemplateName, createdAt, updatedAt, ...body } =
-      target;
-    void [id, trainerId, clientId, status, sourceTemplateName, createdAt, updatedAt];
+    const {
+      id,
+      trainerId,
+      clientId,
+      status,
+      sourceTemplateName,
+      sourceTemplateId,
+      createdAt,
+      updatedAt,
+      ...rest
+    } = target;
+    void [
+      id,
+      trainerId,
+      clientId,
+      status,
+      sourceTemplateName,
+      sourceTemplateId,
+      createdAt,
+      updatedAt,
+    ];
+    const body = { ...rest, macros: declaredMacros(target) };
     await expect(p.menus.updateMenu(TRAINER, target.id, body)).rejects.toMatchObject({
       code: "menu.not_draft",
     });
@@ -641,7 +661,7 @@ describe("flows", () => {
     const maintenance = templates.find((t) => t.id === "mnt-mantenimiento-2500");
     expect(maintenance?.menus[0]?.macros).toEqual(rounded);
     const [menu] = await p.templates.assignMenuTemplate(TRAINER, MARTA, "mnt-mantenimiento-2500");
-    expect(menu?.macros.kcal).toBe(2500);
+    expect(menu?.macros?.kcal).toBe(2500);
   });
 
   it("rejects macros without valid kcal", async () => {

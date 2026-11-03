@@ -1,3 +1,4 @@
+import { declaredMacros } from "./macros";
 import { DomainError } from "./errors";
 import { copyFoodItem } from "./food";
 import type { Menu, MenuTemplate, Routine, RoutineTemplate } from "./schemas";
@@ -178,7 +179,7 @@ export function menusToTemplateContent(
         name: menu.name,
         dayType: menu.dayType,
         suggested,
-        macros: { ...menu.macros },
+        macros: { ...declaredMacros(menu) },
         note: menu.note,
         meals: menu.meals.map((meal) => ({
           id: ctx.newId(),

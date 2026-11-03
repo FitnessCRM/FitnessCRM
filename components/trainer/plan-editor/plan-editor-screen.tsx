@@ -52,6 +52,7 @@ import {
   type Routine,
   type RoutineBody,
   type RoutinePublishOp,
+  declaredMacros,
 } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 
@@ -65,7 +66,7 @@ function toEntry(menu: Menu): MenuTemplateEntry {
     name: menu.name,
     dayType: menu.dayType,
     suggested: menu.suggested,
-    macros: menu.macros,
+    macros: declaredMacros(menu),
     meals: menu.meals,
     note: menu.note,
   };

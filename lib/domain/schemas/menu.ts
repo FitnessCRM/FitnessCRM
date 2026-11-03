@@ -58,6 +58,12 @@ export type MenuBody = z.infer<typeof menuBodySchema>;
 
 /** Menú asignado a un cliente. Jerarquía que solo se consulta y edita completa. */
 export const menuSchema = menuBodySchema.extend({
+  /**
+   * Las declaradas, como en el cuerpo, salvo para quien no puede leerlas: el cliente con
+   * `macrosVisible` en `false` las recibe a `null`, porque la base de datos no se las manda (I11,
+   * E12). El entrenador las lee siempre.
+   */
+  macros: macrosSchema.nullable(),
   ...tenantFields,
   clientId: idSchema,
   status: planStatusSchema,
