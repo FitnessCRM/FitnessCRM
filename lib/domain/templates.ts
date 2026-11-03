@@ -245,3 +245,37 @@ export function templateUseCount(
   return new Set(plans.filter((p) => p.sourceTemplateId === templateId).map((p) => p.clientId))
     .size;
 }
+
+/**
+ * I32 (E9): borradores del cliente que chocan con asignar una plantilla. De rutina, cualquier
+ * rutina en borrador del cliente; de menú, los menús en borrador de los tipos de día que trae la
+ * plantilla (cada tipo de día tiene su conjunto, §7). Si hay alguno, la asignación pregunta si se
+ * sustituyen; sustituir los borra, porque un borrador no tiene histórico.
+ */
+export function routineDraftsBlocking(
+  routines: readonly Pick<Routine, "id" | "clientId" | "status">[],
+  clientId: string,
+): string[] {
+  return routines
+    .filter((r) => r.clientId === clientId && r.status === "borrador")
+    .map((r) => r.id);
+}
+
+export function menuDraftsBlocking(
+  menus: readonly Pick<Menu, "id" | "clientId" | "status" | "dayType">[],
+  clientId: string,
+  template: Pick<MenuTemplate, "menus">,
+): string[] {
+  const dayTypes = new Set(template.menus.map((m) => m.dayType));
+  return menus
+    .filter((m) => m.clientId === clientId && m.status === "borrador" && dayTypes.has(m.dayType))
+    .map((m) => m.id);
+}
+
+/** Lo que se lanza al asignar sobre un borrador sin pedir sustituirlo (I32). */
+export function draftExistsError(): DomainError {
+  return new DomainError(
+    "plan.draft_exists",
+    "El cliente ya tiene un borrador de este plan: hay que confirmar si se sustituye (I32)",
+  );
+}

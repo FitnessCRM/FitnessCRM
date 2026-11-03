@@ -6,6 +6,9 @@ import {
   cloneRoutineTemplate,
   countTemplateDayTypes,
   countTemplateExercises,
+  draftExistsError,
+  menuDraftsBlocking,
+  routineDraftsBlocking,
   templateUseCount,
   duplicateMenuTemplate,
   duplicateRoutineTemplate,
@@ -269,5 +272,35 @@ describe("E8 · template uses are counted by id", () => {
     const ctx = { trainerId: "t", clientId: "c", newId: () => "x", now: NOW };
     expect(cloneRoutineTemplate(routineTemplate, ctx).sourceTemplateId).toBe(routineTemplate.id);
     expect(cloneMenuTemplate(menuTemplate, ctx)[0]?.sourceTemplateId).toBe(menuTemplate.id);
+  });
+});
+
+describe("I32 · one draft per client and plan kind", () => {
+  it("a routine draft of the client blocks assigning a routine template", () => {
+    const routines = [
+      { id: "r1", clientId: "c1", status: "activo" as const },
+      { id: "r2", clientId: "c1", status: "borrador" as const },
+      { id: "r3", clientId: "c2", status: "borrador" as const },
+    ];
+    expect(routineDraftsBlocking(routines, "c1")).toEqual(["r2"]);
+    expect(routineDraftsBlocking(routines, "c3")).toEqual([]);
+  });
+
+  it("menu drafts block only in the day types the template brings", () => {
+    const menus = [
+      { id: "m1", clientId: "c1", status: "borrador" as const, dayType: "descanso" as const },
+      { id: "m2", clientId: "c1", status: "activo" as const, dayType: "entrenamiento" as const },
+    ];
+    const training = { menus: [{ dayType: "entrenamiento" as const }] } as Pick<
+      MenuTemplate,
+      "menus"
+    >;
+    const rest = { menus: [{ dayType: "descanso" as const }] } as Pick<MenuTemplate, "menus">;
+    expect(menuDraftsBlocking(menus, "c1", training)).toEqual([]);
+    expect(menuDraftsBlocking(menus, "c1", rest)).toEqual(["m1"]);
+  });
+
+  it("raises a domain error the screen can ask about", () => {
+    expect(draftExistsError().code).toBe("plan.draft_exists");
   });
 });

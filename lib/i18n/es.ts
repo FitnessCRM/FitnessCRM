@@ -659,6 +659,15 @@ export const es = {
     notFound: { title: "Plantilla no encontrada", hint: "Puede que se haya eliminado." },
     sections: { details: "Datos", content: "Contenido" },
   },
+  /** Assigning a template when the client already has a draft of that plan (I32, E9). */
+  replaceDraftDialog: {
+    title: "Ya hay un borrador",
+    routine:
+      "Este cliente ya tiene una rutina en borrador. Si la sustituyes por la plantilla, el borrador se borra.",
+    menu: "Este cliente ya tiene menús en borrador para estos tipos de día. Si los sustituyes por la plantilla, esos borradores se borran.",
+    confirm: "Sustituir el borrador",
+    cancel: "Cancelar",
+  },
   /** Trainer panel client picker (`components/trainer/client-picker.tsx`): used by Clients, Memberships and Assignment. */
   clientPicker: {
     label: "Cliente",
