@@ -1,6 +1,6 @@
 begin;
 
-select plan(7);
+select plan(12);
 
 -- E12: the client reads the declared menu macros only while macros_visible is true; the trainer always.
 insert into auth.users (id, email) values
@@ -56,6 +56,69 @@ set local "request.jwt.claims" to '{"sub":"22222222-2222-2222-2222-222222222222"
 
 select is((select kcal from public.menu_reads), 2000, 'with macros_visible true the client reads the kcal');
 select is((select fat_g from public.menu_reads), 60::numeric, 'and the macros');
+
+-- Who stays out (card 123). menu_reads runs as its owner and skips the RLS of menus, so its where is
+-- the only thing that keeps trainers and clients apart. A second trainer, a second client of trainer
+-- A, and a draft and an archived menu for Marta.
+reset role;
+
+insert into auth.users (id, email) values
+  ('33333333-3333-3333-3333-333333333333', 'trainer-b@test.local'),
+  ('44444444-4444-4444-4444-444444444444', 'client-a2@test.local');
+
+insert into public.trainers (id, name, email, time_zone) values
+  ('33333333-3333-3333-3333-333333333333', 'Entrenador B', 'trainer-b@test.local', 'Europe/Madrid');
+
+insert into public.clients (id, trainer_id, first_name, last_name, email, start_date, review_every_days, status, macros_visible) values
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '11111111-1111-1111-1111-111111111111', 'Luis', 'A', 'luis@test.local', '2026-01-05', 7, 'activo', true);
+
+insert into public.profiles (user_id, role, trainer_id, client_id) values
+  ('44444444-4444-4444-4444-444444444444', 'client', '11111111-1111-1111-1111-111111111111', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+
+insert into public.menus (id, trainer_id, client_id, status, name, day_type, suggested, kcal, protein_g, carbs_g, fat_g) values
+  ('9e000000-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'borrador', 'Borrador', 'descanso', false, 1800, 140, 160, 60),
+  ('9e000000-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'archivado', 'Antiguo', 'entrenamiento', false, 2200, 160, 230, 70);
+
+set local role authenticated;
+
+-- 1. Another trainer.
+set local "request.jwt.claims" to '{"sub":"33333333-3333-3333-3333-333333333333","user_role":"trainer","trainer_id":"33333333-3333-3333-3333-333333333333"}';
+
+select is((select count(*)::int from public.menu_reads), 0, 'a trainer reads no menu of another trainer');
+
+-- 2. Another client of the same trainer.
+set local "request.jwt.claims" to '{"sub":"44444444-4444-4444-4444-444444444444","user_role":"client","trainer_id":"11111111-1111-1111-1111-111111111111","client_id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}';
+
+select is((select count(*)::int from public.menu_reads), 0, 'a client reads no menu of another client of the same trainer');
+
+-- 3. The client's own menus: only the active ones.
+set local "request.jwt.claims" to '{"sub":"22222222-2222-2222-2222-222222222222","user_role":"client","trainer_id":"11111111-1111-1111-1111-111111111111","client_id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}';
+
+select is(
+  (select array_agg(status::text order by status::text) from public.menu_reads),
+  array['activo'],
+  'a client reads their active menus, not their drafts or archived ones'
+);
+
+-- 4. A client dado de baja.
+reset role;
+update public.clients set status = 'dado_de_baja' where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+set local role authenticated;
+set local "request.jwt.claims" to '{"sub":"22222222-2222-2222-2222-222222222222","user_role":"client","trainer_id":"11111111-1111-1111-1111-111111111111","client_id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}';
+
+select is((select count(*)::int from public.menu_reads), 0, 'a client dado de baja reads no menu');
+
+-- 5. Signed out.
+reset role;
+set local role anon;
+set local "request.jwt.claims" to '{"role":"anon"}';
+
+select throws_ok(
+  $$select * from public.menu_reads$$,
+  '42501',
+  null,
+  'anon cannot read menu_reads'
+);
 
 select * from finish();
 rollback;
