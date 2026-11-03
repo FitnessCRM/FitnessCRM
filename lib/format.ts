@@ -120,6 +120,11 @@ export function formatPriceCents(cents: number): string {
   return euros.format(cents / 100);
 }
 
+/** 4900 → "49,00": un precio guardado, listo para editarlo en un campo en euros. */
+export function formatCentsForInput(cents: number): string {
+  return (cents / 100).toFixed(2).replace(".", ",");
+}
+
 /**
  * Lo que escribe el entrenador en euros ("49", "49,5", "49.50") → céntimos enteros, o `null` si no
  * es un precio válido: mayor que cero y con dos decimales como mucho.

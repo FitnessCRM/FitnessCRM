@@ -36,7 +36,7 @@ export function ClientSignupScreen() {
   const membershipSaved = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
-  const submit = async (values: SignupValues, intent: SignupIntent) => {
+  const submit = async (values: SignupValues, intent: SignupIntent, priceCents: number | null) => {
     setError(null);
     try {
       created.current ??= await createClient.mutateAsync({
@@ -68,6 +68,7 @@ export function ClientSignupScreen() {
           create: {
             clientId: client.id,
             ...values.membership,
+            priceCents,
           },
         });
         membershipSaved.current = true;

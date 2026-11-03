@@ -15,6 +15,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ToggleChip } from "@/components/ui/toggle-chip";
+import {
+  ManualPriceField,
+  useManualPrice,
+} from "@/components/trainer/memberships/manual-price-field";
 import { useSaveMembership } from "@/lib/data/hooks";
 import {
   civilDateSchema,
@@ -49,7 +53,8 @@ function initialValues(memberships: Membership[], today: string): Values {
 
 /**
  * Renovación: crea una membresía nueva. Propone el inicio (día siguiente al fin de la última, u
- * hoy si ya venció) y el fin según el tipo, mientras el entrenador no los toque. Avisa del
+ * hoy si ya venció), el fin según el tipo y el precio cobrado según su tarifa (tarjeta 127),
+ * mientras el entrenador no los toque. Avisa del
  * solape pero no lo impide: el dominio no lo prohíbe (§7).
  */
 export function RenewMembershipDialog({
@@ -82,6 +87,7 @@ export function RenewMembershipDialog({
   const type = form.watch("type");
   const startDate = form.watch("startDate");
   const endDate = form.watch("endDate");
+  const price = useManualPrice(type);
 
   // El fin sigue al tipo y al inicio hasta que se edite a mano.
   useEffect(() => {
@@ -96,6 +102,7 @@ export function RenewMembershipDialog({
   useEffect(() => {
     if (!open) return;
     reset(initialValues(memberships, today));
+    price.reset();
     setFailed(false);
     resetSave();
     // Solo al abrir: reiniciar con cada cambio de `memberships` pisaría lo que se está escribiendo.
@@ -110,8 +117,9 @@ export function RenewMembershipDialog({
 
   const submit = form.handleSubmit(async (values) => {
     setFailed(false);
+    if (price.invalid) return;
     try {
-      await save.mutateAsync({ create: { clientId, ...values } });
+      await save.mutateAsync({ create: { clientId, ...values, priceCents: price.cents } });
       onOpenChange(false);
     } catch {
       setFailed(true);
@@ -180,6 +188,7 @@ export function RenewMembershipDialog({
               ) : null}
             </div>
           </div>
+          <ManualPriceField id="rn-price" type={type} price={price} />
           <div className="flex flex-col gap-2">
             <span id="rn-pay" className="tracking-label text-text-muted text-xs uppercase">
               {t.payment}

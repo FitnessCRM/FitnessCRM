@@ -22,7 +22,7 @@ import {
   type MembershipEdit,
 } from "@/lib/domain";
 import type { MembershipWithClient } from "@/lib/data/ports";
-import { formatCivilDate } from "@/lib/format";
+import { formatCivilDate, formatPriceCents } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn, initialsOf } from "@/lib/utils";
 
@@ -92,6 +92,7 @@ export function MembershipRow({
           <TableCell className="text-text-muted">
             <time dateTime={membership.endDate}>{formatCivilDate(membership.endDate)}</time>
           </TableCell>
+          <PriceCell priceCents={membership.priceCents} />
           <TableCell>
             <PaymentPill status={membership.paymentStatus} />
           </TableCell>
@@ -185,6 +186,8 @@ function EditCells({
           {...form.register("endDate")}
         />
       </TableCell>
+      {/* La copia congelada del precio cobrado no se corrige al editar la fila (E2). */}
+      <PriceCell priceCents={membership.priceCents} />
       <TableCell>
         <Controller
           control={form.control}
@@ -232,6 +235,15 @@ function EditCells({
         ) : null}
       </TableCell>
     </>
+  );
+}
+
+/** Precio cobrado (tarjeta 127): el congelado de la membresía, o «—» si se guardó sin precio. */
+function PriceCell({ priceCents }: { priceCents: number | null }) {
+  return (
+    <TableCell className="text-text-muted text-right tabular-nums">
+      {priceCents === null ? t.noPrice : formatPriceCents(priceCents)}
+    </TableCell>
   );
 }
 
