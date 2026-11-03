@@ -84,6 +84,8 @@ export function buildMemberships(d: DemoDates): Membership[] {
       startDate,
       endDate: d.daysAhead(endOffset),
       paymentStatus,
+      priceCents: null,
+      onlinePaymentId: null,
       createdAt: ts(startDate),
     };
   };

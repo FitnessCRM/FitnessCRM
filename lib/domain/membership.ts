@@ -1,5 +1,16 @@
+import { DomainError } from "./errors";
 import { addCivilDays, civilDaysBetween } from "./week";
-import type { CivilDate, Membership, MembershipType } from "./schemas";
+import {
+  membershipTypeSchema,
+  type CivilDate,
+  type Client,
+  type Membership,
+  type MembershipRate,
+  type MembershipType,
+} from "./schemas";
+
+/** Los cuatro tipos, en su orden: mensual, trimestral, semestral, anual (E1). */
+export const MEMBERSHIP_TYPES: readonly MembershipType[] = membershipTypeSchema.options;
 
 const MONTHS_PER_TYPE: Record<MembershipType, number> = {
   mensual: 1,
@@ -148,4 +159,86 @@ export function overlapsAnyMembership(
   period: { startDate: CivilDate; endDate: CivilDate },
 ): boolean {
   return memberships.some((m) => period.startDate <= m.endDate && m.startDate <= period.endDate);
+}
+
+/* ---------- Tarifas y pago en línea (E1–E6, 03-11-2026) ---------- */
+
+/** Los cuatro tipos con su tarifa: la que tiene fila, o inactiva y sin precio si no la tiene (E1). */
+export function ratesByType(trainerId: string, rates: readonly MembershipRate[]): MembershipRate[] {
+  return MEMBERSHIP_TYPES.map(
+    (type) =>
+      rates.find((r) => r.type === type) ?? { trainerId, type, active: false, priceCents: null },
+  );
+}
+
+/** Lo que se puede pagar con Stripe: activas y con precio (E1, I35). */
+export function payableRates(
+  rates: readonly MembershipRate[],
+): (MembershipRate & { priceCents: number })[] {
+  return rates.filter(
+    (r): r is MembershipRate & { priceCents: number } => r.active && r.priceCents !== null,
+  );
+}
+
+/**
+ * I35: un pago en línea solo se crea para un cliente `activo`, de un entrenador con el cobro en
+ * línea conectado y sobre una tarifa activa con precio. Devuelve el precio que se cobra.
+ */
+export function assertPayable(
+  client: Pick<Client, "status">,
+  rate: MembershipRate | undefined,
+  paymentsEnabled: boolean,
+): number {
+  if (client.status !== "activo") {
+    throw new DomainError("payment.client_not_active", "Un cliente de baja no puede pagar (E5)");
+  }
+  if (!paymentsEnabled) {
+    throw new DomainError("payment.not_enabled", "El entrenador no ha conectado el cobro en línea");
+  }
+  if (!rate || !rate.active || rate.priceCents === null) {
+    throw new DomainError(
+      "payment.rate_not_payable",
+      "Esa tarifa no está activa o no tiene precio",
+    );
+  }
+  return rate.priceCents;
+}
+
+/**
+ * E4: inicio de una membresía pagada en línea. El día siguiente al fin de la membresía en vigor el
+ * día del pago, si la hay; si no, el día del pago. Una que empiece más adelante no cuenta: los
+ * solapes se marcan, no se evitan.
+ */
+export function paidMembershipStart(
+  memberships: readonly Membership[],
+  paidOn: CivilDate,
+): CivilDate {
+  const { current } = membershipStanding(memberships, paidOn);
+  return current ? addCivilDays(current.endDate, 1) : paidOn;
+}
+
+/**
+ * La membresía que crea un pago confirmado (E2, E4, E6, I21): ya `pagada`, con el tipo, la copia del
+ * precio cobrado y el id del pago. Solo la crea la confirmación del pago, nunca antes.
+ */
+export function membershipFromPayment(input: {
+  trainerId: string;
+  clientId: string;
+  type: MembershipType;
+  amountCents: number;
+  paymentId: string;
+  paidOn: CivilDate;
+  existing: readonly Membership[];
+}): Omit<Membership, "id" | "createdAt"> {
+  const startDate = paidMembershipStart(input.existing, input.paidOn);
+  return {
+    trainerId: input.trainerId,
+    clientId: input.clientId,
+    type: input.type,
+    startDate,
+    endDate: membershipEndDate(input.type, startDate),
+    paymentStatus: "pagada",
+    priceCents: input.amountCents,
+    onlinePaymentId: input.paymentId,
+  };
 }

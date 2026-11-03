@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { civilDateOf, parseWholeNumberInput } from "./format";
+import { civilDateOf, parseWholeNumberInput, formatPriceCents, parseEurosToCents } from "./format";
 
 describe("civilDateOf (E10)", () => {
   it("takes the day in the trainer's time zone, not in UTC", () => {
@@ -19,5 +19,21 @@ describe("parseWholeNumberInput", () => {
     for (const raw of ["2.400", "2,4", "2.000", "", "-2400", "+2400", "2400.5", "2 400"]) {
       expect(parseWholeNumberInput(raw)).toBeNaN();
     }
+  });
+});
+
+describe("prices (E3)", () => {
+  it("shows whole cents as euros with two decimals", () => {
+    expect(formatPriceCents(4900).replace(/\s/g, " ")).toBe("49,00 €");
+    expect(formatPriceCents(129950).replace(/\s/g, " ")).toBe("1.299,50 €");
+  });
+
+  it("reads what the trainer types as whole cents, or null", () => {
+    expect(parseEurosToCents("49")).toBe(4900);
+    expect(parseEurosToCents(" 49,5 € ")).toBe(4950);
+    expect(parseEurosToCents("49.99")).toBe(4999);
+    expect(parseEurosToCents("0")).toBeNull();
+    expect(parseEurosToCents("49,999")).toBeNull();
+    expect(parseEurosToCents("abc")).toBeNull();
   });
 });

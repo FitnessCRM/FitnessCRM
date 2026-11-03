@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertPayable,
   compareMembershipsForList,
+  membershipFromPayment,
+  paidMembershipStart,
+  payableRates,
+  ratesByType,
   isExpiringSoon,
   membershipEndDate,
   matchesMembershipFilter,
@@ -10,7 +15,12 @@ import {
   overlappingMembershipIds,
   suggestedRenewalStart,
 } from "./membership";
-import type { Membership } from "./schemas";
+import {
+  membershipRateSchema,
+  membershipSchema,
+  type Membership,
+  type MembershipRate,
+} from "./schemas";
 import { addCivilDays } from "./week";
 
 let seq = 0;
@@ -28,6 +38,8 @@ function membership(
     startDate,
     endDate,
     paymentStatus,
+    priceCents: null,
+    onlinePaymentId: null,
     createdAt: `${startDate}T08:00:00Z`,
   };
 }
@@ -223,5 +235,107 @@ describe("compareMembershipsForList (tarjeta 73: inicio más reciente primero)",
 
   it("is zero for the same membership", () => {
     expect(compareMembershipsForList(row("a", "2026-01-01"), row("a", "2026-01-01"))).toBe(0);
+  });
+});
+
+describe("E1 · membership rates", () => {
+  const rate = (over: Partial<MembershipRate>): MembershipRate => ({
+    trainerId: "t",
+    type: "mensual",
+    active: true,
+    priceCents: 4900,
+    ...over,
+  });
+
+  it("always lists the four closed types, inactive and without price when they have no row", () => {
+    const all = ratesByType("t", [rate({ type: "trimestral", priceCents: 12900 })]);
+    expect(all.map((r) => r.type)).toEqual(["mensual", "trimestral", "semestral", "anual"]);
+    expect(all[0]).toEqual({ trainerId: "t", type: "mensual", active: false, priceCents: null });
+    expect(all[1]?.priceCents).toBe(12900);
+  });
+
+  it("only active rates with a price can be paid online", () => {
+    const rates = [
+      rate({ type: "mensual" }),
+      rate({ type: "trimestral", active: false }),
+      rate({ type: "semestral", priceCents: null }),
+    ];
+    expect(payableRates(rates).map((r) => r.type)).toEqual(["mensual"]);
+  });
+
+  it("E3 · prices are positive whole cents", () => {
+    expect(membershipRateSchema.safeParse(rate({ priceCents: 49.5 })).success).toBe(false);
+    expect(membershipRateSchema.safeParse(rate({ priceCents: 0 })).success).toBe(false);
+    expect(membershipRateSchema.safeParse(rate({ priceCents: null, active: false })).success).toBe(
+      true,
+    );
+  });
+});
+
+describe("I35 · who can pay online", () => {
+  const rate: MembershipRate = { trainerId: "t", type: "mensual", active: true, priceCents: 4900 };
+
+  it("an active client pays an active rate with price of a connected trainer", () => {
+    expect(assertPayable({ status: "activo" }, rate, true)).toBe(4900);
+  });
+
+  it("refuses a discharged client, an unconnected trainer and an unpayable rate", () => {
+    const code = (fn: () => unknown) => {
+      try {
+        fn();
+      } catch (error) {
+        return (error as { code: string }).code;
+      }
+    };
+    expect(code(() => assertPayable({ status: "dado_de_baja" }, rate, true))).toBe(
+      "payment.client_not_active",
+    );
+    expect(code(() => assertPayable({ status: "activo" }, rate, false))).toBe(
+      "payment.not_enabled",
+    );
+    expect(code(() => assertPayable({ status: "activo" }, { ...rate, active: false }, true))).toBe(
+      "payment.rate_not_payable",
+    );
+    expect(code(() => assertPayable({ status: "activo" }, undefined, true))).toBe(
+      "payment.rate_not_payable",
+    );
+  });
+});
+
+describe("E4 · start of a membership paid online", () => {
+  it("starts the day after the membership in force on the payment day", () => {
+    const current = membership("2026-10-01", "2026-12-31");
+    expect(paidMembershipStart([current], "2026-11-03")).toBe("2027-01-01");
+  });
+
+  it("starts on the payment day when none is in force, even if one starts later", () => {
+    const past = membership("2026-01-01", "2026-03-31");
+    const later = membership("2026-12-01", "2026-12-31");
+    expect(paidMembershipStart([past, later], "2026-11-03")).toBe("2026-11-03");
+  });
+
+  it("E2, E6 · the confirmed payment makes a paid membership with the frozen price and the payment id", () => {
+    const made = membershipFromPayment({
+      trainerId: "t",
+      clientId: "c",
+      type: "trimestral",
+      amountCents: 12900,
+      paymentId: "pi_123",
+      paidOn: "2026-11-03",
+      existing: [],
+    });
+    expect(made).toEqual({
+      trainerId: "t",
+      clientId: "c",
+      type: "trimestral",
+      startDate: "2026-11-03",
+      endDate: "2027-02-02",
+      paymentStatus: "pagada",
+      priceCents: 12900,
+      onlinePaymentId: "pi_123",
+    });
+    expect(
+      membershipSchema.safeParse({ ...made, id: "m", createdAt: "2026-11-03T10:00:00Z" }).success,
+    ).toBe(true);
   });
 });

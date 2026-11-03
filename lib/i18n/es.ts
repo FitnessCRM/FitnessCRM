@@ -1036,6 +1036,17 @@ export const es = {
       },
     },
     footer: "Si tienes dudas sobre un pago, escribe a tu entrenador.",
+    /** Online payment (E5): only active rates with a price, only if the trainer connected it. */
+    pay: {
+      title: "Renovar y pagar",
+      hint: "Elige una membresía y págala con tarjeta. Empieza al terminar la que tienes en curso, o hoy si no tienes ninguna.",
+      typeLabel: "Membresía",
+      submit: "Pagar {price}",
+      redirecting: "Abriendo el pago…",
+      failed: "No se ha podido abrir el pago. Inténtalo de nuevo en un momento.",
+      paid: "Pago recibido. Tu membresía aparecerá aquí en cuanto se confirme.",
+      cancelled: "Has salido del pago sin pagar. No se ha cobrado nada.",
+    },
   },
   screensTrainerMemberships: {
     eyebrow: "Pagos y renovaciones",
@@ -1077,6 +1088,35 @@ export const es = {
       title: "Ninguna membresía coincide",
       hint: "Prueba con otro cliente o quita el filtro.",
     },
+    /** Rates (E1, card 124) and online payments (card 125). No screenshot: proposed for this batch. */
+    rates: {
+      title: "Tarifas",
+      hint: "Activa las membresías que ofreces y ponles precio. Solo las activas con precio se pueden pagar en línea; el registro manual admite cualquier tipo.",
+      columns: { type: "Tipo", active: "Activa", price: "Precio (€)" },
+      activeLabel: "Ofrecer {type}",
+      pricePlaceholder: "49,00",
+      priceInvalid: "Escribe un precio mayor que 0, con dos decimales como mucho",
+      save: "Guardar tarifas",
+      saving: "Guardando…",
+      saved: "Tarifas guardadas",
+      saveError: "No se han podido guardar las tarifas.",
+      noPrice: "Sin precio",
+    },
+    online: {
+      title: "Cobro en línea",
+      connectedHint:
+        "Tu cuenta de Stripe está conectada: tus clientes pueden pagar las tarifas activas desde su pantalla Membresía. Reembolsos y disputas, desde tu panel de Stripe.",
+      disconnectedHint:
+        "Conecta tu cuenta de Stripe para que tus clientes paguen sus membresías con tarjeta. El dinero va directo a tu cuenta, sin comisión de la app.",
+      connect: "Conectar Stripe",
+      resume: "Completar la conexión",
+      connecting: "Abriendo Stripe…",
+      connected: "Conectado",
+      failed: "No se ha podido abrir Stripe. Inténtalo de nuevo en un momento.",
+      unavailable: "El cobro en línea no está disponible en este entorno.",
+    },
+    /** Frozen price of a membership paid online (E2). */
+    paidOnline: "Pagada en línea · {price}",
   },
   /** Charts from `components/charts/`: used by both areas, so they don't hang off one screen. */
   charts: {
