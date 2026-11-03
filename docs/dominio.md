@@ -4,13 +4,19 @@ Cuarta pasada. Reconcilia el dominio cerrado en la tercera pasada con la demo na
 aprobada (`docs/design/demo-navegable.html`, 18 pantallas). **Donde el diseño y la tercera
 pasada discrepaban, manda el diseño**: es posterior y responde a peticiones explícitas.
 
-Estado: dominio cerrado para el MVP. Backend decidido el 29-09-2026: **Firebase para datos y
-auth, y el Drive del entrenador para las imágenes de las revisiones** — ver §12 y §9. El acceso
-es con correo y contraseña, con invitación por enlace de correo (§12, 03-10-2026). Implementados:
-la autenticación, las reglas de seguridad y el adaptador de datos de Firebase, que cubre los 18
-puertos: 17 sobre Firestore y Firebase Auth, y el catálogo común de alimentos, que responde «no
-disponible» hasta que la app se conecte a su API (tarjeta 90, §12). La app monta el adaptador en
-memoria salvo con `NEXT_PUBLIC_DATA_BACKEND=firebase`.
+Estado: dominio cerrado para el MVP. Backend decidido el 28-10-2026: **Supabase para datos, auth
+y fotos de revisión** (§12 y §9), con Firebase en producción hasta que acabe la migración (Fase 9 de
+`docs/plan-migracion-supabase.md`). El acceso es con correo y contraseña, con invitación por enlace
+de correo (§12, 03-10-2026). Implementados: la autenticación, las reglas de seguridad y los
+adaptadores de datos de Firebase y de Supabase, que cubren los 18 puertos; el catálogo común de
+alimentos responde «no disponible» hasta que la app se conecte a su API (tarjeta 90, §12). La app
+monta el adaptador en memoria salvo con `NEXT_PUBLIC_DATA_BACKEND=firebase` o `supabase`.
+
+**Decisiones del 03-11-2026** (aprobadas por Dani y Miguel, tanda de noviembre, tarjeta 120): el
+cliente paga su membresía al entrenador con Stripe (§10 y §12), tarifas por tipo de membresía (§4 y
+§5), I21 reescrita, archivar un ejercicio versiona las rutinas activas (§7), `sourceTemplateId` y un
+solo borrador por cliente y tipo de plan (§4, I32), email del cliente único (I31), consentimiento al
+aceptar la invitación (I33) y borrado a petición sin anonimizar (§7, I14).
 
 ---
 
@@ -30,6 +36,7 @@ memoria salvo con `NEXT_PUBLIC_DATA_BACKEND=firebase`.
 | 10 | Estados `pendiente/parcial/completa/vista/vencida` | `borrador → enviada → vista → revisada`. La completitud pasa a ser un atributo, no un estado |
 | 11 | §11 abierto: qué se prescribe por ejercicio | Resuelto: series, reps (rango **o** fijas), RIR, descanso, nota |
 | 12 | — | La "adherencia %" de la maqueta sale de la UI: no había forma de calcularla |
+| 13 | El cobro de las membresías fuera de la app (fila 5) | **El cliente paga su membresía al entrenador con Stripe** (03-11-2026, §10 y §12). El registro manual de una membresía pagada se mantiene |
 
 ---
 
@@ -75,6 +82,9 @@ UI en español, identificadores de código en inglés.
 | Entrenador | `Trainer` | Profesional propietario de una cartera. **Frontera de tenancy** |
 | Cliente | `Client` | Persona con seguimiento. Pertenece a un único entrenador |
 | Membresía | `Membership` | Periodo contratado y su estado de pago. Un cliente acumula varias |
+| Tarifa | `MembershipRate` | Lo que el entrenador cobra por un tipo de membresía: si la ofrece (activa) y su precio. Una por entrenador y tipo |
+| Pago en línea | `OnlinePayment` | Cobro de una membresía con Stripe Checkout, del cliente al entrenador. Lo que queda en la app es la membresía con el id del pago y el importe (I21) |
+| Consentimiento | `consentVersion`, `consentAcceptedAt` | Texto que el cliente acepta al aceptar la invitación. Se guardan la versión aceptada y la fecha (I33) |
 | Ejercicio | `Exercise` | Entrada de la biblioteca: nombre, grupo, material, enlace de vídeo, descripción |
 | Rutina | `Routine` | Plan de entrenamiento del cliente, organizado en días numéricos |
 | Día de rutina | `RoutineDay` | Día 1, 2, 3… con etiqueta opcional ("Torso") |
@@ -116,9 +126,9 @@ directa sin joins — valga RLS o reglas de seguridad.
 
 | Agregado (raíz) | Contiene | Frontera |
 |---|---|---|
-| **Trainer** | Configuración, catálogo de preguntas, catálogo de tipos de medida | Raíz de tenancy. Los catálogos son suyos, no de la plataforma |
-| **Client** | Perfil, cadencia orientativa de revisión, fecha de alta, visibilidad de kcal y macros (`macrosVisible`, por defecto `true`) | La fecha de alta es el origen de la numeración de semanas. `macrosVisible` lo cambian el entrenador, desde la ficha del cliente, y el propio cliente, solo desde su perfil (I11) |
-| **Membership** | — | Suelto: un cliente tiene un historial, no una membresía |
+| **Trainer** | Configuración, catálogo de preguntas, catálogo de tipos de medida, tarifas de membresía | Raíz de tenancy. Los catálogos y las tarifas son suyos, no de la plataforma. La cuenta de Stripe conectada no es del dominio: vive detrás de las Edge Functions (§12) |
+| **Client** | Perfil, cadencia orientativa de revisión, fecha de alta, visibilidad de kcal y macros (`macrosVisible`, por defecto `true`), consentimiento aceptado (versión y fecha) | La fecha de alta es el origen de la numeración de semanas. `macrosVisible` lo cambian el entrenador, desde la ficha del cliente, y el propio cliente, solo desde su perfil (I11). El email es único en la plataforma (I31) |
+| **Membership** | — | Suelto: un cliente tiene un historial, no una membresía. Guarda el tipo, la copia congelada del precio cobrado y, si se pagó con Stripe, el id del pago (I21) |
 | **Exercise** | — | Vive en la biblioteca, se referencia desde las rutinas |
 | **Food** | — | El de un entrenador vive en dos sitios con el mismo `id`: la **copia propia** de su autor, con `trainerId`, y el **catálogo común**, que leen todos los entrenadores; el sembrado, solo en el catálogo común, sin autor. Desde los menús se referencia y se congela |
 | **Routine** | `RoutineDay` → `RoutineDayExercise` | Se edita como un todo |
@@ -127,11 +137,18 @@ directa sin joins — valga RLS o reglas de seguridad.
 | **Review** | `ReviewMedia`, `BodyMeasurement`, `QuestionnaireResponse`, feedback | Donde vive la lógica de completitud |
 | **WeightLog** | — | Suelto por diseño: es continuo, la revisión es de corte |
 | **WorkoutLog** | — | Suelto: es un evento del cliente, no parte de la rutina |
-| **RoutineTemplate / MenuTemplate** | Misma estructura, sin cliente | Se **clonan** al asignar, nunca se enlazan |
+| **RoutineTemplate / MenuTemplate** | Misma estructura, sin cliente | Se **clonan** al asignar, nunca se enlazan. El plan clonado guarda el id de su plantilla (`sourceTemplateId`) y la copia de su nombre (`sourceTemplateName`) |
 
 **Plantillas: clonar, no referenciar.** Si se referenciara, editar una plantilla modificaría
 retroactivamente el plan de clientes activos. La UI lo dice explícitamente: "la plantilla se
 copia al cliente".
+
+**De qué plantilla salió un plan (E8, 03-11-2026).** El plan clonado guarda `sourceTemplateId`, el id
+de la plantilla, y `sourceTemplateName`, la copia de su nombre al asignarla. No es una referencia
+viva: editar la plantilla no toca el plan. El id sirve para contar los usos de una plantilla —antes
+se contaban por nombre, y renombrarla los perdía y dos plantillas homónimas los sumaban—; el nombre
+congelado, para mostrarlo. Los planes anteriores a esta decisión no tienen id y no cuentan como uso
+de ninguna plantilla.
 
 **Catálogos: referenciar *y* congelar.** Al contrario que las plantillas, aquí sí hay FK viva
 **y además** copia congelada del texto. Son dos necesidades distintas: la FK sostiene la
@@ -213,7 +230,13 @@ la licencia ODbL de Open Food Facts. Se admiten nombres duplicados (§11).
 - **`Cadencia`** — cada N días. Orientativa: alimenta un "te quedan X días" y nada más.
 - **`Pose`** — `frente` | `perfil` | `espalda`. Lista cerrada, no configurable.
 - **`DayType`** — `entrenamiento` | `descanso`.
-- **`TipoMembresia`** — `mensual` | `trimestral` | `semestral` | `anual`.
+- **`TipoMembresia`** — `mensual` | `trimestral` | `semestral` | `anual`. Lista cerrada (E1,
+  03-11-2026): el entrenador no crea tipos, solo activa o desactiva cada uno en sus tarifas.
+- **`Precio`** — importe en **céntimos de euro**, entero y mayor que cero. Solo EUR: no se guarda
+  moneda (E3, 03-11-2026). Se presenta en euros con dos decimales.
+- **`Tarifa` (`MembershipRate`)** — tipo + activa (sí/no) + precio (opcional). Una por entrenador
+  y tipo. **Solo una tarifa activa y con precio se puede pagar con Stripe**; el registro manual
+  admite cualquiera de los cuatro tipos, tenga o no tarifa (E1).
 
 ---
 
@@ -234,17 +257,17 @@ marcan y no se reutiliza su número.
 | I8 | Los tipos de medida provienen del catálogo **del entrenador**, cerrado para el cliente | Reglas (el catálogo es del entrenador y cerrado para el cliente) + adaptador (que una medida apunte a un tipo del mismo entrenador) |
 | I9 | El peso de una revisión sale de un `WeightLog` con fecha dentro de la ventana de la revisión: mientras es editable lo referencia, y desde `vista` guarda su copia (I24) | Lógica de dominio |
 | I10 | La comparación de fotos es una acción explícita del entrenador, nunca un estado derivado | Ausencia de automatismo |
-| I11 | El cliente lee su rutina y su menú, incluido el peso por alimento; nunca los escribe. Sus kcal y macros (objetivo diario y las declaradas por menú) los ve solo si `macrosVisible` no está en `false` en su ficha. Ese valor lo pueden cambiar el entrenador y el propio cliente, y gana la última escritura. El entrenador los ve siempre. Por defecto, `true` | Reglas de seguridad para `macroTargets`, y la que deja al cliente escribir en su ficha solo `macrosVisible`, como booleano y mientras esté `activo`. Las macros declaradas en `menus` no tienen regla: decisión del propietario (13-10-2026), que las deja en la app. La pantalla de cliente no las pide ni pinta con el flag en `false` |
+| I11 | El cliente lee su rutina y su menú, incluido el peso por alimento; nunca los escribe. Sus kcal y macros (objetivo diario y las declaradas por menú) los ve solo si `macrosVisible` no está en `false` en su ficha. Ese valor lo pueden cambiar el entrenador y el propio cliente, y gana la última escritura. El entrenador los ve siempre. Por defecto, `true` | Con Supabase, la base de datos: con el flag en `false`, `macro_targets_client_select` no devuelve los objetivos y la lectura de menús del cliente no devuelve las kcal ni las macros declaradas (E12, 03-11-2026, tarjeta 123; test pgTAP con los dos valores). La política que deja al cliente escribir en su ficha solo `macros_visible`, mientras esté `activo`. Con Firebase, las reglas de `macroTargets`; las macros de `menus` siguen en la app (decisión del 13-10-2026, que no se trabaja más con Firebase). La pantalla de cliente no las pide ni pinta con el flag en `false` |
 | I12 | Toda respuesta y toda medida conservan enunciado/etiqueta, formato y unidad vigentes cuando se registró su valor. La copia congelada se escribe al registrar el valor por primera vez o al cambiarlo: volver a guardar una revisión no recongela lo que no ha cambiado. Editar el catálogo no altera el histórico. Lo único que puede faltar de una revisión antigua es la **imagen**, que vive en Storage (§9) | Columnas congeladas, escritas solo al registrar o cambiar el valor |
 | I13 | Nada de lo que cuelgue histórico se borra: preguntas, tipos de medida, ejercicios y alimentos se archivan | Soft delete + reglas (ninguna colección con histórico admite `delete`) · en el catálogo común de alimentos, su API (tarjeta 90) |
-| I14 | Las imágenes viven en Supabase Storage y **se borran con el resto de los datos del cliente**, en su operación explícita por cliente. Si una imagen falta, la app lo dice (§9) | Lógica de dominio (función SQL que devuelve las rutas) · Edge Function · políticas de Storage |
+| I14 | Las imágenes viven en Supabase Storage y **se borran con el resto de los datos del cliente**, en su operación explícita de borrado a petición (§7). Esa operación solo se hace sobre un cliente `dado_de_baja`, se confirma escribiendo su nombre y borra definitivamente, sin anonimizar: fotos, revisiones, pesajes, registros de entreno, membresías, planes, el cliente y su cuenta. Si una imagen falta, la app lo dice (§9) | Lógica de dominio (función SQL que devuelve las rutas y comprueba el estado) · Edge Function · políticas de Storage |
 | I15 | El formato de una pregunta —tipo y límites de la escala— es inmutable desde que existe la primera respuesta. El enunciado es editable siempre | Lógica de dominio + reglas (bandera `hasResponses` en la pregunta) |
 | I16 | Como máximo una revisión por cliente y número de semana | Id del documento `{clientId}_{semana}`, que las reglas comprueban |
 | I17 | El cliente puede editar su revisión hasta que el entrenador la marca como `vista` | Lógica de dominio + reglas (el cliente solo edita en `borrador` y `enviada`) |
 | I18 | El peso corporal se almacena siempre en kg | Validación + reglas (número entre 0 y 400) |
 | ~~I19~~ | ~~Los periodos cerrados no se recalculan al cambiar la periodicidad~~ | **Derogada**: no hay periodos |
 | I20 | El vídeo, tanto de ejercicio como de feedback, es siempre un enlace externo. La app **no aloja vídeo**: las fotos de revisión viven en Supabase Storage (§9) | Validación de URL |
-| I21 | Una membresía registra estado de pago, nunca importes cobrados ni datos de pago | Modelo de datos + reglas (solo existen las claves del modelo) |
+| I21 | La app nunca guarda datos de tarjeta ni de cuenta bancaria. De un pago guarda solo el id del pago de Stripe, su estado y el importe cobrado, en la membresía que crea. Una membresía guarda su tipo y la copia congelada del precio cobrado: cambiar la tarifa después no la altera (reescrita el 03-11-2026, S2 y E2) | Modelo de datos: la membresía solo tiene esas columnas, y los datos de tarjeta no llegan nunca a la app (los pide Stripe Checkout) |
 | I22 | `weekNumber` se congela al crear la revisión y no se recalcula nunca | Escritura única + reglas (no cambia tras crearse) |
 | I23 | Como máximo un `WeightLog` por cliente y fecha civil. Registrar un peso en una fecha que ya tiene pesaje **lo actualiza** en lugar de crear otro: conserva su identidad y su fecha de creación (la revisión que lo referencia, I9, no se rompe) y sustituye el peso. La nota se sustituye solo si llega una; si llega vacía, se conserva la anterior | Lógica de dominio + id del documento `{clientId}_{fecha}`, que las reglas comprueban |
 | I24 | Mientras una revisión está en `borrador` o `enviada`, su peso es el del pesaje al que apunta (`weightLogId`): si el cliente corrige ese pesaje, la revisión lo refleja. La revisión no cambia sola de pesaje —no sigue al último de la ventana—: cambia cuando el cliente la vuelve a guardar. Al pasar a `vista` guarda copia del peso en kg y de la fecha del pesaje, y desde entonces se lee de la copia aunque el pesaje se corrija | Lógica de dominio + reglas (solo el entrenador escribe la copia, al marcar `vista`) |
@@ -254,6 +277,11 @@ marcan y no se reutiliza su número.
 | I28 | Un alimento solo lo edita o archiva el entrenador que lo creó. El catálogo común es de lectura para todos los entrenadores, y de escritura solo para el autor de cada alimento | Reglas de seguridad en la copia propia (por `trainerId`) · la API del catálogo en el catálogo común (tarjeta 90) |
 | I29 | Un alimento del menú que sale de la biblioteca conserva el nombre y la composición con que se añadió. Corregir o archivar el alimento no cambia los menús que ya lo usan, de clientes ni de plantillas; clonar una plantilla copia la copia congelada tal cual, sin refrescarla desde la biblioteca | Copia congelada en el `FoodItem`, escrita solo al añadir el alimento |
 | I30 | Lo que aporta un menú se calcula solo con los alimentos del menú que tienen composición; los de texto libre no suman. El resultado se mide contra las macros del propio menú y avisa —de lo que queda o sobra, y de que hay alimentos que no suman—, pero nunca bloquea guardar ni publicar, ni rellena las macros declaradas | Lógica de dominio (funciones puras) |
+| I31 | El email de un cliente es único en toda la plataforma, sin distinguir mayúsculas. El entrenador solo lo cambia mientras el cliente es `invitado`, y la invitación se reenvía al correo nuevo; con el cliente `activo` o de baja no se cambia (E10, 03-11-2026) | Lógica de dominio + índice único sobre `lower(email)` en Supabase + adaptador |
+| I32 | Un cliente tiene como máximo un borrador por tipo de plan: una rutina, unos macros por tipo de día y un conjunto de menús por tipo de día. Asignar cuando ya hay uno pregunta si se sustituye; sustituirlo lo borra, porque un borrador no tiene histórico (E9, 03-11-2026) | Lógica de dominio + adaptador · índice único parcial en Supabase para rutinas y macros |
+| I33 | Un cliente no pasa de `invitado` a `activo` sin aceptar el texto de consentimiento vigente. Se guardan la versión aceptada y la fecha, y no se reescriben (C1, 03-11-2026) | Lógica de dominio + función de aceptación de la invitación (Supabase) |
+| I34 | Una membresía pagada con Stripe nace solo cuando el webhook confirma el pago, nunca antes: no hay estado «pendiente» y un pago abandonado no deja nada. El mismo pago confirmado dos veces crea una sola membresía (E6, S10) | Índice único sobre el id del pago + Edge Function del webhook, que verifica la firma |
+| I35 | Solo se paga con Stripe una tarifa activa y con precio, de un entrenador que ha conectado su cuenta, y solo la paga un cliente `activo` (E1, E5) | Lógica de dominio + Edge Function de Checkout, que relee la tarifa y el cliente al crear la sesión |
 
 Las reglas de seguridad (`firestore.rules`, tarjeta 34) son el sustituto de RLS y llevan un test
 por invariante contra el emulador de Firestore, con su caso negativo. Dos campos **no son del
@@ -263,7 +291,8 @@ revisión— y que fijan el formato (I15) y la unidad (I26) sin recorrer el hist
 y los esquemas zod las descartan al leer.
 
 I5, I9, I12, I15, I17, I22, I23, I24, I25, I26 e I27 concentran casi toda la lógica de negocio
-real. Se cubren con tests desde el primer día.
+real. Se cubren con tests desde el primer día. Las del 03-11-2026 (I31–I35) llevan test de dominio
+y, lo que garantiza la base de datos, pgTAP.
 
 Cómo se implementan I5 e I9: la revisión guarda al crearse su **ventana** (las fechas entre las
 que vale un pesaje) y sus **requisitos congelados** (qué tipos de medida y qué preguntas se le
@@ -299,10 +328,18 @@ Son los tres únicos estados: **«inactivo» no existe**. Cualquier agrupación 
 usa estos tres, con sus etiquetas «Invitación pendiente», «En activo» y «Baja» (decidido el
 01-10-2026).
 **`invitado` pasa a `activo` en el primer acceso**: el cliente abre el enlace de la invitación que
-recibe por correo, escribe su correo y crea su contraseña (§12).
+recibe por correo, escribe su correo, crea su contraseña y **acepta el texto de consentimiento**
+(I33, §9). Sin aceptarlo la cuenta no se activa.
+**El email solo se cambia mientras el cliente es `invitado`** (I31): cambiarlo reenvía la
+invitación al correo nuevo. Con el cliente `activo` no se cambia.
 La baja conserva el histórico completo, fotos incluidas, sin caducidad. Aparte existe una
-operación de **borrado a petición** que anonimiza el histórico y borra los datos del cliente. Se
-lleva a la vez sus revisiones y sus pesajes, y por eso I25 no la impide.
+operación de **borrado a petición** (decidida el 03-11-2026, E11): el entrenador borra
+definitivamente a un cliente **de baja**, y lo confirma escribiendo su nombre. Se van las fotos de
+Storage, las revisiones con sus medidas y respuestas, los pesajes, los registros de entreno, las
+membresías, sus planes, la ficha y su cuenta. **No se anonimiza nada: se borra.** Los pagos quedan
+en el panel de Stripe del entrenador, que es el comercio (§12). Se lleva a la vez sus revisiones y
+sus pesajes, y por eso I25 no la impide. Un cliente `invitado` o `activo` no se borra: primero se
+da de baja.
 **Un cliente dado de baja no tiene acceso a la app** (decidido el 08-10-2026): ni lectura ni
 escritura desde su cuenta. Su área de cliente no muestra nada más que el aviso de cuenta dada de
 baja, y las reglas de seguridad lo impiden aunque se llegue a Firestore directamente. **El
@@ -328,6 +365,9 @@ contexto.
 nueva y archiva la anterior; en los menús, la versión nueva es el conjunto de su tipo de día. Un
 borrador sí se edita en sitio. Decidido el 01-10-2026; sustituye la decisión de la tarjeta 10, que
 editaba la rutina activa en sitio.
+**Como máximo un borrador por cliente y tipo de plan** (I32, 03-11-2026): si al asignar una
+plantilla ya hay uno, se pregunta si se sustituye; sustituirlo lo borra, porque un borrador no
+tiene histórico que conservar.
 
 **Ejercicio** — `activo` → `archivado`
 El entrenador puede "eliminar" un ejercicio de su biblioteca. El sistema le avisa antes de qué
@@ -335,6 +375,11 @@ clientes lo tienen prescrito y, si confirma, el ejercicio sale de la biblioteca 
 de esos clientes. **La fila no se borra: se archiva.** Un `WorkoutLog` antiguo tiene que poder
 seguir diciendo qué ejercicio se hizo, que es la misma razón por la que las rutinas se archivan
 en vez de borrarse.
+**Cómo sale de las rutinas** (E7, 03-11-2026): cada rutina **activa** que lo prescribe se versiona
+igual que al publicar: se crea una versión nueva, activa, sin ese ejercicio, y la anterior se
+archiva con él dentro, así que el registro de entreno sigue teniendo su prescripción en alguna
+rutina. Los **borradores** se editan en sitio. Las rutinas archivadas no se tocan. Un día que se
+queda sin ejercicios se conserva vacío.
 
 **Alimento** — `activo` → `archivado`
 «Eliminar» un alimento lo archiva (I13): sale de la biblioteca, en la copia propia y en el
@@ -368,6 +413,19 @@ e incompleta — la UI la marca "Parcial" — y eso es normal, no un error.
 
 **Membresía** — `pagada` / `no_pagada`, con fechas de inicio y fin.
 Las renovaciones son filas nuevas, no ediciones de la anterior. El historial es la lista completa.
+Una membresía nace de una de dos formas (03-11-2026):
+
+- **Registro manual del entrenador** (S6). Como hasta ahora: cualquiera de los cuatro tipos, con
+  el estado de pago que diga el entrenador. No lleva id de pago.
+- **Pago del cliente con Stripe** (E5, E6). Desde su pantalla Membresía, el cliente elige un tipo
+  con tarifa activa y precio y va a Stripe Checkout. Si el entrenador no ha conectado Stripe, el
+  botón no aparece; un cliente de baja no puede pagar. La fila se crea **solo cuando el webhook
+  confirma el pago** (I34), ya `pagada`, con el tipo, la copia del precio cobrado y el id del pago
+  (I21). Su **inicio** es el día siguiente al fin de la membresía en vigor el día del pago, si la
+  hay; si no, el día del pago, en la zona del entrenador (E4). Su fin, el de `membershipEndDate`.
+  Los solapes se siguen marcando y no se bloquean.
+
+Un pago es siempre único y de un periodo: no hay suscripciones ni cobros recurrentes (S3).
 
 ---
 
@@ -400,9 +458,10 @@ bucket privado con URLs firmadas (plan de migración, Fase 4). Sustituye a la de
 (Drive del entrenador), que queda derogada. Los datos y la autenticación también pasan a Supabase
 (§12). Conservación indefinida, también tras la baja.
 
-> **Punto abierto.** El texto de consentimiento y quién figura como responsable del tratamiento de
-> las fotos en Storage están por confirmar con Dani (plan de migración, Fase 0.1). Lo que no cambia:
-> la ausencia de una foto es un estado esperado, nunca un hueco roto.
+> **Punto abierto.** Quién figura como responsable del tratamiento de las fotos en Storage está por
+> confirmar con Dani (plan de migración, Fase 0.1, tarjeta 117). El texto de consentimiento tiene un
+> **borrador** desde el 03-11-2026 (C2, tarjeta 31), pendiente de validar por Dani: no es
+> definitivo. Lo que no cambia: la ausencia de una foto es un estado esperado, nunca un hueco roto.
 
 Con las fotos en Storage, **la app sí puede borrarlas**: son suyas y las gestiona ella. De ahí salen
 cuatro cosas, y las cuatro son del dominio, no de la interfaz:
@@ -415,8 +474,11 @@ cuatro cosas, y las cuatro son del dominio, no de la interfaz:
    medidas, respuestas, pesajes, registros de entreno. Dentro de esa operación, revisiones y pesajes
    se van a la vez, así que I25 —que rige en el uso normal de la app— no la impide.
 3. **El texto de consentimiento del alta es obligatorio.** Tiene que decir **dónde viven las fotos**
-   (Supabase Storage), **quién las custodia** y **a quién se le pide el borrado**. El texto concreto
-   queda por confirmar con Dani (Punto abierto, arriba).
+   (Supabase Storage), **quién las custodia** (el entrenador), **a quién se le pide el borrado** (al
+   entrenador) y **cuánto se conservan** (mientras dure la relación y tras la baja, hasta que se
+   pida el borrado). El cliente lo acepta al aceptar la invitación y se guardan la versión y la
+   fecha (I33). Cada texto lleva una versión: cambiarlo es una versión nueva, y lo aceptado antes no
+   se reescribe. El texto actual es un borrador pendiente de validar (Punto abierto, arriba).
 4. **La ausencia de una imagen es un estado esperado, no un fallo.** Una foto puede faltar porque se
    borró, porque su subida falló o porque su ruta ya no existe, y la app se entera al leerla con una
    URL firmada. Así que **la app tiene que detectar que la imagen no está y decirlo, nunca enseñar un
@@ -434,7 +496,12 @@ tratamiento de las fotos en Storage.
 
 ## 10. Fuera de alcance (v1)
 
-- **Cobro de pagos.** Se registra si una membresía está pagada; el dinero se mueve fuera de la app.
+- **Cobro de pagos: lo que sigue fuera.** Desde el 03-11-2026 el cliente paga su membresía al
+  entrenador con Stripe (§7 y §12): un pago único por periodo, con Stripe Connect y cargos directos.
+  Siguen fuera de la app: la cuota de los entrenadores a la plataforma (S1), las suscripciones y los
+  cobros recurrentes (S3), los reembolsos desde la app, las facturas, los impuestos y los
+  reintentos de cobros fallidos (S8). Reembolsos y disputas los gestiona el entrenador desde su
+  panel de Stripe, porque el comercio es él (S5).
 - **Mensajería y chat.** El feedback del entrenador es un vídeo enlazado y una nota, no una
   conversación.
 - **Alojamiento de vídeo.** El vídeo es siempre un enlace externo (I20). Las fotos de revisión son
@@ -443,7 +510,7 @@ tratamiento de las fotos en Storage.
 - **Bloques de entrenamiento.** Post-MVP.
 - **Adherencia calculada.** Sin definición clara de la métrica, fuera de la UI.
 
-El dominio no debe contener campos "preparados por si acaso" para ninguno de estos seis.
+El dominio no debe contener campos "preparados por si acaso" para nada de esta lista.
 
 ---
 
@@ -601,6 +668,29 @@ gastar el código.
 Authentication tiene que apuntar a `/reset-password` de la app; es un ajuste de todo el proyecto y
 no distingue entornos. Los correos de recuperación tienen cuota diaria en Firebase Auth y son un
 blanco típico de abuso: App Check y las alertas de presupuesto (tarjeta 83) son lo que lo protege.
+
+### Cobro de membresías con Stripe
+
+**Decidido el 03-11-2026 (S1–S10, aprobado por Dani y Miguel; tarjetas 124 y 125).**
+
+- **Quién paga a quién.** El cliente paga al entrenador (S1). Stripe Connect con **cuentas
+  Standard** y **cargos directos** (S5): el entrenador es el comercio, así que fraude, disputas y
+  reembolsos son suyos y los lleva desde su panel de Stripe. Sin comisión de la plataforma. El mismo
+  tipo de cuenta para todos los entrenadores.
+- **Dónde vive Stripe.** Conectar la cuenta del entrenador, crear la sesión de Checkout y recibir
+  el webhook son **Edge Functions de Supabase** (S7), junto a `invite-client` y
+  `delete-review-photos`. Todo lo específico de Stripe vive ahí: los puertos y las pantallas hablan
+  de «pago en línea», no de Stripe, y el id de la cuenta conectada se guarda en una tabla que solo
+  escriben las funciones.
+- **Qué guarda la app** (I21). Nunca datos de tarjeta ni de cuenta: los pide Stripe Checkout. Del
+  pago, el id, el estado y el importe, en la membresía que crea el webhook (I34).
+- **El webhook** verifica la firma de Stripe y es **idempotente**: el mismo evento dos veces no crea
+  dos membresías (índice único sobre el id del pago). Un evento de un pago no completado no crea
+  nada.
+- **Modo test y sin claves en el repo** (S9, S10). Los tests usan eventos de ejemplo y verifican la
+  firma con un secreto generado en el propio test. Las claves reales se configuran como secretos de
+  las Edge Functions, fuera del repo.
+- **Solo con Supabase.** Con Firebase, los métodos de pago en línea responden «no disponible».
 
 ### Alimentos: copia propia en Firestore, catálogo común en una API propia
 
