@@ -129,7 +129,7 @@ directa sin joins — valga RLS o reglas de seguridad.
 |---|---|---|
 | **Trainer** | Configuración, catálogo de preguntas, catálogo de tipos de medida, tarifas de membresía | Raíz de tenancy. Los catálogos y las tarifas son suyos, no de la plataforma. La cuenta de Stripe conectada no es del dominio: vive detrás de las Edge Functions (§12) |
 | **Client** | Perfil, cadencia orientativa de revisión, fecha de alta, visibilidad de kcal y macros (`macrosVisible`, por defecto `true`), consentimiento aceptado (versión y fecha) | La fecha de alta es el origen de la numeración de semanas. `macrosVisible` lo cambian el entrenador, desde la ficha del cliente, y el propio cliente, solo desde su perfil (I11). El email es único en la plataforma (I31) |
-| **Membership** | — | Suelto: un cliente tiene un historial, no una membresía. Guarda el tipo, la copia congelada del precio cobrado y, si se pagó con Stripe, el id del pago (I21) |
+| **Membership** | — | Suelto: un cliente tiene un historial, no una membresía. Guarda el tipo, la copia congelada del precio cobrado (del pago con Stripe o, en el registro manual, la que escribe el entrenador, opcional) y, si se pagó con Stripe, el id del pago (I21) |
 | **Exercise** | — | Vive en la biblioteca, se referencia desde las rutinas |
 | **Food** | — | El de un entrenador vive en dos sitios con el mismo `id`: la **copia propia** de su autor, con `trainerId`, y el **catálogo común**, que leen todos los entrenadores; el sembrado, solo en el catálogo común, sin autor. Desde los menús se referencia y se congela |
 | **Routine** | `RoutineDay` → `RoutineDayExercise` | Se edita como un todo |
@@ -417,7 +417,12 @@ Las renovaciones son filas nuevas, no ediciones de la anterior. El historial es 
 Una membresía nace de una de dos formas (03-11-2026):
 
 - **Registro manual del entrenador** (S6). Como hasta ahora: cualquiera de los cuatro tipos, con
-  el estado de pago que diga el entrenador. No lleva id de pago.
+  el estado de pago que diga el entrenador. No lleva id de pago. **Sí lleva el precio cobrado**
+  (decidido por Dani el 03-11-2026, tarjeta 127): el formulario propone el precio actual de la
+  tarifa de ese tipo, esté activa o no, y el entrenador lo cambia si cobró otra cosa. Si el tipo no
+  tiene precio, el campo queda vacío y se guarda sin precio. Se guarda en céntimos enteros (E3) y
+  es la copia congelada de lo cobrado (E2): ni cambiar la tarifa ni editar después la fila la
+  alteran. Las membresías registradas antes no tienen precio, y la tabla las enseña con «—».
 - **Pago del cliente con Stripe** (E5, E6). Desde su pantalla Membresía, el cliente elige un tipo
   con tarifa activa y precio y va a Stripe Checkout. Si el entrenador no ha conectado Stripe, el
   botón no aparece; un cliente de baja no puede pagar. La fila se crea **solo cuando el webhook
