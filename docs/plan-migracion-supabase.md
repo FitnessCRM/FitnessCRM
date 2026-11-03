@@ -1,6 +1,6 @@
 # Plan de migración de Firebase a Supabase
 
-Estado: en ejecución. Refleja las decisiones tomadas hasta el 03-11-2026. Las fotos en Storage ya
+Estado: en ejecución. Refleja las decisiones tomadas hasta el 03-11-2026 y M1 en el cargador (tarjeta 129). Las fotos en Storage ya
 están en `docs/dominio.md` (§9 y §12).
 
 ## Decisiones cerradas
@@ -17,7 +17,7 @@ están en `docs/dominio.md` (§9 y §12).
 | Clientes | Se migran (decidido el 29-10-2026, tarjeta 119), con sus planes: rutinas, objetivos de macros, menús y membresías. |
 | Revisiones, pesajes, registros de entreno | Se migran (29-10-2026, tarjeta 119). Las revisiones, con sus medidas y respuestas congeladas. |
 | Fotos de las revisiones | No se migran: pendientes de la Fase 0.1 (consentimiento y responsable del tratamiento). |
-| Clientes sin cuenta de Auth (M1) | Se migran como `invitado` y se les reenvía la invitación desde Supabase. Hoy son 2. |
+| Clientes sin cuenta de Auth (M1) | Se migran como `invitado` y se les reenvía la invitación desde Supabase. Hoy son 2. Uno `dado_de_baja` sin cuenta no estaba previsto: la tarjeta 129 lo deja de baja y sin invitar, **pendiente de que lo confirme Dani**. |
 | Cuenta de Auth sin ficha (M1) | No se migra: no es de ningún entrenador ni de ningún cliente. |
 | Destino del cargador | Se queda apuntando a la instancia local (`http://127.0.0.1:54321`) por defecto; la carga en remoto exige `--remote` y la decide Dani. |
 
@@ -96,8 +96,8 @@ menús, membresías, pesajes, revisiones y registros de entreno. Las fotos de la
 2. Exportar solo esas colecciones, en modo solo lectura.
 3. Transformar: preservar los `id` si son UUID válidos; si no, tabla de equivalencias. Las plantillas de menú llevan sus comidas y alimentos con la copia congelada tal cual.
 4. Cargar en orden: cuentas, `trainers`, `clients` y `profiles` → catálogos → plantillas y planes → pesajes, revisiones y registros. Cada entidad en su transacción; el script es repetible sin duplicar.
-   - **Clientes sin cuenta (M1).** Se cargan como `invitado`, sin perfil, y después se les reenvía la invitación desde Supabase. El cargador hoy los carga con el estado que traen de Firebase y los cuenta: ponerlos en `invitado` y el reenvío quedan pendientes (tarjeta 121, deuda).
-   - **Cuentas sin ficha (M1).** No se cargan: el cargador las cuenta y las deja fuera.
+   - **Clientes sin cuenta (M1, tarjeta 129).** Se cargan sin perfil. Los `activo` pasan a `invitado`, los `invitado` siguen igual y los `dado_de_baja` siguen de baja, porque invitarlos los reactivaría (pendiente de confirmar, arriba). El informe lista por id los que quedan para reenviarles la invitación. El reenvío no lo hace el cargador: es un paso de producción, después de la carga (paso 8).
+   - **Cuentas sin ficha (M1, tarjeta 129).** No se cargan: ni cuenta de Auth ni perfil. El informe las cuenta y lista sus uids, nunca sus correos.
 5. Verificar:
    - Conteos por tabla, origen y destino.
    - Ejercicios archivados y con vídeo válido (http/https).
@@ -106,7 +106,7 @@ menús, membresías, pesajes, revisiones y registros de entreno. Las fotos de la
    - Muestra de 20 registros por entidad comparada campo a campo.
 6. Ensayo en staging con una copia real.
 7. Corte en producción, con Firebase intacto hasta confirmar la migración.
-8. Cuentas: los entrenadores y los clientes con cuenta restablecen contraseña si el hash no se puede importar. Los clientes sin cuenta reciben de nuevo la invitación (M1).
+8. Cuentas: los entrenadores y los clientes con cuenta restablecen contraseña si el hash no se puede importar. Los clientes sin cuenta reciben de nuevo la invitación (M1): los que lista el informe del cargador, con la Edge Function `invite-client`.
 
 ## Fase 9. Limpieza y despliegue
 
@@ -130,4 +130,5 @@ menús, membresías, pesajes, revisiones y registros de entreno. Las fotos de la
 ## Pendiente
 
 1. Inventario de Firebase, para dimensionar la Fase 8.
-2. M1 en el cargador: clientes sin cuenta como `invitado` y reenvío de su invitación.
+2. Reenviar la invitación a los clientes sin cuenta tras la carga en producción (M1). El cargador ya los deja `invitado` (tarjeta 129).
+3. Volver a ejecutar el cargador después de reenviar las invitaciones devolvería a `invitado` a quien ya la aceptó: la carga de clientes sobrescribe el estado. Hasta que se resuelva, el cargador no se repite después del paso 8.
