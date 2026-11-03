@@ -72,7 +72,7 @@ Estas seis se comprueban antes de dar por buena cualquier tarea.
 | Backend | Supabase (Postgres con RLS, Auth, Storage y Edge Functions), con el SDK solo en `lib/data/adapters/supabase/`. Firebase (Firestore y Auth) en producción hasta la Fase 9 de la migración, con el SDK solo en `lib/data/adapters/firebase/` |
 | Pagos | Stripe Connect (cuentas Standard, cargos directos), solo desde las Edge Functions de `supabase/functions/` |
 | Tests | Vitest; pgTAP contra Supabase local (necesita Docker); el adaptador de Firebase y las reglas, contra los emuladores (necesitan Java) |
-| Gestor de paquetes | pnpm. Node 22 |
+| Gestor de paquetes | pnpm. Node 24 (`.nvmrc`, que es lo que lee la CI) |
 
 **Sin fetching en Server Components.** Es deliberado: los datos llegan por los hooks de
 `lib/data/hooks/`, sobre los puertos, con el SDK de cliente del backend que esté montado (Supabase o
