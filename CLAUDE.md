@@ -19,18 +19,23 @@ Arquitectura multi-tenant desde el primer día, aunque en el lanzamiento solo op
 
 Estas seis se comprueban antes de dar por buena cualquier tarea.
 
-1. **El backend es Firebase y su SDK entra solo por `lib/data/adapters/firebase/`.** Firebase
-   para los datos y la auth, y el Drive del entrenador para las imágenes de las revisiones
-   (`docs/dominio.md` §9 y §12). Detrás de las interfaces de `lib/data/ports/`: ningún componente
-   y ningún hook importa `firebase`, `@firebase/*` ni `firebase-admin`, que es lo que hace que la
-   regla 3 siga siendo cierta con un backend real detrás, y ESLint lo impide
-   (`no-restricted-imports`). El SDK de administración, `firebase-admin`, es dependencia de
-   desarrollo y solo se importa en `lib/data/adapters/firebase/seed/`, para la siembra de la demo:
-   nada de lo que la app sirve lo usa. El SDK de Supabase (`@supabase/*`) solo se importa desde
-   `lib/data/adapters/supabase/`. No instales ningún otro SDK de backend (un ORM, nada que hable con
-   una base de datos) sin tarjeta. El adaptador de Firebase cubre todos
-   los puertos, y `app/providers.tsx` lo monta solo con `NEXT_PUBLIC_DATA_BACKEND=firebase`; sin
-   la variable monta el adaptador en memoria.
+1. **El backend es Supabase, y cada SDK entra solo por su adaptador.** Supabase para los datos, la
+   auth y las fotos de las revisiones (Storage), decidido el 28-10-2026 (`docs/dominio.md` §9 y
+   §12); Firebase sigue en producción hasta que acabe la migración (Fase 9 de
+   `docs/plan-migracion-supabase.md`). Detrás de las interfaces de `lib/data/ports/`: ningún
+   componente y ningún hook importa `@supabase/*`, `firebase`, `@firebase/*` ni `firebase-admin`,
+   que es lo que hace que la regla 3 siga siendo cierta con un backend real detrás, y ESLint lo
+   impide (`no-restricted-imports`). El SDK de Supabase solo se importa desde
+   `lib/data/adapters/supabase/`, y el de Firebase desde `lib/data/adapters/firebase/`. El SDK de
+   administración, `firebase-admin`, es dependencia de desarrollo y solo se importa en
+   `lib/data/adapters/firebase/seed/`, para la siembra de la demo y la exportación de la
+   migración: nada de lo que la app sirve lo usa. **Stripe** (`stripe`) solo se importa en las Edge Functions de
+   `supabase/functions/` (`docs/dominio.md` §12): ni la app ni los puertos saben de Stripe. No
+   instales ningún otro SDK de backend (un ORM, nada que hable con una base de datos) sin tarjeta.
+   Los adaptadores de Firebase y de Supabase cubren todos los puertos; `app/providers.tsx` monta el
+   de Supabase con `NEXT_PUBLIC_DATA_BACKEND=supabase`, el de Firebase con `firebase` y, sin la
+   variable, el adaptador en memoria. Lo nuevo se implementa en el de Supabase y en el de memoria;
+   en el de Firebase, un método nuevo responde «no disponible con Firebase».
 2. **El dominio es puro.** Nada dentro de `lib/domain/` importa React, Next, el DOM ni la red.
    Es TypeScript y zod, y se ejecuta igual en Node, en el navegador y algún día en React Native.
 3. **Los datos entran por el puerto.** Ningún componente llama a una fuente de datos
@@ -64,13 +69,14 @@ Estas seis se comprueban antes de dar por buena cualquier tarea.
 | Gráficas | Recharts |
 | Fechas | date-fns + @date-fns/tz |
 | PWA | Serwist |
-| Backend | Firebase (Firestore y Auth), con el SDK solo en `lib/data/adapters/firebase/` |
-| Tests | Vitest; el adaptador de Firebase y las reglas, contra los emuladores (necesitan Java) |
+| Backend | Supabase (Postgres con RLS, Auth, Storage y Edge Functions), con el SDK solo en `lib/data/adapters/supabase/`. Firebase (Firestore y Auth) en producción hasta la Fase 9 de la migración, con el SDK solo en `lib/data/adapters/firebase/` |
+| Pagos | Stripe Connect (cuentas Standard, cargos directos), solo desde las Edge Functions de `supabase/functions/` |
+| Tests | Vitest; pgTAP contra Supabase local (necesita Docker); el adaptador de Firebase y las reglas, contra los emuladores (necesitan Java) |
 | Gestor de paquetes | pnpm. Node 22 |
 
-**Sin fetching en Server Components.** Es deliberado: el backend es Firebase (`docs/dominio.md`
-§12) y Firebase es un SDK de cliente, así que los datos llegan por los hooks de `lib/data/hooks/`
-y no por RSC. Los Server Components montan el armazón.
+**Sin fetching en Server Components.** Es deliberado: los datos llegan por los hooks de
+`lib/data/hooks/`, sobre los puertos, con el SDK de cliente del backend que esté montado (Supabase o
+Firebase, `docs/dominio.md` §12), y no por RSC. Los Server Components montan el armazón.
 
 **Camino a móvil.** Se mantiene Next.js. El día que haya Expo se reutilizan `lib/domain`,
 `lib/data` y `lib/i18n` íntegros; los componentes se reescriben, que es lo que va a pasar de
