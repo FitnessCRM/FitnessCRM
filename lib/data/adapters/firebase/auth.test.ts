@@ -43,6 +43,8 @@ const invited = (id: string, email: string): Client => ({
   startDate: "2026-09-01",
   reviewCadence: { everyDays: 7 },
   macrosVisible: true,
+  consentVersion: null,
+  consentAcceptedAt: null,
   createdAt: "2026-09-01T08:00:00.000Z",
 });
 

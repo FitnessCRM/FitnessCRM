@@ -88,6 +88,22 @@ export const es = {
         errorNotFound: "No hay ninguna invitación pendiente para ese email",
         errorRegistered: `Este correo ya tiene una cuenta en ${APP_NAME}. Inicia sesión o escribe a soporte.`,
         errorNetwork: "No se ha podido conectar",
+        errorConsent: "Para crear tu cuenta tienes que aceptar el texto de consentimiento",
+      },
+      /**
+       * Consent text (C1, C2, I33). DRAFT PENDING VALIDATION by Dani (card 31): written from
+       * docs/dominio.md §9 on 03-11-2026, not final, not legal advice. Its version is
+       * CONSENT_VERSION in lib/domain/consent.ts: changing this text means a new version.
+       */
+      consent: {
+        title: "Tus fotos y tus datos",
+        paragraphs: [
+          "Tu entrenador usa esta app para seguir tu progreso. Para eso guarda tus datos de contacto, tus revisiones semanales, tus pesajes, tus medidas, tus registros de entreno y las fotos de composición corporal que subas en cada revisión.",
+          "Las fotos son datos sensibles. Se guardan en un almacenamiento privado de Supabase, en la Unión Europea, y solo las ven tu entrenador y tú, con enlaces temporales. La app no las comparte con nadie más.",
+          "Quien custodia tus fotos y tus datos es tu entrenador. Se conservan mientras dure vuestra relación y también después de una baja, hasta que pidas que se borren.",
+          "Para borrarlos, pídeselo a tu entrenador: los borra definitivamente desde su panel, fotos incluidas. Lo que hayas pagado con tarjeta queda registrado en Stripe, que es quien procesa los pagos.",
+        ],
+        accept: "He leído este texto y acepto que se traten mis fotos y mis datos así",
       },
       invalid: {
         title: "Enlace no válido",
@@ -1562,6 +1578,20 @@ export const es = {
         note: "Esto no borra datos. Si el cliente pide que se borren, es otra operación.",
         confirm: "Dar de baja",
         failed: "No se ha podido dar de baja.",
+      },
+      /** Erasure on request (E11, I14). Only for a discharged client. `{name}` is filled in. */
+      erase: {
+        action: "Borrar definitivamente",
+        cardTitle: "Borrado a petición",
+        cardHint:
+          "Si el cliente pide que se borren sus datos, bórralos aquí. No se puede deshacer.",
+        title: "Borrar definitivamente a {name}",
+        body: "Se borran sus fotos, sus revisiones con sus medidas y respuestas, sus pesajes, sus registros de entreno, sus membresías, sus planes, su ficha y su cuenta. No se anonimiza nada: desaparece de la app. Sus pagos siguen en tu panel de Stripe.",
+        typeName: "Escribe «{name}» para confirmar",
+        confirm: "Borrar definitivamente",
+        erasing: "Borrando…",
+        failed:
+          "No se ha podido borrar todo. Vuelve a intentarlo: lo que ya se borró no se repite.",
       },
       reactivate: {
         action: "Reactivar",

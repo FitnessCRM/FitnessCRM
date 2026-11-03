@@ -30,6 +30,8 @@ export const client: Client = {
   startDate: "2026-08-01",
   reviewCadence: { everyDays: 7 },
   macrosVisible: true,
+  consentVersion: null,
+  consentAcceptedAt: null,
   createdAt: "2026-08-01T08:00:00Z",
 };
 

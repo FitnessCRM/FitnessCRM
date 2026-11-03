@@ -30,6 +30,8 @@ function client(
     startDate,
     reviewCadence: { everyDays: 7 },
     macrosVisible: true,
+    consentVersion: null,
+    consentAcceptedAt: null,
     createdAt: ts(startDate),
     ...extra,
   };

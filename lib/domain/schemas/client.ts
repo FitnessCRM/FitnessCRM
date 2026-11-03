@@ -37,6 +37,12 @@ export const clientSchema = z.object({
    * sin el campo guardado se lee como `true`.
    */
   macrosVisible: z.boolean().default(true),
+  /**
+   * Consentimiento aceptado al aceptar la invitación (C1, I33): versión del texto y cuándo. Los dos
+   * a la vez o ninguno. Nadie los reescribe; los clientes anteriores al 03-11-2026 no los tienen.
+   */
+  consentVersion: z.string().nullable().default(null),
+  consentAcceptedAt: isoTimestampSchema.nullable().default(null),
   createdAt: isoTimestampSchema,
 });
 export type Client = z.infer<typeof clientSchema>;
