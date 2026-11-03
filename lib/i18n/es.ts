@@ -525,6 +525,15 @@ export const es = {
       repsMaxPlaceholder: "Fijas",
       rir: "RIR",
       rest: "Descanso",
+      note: "Nota para el cliente",
+      notePlaceholder: "Controla la bajada, pausa abajo…",
+    },
+    /** Own dialog when leaving an editor with unsaved changes by navigating inside the app (E14). */
+    unsavedDialog: {
+      title: "¿Salir sin guardar?",
+      description: "Hay cambios sin guardar. Si sales ahora, se pierden.",
+      stay: "Seguir editando",
+      leave: "Salir sin guardar",
     },
     menu: {
       hint: "Varios menús por tipo de día; uno de ellos sugerido.",
@@ -622,6 +631,8 @@ export const es = {
     back: "← Plantillas",
     createTitle: "Nueva plantilla",
     editTitle: "Editar plantilla",
+    /** Document title of the edit screen once the template is loaded. */
+    editDocumentTitle: "{name} · Editar plantilla",
     editRoutine: "Editar plantilla de rutina",
     editMenu: "Editar plantilla de menú",
     kind: "Tipo",
