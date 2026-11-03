@@ -3,9 +3,11 @@ import {
   assertClientEmailChange,
   assertClientStatusChange,
   clientSchema,
+  DomainError,
   type Client,
   type ClientStatus,
 } from "@/lib/domain";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { SupabaseClient } from "./client";
 import { notFoundError, raise } from "./errors";
 import { countOf, rowsOf } from "./queries";
@@ -44,6 +46,19 @@ async function readClient(client: SupabaseClient, clientId: string): Promise<Cli
   raise(error);
   if (!data) throw notFoundError("Cliente");
   return clientFromRow(data as ClientRow);
+}
+
+/** Borrado a petición (supabase/functions/erase-client). */
+const ERASE_FUNCTION = "erase-client";
+
+/** La función devuelve el código del dominio en el cuerpo; sin él, el borrado quedó a medias. */
+async function eraseFailure(error: Error): Promise<DomainError> {
+  const body =
+    error instanceof FunctionsHttpError
+      ? ((await error.context.json().catch(() => null)) as { code?: unknown } | null)
+      : null;
+  const code = typeof body?.code === "string" ? body.code : "client.erase_incomplete";
+  return new DomainError(code === "client.not_found" ? "not_found" : code, code);
 }
 
 export function createClientPort(client: SupabaseClient): ClientPort {
@@ -133,6 +148,12 @@ export function createClientPort(client: SupabaseClient): ClientPort {
 
     // I11: solo `macrosVisible`, por la RPC. Las comprobaciones (cliente de la sesión y ficha
     // activa) están en la función; un rechazo llega como `client.not_writable`.
+    // E11: la Edge Function borra fotos, filas y cuenta, en ese orden, y comprueba cada paso.
+    eraseClient: async (_trainerId, clientId) => {
+      const { error } = await client.functions.invoke(ERASE_FUNCTION, { body: { clientId } });
+      if (error) throw await eraseFailure(error);
+    },
+
     setMacrosVisible: async (clientId, visible) => {
       const { error } = await client.rpc("set_macros_visible", {
         p_client_id: clientId,

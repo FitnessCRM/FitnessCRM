@@ -393,6 +393,10 @@ verify_jwt = false
 # Igual que invite-client: comprueba el token por su cuenta y solo borra la carpeta de la cliente.
 verify_jwt = false
 
+[functions.erase-client]
+# Borrado a petición (E11): las funciones SQL a las que llama comprueban la sesión de quien llama.
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

@@ -150,6 +150,10 @@ export function createClientPort(
     // I11: el cliente de la sesión, con su ficha activa, y solo este campo: `updateDoc` y no la
     // ficha entera, para no pisar lo que el entrenador cambie a la vez. Las reglas lo repiten en el
     // servidor (`clientSetsMacrosVisible`).
+    // E11: solo con Supabase, que tiene las fotos y la operación que lo borra todo.
+    eraseClient: async () => {
+      throw new Error("El borrado a petición solo está disponible con el adaptador de Supabase.");
+    },
     setMacrosVisible: async (clientId, visible) => {
       const session = await getSession();
       const current =

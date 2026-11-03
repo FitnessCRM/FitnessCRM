@@ -8,6 +8,7 @@ import type {
 import {
   DomainError,
   assertClientEmailChange,
+  assertErasable,
   assertClientStatusChange,
   clientEmailTakenError,
   isClientEmailTaken,
@@ -129,6 +130,23 @@ export function createClientPort(ctx: MockContext): ClientPort {
       }
       const next = clientSchema.parse({ ...current, ...changes, trainerId, id: clientId });
       return ctx.reply(replaceById(ctx.state.clients, next));
+    },
+    // E11: se va todo lo que cuelga del cliente; las fotos de la demo no viven en ningún sitio.
+    eraseClient: async (trainerId, clientId) => {
+      const client = findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
+      assertErasable(client);
+      const s = ctx.state;
+      const other = <T extends { clientId: string }>(rows: T[]) =>
+        rows.filter((r) => r.clientId !== clientId);
+      s.reviews = other(s.reviews);
+      s.weightLogs = other(s.weightLogs);
+      s.workoutLogs = other(s.workoutLogs);
+      s.memberships = other(s.memberships);
+      s.routines = other(s.routines);
+      s.menus = other(s.menus);
+      s.macroTargets = other(s.macroTargets);
+      s.clients = s.clients.filter((c) => c.id !== clientId);
+      return ctx.reply(undefined);
     },
     // I11: el cliente de la sesión, con su ficha activa, y solo este campo. La sesión de demo navega
     // las dos áreas (`clientId` es Marta), así que se mira el cliente de la sesión y no su rol.

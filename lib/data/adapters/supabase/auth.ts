@@ -1,6 +1,6 @@
 import { AuthApiError, FunctionsHttpError } from "@supabase/supabase-js";
 import type { InvitationPort, PasswordResetPort, Session } from "@/lib/data/ports";
-import { DomainError, emailSchema } from "@/lib/domain";
+import { assertConsentAccepted, DomainError, emailSchema } from "@/lib/domain";
 import { invitationKind } from "@/lib/domain/invitation-link";
 import type { SupabaseClient } from "./client";
 import { raise, toDomainError, type BackendError } from "./errors";
@@ -108,15 +108,21 @@ export function createInvitationPort(client: SupabaseClient): InvitationPort {
 
     // Usa la sesión que dejó `readInvitation`: el enlace ya se verificó y no se vuelve a gastar. El
     // correo que llega en `email` no hace falta aquí: la base ya sabe de qué cuenta es la sesión.
-    acceptInvitation: async ({ link, password }) => {
+    acceptInvitation: async ({ link, password, consentVersion }) => {
       const invite = inviteLinkOf(link);
       if (!invite) {
         throw invalidLink("El enlace no es de invitación o no dice a quién invita");
       }
       if (password.length < MIN_PASSWORD_LENGTH) throw weakPassword();
 
+      // I33: la de un cliente no se acepta sin el consentimiento vigente, y sin gastar el enlace.
       return invite.kind === "client"
-        ? acceptClientInvitation(client, invite.clientId, password)
+        ? acceptClientInvitation(
+            client,
+            invite.clientId,
+            password,
+            assertConsentAccepted(consentVersion),
+          )
         : acceptTrainerInvitation(client, password);
     },
   };
@@ -130,8 +136,12 @@ async function acceptClientInvitation(
   client: SupabaseClient,
   clientId: string,
   password: string,
+  consentVersion: string,
 ): Promise<Session> {
-  const { error } = await client.rpc("accept_client_invitation", { p_client_id: clientId });
+  const { error } = await client.rpc("accept_client_invitation", {
+    p_client_id: clientId,
+    p_consent_version: consentVersion,
+  });
   if (error) {
     await client.auth.signOut({ scope: "local" });
     throw invitationRpcError(error);

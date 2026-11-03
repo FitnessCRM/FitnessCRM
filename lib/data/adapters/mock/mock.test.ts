@@ -412,6 +412,18 @@ describe("flows", () => {
     expect((await p.exercises.getExercise(TRAINER, "ex-press-banca"))?.status).toBe("archivado");
   });
 
+  it("erases a discharged client and everything that hangs from them (E11)", async () => {
+    const p = ports();
+    await expect(p.clients.eraseClient(TRAINER, MARTA)).rejects.toMatchObject({
+      code: "client.not_discharged",
+    });
+    await p.clients.updateClient(TRAINER, MARTA, { status: "dado_de_baja" });
+    await p.clients.eraseClient(TRAINER, MARTA);
+    expect(await p.clients.getClient(TRAINER, MARTA)).toBeNull();
+    expect(await p.weightLogs.listWeightLogs(TRAINER, MARTA)).toEqual([]);
+    expect(await p.routines.listRoutines(TRAINER, MARTA)).toEqual([]);
+  });
+
   it("keeps client emails unique and locks the email of an active client (I31)", async () => {
     const p = ports();
     const marta = (await p.clients.getClient(TRAINER, MARTA))!;

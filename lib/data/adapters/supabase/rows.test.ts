@@ -58,6 +58,8 @@ describe("clientFromRow", () => {
       startDate: "2026-01-12",
       reviewCadence: { everyDays: 7 },
       macrosVisible: false,
+      consentVersion: null,
+      consentAcceptedAt: null,
       createdAt: "2026-01-12T09:00:00.500Z",
     });
   });

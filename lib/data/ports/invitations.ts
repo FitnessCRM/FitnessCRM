@@ -32,7 +32,15 @@ export interface InvitationPort {
    * hacía falta; `invitation.email_mismatch` si el correo no es el invitado (sin gastar el enlace);
    * `invitation.not_found` si no hay invitación pendiente para ese correo o cliente; e
    * `invitation.already_registered` si el correo ya es de una cuenta de la app (solo entrenadores),
-   * que queda como estaba.
+   * que queda como estaba; `invitation.consent_required` si la de un cliente llega sin la versión
+   * vigente del texto de consentimiento (I33), sin gastar el enlace. La de un cliente guarda la
+   * versión aceptada y la fecha.
    */
-  acceptInvitation(input: { link: string; password: string; email?: string }): Promise<Session>;
+  acceptInvitation(input: {
+    link: string;
+    password: string;
+    email?: string;
+    /** Versión del consentimiento que el cliente ha leído y aceptado (C1). */
+    consentVersion?: string;
+  }): Promise<Session>;
 }

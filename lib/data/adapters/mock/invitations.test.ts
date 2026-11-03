@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CONSENT_VERSION } from "@/lib/domain";
 import { createMockPorts } from "./index";
 import { MOCK_INVITATION_LINK, MOCK_TRAINER_INVITATION_LINK } from "./invitations";
 import { CLIENT_IDS, TRAINER_ID } from "./demo-data/common";
@@ -28,10 +29,27 @@ describe("mock: invitation of a client", () => {
       email: client.email.toUpperCase(),
       link: MOCK_INVITATION_LINK,
       password: "secreto-1",
+      consentVersion: CONSENT_VERSION,
     });
     expect(session).toEqual({ trainerId: TRAINER_ID, clientId: client.id, role: "client" });
-    expect((await ports.clients.getClient(TRAINER_ID, client.id))?.status).toBe("activo");
+    const activated = await ports.clients.getClient(TRAINER_ID, client.id);
+    expect(activated?.status).toBe("activo");
+    // I33: queda la versión aceptada y la fecha.
+    expect(activated?.consentVersion).toBe(CONSENT_VERSION);
+    expect(activated?.consentAcceptedAt).not.toBeNull();
     expect(await ports.session.getSession()).toEqual(session);
+  });
+
+  it("does not activate the client without the current consent (I33)", async () => {
+    const { ports, client } = invite();
+    await expect(
+      ports.invitations.acceptInvitation({
+        email: client.email,
+        link: MOCK_INVITATION_LINK,
+        password: "secreto-1",
+      }),
+    ).rejects.toMatchObject({ code: "invitation.consent_required" });
+    expect((await ports.clients.getClient(TRAINER_ID, client.id))?.status).toBe("invitado");
   });
 
   it("rejects an email nobody invited and a link that is not an invitation", async () => {
@@ -41,6 +59,7 @@ describe("mock: invitation of a client", () => {
         email: "nadie@email.com",
         link: MOCK_INVITATION_LINK,
         password: "secreto-1",
+        consentVersion: CONSENT_VERSION,
       }),
     ).rejects.toMatchObject({ code: "invitation.not_found" });
     await expect(

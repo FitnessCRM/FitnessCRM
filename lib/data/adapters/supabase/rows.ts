@@ -9,7 +9,7 @@ import {
 
 /** Columnas que leen los puertos: solo las que el dominio necesita. */
 export const CLIENT_COLUMNS =
-  "id, trainer_id, first_name, last_name, email, phone, goal, level, initial_notes, status, start_date, review_every_days, macros_visible, created_at";
+  "id, trainer_id, first_name, last_name, email, phone, goal, level, initial_notes, status, start_date, review_every_days, macros_visible, consent_version, consent_accepted_at, created_at";
 
 export const MEMBERSHIP_COLUMNS =
   "id, trainer_id, client_id, type, start_date, end_date, payment_status, created_at";
@@ -29,6 +29,9 @@ export interface ClientRow {
   start_date: string;
   review_every_days: number;
   macros_visible: boolean;
+  /** I33. Las filas del seguimiento paginado no lo traen: se leen como sin consentimiento. */
+  consent_version?: string | null;
+  consent_accepted_at?: string | null;
   created_at: string;
 }
 
@@ -81,6 +84,8 @@ export function clientFromRow(row: ClientRow): Client {
     startDate: row.start_date,
     reviewCadence: { everyDays: row.review_every_days },
     macrosVisible: row.macros_visible,
+    consentVersion: row.consent_version ?? null,
+    consentAcceptedAt: row.consent_accepted_at ? isoOf(row.consent_accepted_at) : null,
     createdAt: isoOf(row.created_at),
   });
 }
