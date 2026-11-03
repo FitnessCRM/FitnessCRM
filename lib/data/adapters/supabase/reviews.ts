@@ -201,6 +201,19 @@ export function createReviewPort(client: SupabaseClient): ReviewPort {
       return requireReview(trainerId, reviewId);
     },
 
+    // Como al sustituir: la función devuelve la ruta que deja de estar registrada y se pide que se
+    // borre su objeto. Si ese borrado falla, el objeto queda huérfano para el job de limpieza (§9).
+    detachReviewMedia: async (trainerId, reviewId, pose: Pose) => {
+      const { data, error } = await client.rpc("detach_review_media", {
+        p_review_id: reviewId,
+        p_pose: pose,
+      });
+      raise(error);
+      const removed = data as string | null;
+      if (removed) await removeReplacedPhoto(client, removed);
+      return requireReview(trainerId, reviewId);
+    },
+
     submitReview: async (trainerId, reviewId) => {
       const { error } = await client.rpc("submit_review", { p_review_id: reviewId });
       raise(error);

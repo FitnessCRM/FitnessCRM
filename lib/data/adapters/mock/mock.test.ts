@@ -992,6 +992,10 @@ describe("writes are tenant-scoped (I1, I2): one cross-tenant case per method (E
       "reviews.attachReviewMedia",
       (p) => p.reviews.attachReviewMedia(OTHER, "rv-marta-s5", "frente", "x"),
     ],
+    [
+      "reviews.detachReviewMedia",
+      (p) => p.reviews.detachReviewMedia(OTHER, "rv-marta-s5", "frente"),
+    ],
     ["reviews.submitReview", (p) => p.reviews.submitReview(OTHER, "rv-marta-s5")],
     ["reviews.markReviewViewed", (p) => p.reviews.markReviewViewed(OTHER, "rv-marta-s5")],
     [
@@ -1172,6 +1176,24 @@ describe("invariants the adapter keeps on writes the old tests did not cover (E0
     ).rejects.toMatchObject({ code: "review.locked" });
     await expect(
       p.reviews.attachReviewMedia(TRAINER, "rv-marta-s4", "perfil", "storage://otra.jpg"),
+    ).rejects.toMatchObject({ code: "review.locked" });
+  });
+
+  it("card 17 · removes the photo of a pose while editable, and only then (I17)", async () => {
+    const p = ports();
+    await p.reviews.attachReviewMedia(TRAINER, "rv-marta-s5", "frente", "storage://a.jpg");
+    await p.reviews.attachReviewMedia(TRAINER, "rv-marta-s5", "perfil", "storage://b.jpg");
+    const review = await p.reviews.detachReviewMedia(TRAINER, "rv-marta-s5", "frente");
+    const poses = review.media.map((m) => m.pose);
+    expect(poses).not.toContain("frente");
+    expect(poses).toContain("perfil");
+    // Una pose sin foto no cambia nada.
+    const same = await p.reviews.detachReviewMedia(TRAINER, "rv-marta-s5", "frente");
+    expect(same.media.map((m) => m.pose)).toEqual(poses);
+
+    await p.reviews.markReviewViewed(TRAINER, "rv-marta-s5");
+    await expect(
+      p.reviews.detachReviewMedia(TRAINER, "rv-marta-s5", "perfil"),
     ).rejects.toMatchObject({ code: "review.locked" });
   });
 

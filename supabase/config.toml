@@ -418,8 +418,11 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+# Solo para la instancia local (`supabase start`): no es un secreto y no se despliega. Sin él,
+# `invite-client` y `delete-review-photos` responden «misconfigured» en local y en la CI, y borrar una
+# foto de revisión no quita su objeto de Storage (tarjeta 17). En remoto se configura aparte.
+[edge_runtime.secrets]
+INVITE_URL = "http://127.0.0.1:3000/accept-invite"
 
 [analytics]
 enabled = true

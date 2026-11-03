@@ -162,6 +162,11 @@ export function createReviewPort(ctx: MockContext): ReviewPort {
       ];
       return ctx.reply(review);
     },
+    detachReviewMedia: async (trainerId, reviewId, pose) => {
+      const review = editable(trainerId, reviewId);
+      review.media = review.media.filter((m) => m.pose !== pose);
+      return ctx.reply(review);
+    },
     submitReview: async (trainerId, reviewId) => {
       const review = findOwn(ctx.state.reviews, trainerId, reviewId, "Revisión");
       return ctx.reply(replaceById(ctx.state.reviews, submitReview(review, ctx.now())));
