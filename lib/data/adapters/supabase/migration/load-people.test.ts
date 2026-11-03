@@ -41,6 +41,8 @@ const plan: PeoplePlan = {
   ],
   unlinkedAccountUids: [],
   clientsWithoutAccount: [],
+  clientsToInvite: [],
+  clientsMovedToInvited: [],
 };
 
 const accounts = [
