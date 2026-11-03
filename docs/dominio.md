@@ -493,6 +493,17 @@ cuatro cosas, y las cuatro son del dominio, no de la interfaz:
    revisión: medidas y respuestas siguen congeladas e intactas (I12), y la completitud sigue
    siendo la del envío (I5).
 
+**Cómo se suben (T3a y T3b, decidido el 03-11-2026, tarjeta 17).** Antes de subirla, el navegador
+redimensiona cada foto para que su lado largo mida como mucho **1600 px**, conservando la proporción;
+una foto más pequeña no se amplía. Después la convierte a **JPEG con calidad 0,8**, sea cual sea el
+formato de origen, así que en Storage solo hay JPEG. La subida y el registro siguen siendo dos pasos:
+primero el objeto y después su fila, para que una revisión nunca apunte a una foto que no se subió.
+
+**Quitar o sustituir una foto.** Mientras la revisión es editable (I17), el cliente puede sustituir la
+foto de una pose o quitarla. En los dos casos la foto deja de estar registrada y su objeto se borra de
+Storage con la misma Edge Function (`delete-review-photos`), que nunca borra una ruta que siga
+registrada. Si ese borrado falla, el objeto queda huérfano y lo limpia el job periódico (punto 1).
+
 Las fotos de composición corporal son datos personales de categoría sensible bajo el RGPD. **Esto no
 es asesoramiento legal**: conviene contrastar con quien lleve la protección de datos del entrenador
 —antes del lanzamiento— tanto el texto de consentimiento como quién figura como responsable del
