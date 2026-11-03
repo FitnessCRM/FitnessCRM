@@ -105,7 +105,8 @@ export interface MenuRow {
   name: string;
   day_type: string;
   suggested: boolean;
-  kcal: number;
+  /** Null para el cliente con `macros_visible` en false (E12, vista `menu_reads`). */
+  kcal: number | null;
   protein_g: number;
   carbs_g: number;
   fat_g: number;
@@ -212,12 +213,16 @@ export function menuFromRow(row: MenuRow): Menu {
     name: row.name,
     dayType: row.day_type,
     suggested: row.suggested,
-    macros: {
-      kcal: row.kcal,
-      proteinG: row.protein_g,
-      carbsG: row.carbs_g,
-      fatG: row.fat_g,
-    },
+    // E12: `menu_reads` las manda a null al cliente con `macros_visible` en false.
+    macros:
+      row.kcal === null
+        ? null
+        : {
+            kcal: row.kcal,
+            proteinG: row.protein_g,
+            carbsG: row.carbs_g,
+            fatG: row.fat_g,
+          },
     meals: [...row.meals].sort(byPosition).map((meal) => ({
       id: meal.id,
       name: meal.name,

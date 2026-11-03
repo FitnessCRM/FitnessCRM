@@ -236,7 +236,7 @@ export function createTemplatePort(client: SupabaseClient): TemplatePort {
       const ids = data as string[];
       if (ids.length === 0) return [];
       const menus = await rowsOf(
-        client.from("menus").select(MENU_SELECT).eq("trainer_id", trainerId).in("id", ids),
+        client.from("menu_reads").select(MENU_SELECT).eq("trainer_id", trainerId).in("id", ids),
         (row: MenuRow) => menuFromRow(row),
       );
       return menus.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));

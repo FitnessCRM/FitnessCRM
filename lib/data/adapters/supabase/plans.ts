@@ -52,7 +52,7 @@ export async function readMenu(
   menuId: string,
 ): Promise<Menu | null> {
   const { data, error } = await client
-    .from("menus")
+    .from("menu_reads")
     .select(MENU_SELECT)
     .eq("trainer_id", trainerId)
     .eq("id", menuId)
@@ -198,7 +198,11 @@ export function createMacroTargetsPort(client: SupabaseClient): MacroTargetsPort
 
 export function createMenuPort(client: SupabaseClient): MenuPort {
   const menusOf = (trainerId: string, clientId: string) =>
-    client.from("menus").select(MENU_SELECT).eq("trainer_id", trainerId).eq("client_id", clientId);
+    client
+      .from("menu_reads")
+      .select(MENU_SELECT)
+      .eq("trainer_id", trainerId)
+      .eq("client_id", clientId);
 
   const requireMenu = async (trainerId: string, menuId: string): Promise<Menu> => {
     const menu = await readMenu(client, trainerId, menuId);
