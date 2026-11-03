@@ -3,8 +3,8 @@
 import { useRef, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
-import { toReviewPhotoContentType } from "@/lib/data/ports";
 import {
+  REVIEW_PHOTO_FORMAT,
   applyReviewDraft,
   canClientEditReview,
   isReviewComplete,
@@ -36,6 +36,7 @@ import { es } from "@/lib/i18n/es";
 import { CompletenessStrip } from "./completeness-strip";
 import { MeasurementsBlock, type MeasurementField } from "./measurements-block";
 import { PhotosBlock } from "./photos-block";
+import { prepareReviewPhoto } from "./prepare-photo";
 import { QuestionnaireBlock, type QuestionField } from "./questionnaire-block";
 import { SubmitBar } from "./submit-bar";
 import { WeightBlock } from "./weight-block";
@@ -145,15 +146,20 @@ function ReviewEditor({ review, persisted, clientId, types, questions, logs }: E
     const saved = await save();
     await mutation.mutateAsync({ reviewId: saved.id, submit: true });
   };
+  // T3a y T3b: se sube ya redimensionada y en JPEG, venga en el formato que venga, si el navegador
+  // la sabe leer.
   const pickPhoto = async (pose: Pose, file: File) => {
-    const contentType = toReviewPhotoContentType(file.type);
-    setPhotoRejected(contentType === undefined);
-    if (!contentType) return;
+    const prepared = await prepareReviewPhoto(file);
+    setPhotoRejected(prepared === null);
+    if (!prepared) return;
     const opened = await ensureOpened();
     await mutation.mutateAsync({
       reviewId: opened.id,
-      photo: { clientId, pose, file, contentType },
+      photo: { clientId, pose, file: prepared, contentType: REVIEW_PHOTO_FORMAT },
     });
+  };
+  const removePhoto = async (pose: Pose) => {
+    await mutation.mutateAsync({ reviewId: review.id, removePhoto: pose });
   };
 
   return (
@@ -170,6 +176,7 @@ function ReviewEditor({ review, persisted, clientId, types, questions, logs }: E
             editable={editable}
             rejected={photoRejected}
             onPick={(pose, file) => void pickPhoto(pose, file)}
+            onRemove={(pose) => void removePhoto(pose).catch(() => undefined)}
           />
           <WeightBlock weight={shown} next={next} />
           <MeasurementsBlock

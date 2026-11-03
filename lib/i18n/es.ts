@@ -287,9 +287,11 @@ export const es = {
       done: "✓ subida",
       upload: "Subir",
       replace: "Cambiar",
+      /** Removes the photo of the pose; its file leaves Storage (§9, card 17). */
+      remove: "Quitar",
       hint: "Misma luz, misma hora y misma pose que la semana anterior.",
       unavailable: "No disponible",
-      unsupported: "Solo se admiten fotos en JPEG, PNG o WebP.",
+      unsupported: "No se ha podido leer esa foto. Prueba con una en JPEG, PNG o WebP.",
       allUploaded: " ✓",
     },
     weight: {
