@@ -13,6 +13,7 @@ import {
 } from "@/lib/data/hooks";
 import type { MenuTemplate, RoutineTemplate } from "@/lib/domain";
 import { countTemplateExercises } from "@/lib/domain";
+import { isDraftExists, useAssignWithDraftCheck } from "./replace-draft";
 import { es } from "@/lib/i18n/es";
 import { ClientPicker } from "../client-picker";
 import { MacrosCard } from "./macros-card";
@@ -132,6 +133,7 @@ function ClientAssignment({ clientId }: { clientId: string }) {
   const routineTemplates = useRoutineTemplates();
   const menuTemplates = useMenuTemplates();
   const assign = useAssignTemplate(clientId);
+  const replace = useAssignWithDraftCheck(assign);
 
   const queries = [routine, menus, targets, routineTemplates, menuTemplates];
   if (queries.some((q) => q.isPending)) return <LoadingState />;
@@ -141,9 +143,12 @@ function ClientAssignment({ clientId }: { clientId: string }) {
 
   const editorHref = `/clients/${clientId}/editor`;
   const assignTemplate = (kind: "routine" | "menu") => (templateId: string) =>
-    assign.mutate({ kind, templateId }, { onSuccess: () => router.push(editorHref) });
+    void replace.run(kind, templateId, () => router.push(editorHref));
+  // Un borrador que ya existe no es un fallo: lo pregunta el diálogo (I32).
   const error = (kind: "routine" | "menu") =>
-    assign.isError && assign.variables?.kind === kind ? t.assignError : null;
+    assign.isError && !isDraftExists(assign.error) && assign.variables?.kind === kind
+      ? t.assignError
+      : null;
   const isAssigning = (kind: "routine" | "menu") =>
     assign.isPending && assign.variables?.kind === kind;
 
@@ -161,6 +166,7 @@ function ClientAssignment({ clientId }: { clientId: string }) {
 
   return (
     <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+      {replace.dialog}
       <TemplatePicker
         options={routineOptions}
         editorHref={editorHref}

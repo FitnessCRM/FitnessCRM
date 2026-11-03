@@ -89,10 +89,14 @@ export function useAssignTemplate(clientId: string | undefined) {
     mutationFn: async (input: {
       kind: "routine" | "menu";
       templateId: string;
-    }): Promise<unknown> =>
-      input.kind === "routine"
-        ? ports.templates.assignRoutineTemplate(trainerId!, clientId!, input.templateId)
-        : ports.templates.assignMenuTemplate(trainerId!, clientId!, input.templateId),
+      /** I32: el entrenador ha confirmado que se sustituye el borrador que ya hay. */
+      replaceDraft?: boolean;
+    }): Promise<unknown> => {
+      const options = { replaceDraft: input.replaceDraft ?? false };
+      return input.kind === "routine"
+        ? ports.templates.assignRoutineTemplate(trainerId!, clientId!, input.templateId, options)
+        : ports.templates.assignMenuTemplate(trainerId!, clientId!, input.templateId, options);
+    },
     onSuccess: (_, input) => {
       const routine = input.kind === "routine";
       void queryClient.invalidateQueries({
