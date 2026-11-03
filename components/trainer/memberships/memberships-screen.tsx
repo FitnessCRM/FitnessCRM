@@ -18,6 +18,7 @@ import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 import { ClientPicker } from "../client-picker";
 import { MembershipRow } from "./membership-row";
+import { RatesCard } from "./rates-card";
 
 const t = es.screensTrainerMemberships;
 
@@ -196,6 +197,8 @@ export function MembershipsScreen({ initialClientId }: { initialClientId?: strin
           <p className="text-text-subtle text-[13px]">{t.legend}</p>
         </>
       )}
+
+      <RatesCard />
     </div>
   );
 }

@@ -16,6 +16,7 @@ export const queryKeys = {
     ["clients", trainerId, "tracking", query] as const,
   client: (trainerId: string, clientId: string) => ["clients", trainerId, clientId] as const,
   memberships: (trainerId: string) => ["memberships", trainerId] as const,
+  membershipRates: (trainerId: string) => ["membership-rates", trainerId] as const,
   membershipsWithClients: (trainerId: string, query: MembershipQuery) =>
     ["memberships", trainerId, "with-clients", query] as const,
   clientMemberships: (trainerId: string, clientId: string) =>
