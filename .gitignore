@@ -51,3 +51,9 @@ public/swe-worker-*.js
 
 # gga and its provider CLI, installed locally for the pre-commit hook
 .tools/
+
+# pruebas de humo (Playwright, tarjeta 130)
+/.next-e2e/
+/test-results/
+/playwright-report/
+/e2e/.seed.json
