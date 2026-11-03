@@ -212,11 +212,12 @@ export function createTemplatePort(client: SupabaseClient): TemplatePort {
       if (!data) throw notFoundError("Plantilla");
     },
 
-    // La función copia la plantilla en una rutina en borrador del cliente (§4).
-    assignRoutineTemplate: async (trainerId, clientId, templateId) => {
+    // La función copia la plantilla en una rutina en borrador del cliente (§4) y comprueba I32.
+    assignRoutineTemplate: async (trainerId, clientId, templateId, options) => {
       const { data, error } = await client.rpc("assign_routine_template", {
         p_template_id: templateId,
         p_client_id: clientId,
+        p_replace_draft: options?.replaceDraft ?? false,
       });
       raise(error);
       const routine = await readRoutine(client, trainerId, data as string);
@@ -225,10 +226,11 @@ export function createTemplatePort(client: SupabaseClient): TemplatePort {
     },
 
     // La función devuelve los ids de los menús que crea, en el orden de la plantilla.
-    assignMenuTemplate: async (trainerId, clientId, templateId) => {
+    assignMenuTemplate: async (trainerId, clientId, templateId, options) => {
       const { data, error } = await client.rpc("assign_menu_template", {
         p_template_id: templateId,
         p_client_id: clientId,
+        p_replace_draft: options?.replaceDraft ?? false,
       });
       raise(error);
       const ids = data as string[];

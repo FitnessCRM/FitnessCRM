@@ -411,6 +411,21 @@ describe("flows", () => {
     expect((await p.exercises.getExercise(TRAINER, "ex-press-banca"))?.status).toBe("archivado");
   });
 
+  it("assigning over a draft asks first and replacing keeps one draft (I32)", async () => {
+    const p = ports();
+    await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-full-body-2d");
+    await expect(
+      p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-full-body-2d"),
+    ).rejects.toMatchObject({ code: "plan.draft_exists" });
+    const replaced = await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-full-body-2d", {
+      replaceDraft: true,
+    });
+    const drafts = (await p.routines.listRoutines(TRAINER, MARTA)).filter(
+      (r) => r.status === "borrador",
+    );
+    expect(drafts.map((r) => r.id)).toEqual([replaced.id]);
+  });
+
   it("archiving leaves archived routines untouched and workout logs still name the exercise", async () => {
     const p = ports();
     const draft = await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-full-body-2d");

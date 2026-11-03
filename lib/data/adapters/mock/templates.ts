@@ -1,6 +1,9 @@
 import type { TemplatePort } from "@/lib/data/ports";
 import {
   assertExercisesInLibrary,
+  draftExistsError,
+  menuDraftsBlocking,
+  routineDraftsBlocking,
   cloneMenuTemplate,
   cloneRoutineTemplate,
   duplicateMenuTemplate,
@@ -79,9 +82,15 @@ export function createTemplatePort(ctx: MockContext): TemplatePort {
       removeById(ctx.state.menuTemplates, templateId);
       return ctx.reply(undefined);
     },
-    assignRoutineTemplate: async (trainerId, clientId, templateId) => {
+    assignRoutineTemplate: async (trainerId, clientId, templateId, options) => {
       findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
       const template = findOwn(ctx.state.routineTemplates, trainerId, templateId, "Plantilla");
+      // I32: un borrador por cliente; sustituirlo lo borra, porque un borrador no tiene histórico.
+      const drafts = new Set(routineDraftsBlocking(own(ctx.state.routines, trainerId), clientId));
+      if (drafts.size > 0) {
+        if (!options?.replaceDraft) throw draftExistsError();
+        ctx.state.routines = ctx.state.routines.filter((r) => !drafts.has(r.id));
+      }
       const routine = cloneRoutineTemplate(template, {
         trainerId,
         clientId,
@@ -91,9 +100,17 @@ export function createTemplatePort(ctx: MockContext): TemplatePort {
       ctx.state.routines.push(routine);
       return ctx.reply(routine);
     },
-    assignMenuTemplate: async (trainerId, clientId, templateId) => {
+    assignMenuTemplate: async (trainerId, clientId, templateId, options) => {
       findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
       const template = findOwn(ctx.state.menuTemplates, trainerId, templateId, "Plantilla");
+      // I32: un conjunto en borrador por tipo de día; solo chocan los tipos que trae la plantilla.
+      const drafts = new Set(
+        menuDraftsBlocking(own(ctx.state.menus, trainerId), clientId, template),
+      );
+      if (drafts.size > 0) {
+        if (!options?.replaceDraft) throw draftExistsError();
+        ctx.state.menus = ctx.state.menus.filter((m) => !drafts.has(m.id));
+      }
       const menus = cloneMenuTemplate(template, {
         trainerId,
         clientId,
