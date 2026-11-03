@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { MenusEditor } from "@/components/editor/menus-editor";
 import { RoutineDaysEditor } from "@/components/editor/routine-days-editor";
-import { useUnsavedGuard } from "@/components/editor/use-unsaved-guard";
+import { useUnsavedGuard } from "@/components/editor/unsaved-guard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,9 +29,23 @@ import {
   type RoutineTemplate,
   type TemplateKind,
 } from "@/lib/domain";
-import { es } from "@/lib/i18n/es";
+import { APP_NAME, es } from "@/lib/i18n/es";
 
 const t = es.screensTemplateEditor;
+
+/**
+ * `<title>` con el nombre guardado de la plantilla. La plantilla llega por los hooks, en cliente,
+ * así que la metadata del servidor solo puede dar el genérico «Editar plantilla».
+ */
+function useTemplateTitle(name: string) {
+  useEffect(() => {
+    const previous = document.title;
+    document.title = `${t.editDocumentTitle.replace("{name}", name)} · ${APP_NAME}`;
+    return () => {
+      document.title = previous;
+    };
+  }, [name]);
+}
 
 function BackLink() {
   return (
@@ -173,7 +187,8 @@ function RoutineEditor({ template }: { template: RoutineTemplate }) {
   const [justSaved, setJustSaved] = useState(false);
   const isSaved = (value: RoutineTemplate) => JSON.stringify(value) === JSON.stringify(saved);
   const dirty = !isSaved(draft);
-  useUnsavedGuard(dirty);
+  const leaveDialog = useUnsavedGuard(dirty);
+  useTemplateTitle(saved.name);
   const parsed = routineTemplateSchema.safeParse(draft);
   const valid = parsed.success;
   // El aviso general habla del contenido; si solo falta el nombre, lo dice el campo (tarjeta 100).
@@ -203,6 +218,7 @@ function RoutineEditor({ template }: { template: RoutineTemplate }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {leaveDialog}
       <BackLink />
       <PageHeader title={t.editRoutine} />
       <DetailsCard
@@ -286,7 +302,8 @@ function MenuEditor({ template }: { template: MenuTemplate }) {
   const [justSaved, setJustSaved] = useState(false);
   const isSaved = (value: MenuTemplateDraft) => JSON.stringify(value) === JSON.stringify(saved);
   const dirty = !isSaved(draft);
-  useUnsavedGuard(dirty);
+  const leaveDialog = useUnsavedGuard(dirty);
+  useTemplateTitle(saved.name);
   const complete = completeTemplate(draft);
   // Igual que en la rutina: el aviso general solo cuando falla algo del contenido (tarjeta 100).
   const contentInvalid = menuContentInvalid(draft);
@@ -315,6 +332,7 @@ function MenuEditor({ template }: { template: MenuTemplate }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {leaveDialog}
       <BackLink />
       <PageHeader title={t.editMenu} />
       <DetailsCard

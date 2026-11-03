@@ -272,6 +272,21 @@ function ExerciseRow({
           />
         </div>
       </div>
+      <div className="flex min-w-0 flex-col gap-1">
+        <Label
+          htmlFor={`${exercise.id}-note`}
+          className="text-text-subtle tracking-label text-[11px] uppercase"
+        >
+          {t.note}
+        </Label>
+        <Input
+          id={`${exercise.id}-note`}
+          value={p.note}
+          placeholder={t.notePlaceholder}
+          onChange={(event) => set({ note: event.target.value })}
+          className="h-10 px-2.5 text-[14px]"
+        />
+      </div>
     </li>
   );
 }
