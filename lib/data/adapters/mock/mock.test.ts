@@ -412,6 +412,24 @@ describe("flows", () => {
     expect((await p.exercises.getExercise(TRAINER, "ex-press-banca"))?.status).toBe("archivado");
   });
 
+  it("pays a rate online only once connected, and the payment makes the membership (E5, E6)", async () => {
+    const p = ports();
+    await expect(p.onlinePayments.startCheckout("mensual")).rejects.toMatchObject({
+      code: "payment.not_enabled",
+    });
+    await p.onlinePayments.startConnection(TRAINER);
+    expect(await p.onlinePayments.getStatus(TRAINER)).toEqual({ connected: true, enabled: true });
+    await expect(p.onlinePayments.startCheckout("semestral")).rejects.toMatchObject({
+      code: "payment.rate_not_payable",
+    });
+    const before = await p.memberships.listClientMemberships(TRAINER, MARTA);
+    await p.onlinePayments.startCheckout("mensual");
+    const after = await p.memberships.listClientMemberships(TRAINER, MARTA);
+    const paid = after.find((m) => m.onlinePaymentId !== null)!;
+    expect(after).toHaveLength(before.length + 1);
+    expect(paid).toMatchObject({ type: "mensual", paymentStatus: "pagada", priceCents: 4900 });
+  });
+
   it("lists the four rates and saves one (E1)", async () => {
     const p = ports();
     const rates = await p.memberships.listRates(TRAINER);

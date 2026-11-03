@@ -1,3 +1,4 @@
+import { createOnlinePaymentPort } from "./online-payments";
 import type { DataPorts } from "@/lib/data/ports";
 import { createMeasurementTypePort, createQuestionnairePort } from "./catalogs";
 import { createExercisePort } from "./exercises";
@@ -44,6 +45,7 @@ export function createMockPorts(options: MockPortsOptions = {}): DataPorts & { s
     trainer: createTrainerPort(ctx),
     clients: createClientPort(ctx),
     memberships: createMembershipPort(ctx),
+    onlinePayments: createOnlinePaymentPort(ctx),
     exercises: createExercisePort(ctx),
     ownFoods: createOwnFoodPort(ctx),
     foodCatalog: createFoodCatalogPort(ctx, { down: options.foodCatalogDown }),

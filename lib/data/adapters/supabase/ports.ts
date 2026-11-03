@@ -1,3 +1,4 @@
+import { createOnlinePaymentPort } from "./online-payments";
 import type { DataPorts } from "@/lib/data/ports";
 import { createInvitationPort, createPasswordResetPort } from "./auth";
 import { createMeasurementTypePort, createQuestionnairePort } from "./catalogs";
@@ -35,6 +36,7 @@ export function createSupabasePorts(options: SupabasePortsOptions): DataPorts {
     trainer: createTrainerPort(client),
     clients: createClientPort(client),
     memberships: createMembershipPort(client),
+    onlinePayments: createOnlinePaymentPort(client),
     exercises: createExercisePort(client),
     ownFoods: createOwnFoodPort(client),
     foodCatalog: createUnavailableFoodCatalogPort(),

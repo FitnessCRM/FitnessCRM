@@ -397,6 +397,16 @@ verify_jwt = false
 # Borrado a petición (E11): las funciones SQL a las que llama comprueban la sesión de quien llama.
 verify_jwt = true
 
+[functions.stripe-connect]
+verify_jwt = true
+
+[functions.stripe-checkout]
+verify_jwt = true
+
+[functions.stripe-webhook]
+# Lo llama Stripe, sin sesión: la función verifica la firma del evento con STRIPE_WEBHOOK_SECRET.
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
