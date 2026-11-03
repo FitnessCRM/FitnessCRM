@@ -418,10 +418,15 @@ describe("flows", () => {
     await p.exercises.archiveExercise(TRAINER, "ex-sentadilla-trasera");
     const all = await p.routines.listRoutines(TRAINER, MARTA);
     const archived = all.find((r) => r.id === "rt-marta-hipertrofia")!;
-    const active = all.find((r) => r.id === draft.id)!;
+    const active = all.find((r) => r.status === "activo")!;
+    const previous = all.find((r) => r.id === draft.id)!;
     const ids = (r: typeof archived) => r.days.flatMap((d) => d.exercises.map((e) => e.exerciseId));
     expect(archived.status).toBe("archivado");
     expect(ids(archived)).toContain("ex-sentadilla-trasera");
+    // E7: la activa no se edita en sitio; se archiva con el ejercicio y la sustituye una versión.
+    expect(previous.status).toBe("archivado");
+    expect(ids(previous)).toContain("ex-sentadilla-trasera");
+    expect(active.id).not.toBe(draft.id);
     expect(ids(active)).not.toContain("ex-sentadilla-trasera");
     const logs = (await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA)).filter(
       (l) => l.routineId === "rt-marta-hipertrofia",
