@@ -15,4 +15,5 @@ export * from "./membership";
 export * from "./text";
 export * from "./weight";
 export * from "./progress";
+export * from "./client-email";
 export * from "./client-status";

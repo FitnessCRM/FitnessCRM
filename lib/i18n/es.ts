@@ -1226,6 +1226,10 @@ export const es = {
   },
   screensClientEdit: {
     eyebrow: "Clientes / Editar",
+    /** I31: the email only changes while the invitation is pending. */
+    emailLockedHint:
+      "No se puede cambiar: es el correo con el que entra. Solo se cambia mientras la invitación está pendiente.",
+    emailResendHint: "Si lo cambias, la invitación se reenvía al correo nuevo.",
     startDateLockedHint:
       "No se puede cambiar: es el origen de la numeración de semanas y no reetiquetaría las revisiones ya enviadas.",
     cadence: {
@@ -1236,6 +1240,9 @@ export const es = {
     errors: {
       cadenceInvalid: "Escribe un número de días entero y mayor que 0",
       saveFailed: "No se han podido guardar los cambios.",
+      emailTaken: "Ese correo ya es de otro cliente. Cada cliente necesita su propio correo.",
+      resendFailed:
+        "Los cambios se han guardado, pero no se ha podido reenviar la invitación al correo nuevo. Reenvíala desde su ficha.",
     },
     inactive: {
       title: "Cliente de baja",
@@ -1261,6 +1268,7 @@ export const es = {
     errors: {
       endBeforeStart: "El fin no puede ser anterior al inicio",
       clientFailed: "No se ha podido crear el cliente.",
+      emailTaken: "Ese correo ya es de otro cliente. Cada cliente necesita su propio correo.",
       membershipFailed:
         "El cliente se ha creado, pero no su membresía. Vuelve a pulsar para añadirla.",
       invitationFailed:
