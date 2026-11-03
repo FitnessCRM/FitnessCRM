@@ -7,7 +7,10 @@ import type {
 } from "@/lib/data/ports";
 import {
   DomainError,
+  assertClientEmailChange,
   assertClientStatusChange,
+  clientEmailTakenError,
+  isClientEmailTaken,
   clientSchema,
   compareMembershipsForList,
   matchesMembershipFilter,
@@ -103,6 +106,8 @@ export function createClientPort(ctx: MockContext): ClientPort {
         ctx.state.clients.find((c) => c.id === clientId && c.trainerId === trainerId) ?? null,
       ),
     createClient: async (input) => {
+      // I31: único en toda la plataforma, de cualquier entrenador.
+      if (isClientEmailTaken(input.email, ctx.state.clients)) throw clientEmailTakenError();
       const client = clientSchema.parse({
         ...input,
         status: "invitado",
@@ -115,6 +120,13 @@ export function createClientPort(ctx: MockContext): ClientPort {
     updateClient: async (trainerId, clientId, changes) => {
       const current = findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
       if (changes.status) assertClientStatusChange(current.status, changes.status);
+      assertClientEmailChange(current, changes.email);
+      if (
+        changes.email !== undefined &&
+        isClientEmailTaken(changes.email, ctx.state.clients, clientId)
+      ) {
+        throw clientEmailTakenError();
+      }
       const next = clientSchema.parse({ ...current, ...changes, trainerId, id: clientId });
       return ctx.reply(replaceById(ctx.state.clients, next));
     },

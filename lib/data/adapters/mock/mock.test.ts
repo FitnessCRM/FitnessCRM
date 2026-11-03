@@ -411,6 +411,28 @@ describe("flows", () => {
     expect((await p.exercises.getExercise(TRAINER, "ex-press-banca"))?.status).toBe("archivado");
   });
 
+  it("keeps client emails unique and locks the email of an active client (I31)", async () => {
+    const p = ports();
+    const marta = (await p.clients.getClient(TRAINER, MARTA))!;
+    await expect(
+      p.clients.updateClient(TRAINER, MARTA, { email: "otra@example.com" }),
+    ).rejects.toMatchObject({ code: "client.email_locked" });
+    await expect(
+      p.clients.createClient({
+        trainerId: TRAINER,
+        firstName: "Otra",
+        lastName: "Persona",
+        email: ` ${marta.email.toUpperCase()}`,
+        phone: "",
+        goal: "",
+        level: "",
+        initialNotes: "",
+        startDate: marta.startDate,
+        reviewCadence: { everyDays: 7 },
+      }),
+    ).rejects.toMatchObject({ code: "client.email_taken" });
+  });
+
   it("assigning over a draft asks first and replacing keeps one draft (I32)", async () => {
     const p = ports();
     await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-full-body-2d");

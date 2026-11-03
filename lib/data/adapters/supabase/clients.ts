@@ -1,5 +1,6 @@
 import type { ClientChanges, ClientInput, ClientPort } from "@/lib/data/ports";
 import {
+  assertClientEmailChange,
   assertClientStatusChange,
   clientSchema,
   type Client,
@@ -114,6 +115,7 @@ export function createClientPort(client: SupabaseClient): ClientPort {
     updateClient: async (trainerId, clientId, changes: ClientChanges) => {
       const current = await readClient(client, clientId);
       if (changes.status) assertClientStatusChange(current.status, changes.status);
+      assertClientEmailChange(current, changes.email); // I31; la base de datos lo repite
       // Valida la ficha entera antes de escribir: lo que llega debe cumplir el dominio tal cual.
       clientSchema.parse({ ...current, ...changes });
 
