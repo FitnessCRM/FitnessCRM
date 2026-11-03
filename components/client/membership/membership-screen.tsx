@@ -9,15 +9,17 @@ import { formatCivilDate, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { CurrentCard } from "./current-card";
 import { HistoryTable } from "./history-table";
+import { PayCard, PaymentReturnNotice } from "./pay-card";
 import { PaymentPill } from "@/components/ui/payment-pill";
 
 const t = es.screensMembership;
 
 /**
- * Pantalla 07 · Membresía. Solo lectura: el cliente no toca su membresía y el cobro pasa fuera
- * de la app (§10, I21). Una renovación es una fila nueva del historial, nunca una edición.
+ * Pantalla 07 · Membresía. El cliente no edita su membresía: una renovación es una fila nueva del
+ * historial, nunca una edición. Desde el 03-11-2026 puede pagar una tarifa en línea (E5, tarjeta
+ * 125) si su entrenador lo tiene conectado; la membresía la crea la confirmación del pago (E6).
  */
-export function MembershipScreen() {
+export function MembershipScreen({ paymentResult = null }: { paymentResult?: string | null }) {
   const clientId = useSessionClientId();
   const trainer = useTrainer();
   const memberships = useClientMemberships(clientId);
@@ -30,14 +32,23 @@ export function MembershipScreen() {
         eyebrow={trainerName ? `${t.eyebrow} ${trainerName}` : undefined}
         title={es.pages.client.membresia}
       />
+      <PaymentReturnNotice result={paymentResult} />
       <QueryBoundary query={memberships} isEmpty={() => false} empty={null}>
-        {(data) => <MembershipView memberships={data} today={today} />}
+        {(data) => <MembershipView memberships={data} today={today} trainerId={trainer.data?.id} />}
       </QueryBoundary>
     </div>
   );
 }
 
-function MembershipView({ memberships, today }: { memberships: Membership[]; today: string }) {
+function MembershipView({
+  memberships,
+  today,
+  trainerId,
+}: {
+  memberships: Membership[];
+  today: string;
+  trainerId: string | undefined;
+}) {
   const { current, next, daysLeft, elapsed } = membershipStanding(memberships, today);
 
   return (
@@ -45,6 +56,7 @@ function MembershipView({ memberships, today }: { memberships: Membership[]; tod
       <div className="flex flex-col gap-4">
         <CurrentCard membership={current} daysLeft={daysLeft} elapsed={elapsed} />
         {next ? <NextCard membership={next} /> : null}
+        {trainerId ? <PayCard trainerId={trainerId} /> : null}
       </div>
       <div className="flex min-w-0 flex-col gap-3">
         <HistoryTable

@@ -414,6 +414,7 @@ describe("flows", () => {
 
   it("pays a rate online only once connected, and the payment makes the membership (E5, E6)", async () => {
     const p = ports();
+    p.state.onlinePaymentsConnected = [];
     await expect(p.onlinePayments.startCheckout("mensual")).rejects.toMatchObject({
       code: "payment.not_enabled",
     });

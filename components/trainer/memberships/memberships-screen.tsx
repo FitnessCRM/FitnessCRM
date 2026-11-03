@@ -18,6 +18,7 @@ import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
 import { ClientPicker } from "../client-picker";
 import { MembershipRow } from "./membership-row";
+import { OnlinePaymentsCard } from "./online-payments-card";
 import { RatesCard } from "./rates-card";
 
 const t = es.screensTrainerMemberships;
@@ -198,7 +199,10 @@ export function MembershipsScreen({ initialClientId }: { initialClientId?: strin
         </>
       )}
 
-      <RatesCard />
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_360px]">
+        <RatesCard />
+        <OnlinePaymentsCard />
+      </div>
     </div>
   );
 }
