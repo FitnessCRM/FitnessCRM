@@ -431,6 +431,37 @@ describe("flows", () => {
     expect(paid).toMatchObject({ type: "mensual", paymentStatus: "pagada", priceCents: 4900 });
   });
 
+  it("card 127 · a manual registration keeps the price charged, or none", async () => {
+    const p = ports();
+    const base = {
+      trainerId: TRAINER,
+      clientId: MARTA,
+      type: "mensual" as const,
+      startDate: "2030-01-01",
+      endDate: "2030-01-31",
+      paymentStatus: "pagada" as const,
+    };
+    const priced = await p.memberships.createMembership({ ...base, priceCents: 4500 });
+    expect(priced).toMatchObject({ priceCents: 4500, onlinePaymentId: null });
+    const unpriced = await p.memberships.createMembership(base);
+    expect(unpriced.priceCents).toBeNull();
+    await expect(
+      p.memberships.createMembership({ ...base, priceCents: 45.5 }),
+    ).rejects.toBeDefined();
+
+    // Copia congelada: cambiar la tarifa o editar la fila no la toca (E2).
+    await p.memberships.saveRate({
+      trainerId: TRAINER,
+      type: "mensual",
+      active: true,
+      priceCents: 9900,
+    });
+    const edited = await p.memberships.updateMembership(TRAINER, priced.id, {
+      paymentStatus: "no_pagada",
+    });
+    expect(edited.priceCents).toBe(4500);
+  });
+
   it("lists the four rates and saves one (E1)", async () => {
     const p = ports();
     const rates = await p.memberships.listRates(TRAINER);

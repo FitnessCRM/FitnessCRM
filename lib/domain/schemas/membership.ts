@@ -32,8 +32,10 @@ const membershipFields = z.object({
   endDate: civilDateSchema,
   paymentStatus: paymentStatusSchema,
   /**
-   * Copia congelada del precio cobrado, en céntimos de euro (E2, E3, I21). Solo la tiene una
-   * membresía pagada en línea; el registro manual no la lleva, porque la app no sabe qué se cobró.
+   * Copia congelada del precio cobrado, en céntimos de euro (E2, E3, I21). La pone el pago en línea
+   * con lo que cobró Stripe, o el entrenador en el registro manual, que propone el precio de la
+   * tarifa del tipo y deja cambiarlo (tarjeta 127). `null`: registro manual sin precio. Cambiar la
+   * tarifa después no la altera, y no se corrige al editar la fila.
    */
   priceCents: priceCentsSchema.nullable().default(null),
   /**
@@ -64,3 +66,13 @@ export const membershipEditSchema = membershipFields
   .pick({ type: true, startDate: true, endDate: true, paymentStatus: true })
   .refine((m) => m.endDate >= m.startDate, endNotBeforeStart);
 export type MembershipEdit = z.infer<typeof membershipEditSchema>;
+
+/**
+ * Registro manual de una membresía (S6, tarjeta 127): lo mismo que se edita en una fila más el precio
+ * cobrado, que es opcional. El id del pago no: solo lo pone un pago en línea confirmado (I21, I34).
+ */
+export const manualMembershipSchema = membershipFields
+  .pick({ type: true, startDate: true, endDate: true, paymentStatus: true })
+  .extend({ priceCents: priceCentsSchema.nullable() })
+  .refine((m) => m.endDate >= m.startDate, endNotBeforeStart);
+export type ManualMembership = z.infer<typeof manualMembershipSchema>;

@@ -3,6 +3,7 @@ import {
   addCivilDays,
   DomainError,
   EXPIRING_SOON_DAYS,
+  manualMembershipSchema,
   membershipEditSchema,
   membershipRateSchema,
   ratesByType,
@@ -116,7 +117,8 @@ export function createMembershipPort(client: SupabaseClient): MembershipPort {
 
     createMembership: async (input) => {
       await requireWritableClient(input.trainerId, input.clientId);
-      const data = membershipEditSchema.parse(input);
+      // Registro manual: el precio, si llega, es la copia congelada de lo cobrado (tarjeta 127).
+      const data = manualMembershipSchema.parse({ ...input, priceCents: input.priceCents ?? null });
       const { data: row, error } = await client
         .from("memberships")
         .insert({
@@ -126,6 +128,7 @@ export function createMembershipPort(client: SupabaseClient): MembershipPort {
           start_date: data.startDate,
           end_date: data.endDate,
           payment_status: data.paymentStatus,
+          price_cents: data.priceCents,
         })
         .select(MEMBERSHIP_COLUMNS)
         .single();

@@ -4,16 +4,18 @@ import type {
   Membership,
   MembershipRate,
   MembershipStatusFilter,
+  PriceCents,
 } from "@/lib/domain";
 
 /**
- * El registro manual (S6): el precio y el id del pago solo los pone un pago en línea confirmado
- * (I21, I34), nunca el entrenador.
+ * El registro manual (S6). El precio cobrado es opcional (tarjeta 127): lo escribe el entrenador, a
+ * partir del de la tarifa, y sin él la membresía queda sin precio. El id del pago solo lo pone un
+ * pago en línea confirmado (I21, I34), nunca el entrenador.
  */
 export type MembershipInput = Omit<
   Membership,
   "id" | "createdAt" | "priceCents" | "onlinePaymentId"
->;
+> & { priceCents?: PriceCents | null };
 export type MembershipChanges = Partial<
   Pick<Membership, "type" | "startDate" | "endDate" | "paymentStatus">
 >;

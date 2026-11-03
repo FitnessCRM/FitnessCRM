@@ -16,6 +16,7 @@ import {
   compareMembershipsForList,
   matchesMembershipFilter,
   membershipStanding,
+  manualMembershipSchema,
   membershipRateSchema,
   membershipSchema,
   ratesByType,
@@ -204,8 +205,16 @@ export function createMembershipPort(ctx: MockContext): MembershipPort {
       ),
     createMembership: async (input) => {
       ownClient(ctx.state, input.trainerId, input.clientId);
-      const membership = membershipSchema.parse({
+      // Registro manual: el precio, si llega, es la copia congelada de lo cobrado (tarjeta 127).
+      const manual = manualMembershipSchema.parse({
         ...input,
+        priceCents: input.priceCents ?? null,
+      });
+      const membership = membershipSchema.parse({
+        ...manual,
+        trainerId: input.trainerId,
+        clientId: input.clientId,
+        onlinePaymentId: null,
         id: ctx.newId(),
         createdAt: ctx.now(),
       });

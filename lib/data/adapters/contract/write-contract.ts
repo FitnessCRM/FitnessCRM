@@ -203,5 +203,27 @@ export function runWriteContract(
         code: "not_found",
       });
     });
+
+    it("E2, E3: el registro manual guarda el precio cobrado y no lo cambia al editar", async () => {
+      const { ports, ids: f } = fixture;
+      await fixture.as("trainer");
+      const base = {
+        trainerId: f.trainer,
+        clientId: f.client,
+        type: "mensual" as const,
+        startDate: "2026-09-01",
+        endDate: "2026-09-30",
+        paymentStatus: "no_pagada" as const,
+      };
+      const priced = await ports.memberships.createMembership({ ...base, priceCents: 4500 });
+      expect(priced).toMatchObject({ priceCents: 4500, onlinePaymentId: null });
+      const unpriced = await ports.memberships.createMembership({ ...base, priceCents: null });
+      expect(unpriced.priceCents).toBeNull();
+
+      const edited = await ports.memberships.updateMembership(f.trainer, priced.id, {
+        paymentStatus: "pagada",
+      });
+      expect(edited).toMatchObject({ paymentStatus: "pagada", priceCents: 4500 });
+    });
   });
 }
