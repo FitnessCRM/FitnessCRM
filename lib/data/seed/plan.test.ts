@@ -51,6 +51,7 @@ function ctxFor(anchor: CivilDate, timeZone: string, time = "22:00"): SeedContex
     trainerId: TRAINER_ID,
     idPrefix: SEED_PREFIX,
     ids: TEST_IDS,
+    clientEmails: { lucas: "lucas@prueba.test", irene: "irene@prueba.test" },
     anchor,
     clock: { timeZone, now: instant(anchor, time, timeZone) },
   };

@@ -23,7 +23,6 @@ export type ClientKey = "lucas" | "irene";
 interface ClientSpec {
   firstName: string;
   lastName: string;
-  email: string;
   goal: string;
   level: string;
   /** Días entre el alta y el ancla. */
@@ -39,7 +38,6 @@ export const CLIENT_SPECS: Record<ClientKey, ClientSpec> = {
   lucas: {
     firstName: "Lucas",
     lastName: "Navarro",
-    email: "daniel2003ml+lucas@gmail.com",
     goal: "Ganancia muscular",
     level: "Nivel medio",
     startDaysAgo: 40,
@@ -47,7 +45,6 @@ export const CLIENT_SPECS: Record<ClientKey, ClientSpec> = {
   irene: {
     firstName: "Irene",
     lastName: "Soto",
-    email: "daniel2003ml+irene@gmail.com",
     goal: "Pérdida de grasa",
     level: "Nivel avanzado",
     startDaysAgo: 63,
@@ -81,7 +78,7 @@ export function buildClients(ctx: SeedContext): Record<ClientKey, Client> {
       trainerId: ctx.trainerId,
       firstName: spec.firstName,
       lastName: spec.lastName,
-      email: spec.email,
+      email: ctx.clientEmails[key],
       phone: "",
       goal: spec.goal,
       level: spec.level,
