@@ -1,4 +1,5 @@
-import { macrosSchema, type Macros, type MenuTemplateEntry } from "./schemas";
+import { DomainError } from "./errors";
+import { macrosSchema, type Macros, type Menu, type MenuTemplateEntry } from "./schemas";
 
 /** Factores de Atwater: solo sirven para repartir la energía entre macros, nunca para dar kcal. */
 const KCAL_PER_GRAM = { protein: 4, carbs: 4, fat: 9 } as const;
@@ -76,4 +77,16 @@ export function fromMenuDrafts(drafts: readonly MenuEntryDraft[]): MenuTemplateE
     entries.push({ ...draft, macros });
   }
   return entries;
+}
+
+/**
+ * Las macros declaradas de un menú leído por el entrenador, que las recibe siempre (I11). Solo el
+ * cliente con `macrosVisible` en `false` las recibe a `null` (E12): llegar aquí sin ellas es leer
+ * como cliente lo que es del entrenador, y se dice en vez de inventar cifras.
+ */
+export function declaredMacros(menu: Pick<Menu, "macros">): Macros {
+  if (menu.macros === null) {
+    throw new DomainError("menu.macros_hidden", "Las macros de este menú no son visibles (I11)");
+  }
+  return menu.macros;
 }

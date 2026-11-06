@@ -37,8 +37,12 @@ export function useAcceptInvitation() {
   const ports = usePorts();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { link: string; password: string; email?: string }) =>
-      ports.invitations.acceptInvitation(input),
+    mutationFn: (input: {
+      link: string;
+      password: string;
+      email?: string;
+      consentVersion?: string;
+    }) => ports.invitations.acceptInvitation(input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.session }),
   });
 }

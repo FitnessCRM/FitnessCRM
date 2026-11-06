@@ -30,6 +30,8 @@ function client(
     startDate,
     reviewCadence: { everyDays: 7 },
     macrosVisible: true,
+    consentVersion: null,
+    consentAcceptedAt: null,
     createdAt: ts(startDate),
     ...extra,
   };
@@ -82,6 +84,8 @@ export function buildMemberships(d: DemoDates): Membership[] {
       startDate,
       endDate: d.daysAhead(endOffset),
       paymentStatus,
+      priceCents: null,
+      onlinePaymentId: null,
       createdAt: ts(startDate),
     };
   };

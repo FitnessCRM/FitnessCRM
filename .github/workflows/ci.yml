@@ -1,7 +1,9 @@
 name: CI
 
-# `lint`, `typecheck`, `test` y `build` en cada PR y en cada fusión a `main`. Es lo que exige la
-# protección de rama («Require status checks»): el check se llama `CI`.
+# `lint`, `typecheck`, `test` y `build` en cada PR y en cada fusión a `main`, más la base de datos:
+# Supabase local, migraciones desde cero, pgTAP y los tests del adaptador de Supabase. Es lo que
+# exige la protección de rama («Require status checks»): el check se llama `CI`, y por eso todo va
+# en este único job: un job aparte tendría otro nombre y el ruleset no lo exigiría.
 on:
   pull_request:
   push:
@@ -18,7 +20,7 @@ jobs:
   ci:
     name: CI
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       # `prepare` instala husky: en CI no hay hooks que instalar.
       HUSKY: "0"
@@ -36,6 +38,30 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      # Los runners de GitHub traen Docker. Sin los servicios que los tests no usan, arranca antes.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Supabase start
+        run: supabase start -x studio,imgproxy,vector,logflare,supavisor,mailpit,realtime
+
+      # `start` ya aplica las migraciones; `db reset` lo repite desde cero, que es lo que se
+      # comprueba: que la cadena de migraciones entera aplica sobre una base vacía.
+      - name: Supabase db reset
+        run: supabase db reset
+
+      - name: pgTAP
+        run: supabase test db
+
+      # Las claves de la instancia local son las de demo de la CLI, no secretos. Con ellas,
+      # `pnpm test` corre también el contrato del adaptador de Supabase, que sin ellas se salta.
+      - name: Supabase test env
+        run: |
+          supabase status -o env \
+            | sed -n 's/^API_URL=/SUPABASE_TEST_URL=/p; s/^ANON_KEY=/SUPABASE_TEST_ANON_KEY=/p; s/^SERVICE_ROLE_KEY=/SUPABASE_TEST_SERVICE_ROLE_KEY=/p' \
+            | tr -d '"' >> "$GITHUB_ENV"
 
       # Cada paso corre aunque falle el anterior, para que una revisión vea todos los fallos juntos.
       - name: Lint

@@ -21,6 +21,7 @@ import { formatCivilDate, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn, initialsOf } from "@/lib/utils";
 import { ClientInvitationCard } from "./client-invitation-card";
+import { ClientEraseAction } from "./client-erase-action";
 import { ClientStatusAction } from "./client-status-action";
 import { MembershipCard } from "./membership-card";
 import { MacrosMenuCard, RoutineCard } from "./plan-cards";
@@ -211,6 +212,7 @@ export function ClientDetailScreen({ clientId }: { clientId: string }) {
       </div>
 
       <ClientStatusAction client={c} />
+      {c.status === "dado_de_baja" ? <ClientEraseAction client={c} /> : null}
     </div>
   );
 }

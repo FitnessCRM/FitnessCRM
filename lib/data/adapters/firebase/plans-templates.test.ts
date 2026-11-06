@@ -142,6 +142,7 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
       expect(draft).toMatchObject({
         status: "borrador",
         sourceTemplateName: null,
+        sourceTemplateId: null,
         clientId: CLIENT_IDS.marta,
       });
       await expect(
@@ -193,6 +194,7 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
         status: "borrador",
         clientId: CLIENT_IDS.marta,
         sourceTemplateName: active.sourceTemplateName,
+        sourceTemplateId: active.sourceTemplateId,
       });
       expect(draft.id).not.toBe(active.id);
       // La activa no cambia hasta que se active el borrador.
@@ -288,6 +290,7 @@ describe.skipIf(!emulatorHost)("adaptador de Firebase · planes y plantillas", (
       expect(revised).toMatchObject({
         status: "borrador",
         sourceTemplateName: active.sourceTemplateName,
+        sourceTemplateId: active.sourceTemplateId,
       });
       const activated = await menus.activateMenus(TRAINER_ID, CLIENT_IDS.marta, active.dayType);
       expect(activated.map((m) => m.id)).toEqual([revised.id]);

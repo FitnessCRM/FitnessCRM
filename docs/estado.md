@@ -1,11 +1,13 @@
 # Estado del proyecto
 
-Última actualización: 18-10-2026. Corresponde a `main` en `75b300f` (PR #136). Están en `main` los
-cimientos, las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de
-seguridad, el adaptador de Firebase, el modo sin conexión del cliente, la capa de datos de los
-alimentos y sus pantallas, el flag de kcal y macros por cliente y la sección Alimentos propia; el
-resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de
-continuar.
+Última actualización: 03-11-2026, en la rama de la tanda de noviembre (tarjeta 120), sobre `main` en
+`89fa0b2` (PR #145). Este archivo describe lo que deja esa rama cuando se fusione: por excepción de la
+tanda, `estado.md` viaja en la misma rama. Están en `main` los cimientos, las siete pantallas del
+cliente, el panel del entrenador, la auth y las reglas de seguridad, el adaptador de Firebase, el modo
+sin conexión del cliente, la capa de datos de los alimentos y sus pantallas, el flag de kcal y macros
+por cliente, la sección Alimentos propia y la base de la migración a Supabase (esquema, RLS, Storage,
+Edge Functions, adaptador con los 18 puertos, exportación y cargador). La tanda añade lo de «Tanda de
+noviembre», abajo; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
 
 ## Cómo se trabajó hasta aquí
 
@@ -999,15 +1001,73 @@ tarjeta y en la descripción de su PR. «Sin tarjeta» marca deuda que todavía 
   `trainer/`) y #33 (enlace a la revisión desde el panel de control, rama
   `feature/navigate-to-reviews`).
 
+### Migración a Supabase (28-10 a 31-10-2026, PR #137–#145)
+
+- **Decisión y documentación** (#137, #138, #140, #142): el cliente también cambia su flag de kcal y
+  macros; plan de migración (`docs/plan-migracion-supabase.md`); fotos de revisión en Supabase
+  Storage en vez del Drive del entrenador (§9 y §12 de `dominio.md`); el SDK de Supabase, solo en su
+  adaptador.
+- **Supabase local y esquema** (tarjeta 118, #139, #141): `supabase/` con las migraciones (esquema con
+  claves compuestas por entrenador, RLS por rol, bucket privado `review-photos`, funciones RPC para
+  las escrituras de varias filas), el hook de token que pone `role` y `trainer_id` en el JWT, las
+  plantillas de correo y las Edge Functions `invite-client` y `delete-review-photos`. Tests pgTAP en
+  `supabase/tests/`.
+- **Adaptador de Supabase** (tarjeta 118, #143): los 18 puertos en `lib/data/adapters/supabase/`,
+  montado con `NEXT_PUBLIC_DATA_BACKEND=supabase`, con el contrato de escritura contra la instancia
+  local (`contract.test.ts`, necesita `SUPABASE_TEST_*`).
+- **Exportación y cargador** (tarjeta 119, #144, #145): `pnpm migrate:firebase:export` (solo lee
+  Firebase) y `pnpm migrate:firebase:load`, que valida y, con `--apply`, carga en la instancia local
+  (o en remoto con `--remote`). Carga cuentas, entrenadores, clientes, catálogos, plantillas, planes,
+  membresías, pesajes, revisiones y registros; las fotos no.
+
+### Tanda de noviembre (03-11-2026, tarjeta 120)
+
+Una sola rama y un único PR, sin aprobación entre secciones, con las decisiones del 03-11-2026
+aprobadas por Dani y Miguel (S1–S10, E1–E14, C1–C2, M1, M6). Lo de cada tarjeta, en su comentario y
+en el cuerpo del PR; aquí el resumen.
+
+- **Documentación** (121): `dominio.md` con todas las decisiones (I21 reescrita, I31–I35, §4, §5, §7,
+  §9, §10 y §12), la regla 1 y el Stack de `CLAUDE.md` y `AGENTS.md` con Supabase y Stripe, el plan de
+  migración con el alcance del 29-10 y M1, y `.env.example` con Supabase y Stripe sin valores.
+- **CI** (122): el job `CI` arranca Supabase, rehace la base desde las migraciones, corre pgTAP y pasa
+  a `pnpm test` las claves de demo locales para que el contrato del adaptador de Supabase se ejecute.
+  `.nvmrc` a 24 (cierra el punto abierto de la versión de Node).
+- **Progreso** (86): la lista de revisiones enseña las últimas 6 semanas, contadas desde la revisión
+  más reciente, y «Ver todas».
+- **Plantillas y editores** (69): diálogo propio al salir con cambios sin guardar navegando dentro de
+  la app (E14; el «atrás» del navegador no se intercepta), nota por ejercicio en el editor de rutina
+  (plantillas y plan), `<title>` con el nombre de la plantilla, `sourceTemplateId` en los planes y
+  usos contados por id (E8; ninguna pantalla los enseña hoy) y un solo borrador por cliente y tipo de
+  plan al asignar, con diálogo para sustituirlo (E9, I32).
+- **Archivar un ejercicio** (62): las rutinas activas se versionan (E7). Supabase ya lo hacía; ahora
+  también el adaptador en memoria.
+- **Email del cliente** (67): único en la plataforma y bloqueado salvo con el cliente `invitado`;
+  cambiarlo reenvía la invitación (E10, I31).
+- **Macros del menú ocultas** (123): con el flag en `false`, Supabase no manda al cliente las kcal ni
+  las macros declaradas del menú (vista `menu_reads`), con pgTAP de los dos valores (E12).
+- **I4** (72): ya la garantizaban las migraciones (índices únicos parciales); no se cambia nada (M6).
+- **Consentimiento y borrado a petición** (31): el cliente acepta el consentimiento al aceptar la
+  invitación y se guardan versión y fecha (C1, I33); el texto es un **borrador pendiente de
+  validar** (C2). El entrenador borra definitivamente a un cliente de baja escribiendo su nombre: Edge
+  Function `erase-client`, fotos primero (E11, I14).
+- **Tarifas** (124): el entrenador activa cada uno de los cuatro tipos y le pone precio en Membresías
+  (sin captura: propuesta). La membresía guarda el precio cobrado y el id del pago (E1–E4, I21).
+- **Pagos con Stripe** (125): Stripe Connect con cuentas Standard y cargos directos, en las Edge
+  Functions `stripe-connect`, `stripe-checkout` y `stripe-webhook`; el webhook verifica la firma y
+  crea la membresía una sola vez por pago (S1–S10, E5, E6, I34, I35). Solo modo test y sin claves en
+  el repo. Puerto `onlinePayments`; la demo confirma el pago en el acto.
+- **Favicon** (19): favicon e iconos de la PWA con la inicial de `APP_NAME` en Oswald sobre el acento.
+- **Firebase**: no se trabaja nada nuevo. Lo nuevo responde «no disponible con Firebase» (borrado,
+  tarifas, cobro en línea); aceptar la invitación con Firebase sigue sin pedir consentimiento.
+
 ## Siguiente
 
 Las pantallas del cliente y del panel están en `main`. Desde el 21-09-2026 trabajan dos personas
 (sección «Equipo» de `CLAUDE.md`) y este archivo es un resumen curado que se escribe en un PR de
 documentación después de cada fusión. Lo que queda, con su tarjeta:
 
-- **Kcal y macros por cliente (deuda de la tarjeta 111):** separar las macros declaradas por menú en
-  otro documento, para que las reglas las oculten al cliente con el flag en `false` (ver «Hecho»).
-  Requiere decisión del propietario antes de programarlo.
+- **Kcal y macros por cliente (deuda de la tarjeta 111):** resuelto con Supabase en la tanda de
+  noviembre (tarjeta 123). Con Firebase se queda como estaba, porque no se trabaja más.
 - **Alimentos:**
   - **Conectar la API del catálogo común (90).** La API ya existe (`FitnessCRM/food-api`); la
     tarjeta está bloqueada porque la API no tiene CORS y porque falta la URL de su despliegue.
@@ -1016,11 +1076,17 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
     sembrados en vez de todos por nombre. La app sigue el contrato; hay que pedir en
     `FitnessCRM/food-api` que se alineen.
 
-- **Migración a Supabase (decidida el 28-10-2026, `docs/plan-migracion-supabase.md`).** Datos, auth y
-  fotos de revisión pasan a Supabase; las fotos van a Supabase Storage, acordado con Dani. Fase 0 en
-  curso: este PR de documentación y la dependencia `@supabase/*` en su propia rama. Pendiente con
-  Dani: el texto de consentimiento y el responsable del tratamiento de las fotos. Pendiente del
-  inventario de Firebase (Fase 0.3).
+- **Migración a Supabase (decidida el 28-10-2026, `docs/plan-migracion-supabase.md`).** Hechos el
+  esquema, el adaptador, la exportación y el cargador (#137–#145) y, en la tanda de noviembre, lo que
+  dice «Tanda de noviembre». Pendiente con Dani: validar el borrador del consentimiento y el
+  responsable del tratamiento de las fotos (tarjeta 117); el inventario de Firebase (Fase 0.3); M1 en
+  el cargador (clientes sin cuenta como `invitado` y reenvío de su invitación); decidir cuándo
+  `providers.tsx` monta Supabase por defecto.
+- **Cobro en línea, pasos fuera del repo:** claves de Stripe (modo test) y secreto del webhook como
+  secretos de las Edge Functions, endpoint del webhook de Connect apuntando a `stripe-webhook`
+  (eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded` y
+  `account.updated`), `APP_URL`, y desplegar las funciones y las migraciones. Las Edge Functions de
+  Stripe no se han ejecutado de punta a punta (ver el PR de la tanda).
 - **Backend.** Firebase está conectado y se ha probado con el proyecto real (06-10-2026): el
   `users/{uid}` del entrenador está creado, y las reglas de seguridad (tarjeta 34) y los índices de
   `reviews` están desplegados. Las reglas se comprobaron con sesión de entrenador contra el proyecto
@@ -1043,14 +1109,15 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   tabla de Membresías falla con `failed-precondition` con `NEXT_PUBLIC_DATA_BACKEND=firebase`.
   Comando: `firebase deploy --only firestore:indexes --project fitnesscrm-fb1ef`. Lo ejecuta
   quien tenga el permiso de despliegue; después se comprueba la tabla contra el proyecto real.
-- **Decisiones de dominio pendientes**: si archivar un ejercicio crea versión nueva de las rutinas
-  vivas (62). Los huecos menores H5, H6, H7 y H9 ya están decididos en `dominio.md` (tarjeta 61):
+- **Decisiones de dominio**: archivar un ejercicio versiona las rutinas activas (62, hecho en la
+  tanda de noviembre). Los huecos menores H5, H6, H7 y H9 ya están decididos en `dominio.md` (tarjeta 61):
   escala sin mínimo negativo, tres transiciones del cliente, la semana sigue contando en la baja,
   y «Tipos de medida» / «Mediciones». En `main` (#122): la escala no admite mínimo negativo (107) y
   las etiquetas nuevas (109). Las transiciones del cliente (108) están en el dominio y en los dos
   adaptadores, pero las reglas de Firestore todavía no las comprueban: esa parte falta. Falta
   comprobar que asignar planes y enviar feedback a un cliente de baja la respetan (tarjeta 61).
-- **Deuda menor con tarjeta**: favicon (19) y cifras del panel en una consulta (42). Resueltas: la columna de completitud de «Revisiones recibidas», que marcaba «Completa» toda
+- **Deuda menor con tarjeta**: cifras del panel en una consulta (42). El favicon (19) se hizo en la
+  tanda de noviembre. Resueltas: la columna de completitud de «Revisiones recibidas», que marcaba «Completa» toda
   revisión porque leía el objeto de `isReviewComplete` en vez de su `.complete` (105, PR #108); el
   nombre accesible de `NumberField` (59, PR
   #66, etiqueta y campo asociados con `useId`) y `ReviewPort.listSubmittedReviews`, que se quitó
@@ -1067,10 +1134,8 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
 
 ### Puntos abiertos
 
-- **Versión de Node.** `.nvmrc` pide Node 22 y todas las comprobaciones desde el 30-09-2026 se han
-  hecho con Node 24.18, que es el que hay instalado. No se ha cambiado `.nvmrc`: queda por decidir
-  si se instala Node 22 o se sube la versión fijada, y lo natural es cerrarlo con la CI (tarjeta
-  28), que fijará la suya.
+- ~~**Versión de Node.**~~ Cerrado en la tanda de noviembre (tarjeta 122): `.nvmrc` pasa a 24 y la
+  CI lo lee de ahí.
 
 ### Hito: pasada responsive del área de cliente — hecho (21-09-2026)
 

@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { MenusEditor } from "@/components/editor/menus-editor";
 import { RoutineDaysEditor } from "@/components/editor/routine-days-editor";
-import { useUnsavedGuard } from "@/components/editor/use-unsaved-guard";
+import { useUnsavedGuard } from "@/components/editor/unsaved-guard";
+import {
+  isDraftExists,
+  useAssignWithDraftCheck,
+} from "@/components/trainer/assignment/replace-draft";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -48,6 +52,7 @@ import {
   type Routine,
   type RoutineBody,
   type RoutinePublishOp,
+  declaredMacros,
 } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 
@@ -61,7 +66,7 @@ function toEntry(menu: Menu): MenuTemplateEntry {
     name: menu.name,
     dayType: menu.dayType,
     suggested: menu.suggested,
-    macros: menu.macros,
+    macros: declaredMacros(menu),
     meals: menu.meals,
     note: menu.note,
   };
@@ -198,6 +203,7 @@ function PlanEditor({
   const routineTemplates = useRoutineTemplates();
   const menuTemplates = useMenuTemplates();
   const assign = useAssignTemplate(clientId);
+  const replace = useAssignWithDraftCheck(assign);
 
   const isRoutinePublished = (value: RoutineBody) =>
     JSON.stringify(value) === JSON.stringify(initialRoutine);
@@ -208,7 +214,7 @@ function PlanEditor({
   const routinePending = routineDirty || target?.status === "borrador";
   const menusPending = menusDirty || menus.some((m) => m.status === "borrador");
   const dirty = routineDirty || menusDirty;
-  useUnsavedGuard(dirty);
+  const leaveDialog = useUnsavedGuard(dirty);
   const isPublishing = publishRoutine.isPending || publishMenus.isPending;
 
   // Un menú sin sus cuatro cifras no se publica (§5): `fromMenuDrafts` devuelve null.
@@ -247,7 +253,7 @@ function PlanEditor({
 
   const fromTemplate = async (kind: Tab, templateId: string) => {
     if (dirty && !window.confirm(t.confirmTemplate)) return;
-    await assign.mutateAsync({ kind, templateId }).catch(() => null);
+    await replace.run(kind, templateId);
   };
   const templates =
     tab === "routine"
@@ -258,6 +264,8 @@ function PlanEditor({
 
   return (
     <div className="flex flex-col gap-6">
+      {leaveDialog}
+      {replace.dialog}
       {back}
       <PageHeader
         eyebrow={t.breadcrumb.replace("{name}", `${client.firstName} ${client.lastName}`)}
@@ -293,7 +301,9 @@ function PlanEditor({
         }
       />
 
-      {assign.isError ? <ErrorState message={t.templateError} /> : null}
+      {assign.isError && !isDraftExists(assign.error) ? (
+        <ErrorState message={t.templateError} />
+      ) : null}
       {showErrors && !valid ? <ErrorState message={t.invalid} /> : null}
       {publishRoutine.isError || publishMenus.isError ? <ErrorState message={t.saveError} /> : null}
       <p role="status" className="text-text-muted -mt-2 min-h-5 text-[13px]">

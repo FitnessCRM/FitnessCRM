@@ -7,12 +7,18 @@ import type {
 } from "@/lib/data/ports";
 import {
   DomainError,
+  assertClientEmailChange,
+  assertErasable,
   assertClientStatusChange,
+  clientEmailTakenError,
+  isClientEmailTaken,
   clientSchema,
   compareMembershipsForList,
   matchesMembershipFilter,
   membershipStanding,
+  membershipRateSchema,
   membershipSchema,
+  ratesByType,
   overlappingMembershipIds,
   type MembershipStatusFilter,
 } from "@/lib/domain";
@@ -103,6 +109,8 @@ export function createClientPort(ctx: MockContext): ClientPort {
         ctx.state.clients.find((c) => c.id === clientId && c.trainerId === trainerId) ?? null,
       ),
     createClient: async (input) => {
+      // I31: único en toda la plataforma, de cualquier entrenador.
+      if (isClientEmailTaken(input.email, ctx.state.clients)) throw clientEmailTakenError();
       const client = clientSchema.parse({
         ...input,
         status: "invitado",
@@ -115,8 +123,32 @@ export function createClientPort(ctx: MockContext): ClientPort {
     updateClient: async (trainerId, clientId, changes) => {
       const current = findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
       if (changes.status) assertClientStatusChange(current.status, changes.status);
+      assertClientEmailChange(current, changes.email);
+      if (
+        changes.email !== undefined &&
+        isClientEmailTaken(changes.email, ctx.state.clients, clientId)
+      ) {
+        throw clientEmailTakenError();
+      }
       const next = clientSchema.parse({ ...current, ...changes, trainerId, id: clientId });
       return ctx.reply(replaceById(ctx.state.clients, next));
+    },
+    // E11: se va todo lo que cuelga del cliente; las fotos de la demo no viven en ningún sitio.
+    eraseClient: async (trainerId, clientId) => {
+      const client = findOwn(ctx.state.clients, trainerId, clientId, "Cliente");
+      assertErasable(client);
+      const s = ctx.state;
+      const other = <T extends { clientId: string }>(rows: T[]) =>
+        rows.filter((r) => r.clientId !== clientId);
+      s.reviews = other(s.reviews);
+      s.weightLogs = other(s.weightLogs);
+      s.workoutLogs = other(s.workoutLogs);
+      s.memberships = other(s.memberships);
+      s.routines = other(s.routines);
+      s.menus = other(s.menus);
+      s.macroTargets = other(s.macroTargets);
+      s.clients = s.clients.filter((c) => c.id !== clientId);
+      return ctx.reply(undefined);
     },
     // I11: el cliente de la sesión, con su ficha activa, y solo este campo. La sesión de demo navega
     // las dos áreas (`clientId` es Marta), así que se mira el cliente de la sesión y no su rol.
@@ -191,6 +223,18 @@ export function createMembershipPort(ctx: MockContext): MembershipPort {
         clientId: current.clientId,
       });
       return ctx.reply(replaceById(ctx.state.memberships, next));
+    },
+    listRates: async (trainerId) =>
+      ctx.reply(ratesByType(trainerId, own(ctx.state.membershipRates, trainerId))),
+    saveRate: async (rate) => {
+      const next = membershipRateSchema.parse(rate);
+      ctx.state.membershipRates = [
+        ...ctx.state.membershipRates.filter(
+          (r) => !(r.trainerId === next.trainerId && r.type === next.type),
+        ),
+        next,
+      ];
+      return ctx.reply(next);
     },
   };
 }

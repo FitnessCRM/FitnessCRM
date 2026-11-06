@@ -15,7 +15,7 @@ import type {
   MembershipInput,
   MembershipQuery,
 } from "@/lib/data/ports";
-import { DomainError } from "@/lib/domain";
+import { DomainError, type MembershipRate } from "@/lib/domain";
 import { usePorts } from "./ports-provider";
 import { queryKeys } from "./query-keys";
 import { useTrainerId } from "./use-session";
@@ -72,6 +72,20 @@ export function useUpdateClient() {
     mutationFn: ({ clientId, changes }: { clientId: string; changes: ClientChanges }) =>
       ports.clients.updateClient(trainerId!, clientId, changes),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.clients(trainerId!) }),
+  });
+}
+
+/**
+ * Borrado a petición de un cliente de baja (E11, I14). Al acabar, el cliente ya no existe: se
+ * olvidan todas las consultas del entrenador, que podían contenerlo.
+ */
+export function useEraseClient() {
+  const ports = usePorts();
+  const queryClient = useQueryClient();
+  const trainerId = useTrainerId();
+  return useMutation({
+    mutationFn: (clientId: string) => ports.clients.eraseClient(trainerId!, clientId),
+    onSuccess: () => queryClient.invalidateQueries(),
   });
 }
 
@@ -150,5 +164,34 @@ export function useSaveMembership() {
         queryClient.invalidateQueries({ queryKey: queryKeys.memberships(trainerId!) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.clients(trainerId!) }),
       ]),
+  });
+}
+
+/**
+ * Las cuatro tarifas del entrenador (E1). Sin `trainerId`, las del entrenador de la sesión; el
+ * cliente pasa el de su entrenador y solo recibe las que se pueden pagar.
+ */
+export function useMembershipRates(trainerId?: string) {
+  const ports = usePorts();
+  const sessionTrainerId = useTrainerId();
+  const id = trainerId ?? sessionTrainerId;
+  return useQuery({
+    queryKey: queryKeys.membershipRates(id ?? ""),
+    queryFn: () => ports.memberships.listRates(id!),
+    enabled: !!id,
+  });
+}
+
+/** Guarda las tarifas que han cambiado (E1), una a una. */
+export function useSaveMembershipRates() {
+  const ports = usePorts();
+  const queryClient = useQueryClient();
+  const trainerId = useTrainerId();
+  return useMutation({
+    mutationFn: async (rates: MembershipRate[]) => {
+      for (const rate of rates) await ports.memberships.saveRate(rate);
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.membershipRates(trainerId!) }),
   });
 }

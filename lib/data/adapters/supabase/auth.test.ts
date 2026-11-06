@@ -1,5 +1,6 @@
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
+import { CONSENT_VERSION } from "@/lib/domain";
 import type { SupabaseClient } from "./client";
 import { createInvitationPort, createPasswordResetPort } from "./auth";
 
@@ -72,6 +73,16 @@ describe("createInvitationPort.acceptInvitation", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it("does not call the backend without the current consent (I33)", async () => {
+    const rpc = vi.fn();
+    const port = createInvitationPort(fakeClient({ rpc }));
+
+    await expect(port.acceptInvitation({ link, password: "secreta1" })).rejects.toMatchObject({
+      code: "invitation.consent_required",
+    });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it("rejects a link that is not an invitation without calling the backend", async () => {
     const rpc = vi.fn();
     const port = createInvitationPort(fakeClient({ rpc }));
@@ -79,6 +90,16 @@ describe("createInvitationPort.acceptInvitation", () => {
     await expect(
       port.acceptInvitation({ link: `${APP}/accept-invite?c=${CLIENT_ID}`, password: "secreta1" }),
     ).rejects.toMatchObject({ code: "invitation.invalid_link" });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("does not call the backend without the current consent (I33)", async () => {
+    const rpc = vi.fn();
+    const port = createInvitationPort(fakeClient({ rpc }));
+
+    await expect(port.acceptInvitation({ link, password: "secreta1" })).rejects.toMatchObject({
+      code: "invitation.consent_required",
+    });
     expect(rpc).not.toHaveBeenCalled();
   });
 
@@ -90,10 +111,13 @@ describe("createInvitationPort.acceptInvitation", () => {
     const signOut = vi.fn().mockResolvedValue({ error: null });
     const port = createInvitationPort(fakeClient({ rpc, auth: { signOut } }));
 
-    await expect(port.acceptInvitation({ link, password: "secreta1" })).rejects.toMatchObject({
-      code: "invitation.not_found",
+    await expect(
+      port.acceptInvitation({ link, password: "secreta1", consentVersion: CONSENT_VERSION }),
+    ).rejects.toMatchObject({ code: "invitation.not_found" });
+    expect(rpc).toHaveBeenCalledWith("accept_client_invitation", {
+      p_client_id: CLIENT_ID,
+      p_consent_version: CONSENT_VERSION,
     });
-    expect(rpc).toHaveBeenCalledWith("accept_client_invitation", { p_client_id: CLIENT_ID });
     expect(signOut).toHaveBeenCalledWith({ scope: "local" });
   });
 });

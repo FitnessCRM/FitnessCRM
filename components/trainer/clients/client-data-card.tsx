@@ -45,10 +45,16 @@ export function FieldError({ message }: { message?: string }) {
  */
 export function ClientDataCard({
   lockStartDate = false,
+  lockEmail = false,
+  emailHint,
   startDateHint,
   children,
 }: {
   lockStartDate?: boolean;
+  /** I31: en la edición, el correo solo se cambia mientras el cliente es `invitado`. */
+  lockEmail?: boolean;
+  /** Texto bajo el correo: por qué no se cambia, o qué pasa si se cambia. */
+  emailHint?: string;
   startDateHint: string;
   /** Campos propios de la pantalla, debajo de la fecha de alta. */
   children?: React.ReactNode;
@@ -87,8 +93,15 @@ export function ClientDataCard({
             type="email"
             autoComplete="off"
             aria-invalid={!!errors.email}
+            aria-describedby={emailHint ? "cd-email-hint" : undefined}
+            readOnly={lockEmail}
             {...form.register("email")}
           />
+          {emailHint ? (
+            <p id="cd-email-hint" className="text-text-subtle text-xs">
+              {emailHint}
+            </p>
+          ) : null}
           <FieldError message={errors.email ? t.errors.emailInvalid : undefined} />
         </div>
         <div className="flex flex-col gap-1.5">

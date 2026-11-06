@@ -165,5 +165,13 @@ export function createMembershipPort(ctx: FirebaseContext): MembershipPort {
         tx.set(docRef, next, { merge: true });
         return next;
       }),
+
+    // Tarifas (E1): solo con Supabase. Nada nuevo se trabaja para Firebase en la tanda de noviembre.
+    listRates: async () => {
+      throw new Error("Las tarifas solo están disponibles con el adaptador de Supabase.");
+    },
+    saveRate: async () => {
+      throw new Error("Las tarifas solo están disponibles con el adaptador de Supabase.");
+    },
   };
 }

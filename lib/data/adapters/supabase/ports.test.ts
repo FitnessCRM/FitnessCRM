@@ -23,6 +23,7 @@ describe("createSupabasePorts", () => {
         "measurementTypes",
         "memberships",
         "menus",
+        "onlinePayments",
         "ownFoods",
         "passwordReset",
         "questionnaire",

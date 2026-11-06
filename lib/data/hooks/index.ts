@@ -2,6 +2,7 @@ export { PortsProvider, usePorts } from "./ports-provider";
 export { queryKeys } from "./query-keys";
 export * from "./use-session";
 export * from "./use-clients";
+export * from "./use-online-payments";
 export * from "./use-library";
 export * from "./use-foods";
 export * from "./use-plans";

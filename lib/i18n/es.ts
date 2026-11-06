@@ -88,6 +88,22 @@ export const es = {
         errorNotFound: "No hay ninguna invitación pendiente para ese email",
         errorRegistered: `Este correo ya tiene una cuenta en ${APP_NAME}. Inicia sesión o escribe a soporte.`,
         errorNetwork: "No se ha podido conectar",
+        errorConsent: "Para crear tu cuenta tienes que aceptar el texto de consentimiento",
+      },
+      /**
+       * Consent text (C1, C2, I33). DRAFT PENDING VALIDATION by Dani (card 31): written from
+       * docs/dominio.md §9 on 03-11-2026, not final, not legal advice. Its version is
+       * CONSENT_VERSION in lib/domain/consent.ts: changing this text means a new version.
+       */
+      consent: {
+        title: "Tus fotos y tus datos",
+        paragraphs: [
+          "Tu entrenador usa esta app para seguir tu progreso. Para eso guarda tus datos de contacto, tus revisiones semanales, tus pesajes, tus medidas, tus registros de entreno y las fotos de composición corporal que subas en cada revisión.",
+          "Las fotos son datos sensibles. Se guardan en un almacenamiento privado de Supabase, en la Unión Europea, y solo las ven tu entrenador y tú, con enlaces temporales. La app no las comparte con nadie más.",
+          "Quien custodia tus fotos y tus datos es tu entrenador. Se conservan mientras dure vuestra relación y también después de una baja, hasta que pidas que se borren.",
+          "Para borrarlos, pídeselo a tu entrenador: los borra definitivamente desde su panel, fotos incluidas. Lo que hayas pagado con tarjeta queda registrado en Stripe, que es quien procesa los pagos.",
+        ],
+        accept: "He leído este texto y acepto que se traten mis fotos y mis datos así",
       },
       invalid: {
         title: "Enlace no válido",
@@ -525,6 +541,15 @@ export const es = {
       repsMaxPlaceholder: "Fijas",
       rir: "RIR",
       rest: "Descanso",
+      note: "Nota para el cliente",
+      notePlaceholder: "Controla la bajada, pausa abajo…",
+    },
+    /** Own dialog when leaving an editor with unsaved changes by navigating inside the app (E14). */
+    unsavedDialog: {
+      title: "¿Salir sin guardar?",
+      description: "Hay cambios sin guardar. Si sales ahora, se pierden.",
+      stay: "Seguir editando",
+      leave: "Salir sin guardar",
     },
     menu: {
       hint: "Varios menús por tipo de día; uno de ellos sugerido.",
@@ -622,6 +647,8 @@ export const es = {
     back: "← Plantillas",
     createTitle: "Nueva plantilla",
     editTitle: "Editar plantilla",
+    /** Document title of the edit screen once the template is loaded. */
+    editDocumentTitle: "{name} · Editar plantilla",
     editRoutine: "Editar plantilla de rutina",
     editMenu: "Editar plantilla de menú",
     kind: "Tipo",
@@ -647,6 +674,15 @@ export const es = {
       "La plantilla se copia al cliente al asignarla: editarla no cambia planes ya asignados.",
     notFound: { title: "Plantilla no encontrada", hint: "Puede que se haya eliminado." },
     sections: { details: "Datos", content: "Contenido" },
+  },
+  /** Assigning a template when the client already has a draft of that plan (I32, E9). */
+  replaceDraftDialog: {
+    title: "Ya hay un borrador",
+    routine:
+      "Este cliente ya tiene una rutina en borrador. Si la sustituyes por la plantilla, el borrador se borra.",
+    menu: "Este cliente ya tiene menús en borrador para estos tipos de día. Si los sustituyes por la plantilla, esos borradores se borran.",
+    confirm: "Sustituir el borrador",
+    cancel: "Cancelar",
   },
   /** Trainer panel client picker (`components/trainer/client-picker.tsx`): used by Clients, Memberships and Assignment. */
   clientPicker: {
@@ -1000,6 +1036,17 @@ export const es = {
       },
     },
     footer: "Si tienes dudas sobre un pago, escribe a tu entrenador.",
+    /** Online payment (E5): only active rates with a price, only if the trainer connected it. */
+    pay: {
+      title: "Renovar y pagar",
+      hint: "Elige una membresía y págala con tarjeta. Empieza al terminar la que tienes en curso, o hoy si no tienes ninguna.",
+      typeLabel: "Membresía",
+      submit: "Pagar {price}",
+      redirecting: "Abriendo el pago…",
+      failed: "No se ha podido abrir el pago. Inténtalo de nuevo en un momento.",
+      paid: "Pago recibido. Tu membresía aparecerá aquí en cuanto se confirme.",
+      cancelled: "Has salido del pago sin pagar. No se ha cobrado nada.",
+    },
   },
   screensTrainerMemberships: {
     eyebrow: "Pagos y renovaciones",
@@ -1041,6 +1088,35 @@ export const es = {
       title: "Ninguna membresía coincide",
       hint: "Prueba con otro cliente o quita el filtro.",
     },
+    /** Rates (E1, card 124) and online payments (card 125). No screenshot: proposed for this batch. */
+    rates: {
+      title: "Tarifas",
+      hint: "Activa las membresías que ofreces y ponles precio. Solo las activas con precio se pueden pagar en línea; el registro manual admite cualquier tipo.",
+      columns: { type: "Tipo", active: "Activa", price: "Precio (€)" },
+      activeLabel: "Ofrecer {type}",
+      pricePlaceholder: "49,00",
+      priceInvalid: "Escribe un precio mayor que 0, con dos decimales como mucho",
+      save: "Guardar tarifas",
+      saving: "Guardando…",
+      saved: "Tarifas guardadas",
+      saveError: "No se han podido guardar las tarifas.",
+      noPrice: "Sin precio",
+    },
+    online: {
+      title: "Cobro en línea",
+      connectedHint:
+        "Tu cuenta de Stripe está conectada: tus clientes pueden pagar las tarifas activas desde su pantalla Membresía. Reembolsos y disputas, desde tu panel de Stripe.",
+      disconnectedHint:
+        "Conecta tu cuenta de Stripe para que tus clientes paguen sus membresías con tarjeta. El dinero va directo a tu cuenta, sin comisión de la app.",
+      connect: "Conectar Stripe",
+      resume: "Completar la conexión",
+      connecting: "Abriendo Stripe…",
+      connected: "Conectado",
+      failed: "No se ha podido abrir Stripe. Inténtalo de nuevo en un momento.",
+      unavailable: "El cobro en línea no está disponible en este entorno.",
+    },
+    /** Frozen price of a membership paid online (E2). */
+    paidOnline: "Pagada en línea · {price}",
   },
   /** Charts from `components/charts/`: used by both areas, so they don't hang off one screen. */
   charts: {
@@ -1206,6 +1282,10 @@ export const es = {
   },
   screensClientEdit: {
     eyebrow: "Clientes / Editar",
+    /** I31: the email only changes while the invitation is pending. */
+    emailLockedHint:
+      "No se puede cambiar: es el correo con el que entra. Solo se cambia mientras la invitación está pendiente.",
+    emailResendHint: "Si lo cambias, la invitación se reenvía al correo nuevo.",
     startDateLockedHint:
       "No se puede cambiar: es el origen de la numeración de semanas y no reetiquetaría las revisiones ya enviadas.",
     cadence: {
@@ -1216,6 +1296,9 @@ export const es = {
     errors: {
       cadenceInvalid: "Escribe un número de días entero y mayor que 0",
       saveFailed: "No se han podido guardar los cambios.",
+      emailTaken: "Ese correo ya es de otro cliente. Cada cliente necesita su propio correo.",
+      resendFailed:
+        "Los cambios se han guardado, pero no se ha podido reenviar la invitación al correo nuevo. Reenvíala desde su ficha.",
     },
     inactive: {
       title: "Cliente de baja",
@@ -1241,6 +1324,7 @@ export const es = {
     errors: {
       endBeforeStart: "El fin no puede ser anterior al inicio",
       clientFailed: "No se ha podido crear el cliente.",
+      emailTaken: "Ese correo ya es de otro cliente. Cada cliente necesita su propio correo.",
       membershipFailed:
         "El cliente se ha creado, pero no su membresía. Vuelve a pulsar para añadirla.",
       invitationFailed:
@@ -1534,6 +1618,20 @@ export const es = {
         note: "Esto no borra datos. Si el cliente pide que se borren, es otra operación.",
         confirm: "Dar de baja",
         failed: "No se ha podido dar de baja.",
+      },
+      /** Erasure on request (E11, I14). Only for a discharged client. `{name}` is filled in. */
+      erase: {
+        action: "Borrar definitivamente",
+        cardTitle: "Borrado a petición",
+        cardHint:
+          "Si el cliente pide que se borren sus datos, bórralos aquí. No se puede deshacer.",
+        title: "Borrar definitivamente a {name}",
+        body: "Se borran sus fotos, sus revisiones con sus medidas y respuestas, sus pesajes, sus registros de entreno, sus membresías, sus planes, su ficha y su cuenta. No se anonimiza nada: desaparece de la app. Sus pagos siguen en tu panel de Stripe.",
+        typeName: "Escribe «{name}» para confirmar",
+        confirm: "Borrar definitivamente",
+        erasing: "Borrando…",
+        failed:
+          "No se ha podido borrar todo. Vuelve a intentarlo: lo que ya se borró no se repite.",
       },
       reactivate: {
         action: "Reactivar",

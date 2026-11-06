@@ -82,6 +82,7 @@ const routine: Routine = {
   name: "Fuerza",
   note: "",
   sourceTemplateName: null,
+  sourceTemplateId: null,
   createdAt: CREATED,
   updatedAt: CREATED,
   days: [

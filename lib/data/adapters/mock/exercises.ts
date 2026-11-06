@@ -1,5 +1,10 @@
 import type { ExercisePort } from "@/lib/data/ports";
-import { exerciseSchema, removeExerciseFromRoutine, routinesUsingExercise } from "@/lib/domain";
+import {
+  archiveExerciseInRoutines,
+  exerciseSchema,
+  removeExerciseFromRoutine,
+  routinesUsingExercise,
+} from "@/lib/domain";
 import { findOwn, own, replaceById } from "./helpers";
 import type { MockContext } from "./store";
 
@@ -46,12 +51,13 @@ export function createExercisePort(ctx: MockContext): ExercisePort {
     archiveExercise: async (trainerId, exerciseId) => {
       const exercise = findOwn(ctx.state.exercises, trainerId, exerciseId, "Ejercicio");
       const now = ctx.now();
-      // Solo rutinas vivas: las archivadas existen para leer un entreno antiguo en su contexto.
-      ctx.state.routines = ctx.state.routines.map((r) =>
-        r.trainerId === trainerId && r.status !== "archivado"
-          ? { ...removeExerciseFromRoutine(r, exerciseId), updatedAt: now }
-          : r,
-      );
+      // E7: las activas se versionan (la anterior se archiva con el ejercicio dentro) y los
+      // borradores se editan en sitio. Las archivadas no se tocan.
+      const own = ctx.state.routines.filter((r) => r.trainerId === trainerId);
+      ctx.state.routines = [
+        ...ctx.state.routines.filter((r) => r.trainerId !== trainerId),
+        ...archiveExerciseInRoutines(own, exerciseId, { now, newId: ctx.newId }),
+      ];
       ctx.state.routineTemplates = ctx.state.routineTemplates.map((t) =>
         t.trainerId === trainerId
           ? { ...removeExerciseFromRoutine(t, exerciseId), updatedAt: now }

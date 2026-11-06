@@ -13,7 +13,9 @@ const t = es.screensMenu.menus;
  * "aporta 2.348 kcal · P 165 · C 260 · G 72", siempre con el verbo delante: no es un objetivo. Las
  * kcal son las que declaró el entrenador para el menú (§5), no una cuenta sobre los macros.
  */
-function providesLine(menu: Menu): string {
+function providesLine(menu: Menu): string | null {
+  // Con `macrosVisible` en `false` la base de datos no las manda (E12): no hay línea que pintar.
+  if (menu.macros === null) return null;
   const { proteinG, carbsG, fatG } = menu.macros;
   const macros = [
     `${t.macroAbbr.protein} ${formatNumber(proteinG)}`,

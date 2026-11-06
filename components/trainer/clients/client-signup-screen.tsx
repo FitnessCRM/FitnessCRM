@@ -10,7 +10,7 @@ import {
   useSendInvitation,
   useTrainer,
 } from "@/lib/data/hooks";
-import type { Client } from "@/lib/domain";
+import { DomainError, type Client } from "@/lib/domain";
 import { todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { ClientSignupForm, type SignupIntent, type SignupValues } from "./client-signup-form";
@@ -52,7 +52,12 @@ export function ClientSignupScreen() {
         macrosVisible: values.macrosVisible,
       });
     } catch (cause) {
-      setError(t.errors.clientFailed);
+      // I31: el correo ya es de otro cliente, de este entrenador o de otro.
+      setError(
+        cause instanceof DomainError && cause.code === "client.email_taken"
+          ? t.errors.emailTaken
+          : t.errors.clientFailed,
+      );
       throw cause;
     }
 

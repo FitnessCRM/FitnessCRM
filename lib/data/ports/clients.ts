@@ -5,10 +5,15 @@ import type { CivilDate, Client, ClientStatus, IsoTimestamp, Membership } from "
  * y `status`, porque un cliente nace siempre `invitado` (§7) y pasar a `activo` es otra operación.
  */
 /** `macrosVisible` es opcional al crear: sin él, el dominio lo deja en `true` (I11). */
-export type ClientInput = Omit<Client, "id" | "createdAt" | "status" | "macrosVisible"> & {
+/** El consentimiento no lo escribe el entrenador: lo acepta el cliente al aceptar la invitación (I33). */
+type ConsentFields = "consentVersion" | "consentAcceptedAt";
+export type ClientInput = Omit<
+  Client,
+  "id" | "createdAt" | "status" | "macrosVisible" | ConsentFields
+> & {
   macrosVisible?: boolean;
 };
-export type ClientChanges = Partial<Omit<Client, "id" | "createdAt" | "trainerId">>;
+export type ClientChanges = Partial<Omit<Client, "id" | "createdAt" | "trainerId" | ConsentFields>>;
 
 /**
  * Corte por estado del seguimiento de clientes: los tres estados del dominio (§7). «Inactivo» no
@@ -68,4 +73,12 @@ export interface ClientPort {
    * sesión, o su ficha no está `activo`, lanza `not_found`. El entrenador usa `updateClient`.
    */
   setMacrosVisible(clientId: string, visible: boolean): Promise<Client>;
+  /**
+   * Borrado a petición (E11, I14): borra definitivamente a un cliente dado de baja, sin anonimizar:
+   * las fotos de sus revisiones en el almacenamiento, sus revisiones, pesajes, registros de entreno,
+   * membresías y planes, su ficha y su cuenta. Las fotos se borran primero y se comprueba que no
+   * queda ninguna antes de borrar el resto. `client.not_discharged` si no está de baja; `not_found`
+   * si no es de ese entrenador; `client.erase_incomplete` si algo quedó a medias (se puede repetir).
+   */
+  eraseClient(trainerId: string, clientId: string): Promise<void>;
 }

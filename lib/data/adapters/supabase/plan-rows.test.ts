@@ -27,6 +27,7 @@ describe("routineFromRow", () => {
     name: "Fuerza A",
     note: "Sube peso",
     source_template_name: null,
+    source_template_id: null,
     created_at: CREATED,
     updated_at: CREATED,
     routine_days: [
@@ -101,6 +102,7 @@ describe("routineFromRow", () => {
       name: "Fuerza A",
       note: "Sube peso",
       sourceTemplateName: null,
+      sourceTemplateId: null,
       createdAt: "2026-10-01T10:00:00.123Z",
     });
   });
@@ -121,6 +123,7 @@ describe("menuFromRow", () => {
     fat_g: 60,
     note: "",
     source_template_name: "Plantilla base",
+    source_template_id: null,
     created_at: CREATED,
     updated_at: CREATED,
     meals: [
@@ -168,6 +171,7 @@ describe("menuFromRow", () => {
       suggested: true,
       macros: { kcal: 2000, proteinG: 150, carbsG: 200, fatG: 60 },
       sourceTemplateName: "Plantilla base",
+      sourceTemplateId: null,
     });
   });
 

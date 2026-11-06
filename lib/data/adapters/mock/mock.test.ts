@@ -21,6 +21,7 @@ import {
   latestDayRecord,
   reviewWeight,
   weekNumber,
+  declaredMacros,
 } from "@/lib/domain";
 import { createDemoState, createMockPorts, demoToday } from "./index";
 
@@ -411,6 +412,91 @@ describe("flows", () => {
     expect((await p.exercises.getExercise(TRAINER, "ex-press-banca"))?.status).toBe("archivado");
   });
 
+  it("pays a rate online only once connected, and the payment makes the membership (E5, E6)", async () => {
+    const p = ports();
+    p.state.onlinePaymentsConnected = [];
+    await expect(p.onlinePayments.startCheckout("mensual")).rejects.toMatchObject({
+      code: "payment.not_enabled",
+    });
+    await p.onlinePayments.startConnection(TRAINER);
+    expect(await p.onlinePayments.getStatus(TRAINER)).toEqual({ connected: true, enabled: true });
+    await expect(p.onlinePayments.startCheckout("semestral")).rejects.toMatchObject({
+      code: "payment.rate_not_payable",
+    });
+    const before = await p.memberships.listClientMemberships(TRAINER, MARTA);
+    await p.onlinePayments.startCheckout("mensual");
+    const after = await p.memberships.listClientMemberships(TRAINER, MARTA);
+    const paid = after.find((m) => m.onlinePaymentId !== null)!;
+    expect(after).toHaveLength(before.length + 1);
+    expect(paid).toMatchObject({ type: "mensual", paymentStatus: "pagada", priceCents: 4900 });
+  });
+
+  it("lists the four rates and saves one (E1)", async () => {
+    const p = ports();
+    const rates = await p.memberships.listRates(TRAINER);
+    expect(rates.map((r) => r.type)).toEqual(["mensual", "trimestral", "semestral", "anual"]);
+    expect(rates[3]).toMatchObject({ active: false, priceCents: null });
+    await p.memberships.saveRate({
+      trainerId: TRAINER,
+      type: "anual",
+      active: true,
+      priceCents: 44900,
+    });
+    expect((await p.memberships.listRates(TRAINER))[3]).toMatchObject({
+      active: true,
+      priceCents: 44900,
+    });
+  });
+
+  it("erases a discharged client and everything that hangs from them (E11)", async () => {
+    const p = ports();
+    await expect(p.clients.eraseClient(TRAINER, MARTA)).rejects.toMatchObject({
+      code: "client.not_discharged",
+    });
+    await p.clients.updateClient(TRAINER, MARTA, { status: "dado_de_baja" });
+    await p.clients.eraseClient(TRAINER, MARTA);
+    expect(await p.clients.getClient(TRAINER, MARTA)).toBeNull();
+    expect(await p.weightLogs.listWeightLogs(TRAINER, MARTA)).toEqual([]);
+    expect(await p.routines.listRoutines(TRAINER, MARTA)).toEqual([]);
+  });
+
+  it("keeps client emails unique and locks the email of an active client (I31)", async () => {
+    const p = ports();
+    const marta = (await p.clients.getClient(TRAINER, MARTA))!;
+    await expect(
+      p.clients.updateClient(TRAINER, MARTA, { email: "otra@example.com" }),
+    ).rejects.toMatchObject({ code: "client.email_locked" });
+    await expect(
+      p.clients.createClient({
+        trainerId: TRAINER,
+        firstName: "Otra",
+        lastName: "Persona",
+        email: ` ${marta.email.toUpperCase()}`,
+        phone: "",
+        goal: "",
+        level: "",
+        initialNotes: "",
+        startDate: marta.startDate,
+        reviewCadence: { everyDays: 7 },
+      }),
+    ).rejects.toMatchObject({ code: "client.email_taken" });
+  });
+
+  it("assigning over a draft asks first and replacing keeps one draft (I32)", async () => {
+    const p = ports();
+    await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-full-body-2d");
+    await expect(
+      p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-full-body-2d"),
+    ).rejects.toMatchObject({ code: "plan.draft_exists" });
+    const replaced = await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-full-body-2d", {
+      replaceDraft: true,
+    });
+    const drafts = (await p.routines.listRoutines(TRAINER, MARTA)).filter(
+      (r) => r.status === "borrador",
+    );
+    expect(drafts.map((r) => r.id)).toEqual([replaced.id]);
+  });
+
   it("archiving leaves archived routines untouched and workout logs still name the exercise", async () => {
     const p = ports();
     const draft = await p.templates.assignRoutineTemplate(TRAINER, MARTA, "rt-full-body-2d");
@@ -418,10 +504,15 @@ describe("flows", () => {
     await p.exercises.archiveExercise(TRAINER, "ex-sentadilla-trasera");
     const all = await p.routines.listRoutines(TRAINER, MARTA);
     const archived = all.find((r) => r.id === "rt-marta-hipertrofia")!;
-    const active = all.find((r) => r.id === draft.id)!;
+    const active = all.find((r) => r.status === "activo")!;
+    const previous = all.find((r) => r.id === draft.id)!;
     const ids = (r: typeof archived) => r.days.flatMap((d) => d.exercises.map((e) => e.exerciseId));
     expect(archived.status).toBe("archivado");
     expect(ids(archived)).toContain("ex-sentadilla-trasera");
+    // E7: la activa no se edita en sitio; se archiva con el ejercicio y la sustituye una versión.
+    expect(previous.status).toBe("archivado");
+    expect(ids(previous)).toContain("ex-sentadilla-trasera");
+    expect(active.id).not.toBe(draft.id);
     expect(ids(active)).not.toContain("ex-sentadilla-trasera");
     const logs = (await p.workoutLogs.listWorkoutLogs(TRAINER, MARTA)).filter(
       (l) => l.routineId === "rt-marta-hipertrofia",
@@ -451,6 +542,7 @@ describe("flows", () => {
     expect(draft).toMatchObject({
       status: "borrador",
       sourceTemplateName: active.sourceTemplateName,
+      sourceTemplateId: active.sourceTemplateId,
     });
     await p.routines.activateRoutine(TRAINER, draft.id);
     const all = await p.routines.listRoutines(TRAINER, MARTA);
@@ -497,9 +589,28 @@ describe("flows", () => {
     const dayType = active[0]!.dayType;
     const set = active.filter((m) => m.dayType === dayType);
     const target = set[0]!;
-    const { id, trainerId, clientId, status, sourceTemplateName, createdAt, updatedAt, ...body } =
-      target;
-    void [id, trainerId, clientId, status, sourceTemplateName, createdAt, updatedAt];
+    const {
+      id,
+      trainerId,
+      clientId,
+      status,
+      sourceTemplateName,
+      sourceTemplateId,
+      createdAt,
+      updatedAt,
+      ...rest
+    } = target;
+    void [
+      id,
+      trainerId,
+      clientId,
+      status,
+      sourceTemplateName,
+      sourceTemplateId,
+      createdAt,
+      updatedAt,
+    ];
+    const body = { ...rest, macros: declaredMacros(target) };
     await expect(p.menus.updateMenu(TRAINER, target.id, body)).rejects.toMatchObject({
       code: "menu.not_draft",
     });
@@ -598,7 +709,7 @@ describe("flows", () => {
     const maintenance = templates.find((t) => t.id === "mnt-mantenimiento-2500");
     expect(maintenance?.menus[0]?.macros).toEqual(rounded);
     const [menu] = await p.templates.assignMenuTemplate(TRAINER, MARTA, "mnt-mantenimiento-2500");
-    expect(menu?.macros.kcal).toBe(2500);
+    expect(menu?.macros?.kcal).toBe(2500);
   });
 
   it("rejects macros without valid kcal", async () => {
@@ -876,6 +987,7 @@ describe("writes are tenant-scoped (I1, I2): one cross-tenant case per method (E
       clientId: MARTA,
       status: "borrador",
       sourceTemplateName: null,
+      sourceTemplateId: null,
       createdAt: `${TODAY}T08:00:00Z`,
       updatedAt: `${TODAY}T08:00:00Z`,
     });

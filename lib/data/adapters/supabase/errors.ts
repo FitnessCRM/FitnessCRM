@@ -12,6 +12,10 @@ export interface BackendError {
  * como error normal, sin disfrazarlo de error de negocio.
  */
 export function toDomainError(error: BackendError): Error {
+  // I31: el índice único de correos de cliente abarca a todos los entrenadores, que RLS no deja ver.
+  if (error.code === "23505" && error.message.includes("clients_email_unique")) {
+    return new DomainError("client.email_taken", error.message);
+  }
   if (error.code === "P0001") {
     // Todo `*.not_found` de las funciones es el mismo caso para el puerto: `not_found`.
     const code = error.message.endsWith(".not_found") ? "not_found" : error.message;

@@ -1,3 +1,4 @@
+import { declaredMacros } from "@/lib/domain";
 import type {
   Exercise,
   Food,
@@ -220,10 +221,10 @@ export function menuRows(menu: Menu) {
       name: menu.name,
       day_type: menu.dayType,
       suggested: menu.suggested,
-      kcal: menu.macros.kcal,
-      protein_g: menu.macros.proteinG,
-      carbs_g: menu.macros.carbsG,
-      fat_g: menu.macros.fatG,
+      kcal: declaredMacros(menu).kcal,
+      protein_g: declaredMacros(menu).proteinG,
+      carbs_g: declaredMacros(menu).carbsG,
+      fat_g: declaredMacros(menu).fatG,
       note: menu.note,
       source_template_name: menu.sourceTemplateName,
       created_at: menu.createdAt,

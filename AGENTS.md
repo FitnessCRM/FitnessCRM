@@ -11,7 +11,9 @@ hard constraint from `CLAUDE.md` («Reglas duras») or a convention from its
 2. Firebase SDK imports (`firebase`, `@firebase/*`, `firebase-admin`) appear
    only under `lib/data/adapters/firebase/`, and `firebase-admin` only under
    `lib/data/adapters/firebase/seed/`. Supabase SDK imports (`@supabase/*`) appear
-   only under `lib/data/adapters/supabase/`. Any other backend SDK (an ORM, a
+   only under `lib/data/adapters/supabase/`. The Stripe SDK (`stripe`) appears
+   only under `supabase/functions/` (Edge Functions): ports, hooks and
+   components never mention Stripe. Any other backend SDK (an ORM, a
    database client) is a violation.
 3. Components and hooks never call a data source directly. Data goes through
    `lib/data/hooks/`, which talks to the interfaces in `lib/data/ports/`.

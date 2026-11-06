@@ -35,6 +35,7 @@ import {
   type PlanPeriod,
   type Prescription,
   type RoutinePeriod,
+  declaredMacros,
 } from "@/lib/domain";
 import { formatCivilDate, formatInteger, todayCivil } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
@@ -83,7 +84,7 @@ function prescriptionLine(p: Prescription): string {
 }
 
 function macrosLine(menu: Menu): string {
-  const { kcal, proteinG, carbsG, fatG } = menu.macros;
+  const { kcal, proteinG, carbsG, fatG } = declaredMacros(menu);
   return `${formatInteger(kcal)} ${es.common.kcal} · ${t.protein} ${proteinG} ${t.grams} · ${t.carbs} ${carbsG} ${t.grams} · ${t.fat} ${fatG} ${t.grams}`;
 }
 
@@ -211,7 +212,9 @@ function MenuSetItem({ period, today }: { period: MenuSetPeriod; today: CivilDat
       title={menus.map((m) => m.name).join(" · ")}
       inUse={period.to === null}
       details={[
-        single ? `${template} · ${formatInteger(single.macros.kcal)} ${es.common.kcal}` : template,
+        single
+          ? `${template} · ${formatInteger(declaredMacros(single).kcal)} ${es.common.kcal}`
+          : template,
       ]}
       period={periodLine(period)}
       duration={durationLine(period, today)}

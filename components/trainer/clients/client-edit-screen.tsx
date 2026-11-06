@@ -5,12 +5,16 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
-import { useClient, useUpdateClient } from "@/lib/data/hooks";
+import { useClient, useSendInvitation, useUpdateClient } from "@/lib/data/hooks";
+import { changesClientEmail, DomainError } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 import { clientEditChanges, type EditDirtyFields } from "./client-edit-changes";
 import { ClientEditForm, type EditValues } from "./client-edit-form";
 
 const t = es.screensClientEdit;
+
+const isEmailTaken = (error: unknown) =>
+  error instanceof DomainError && error.code === "client.email_taken";
 
 /**
  * Edición de los datos de un cliente (`/clients/[clientId]/edit`). No escribe `startDate` ni
@@ -21,15 +25,26 @@ export function ClientEditScreen({ clientId }: { clientId: string }) {
   const router = useRouter();
   const client = useClient(clientId);
   const updateClient = useUpdateClient();
+  const sendInvitation = useSendInvitation(client.data?.trainerId ?? "");
   const [error, setError] = useState<string | null>(null);
 
   const submit = async (values: EditValues, dirty: EditDirtyFields) => {
     setError(null);
+    const before = client.data;
     try {
       await updateClient.mutateAsync({ clientId, changes: clientEditChanges(values, dirty) });
     } catch (cause) {
-      setError(t.errors.saveFailed);
+      setError(isEmailTaken(cause) ? t.errors.emailTaken : t.errors.saveFailed);
       throw cause;
+    }
+    // I31: con el cliente invitado, cambiar el correo reenvía la invitación al correo nuevo.
+    if (before?.status === "invitado" && changesClientEmail(before, values.email)) {
+      try {
+        await sendInvitation.mutateAsync(clientId);
+      } catch (cause) {
+        setError(t.errors.resendFailed);
+        throw cause;
+      }
     }
     router.push(`/clients/${clientId}`);
   };

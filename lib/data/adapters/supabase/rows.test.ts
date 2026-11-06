@@ -58,6 +58,8 @@ describe("clientFromRow", () => {
       startDate: "2026-01-12",
       reviewCadence: { everyDays: 7 },
       macrosVisible: false,
+      consentVersion: null,
+      consentAcceptedAt: null,
       createdAt: "2026-01-12T09:00:00.500Z",
     });
   });
@@ -113,6 +115,8 @@ describe("membershipFromRow", () => {
       startDate: "2026-09-01",
       endDate: "2026-11-30",
       paymentStatus: "pagada",
+      priceCents: null,
+      onlinePaymentId: null,
       createdAt: "2026-08-28T18:30:00.000Z",
     });
   });

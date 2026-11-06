@@ -75,6 +75,11 @@ export const routineSchema = routineBodySchema.extend({
   status: planStatusSchema,
   /** Nombre de la plantilla de origen, congelado. Es copia, no enlace (§4). */
   sourceTemplateName: z.string().nullable(),
+  /**
+   * Id de la plantilla de origen (E8): cuenta los usos de una plantilla. No es un enlace vivo. Los
+   * planes anteriores a E8 no lo tienen y se leen como `null`.
+   */
+  sourceTemplateId: z.string().nullable().default(null),
   createdAt: isoTimestampSchema,
   updatedAt: isoTimestampSchema,
 });

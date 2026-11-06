@@ -28,6 +28,7 @@ import {
   routineToTemplateContent,
   type Menu,
   type Routine,
+  declaredMacros,
 } from "@/lib/domain";
 import { formatInteger } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
@@ -150,7 +151,7 @@ export function FromPlanDialog({ onOpenChange }: { onOpenChange: (open: boolean)
           <span className="min-w-0">
             <span className="block text-[15px] font-semibold">{menu.name}</span>
             <span className="text-text-muted block text-xs">
-              {es.editor.menu.dayTypes[menu.dayType]} · {formatInteger(menu.macros.kcal)}{" "}
+              {es.editor.menu.dayTypes[menu.dayType]} · {formatInteger(declaredMacros(menu).kcal)}{" "}
               {es.common.kcal}
             </span>
           </span>

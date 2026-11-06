@@ -105,3 +105,28 @@ export function todayCivil(timeZone?: string): CivilDate {
     timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
   );
 }
+
+// Precios: siempre en euros con dos decimales (E3). Lo que se guarda son céntimos enteros.
+const euros = new Intl.NumberFormat("es-ES", {
+  style: "currency",
+  currency: "EUR",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+  useGrouping: "always",
+});
+
+/** 4900 → "49,00 €" */
+export function formatPriceCents(cents: number): string {
+  return euros.format(cents / 100);
+}
+
+/**
+ * Lo que escribe el entrenador en euros ("49", "49,5", "49.50") → céntimos enteros, o `null` si no
+ * es un precio válido: mayor que cero y con dos decimales como mucho.
+ */
+export function parseEurosToCents(text: string): number | null {
+  const normalized = text.trim().replace(/\s|€/g, "").replace(",", ".");
+  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null;
+  const cents = Math.round(Number(normalized) * 100);
+  return cents > 0 ? cents : null;
+}

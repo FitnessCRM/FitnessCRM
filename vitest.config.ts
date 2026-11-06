@@ -6,7 +6,12 @@ export default defineConfig({
     alias: { "@": path.resolve(__dirname) },
   },
   test: {
-    include: ["lib/**/*.test.ts", "components/**/*.test.ts"],
+    include: [
+      "lib/**/*.test.ts",
+      "components/**/*.test.ts",
+      // Lógica pura de las Edge Functions (el webhook de Stripe): sin red y sin claves.
+      "supabase/functions/_shared/**/*.test.ts",
+    ],
     environment: "node",
   },
 });

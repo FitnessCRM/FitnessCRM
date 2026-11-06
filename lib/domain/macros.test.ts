@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  declaredMacros,
   emptyMacrosDraft,
   fromMenuDrafts,
   macroEnergyShares,
@@ -86,5 +87,18 @@ describe("menu drafts", () => {
 
   it("one incomplete menu blocks the whole list", () => {
     expect(fromMenuDrafts([...toMenuDrafts([entry]), draftWith({ kcal: null })])).toBeNull();
+  });
+});
+
+describe("E12 · declared menu macros can be hidden from the client", () => {
+  it("returns the declared macros the trainer always reads", () => {
+    const macros = { kcal: 2000, proteinG: 150, carbsG: 200, fatG: 60 };
+    expect(declaredMacros({ macros })).toBe(macros);
+  });
+
+  it("says so instead of inventing figures when they were hidden", () => {
+    expect(() => declaredMacros({ macros: null })).toThrow(
+      expect.objectContaining({ code: "menu.macros_hidden" }),
+    );
   });
 });

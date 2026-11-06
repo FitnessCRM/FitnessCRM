@@ -42,6 +42,7 @@ export function createRoutinePort(ctx: MockContext): RoutinePort {
         clientId,
         status: "borrador",
         sourceTemplateName: null,
+        sourceTemplateId: null,
         createdAt: now,
         updatedAt: now,
       });
@@ -75,6 +76,7 @@ export function createRoutinePort(ctx: MockContext): RoutinePort {
         clientId: current.clientId,
         status: "borrador",
         sourceTemplateName: current.sourceTemplateName,
+        sourceTemplateId: current.sourceTemplateId,
         createdAt: now,
         updatedAt: now,
       });
@@ -170,6 +172,7 @@ export function createMenuPort(ctx: MockContext): MenuPort {
         clientId,
         status: "borrador",
         sourceTemplateName: null,
+        sourceTemplateId: null,
         createdAt: now,
         updatedAt: now,
       });
@@ -202,6 +205,7 @@ export function createMenuPort(ctx: MockContext): MenuPort {
         clientId: current.clientId,
         status: "borrador",
         sourceTemplateName: current.sourceTemplateName,
+        sourceTemplateId: current.sourceTemplateId,
         createdAt: now,
         updatedAt: now,
       });

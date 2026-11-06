@@ -1,5 +1,5 @@
 import type { InvitationPort, Session } from "@/lib/data/ports";
-import { DomainError } from "@/lib/domain";
+import { assertConsentAccepted, DomainError } from "@/lib/domain";
 import { invitationKind } from "@/lib/domain/invitation-link";
 import { findOwn } from "./helpers";
 import type { MockContext } from "./store";
@@ -68,7 +68,7 @@ export function createInvitationPort(ctx: MockContext): InvitationPort {
       }
       return ctx.reply({ email: null });
     },
-    acceptInvitation: async ({ link, email }) => {
+    acceptInvitation: async ({ link, email, consentVersion }) => {
       if (!link.includes("invite=")) {
         throw new DomainError("invitation.invalid_link", "El enlace no es de invitación");
       }
@@ -76,6 +76,7 @@ export function createInvitationPort(ctx: MockContext): InvitationPort {
         throw new DomainError("invitation.email_required", "Falta el correo de la invitación");
       }
       if (invitationKind(link) === "trainer") return acceptTrainerInvitation(email);
+      const accepted = assertConsentAccepted(consentVersion); // I33
       const client = ctx.state.clients.find(
         (c) => c.status === "invitado" && c.email.toLowerCase() === email.trim().toLowerCase(),
       );
@@ -83,6 +84,8 @@ export function createInvitationPort(ctx: MockContext): InvitationPort {
         throw new DomainError("invitation.not_found", "Ningún cliente invitado tiene ese correo");
       }
       client.status = "activo";
+      client.consentVersion = accepted;
+      client.consentAcceptedAt = ctx.now();
       ctx.state.session = { trainerId: client.trainerId, clientId: client.id, role: "client" };
       return ctx.reply(ctx.state.session);
     },

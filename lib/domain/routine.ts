@@ -48,3 +48,33 @@ export function removeExerciseFromRoutine<T extends Routine | RoutineTemplate>(
     })),
   };
 }
+
+/**
+ * Saca un ejercicio archivado de las rutinas de clientes (E7, §7). Un borrador se edita en sitio.
+ * Una rutina activa no se edita nunca en sitio: se archiva tal cual, con el ejercicio dentro, para
+ * que los registros de entreno conserven su prescripción, y la sustituye una versión nueva, activa,
+ * sin él, igual que al publicar (mismos ids de días y líneas, para que cada línea conserve su
+ * identidad). Las archivadas y las que no lo prescriben no se tocan. Devuelve la lista completa.
+ */
+export function archiveExerciseInRoutines(
+  routines: readonly Routine[],
+  exerciseId: string,
+  { now, newId }: { now: string; newId: () => string },
+): Routine[] {
+  const prescribes = (r: Routine) =>
+    r.days.some((d) => d.exercises.some((e) => e.exerciseId === exerciseId));
+  return routines.flatMap((r) => {
+    if (r.status === "archivado" || !prescribes(r)) return [r];
+    if (r.status === "borrador")
+      return [{ ...removeExerciseFromRoutine(r, exerciseId), updatedAt: now }];
+    const archived: Routine = { ...r, status: "archivado", updatedAt: now };
+    const version: Routine = {
+      ...removeExerciseFromRoutine(r, exerciseId),
+      id: newId(),
+      status: "activo",
+      createdAt: now,
+      updatedAt: now,
+    };
+    return [archived, version];
+  });
+}

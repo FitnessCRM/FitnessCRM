@@ -65,6 +65,16 @@ export function createFirebasePorts(options: FirebasePortsOptions): DataPorts {
     trainer: createTrainerPort(ctx),
     clients: createClientPort(ctx, session.getSession),
     memberships: createMembershipPort(ctx),
+    // Tarjeta 125: el cobro en línea solo existe con Supabase (Edge Functions de Stripe).
+    onlinePayments: {
+      getStatus: async () => ({ connected: false, enabled: false }),
+      startConnection: async () => {
+        throw new Error("El cobro en línea solo está disponible con el adaptador de Supabase.");
+      },
+      startCheckout: async () => {
+        throw new Error("El cobro en línea solo está disponible con el adaptador de Supabase.");
+      },
+    },
     exercises: createExercisePort(ctx),
     ownFoods: createOwnFoodPort(ctx),
     foodCatalog: createUnavailableFoodCatalogPort(),

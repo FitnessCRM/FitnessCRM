@@ -16,6 +16,12 @@ const firebasePatterns = {
     "El SDK de Firebase solo entra por lib/data/adapters/firebase/ (CLAUDE.md, regla 1): detrás de los puertos",
 };
 
+const stripePatterns = {
+  group: ["stripe", "stripe/*"],
+  message:
+    "Stripe solo entra por las Edge Functions de supabase/functions/ (CLAUDE.md, regla 1): la app habla de «pago en línea» por su puerto",
+};
+
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   prettier,
@@ -23,7 +29,12 @@ const eslintConfig = [
     /* Regla dura 1: ningún componente ni hook importa el SDK de backend. */
     files: ["**/*.{ts,tsx,mjs}"],
     ignores: ["lib/data/adapters/firebase/**"],
-    rules: { "no-restricted-imports": ["error", { patterns: [firebasePatterns] }] },
+    rules: { "no-restricted-imports": ["error", { patterns: [firebasePatterns, stripePatterns] }] },
+  },
+  {
+    /* Regla dura 1, Firebase: dentro de su adaptador sí, pero Stripe tampoco. */
+    files: ["lib/data/adapters/firebase/**/*.{ts,tsx}"],
+    rules: { "no-restricted-imports": ["error", { patterns: [stripePatterns] }] },
   },
   {
     /* Regla dura 2: el dominio es puro. Nada de React, Next, DOM ni capas superiores. */

@@ -1,3 +1,4 @@
+import { declaredMacros } from "./macros";
 import { DomainError } from "./errors";
 import { copyFoodItem } from "./food";
 import type { Menu, MenuTemplate, Routine, RoutineTemplate } from "./schemas";
@@ -34,6 +35,7 @@ export function cloneRoutineTemplate(template: RoutineTemplate, ctx: CloneContex
     })),
     status: "borrador",
     sourceTemplateName: template.name,
+    sourceTemplateId: template.id,
     createdAt: ctx.now,
     updatedAt: ctx.now,
   };
@@ -57,6 +59,7 @@ export function cloneMenuTemplate(template: MenuTemplate, ctx: CloneContext): Me
     })),
     status: "borrador",
     sourceTemplateName: template.name,
+    sourceTemplateId: template.id,
     createdAt: ctx.now,
     updatedAt: ctx.now,
   }));
@@ -176,7 +179,7 @@ export function menusToTemplateContent(
         name: menu.name,
         dayType: menu.dayType,
         suggested,
-        macros: { ...menu.macros },
+        macros: { ...declaredMacros(menu) },
         note: menu.note,
         meals: menu.meals.map((meal) => ({
           id: ctx.newId(),
@@ -226,5 +229,54 @@ export function setSuggestedMenu<T extends { id: string; dayType: string; sugges
   if (!chosen) return [...menus];
   return menus.map((m) =>
     m.dayType === chosen.dayType ? { ...m, suggested: m.id === menuId } : m,
+  );
+}
+
+/**
+ * Usos de una plantilla (E8): cuántos clientes tienen algún plan clonado de ella, en cualquier
+ * estado. Se cuenta por `sourceTemplateId`, nunca por nombre: renombrar la plantilla no pierde sus
+ * usos y dos plantillas con el mismo nombre no los suman. Una plantilla de menú clona varios menús
+ * en cada asignación, por eso se cuentan clientes y no planes. Los planes anteriores a E8 no tienen
+ * id y no cuentan.
+ */
+export function templateUseCount(
+  templateId: string,
+  plans: readonly { clientId: string; sourceTemplateId: string | null }[],
+): number {
+  return new Set(plans.filter((p) => p.sourceTemplateId === templateId).map((p) => p.clientId))
+    .size;
+}
+
+/**
+ * I32 (E9): borradores del cliente que chocan con asignar una plantilla. De rutina, cualquier
+ * rutina en borrador del cliente; de menú, los menús en borrador de los tipos de día que trae la
+ * plantilla (cada tipo de día tiene su conjunto, §7). Si hay alguno, la asignación pregunta si se
+ * sustituyen; sustituir los borra, porque un borrador no tiene histórico.
+ */
+export function routineDraftsBlocking(
+  routines: readonly Pick<Routine, "id" | "clientId" | "status">[],
+  clientId: string,
+): string[] {
+  return routines
+    .filter((r) => r.clientId === clientId && r.status === "borrador")
+    .map((r) => r.id);
+}
+
+export function menuDraftsBlocking(
+  menus: readonly Pick<Menu, "id" | "clientId" | "status" | "dayType">[],
+  clientId: string,
+  template: Pick<MenuTemplate, "menus">,
+): string[] {
+  const dayTypes = new Set(template.menus.map((m) => m.dayType));
+  return menus
+    .filter((m) => m.clientId === clientId && m.status === "borrador" && dayTypes.has(m.dayType))
+    .map((m) => m.id);
+}
+
+/** Lo que se lanza al asignar sobre un borrador sin pedir sustituirlo (I32). */
+export function draftExistsError(): DomainError {
+  return new DomainError(
+    "plan.draft_exists",
+    "El cliente ya tiene un borrador de este plan: hay que confirmar si se sustituye (I32)",
   );
 }
