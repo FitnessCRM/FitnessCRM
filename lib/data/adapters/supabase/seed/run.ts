@@ -258,7 +258,7 @@ export async function runSeed(
     }
     if (normalizeEmail(String(row.email)) !== assignedEmails[key]) {
       blockers.push(
-        `${CLIENT_SPECS[key].firstName} ya está sembrado con el correo ${String(row.email)}, y ahora se pide ${assignedEmails[key]}: la siembra no cambia correos.`,
+        `La ficha de ${CLIENT_SPECS[key].firstName} ya está sembrada con el correo ${String(row.email)}, y ahora se pide ${assignedEmails[key]}: la siembra no cambia correos.`,
       );
     }
     const startDate = civilDateSchema.safeParse(row.start_date);

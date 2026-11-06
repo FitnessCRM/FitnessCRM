@@ -273,7 +273,7 @@ describe("siembra de Supabase · ejecución", () => {
       options({ clientEmails: ["uno@prueba.test", "dos@prueba.test"] }).opts,
     );
     expect(result.blockers.join(" ")).toMatch(
-      /Irene ya está sembrado con el correo .*demo.invalid/,
+      /La ficha de Irene ya está sembrada con el correo .*demo.invalid/,
     );
   });
 
