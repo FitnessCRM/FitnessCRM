@@ -110,16 +110,21 @@ lib/
     ports/            interfaces de repositorio
     adapters/mock/    implementación en memoria con datos de demo
     adapters/firebase/  Firestore y Auth: el único sitio que importa el SDK, con sus tests de
-                        emulador (`rules/` para las reglas de seguridad) y la siembra de la
-                        demo (`seed/`, lo único que importa `firebase-admin`)
+                        emulador (`rules/` para las reglas de seguridad) y la escritura de la
+                        siembra de la demo en Firestore (`seed/`, lo único que importa
+                        `firebase-admin`)
+    seed/             los datos de la siembra de la demo como objetos del dominio, sin backend:
+                      cada adaptador los traduce a su forma. ESLint le impide importar
+                      adaptadores, SDK de backend, React y Next
     hooks/            TanStack Query sobre los puertos
   design/             tokens
   i18n/es.ts          todos los literales visibles
   format.ts           formateadores de fechas y cifras
   session-access.ts   qué área carga cada rol (panel del entrenador o área de cliente)
 scripts/
-  seed-demo-trainer.ts   entrada de `pnpm seed:demo`, con sus instrucciones en la cabecera; la
-                         lógica vive en `lib/data/adapters/firebase/seed/`
+  seed-demo-trainer.ts   entrada de `pnpm seed:demo`, con sus instrucciones en la cabecera; los
+                         datos salen de `lib/data/seed/` y la escritura vive en
+                         `lib/data/adapters/firebase/seed/`
 docs/
   dominio.md
   estado.md
