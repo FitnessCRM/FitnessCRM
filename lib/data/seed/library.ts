@@ -21,12 +21,34 @@ import {
   type RoutineDay,
   type RoutineTemplate,
 } from "@/lib/domain";
-import { SEED_PREFIX, slug } from "./ids";
+import { slug } from "./ids";
 import { at, type SeedClock } from "./time";
+
+/**
+ * Los ids que cada backend compone a su manera. En Firestore, un pesaje, una serie y una revisión
+ * llevan como id su clave compuesta (cliente y fecha, cliente y semana…), y la siembra tiene que
+ * caer sobre esos mismos documentos.
+ */
+export interface SeedIdFormats {
+  weightLog: (clientId: string, date: CivilDate) => string;
+  workoutLog: (
+    clientId: string,
+    routineDayExerciseId: string,
+    date: CivilDate,
+    setNumber: number,
+  ) => string;
+  review: (clientId: string, weekNumber: number) => string;
+}
 
 /** Lo que hace falta para construir cualquier dato de la siembra. */
 export interface SeedContext {
   trainerId: string;
+  /**
+   * Prefijo de todos los ids sembrados. Firebase usa `SEED_PREFIX`; un backend que siembre a varios
+   * entrenadores lo hace único por entrenador, para que sus ids no choquen.
+   */
+  idPrefix: string;
+  ids: SeedIdFormats;
   /** El «hoy» de la siembra en la zona del entrenador: todas las fechas son relativas a él. */
   anchor: CivilDate;
   clock: SeedClock;
@@ -78,19 +100,21 @@ const EXERCISE_ROWS = [
 
 export type ExerciseKey = (typeof EXERCISE_ROWS)[number][0];
 
-const exerciseId = (name: string) => `${SEED_PREFIX}ex-${slug(name)}`;
+const exerciseId = (prefix: string, name: string) => `${prefix}ex-${slug(name)}`;
 
 /** Id de cada ejercicio por su clave: es lo que usan las plantillas y los entrenos registrados. */
-export const EXERCISE_IDS = Object.fromEntries(
-  EXERCISE_ROWS.map(([key, name]) => [key, exerciseId(name)]),
-) as Record<ExerciseKey, string>;
+export const exerciseIds = (prefix: string) =>
+  Object.fromEntries(EXERCISE_ROWS.map(([key, name]) => [key, exerciseId(prefix, name)])) as Record<
+    ExerciseKey,
+    string
+  >;
 
 /** Doce ejercicios activos. Sin vídeo: un enlace inventado no lleva a ningún sitio (I20). */
 export function buildExercises(ctx: SeedContext): Exercise[] {
   const createdAt = at(ctx.clock, daysAgo(ctx, LIBRARY_AGE_DAYS), "10:00");
   return (EXERCISE_ROWS as readonly ExerciseRow[]).map(([, name, muscleGroup, equipment, desc]) =>
     exerciseSchema.parse({
-      id: exerciseId(name),
+      id: exerciseId(ctx.idPrefix, name),
       trainerId: ctx.trainerId,
       name,
       muscleGroup,
@@ -144,7 +168,7 @@ export function buildFoods(ctx: SeedContext): Food[] {
   const createdAt = at(ctx.clock, daysAgo(ctx, LIBRARY_AGE_DAYS), "10:30");
   return (FOOD_ROWS as readonly FoodRow[]).map(([, name, kcal, proteinG, carbsG, fatG]) =>
     foodSchema.parse({
-      id: `${SEED_PREFIX}food-${slug(name)}`,
+      id: `${ctx.idPrefix}food-${slug(name)}`,
       trainerId: ctx.trainerId,
       name,
       composition: { kcal, proteinG, carbsG, fatG },
@@ -175,12 +199,13 @@ const MEASUREMENT_LABELS = [
 export type MeasurementLabel = (typeof MEASUREMENT_LABELS)[number];
 const RECENT_MEASUREMENT: MeasurementLabel = "Hombros";
 
-export const measurementTypeId = (label: MeasurementLabel) => `${SEED_PREFIX}mt-${slug(label)}`;
+export const measurementTypeId = (prefix: string, label: MeasurementLabel) =>
+  `${prefix}mt-${slug(label)}`;
 
 export function buildMeasurementTypes(ctx: SeedContext): MeasurementType[] {
   return MEASUREMENT_LABELS.map((label, order) =>
     measurementTypeSchema.parse({
-      id: measurementTypeId(label),
+      id: measurementTypeId(ctx.idPrefix, label),
       trainerId: ctx.trainerId,
       label,
       unit: "cm",
@@ -215,14 +240,17 @@ const QUESTION_ROWS = [
 
 export type QuestionKey = (typeof QUESTION_ROWS)[number][0];
 
-export const QUESTION_IDS = Object.fromEntries(
-  QUESTION_ROWS.map(([key]) => [key, `${SEED_PREFIX}q-${slug(key)}`]),
-) as Record<QuestionKey, string>;
+export const questionIds = (prefix: string) =>
+  Object.fromEntries(QUESTION_ROWS.map(([key]) => [key, `${prefix}q-${slug(key)}`])) as Record<
+    QuestionKey,
+    string
+  >;
 
 export function buildQuestions(ctx: SeedContext): QuestionnaireQuestion[] {
+  const ids = questionIds(ctx.idPrefix);
   return (QUESTION_ROWS as readonly QuestionRow[]).map(([key, prompt, format, recent], order) =>
     questionnaireQuestionSchema.parse({
-      id: QUESTION_IDS[key as QuestionKey],
+      id: ids[key as QuestionKey],
       trainerId: ctx.trainerId,
       prompt,
       format,
@@ -245,23 +273,30 @@ type Rx = [
   note?: string,
 ];
 
-function day(prefix: string, dayNumber: number, label: string, rows: Rx[]): RoutineDay {
+function day(
+  exerciseIdOf: Record<ExerciseKey, string>,
+  prefix: string,
+  dayNumber: number,
+  label: string,
+  rows: Rx[],
+): RoutineDay {
   return {
     id: `${prefix}-d${dayNumber}`,
     dayNumber,
     label,
     exercises: rows.map(([exercise, sets, repsMin, repsMax, rir, rest = "", note = ""], i) => ({
       id: `${prefix}-d${dayNumber}-e${i + 1}`,
-      exerciseId: EXERCISE_IDS[exercise],
+      exerciseId: exerciseIdOf[exercise],
       prescription: { sets, repsMin, repsMax, rir, rest, note },
     })),
   };
 }
 
-export const ROUTINE_TEMPLATE_IDS = {
-  fullBody3d: `${SEED_PREFIX}rt-full-body-3d`,
-  upperLower4d: `${SEED_PREFIX}rt-torso-pierna-4d`,
-} as const;
+export const routineTemplateIds = (prefix: string) =>
+  ({
+    fullBody3d: `${prefix}rt-full-body-3d`,
+    upperLower4d: `${prefix}rt-torso-pierna-4d`,
+  }) as const;
 
 /** Dos plantillas de rutina: una de tres días y otra de cuatro. Solo ejercicios activos (I3). */
 export function buildRoutineTemplates(
@@ -271,8 +306,8 @@ export function buildRoutineTemplates(
   const createdAt = at(ctx.clock, daysAgo(ctx, LIBRARY_AGE_DAYS), "12:00");
   const updatedAt = at(ctx.clock, daysAgo(ctx, 70), "12:00");
   const base = { trainerId: ctx.trainerId, note: "", createdAt, updatedAt };
-  const fullBody = ROUTINE_TEMPLATE_IDS.fullBody3d;
-  const upperLower = ROUTINE_TEMPLATE_IDS.upperLower4d;
+  const { fullBody3d: fullBody, upperLower4d: upperLower } = routineTemplateIds(ctx.idPrefix);
+  const ex = exerciseIds(ctx.idPrefix);
   const templates = [
     {
       ...base,
@@ -280,19 +315,19 @@ export function buildRoutineTemplates(
       name: "Full body 3 días",
       description: "Cuerpo completo en días alternos",
       days: [
-        day(fullBody, 1, "A", [
+        day(ex, fullBody, 1, "A", [
           ["squat", 4, 6, 8, "2", "3 min"],
           ["bench", 4, 6, 8, "2", "3 min"],
           ["row", 3, 8, 10, "2", "2 min"],
           ["lateralRaise", 3, 12, 15, "1"],
         ]),
-        day(fullBody, 2, "B", [
+        day(ex, fullBody, 2, "B", [
           ["rdl", 4, 6, 8, "2", "3 min"],
           ["ohp", 4, 6, 8, "2", "3 min"],
           ["latPulldown", 3, 10, 12, "1-2", "2 min"],
           ["bulgarian", 3, 8, 10, "2", "", "por pierna"],
         ]),
-        day(fullBody, 3, "C", [
+        day(ex, fullBody, 3, "C", [
           ["legPress", 3, 10, 12, "1-2", "2 min"],
           ["inclineDb", 3, 8, 10, "2", "2 min"],
           ["pullup", 3, 6, 10, "2", "2 min"],
@@ -306,23 +341,23 @@ export function buildRoutineTemplates(
       name: "Torso / Pierna 4 días",
       description: "Dos días de torso y dos de pierna",
       days: [
-        day(upperLower, 1, "Torso", [
+        day(ex, upperLower, 1, "Torso", [
           ["bench", 4, 6, 8, "2", "3 min"],
           ["row", 4, 8, 10, "2", "2 min"],
           ["ohp", 3, 8, 10, "1-2", "2 min"],
           ["latPulldown", 3, 10, 12, "1-2", "2 min"],
         ]),
-        day(upperLower, 2, "Pierna", [
+        day(ex, upperLower, 2, "Pierna", [
           ["squat", 4, 6, 8, "2", "3 min"],
           ["legPress", 3, 10, 12, "1-2", "2 min"],
           ["legCurl", 3, 12, 15, "1"],
         ]),
-        day(upperLower, 3, "Torso", [
+        day(ex, upperLower, 3, "Torso", [
           ["pullup", 4, 6, 10, "2", "3 min"],
           ["inclineDb", 3, 8, 10, "2", "2 min"],
           ["lateralRaise", 3, 12, 15, "1"],
         ]),
-        day(upperLower, 4, "Pierna", [
+        day(ex, upperLower, 4, "Pierna", [
           ["rdl", 4, 6, 8, "2", "3 min"],
           ["bulgarian", 3, 8, 10, "2", "", "por pierna"],
           ["legCurl", 3, 12, 15, "1"],
@@ -339,7 +374,7 @@ export function buildRoutineTemplates(
 /** Alimento del menú: de la biblioteca si lleva su clave, de texto libre si lleva `free`. */
 type Item = [food: FoodKey | { free: string }, grams: number];
 
-export const MENU_TEMPLATE_ID = `${SEED_PREFIX}mnt-semana-tipo`;
+export const menuTemplateId = (prefix: string) => `${prefix}mnt-semana-tipo`;
 
 /**
  * Una plantilla con dos menús de entrenamiento (uno sugerido) y uno de descanso. Los alimentos salen
@@ -348,6 +383,7 @@ export const MENU_TEMPLATE_ID = `${SEED_PREFIX}mnt-semana-tipo`;
  * escribe el entrenador: no se derivan de los alimentos ni con 4/4/9 (§5).
  */
 export function buildMenuTemplate(ctx: SeedContext, foods: readonly Food[]): MenuTemplate {
+  const templateId = menuTemplateId(ctx.idPrefix);
   const foodOf = (key: FoodKey): Food => {
     const name = (FOOD_ROWS as readonly FoodRow[]).find(([k]) => k === key)![1];
     return foods.find((f) => f.name === name)!;
@@ -371,7 +407,7 @@ export function buildMenuTemplate(ctx: SeedContext, foods: readonly Food[]): Men
     note: string,
     meals: [name: string, items: Item[]][],
   ): MenuTemplateEntry => {
-    const id = `${MENU_TEMPLATE_ID}-${key}`;
+    const id = `${templateId}-${key}`;
     return {
       id,
       name,
@@ -383,7 +419,7 @@ export function buildMenuTemplate(ctx: SeedContext, foods: readonly Food[]): Men
     };
   };
   return menuTemplateSchema.parse({
-    id: MENU_TEMPLATE_ID,
+    id: templateId,
     trainerId: ctx.trainerId,
     name: "Semana tipo",
     description: "Dos menús de entrenamiento y uno de descanso; los gramos se ajustan por cliente",

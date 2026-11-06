@@ -1,6 +1,7 @@
 /**
- * Ids de la siembra. Todos empiezan por `seed-`: es lo que distingue un documento sembrado de uno
- * que el entrenador o sus clientes crearon después, y lo que permite repetir la siembra sin duplicar.
+ * Ids de la siembra. Todos empiezan por el prefijo del contexto, que a su vez empieza por `seed-`:
+ * es lo que distingue un dato sembrado de uno que el entrenador o sus clientes crearon después, y lo
+ * que permite repetir la siembra sin duplicar.
  */
 export const SEED_PREFIX = "seed-";
 

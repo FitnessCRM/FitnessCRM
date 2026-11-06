@@ -71,6 +71,33 @@ const eslintConfig = [
     },
   },
   {
+    /*
+     * La siembra de la demo (tarjeta 135) la usan los adaptadores de Firebase y de Supabase, así que
+     * no depende de ninguno: ni de su código ni de su SDK.
+     */
+    files: ["lib/data/seed/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            firebasePatterns,
+            stripePatterns,
+            {
+              group: ["@supabase/*", "@/lib/data/adapters/*", "**/adapters/*"],
+              message:
+                "lib/data/seed no depende de ningún adaptador ni SDK: cada backend traduce el plan a su forma",
+            },
+            {
+              group: ["react", "react-*", "react/*", "next", "next/*"],
+              message: "lib/data/seed no importa React ni Next",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     ignores: [
       "node_modules/**",
       ".next/**",

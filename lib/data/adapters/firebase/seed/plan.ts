@@ -1,4 +1,7 @@
 import type { z } from "zod";
+import { SEED_PREFIX } from "@/lib/data/seed/ids";
+import type { SeedContext, SeedIdFormats } from "@/lib/data/seed/library";
+import { buildSeedPlan, type SeedPlan } from "@/lib/data/seed/plan";
 import {
   clientSchema,
   exerciseSchema,
@@ -15,40 +18,33 @@ import {
   weightLogSchema,
   workoutLogSchema,
   type Client,
-  type Exercise,
-  type Food,
-  type MacroTargets,
-  type MeasurementType,
-  type Membership,
-  type Menu,
-  type MenuTemplate,
-  type QuestionnaireQuestion,
-  type Review,
-  type Routine,
-  type RoutineTemplate,
-  type WeightLog,
-  type WorkoutLog,
 } from "@/lib/domain";
 import { COLLECTIONS, FLAGS } from "../helpers";
-import {
-  buildMacroTargets,
-  buildMenus,
-  buildRoutine,
-  buildWeightLogs,
-  buildWorkoutLogs,
-} from "./history";
-import {
-  ROUTINE_TEMPLATE_IDS,
-  buildExercises,
-  buildFoods,
-  buildMeasurementTypes,
-  buildMenuTemplate,
-  buildQuestions,
-  buildRoutineTemplates,
-  type SeedContext,
-} from "./library";
-import { CLIENT_KEYS, buildClients, buildMemberships, type ClientKey } from "./people";
-import { buildReviews } from "./reviews";
+import { weightLogDocId, workoutLogDocId } from "../logs";
+import { reviewDocId } from "../reviews";
+
+/**
+ * La siembra de la demo en forma de Firestore (tarjeta 104). Los datos los construye
+ * `lib/data/seed/`, que no sabe de ningún backend; aquí se deciden los ids, las colecciones, las
+ * banderas y los `users/{uid}`.
+ */
+
+/** El entrenador de la demo. La siembra es para esta cuenta y no para otra. */
+export const TRAINER_EMAIL = "h.damaso@gmail.com";
+
+/** Pesajes, series y revisiones llevan como id la clave compuesta que usa el adaptador. */
+export const FIRESTORE_SEED_IDS: SeedIdFormats = {
+  weightLog: weightLogDocId,
+  workoutLog: workoutLogDocId,
+  review: reviewDocId,
+};
+
+/** El contexto de la siembra en Firestore: ids con `seed-`, como los de la primera ejecución. */
+export const firestoreSeedContext = (base: Omit<SeedContext, "idPrefix" | "ids">): SeedContext => ({
+  ...base,
+  idPrefix: SEED_PREFIX,
+  ids: FIRESTORE_SEED_IDS,
+});
 
 /** Un documento de la siembra, listo para `create()`. */
 export interface SeedDoc {
@@ -61,101 +57,16 @@ export interface SeedDoc {
 }
 
 /** Todo lo que la siembra escribe en Firestore, salvo `trainers/{id}` y los `users/{uid}`. */
-export interface SeedPlan {
-  ctx: SeedContext;
-  exercises: Exercise[];
-  foods: Food[];
-  measurementTypes: MeasurementType[];
-  questions: QuestionnaireQuestion[];
-  routineTemplates: RoutineTemplate[];
-  menuTemplate: MenuTemplate;
-  clients: Record<ClientKey, Client>;
-  memberships: Membership[];
-  routines: Record<ClientKey, Routine>;
-  macroTargets: MacroTargets[];
-  menus: Menu[];
-  weightLogs: WeightLog[];
-  workoutLogs: WorkoutLog[];
-  reviews: Review[];
-  /** Tipos de medida y preguntas que alguna revisión sembrada usa de verdad. */
-  measured: ReadonlySet<string>;
-  answered: ReadonlySet<string>;
+export interface FirestoreSeedPlan extends SeedPlan {
   /** En el orden en que se escriben: primero la biblioteca, al final lo que depende de todo. */
   docs: SeedDoc[];
 }
 
-/** Plantilla de rutina, nota y macros objetivo de cada cliente. Las kcal las escribe el entrenador. */
-const CLIENT_PLANS = {
-  lucas: {
-    routineTemplateId: ROUTINE_TEMPLATE_IDS.fullBody3d,
-    routineNote: "Sube 2,5 kg en sentadilla si el RIR 2 se te queda fácil.",
-    macroTargets: {
-      entrenamiento: { kcal: 2700, proteinG: 170, carbsG: 340, fatG: 75 },
-      descanso: { kcal: 2400, proteinG: 165, carbsG: 280, fatG: 72 },
-    },
-    // La plantilla es de definición: para Lucas, más gramos y las macros que le corresponden.
-    menuAdjustment: {
-      gramsFactor: 1.35,
-      macros: [
-        { kcal: 2700, proteinG: 170, carbsG: 340, fatG: 75 },
-        { kcal: 2650, proteinG: 165, carbsG: 330, fatG: 78 },
-        { kcal: 2400, proteinG: 165, carbsG: 280, fatG: 72 },
-      ],
-    },
-  },
-  irene: {
-    routineTemplateId: ROUTINE_TEMPLATE_IDS.upperLower4d,
-    routineNote: "En la búlgara, prioriza el rango completo antes que el peso.",
-    macroTargets: {
-      entrenamiento: { kcal: 2000, proteinG: 150, carbsG: 210, fatG: 60 },
-      descanso: { kcal: 1750, proteinG: 145, carbsG: 160, fatG: 58 },
-    },
-    menuAdjustment: undefined,
-  },
-} as const;
-
-/**
- * La siembra entera como función pura de quién es el entrenador, cuál es el ancla y qué zona usa.
- * No toca Firebase: lo que devuelve ya está validado con los esquemas de `lib/domain`, y `run.ts`
- * solo decide qué falta por crear.
- */
-export function buildSeedPlan(ctx: SeedContext): SeedPlan {
-  const exercises = buildExercises(ctx);
-  const foods = buildFoods(ctx);
-  const measurementTypes = buildMeasurementTypes(ctx);
-  const questions = buildQuestions(ctx);
-  const routineTemplates = buildRoutineTemplates(ctx, exercises);
-  const menuTemplate = buildMenuTemplate(ctx, foods);
-  const clients = buildClients(ctx);
-  const memberships = buildMemberships(ctx, clients);
-
-  const routines = {} as Record<ClientKey, Routine>;
-  const macroTargets: MacroTargets[] = [];
-  const menus: Menu[] = [];
-  const weightLogs: WeightLog[] = [];
-  const workoutLogs: WorkoutLog[] = [];
-  const reviews: Review[] = [];
-
-  for (const key of CLIENT_KEYS) {
-    const client = clients[key];
-    const plan = CLIENT_PLANS[key];
-    const template = routineTemplates.find((t) => t.id === plan.routineTemplateId)!;
-    routines[key] = buildRoutine(ctx, client, template, exercises, plan.routineNote);
-    macroTargets.push(...buildMacroTargets(ctx, client, plan.macroTargets));
-    menus.push(...buildMenus(ctx, client, menuTemplate, plan.menuAdjustment));
-    const logs = buildWeightLogs(ctx, key, client);
-    weightLogs.push(...logs);
-    workoutLogs.push(...buildWorkoutLogs(ctx, key, client, routines[key]));
-    reviews.push(
-      ...buildReviews(ctx, key, { client, weightLogs: logs, measurementTypes, questions }),
-    );
-  }
-
-  // I26 e I15: la unidad y el formato quedan fijos desde la primera medida o respuesta. La app sube
-  // estas banderas al guardar la revisión; aquí las revisiones se escriben directamente, así que
-  // nacen `true` las de lo que alguna revisión usa, y `false` las demás, que siguen editables.
-  const measured = new Set(reviews.flatMap((r) => r.measurements.map((m) => m.measurementTypeId)));
-  const answered = new Set(reviews.flatMap((r) => r.responses.map((r2) => r2.questionId)));
+export function buildFirestoreSeedPlan(
+  base: Omit<SeedContext, "idPrefix" | "ids">,
+): FirestoreSeedPlan {
+  const plan = buildSeedPlan(firestoreSeedContext(base));
+  const { measured, answered } = plan;
 
   const docsOf = <T extends { id: string }>(
     collection: string,
@@ -165,47 +76,31 @@ export function buildSeedPlan(ctx: SeedContext): SeedPlan {
   ): SeedDoc[] =>
     items.map((item) => ({ collection, id: item.id, schema, data: { ...item, ...extra(item) } }));
 
+  // I26 e I15: la app sube estas banderas al guardar la revisión; aquí las revisiones se escriben
+  // directamente, así que nacen `true` las de lo que alguna revisión usa, y `false` las demás, que
+  // siguen editables.
   const docs: SeedDoc[] = [
-    ...docsOf(COLLECTIONS.exercises, exerciseSchema, exercises),
-    ...docsOf(COLLECTIONS.foods, foodSchema, foods),
-    ...docsOf(COLLECTIONS.measurementTypes, measurementTypeSchema, measurementTypes, (t) => ({
+    ...docsOf(COLLECTIONS.exercises, exerciseSchema, plan.exercises),
+    ...docsOf(COLLECTIONS.foods, foodSchema, plan.foods),
+    ...docsOf(COLLECTIONS.measurementTypes, measurementTypeSchema, plan.measurementTypes, (t) => ({
       [FLAGS.hasMeasurements]: measured.has(t.id),
     })),
-    ...docsOf(COLLECTIONS.questions, questionnaireQuestionSchema, questions, (q) => ({
+    ...docsOf(COLLECTIONS.questions, questionnaireQuestionSchema, plan.questions, (q) => ({
       [FLAGS.hasResponses]: answered.has(q.id),
     })),
-    ...docsOf(COLLECTIONS.routineTemplates, routineTemplateSchema, routineTemplates),
-    ...docsOf(COLLECTIONS.menuTemplates, menuTemplateSchema, [menuTemplate]),
-    ...docsOf(COLLECTIONS.clients, clientSchema, Object.values(clients)),
-    ...docsOf(COLLECTIONS.memberships, membershipSchema, memberships),
-    ...docsOf(COLLECTIONS.routines, routineSchema, Object.values(routines)),
-    ...docsOf(COLLECTIONS.macroTargets, macroTargetsSchema, macroTargets),
-    ...docsOf(COLLECTIONS.menus, menuSchema, menus),
-    ...docsOf(COLLECTIONS.weightLogs, weightLogSchema, weightLogs),
-    ...docsOf(COLLECTIONS.workoutLogs, workoutLogSchema, workoutLogs),
-    ...docsOf(COLLECTIONS.reviews, reviewSchema, reviews),
+    ...docsOf(COLLECTIONS.routineTemplates, routineTemplateSchema, plan.routineTemplates),
+    ...docsOf(COLLECTIONS.menuTemplates, menuTemplateSchema, [plan.menuTemplate]),
+    ...docsOf(COLLECTIONS.clients, clientSchema, Object.values(plan.clients)),
+    ...docsOf(COLLECTIONS.memberships, membershipSchema, plan.memberships),
+    ...docsOf(COLLECTIONS.routines, routineSchema, Object.values(plan.routines)),
+    ...docsOf(COLLECTIONS.macroTargets, macroTargetsSchema, plan.macroTargets),
+    ...docsOf(COLLECTIONS.menus, menuSchema, plan.menus),
+    ...docsOf(COLLECTIONS.weightLogs, weightLogSchema, plan.weightLogs),
+    ...docsOf(COLLECTIONS.workoutLogs, workoutLogSchema, plan.workoutLogs),
+    ...docsOf(COLLECTIONS.reviews, reviewSchema, plan.reviews),
   ];
 
-  return {
-    ctx,
-    exercises,
-    foods,
-    measurementTypes,
-    questions,
-    routineTemplates,
-    menuTemplate,
-    clients,
-    memberships,
-    routines,
-    macroTargets,
-    menus,
-    weightLogs,
-    workoutLogs,
-    reviews,
-    measured,
-    answered,
-    docs,
-  };
+  return { ...plan, docs };
 }
 
 /** Las colecciones que la siembra escribe, en su orden de escritura y sin repetir. */
@@ -225,3 +120,29 @@ export const SEED_COLLECTIONS: readonly string[] = [
   COLLECTIONS.workoutLogs,
   COLLECTIONS.reviews,
 ];
+
+/**
+ * `users/{uid}`: el puente entre una cuenta de Auth y una persona (§12). No es una entidad del
+ * dominio y no tiene esquema; estas son las formas que leen `auth.ts` y las reglas de seguridad.
+ */
+export interface UserLink {
+  role: "trainer" | "client";
+  trainerId: string;
+  clientId: string | null;
+  email: string;
+}
+
+export const trainerUserLink = (trainerId: string, email: string): UserLink => ({
+  role: "trainer",
+  trainerId,
+  clientId: null,
+  email,
+});
+
+/** Exactamente las cuatro claves que exigen las reglas a quien acepta una invitación. */
+export const clientUserLink = (client: Client): UserLink => ({
+  role: "client",
+  trainerId: client.trainerId,
+  clientId: client.id,
+  email: client.email,
+});

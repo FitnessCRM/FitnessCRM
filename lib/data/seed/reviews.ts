@@ -17,11 +17,10 @@ import {
   type ReviewStatus,
   type WeightLog,
 } from "@/lib/domain";
-import { reviewDocId } from "../reviews";
 import { sequence } from "./ids";
 import {
-  QUESTION_IDS,
   measurementTypeId,
+  questionIds,
   type MeasurementLabel,
   type QuestionKey,
   type SeedContext,
@@ -145,7 +144,7 @@ interface ReviewSources {
  * documento a mano:
  *
  * - `openReview` congela la semana y la ventana (I22) y los requisitos del catálogo que había al
- *   abrirla (I5). El id es `{clientId}_{semana}`, como en el adaptador (I16).
+ *   abrirla (I5). El id sale del cliente y la semana (I16).
  * - El peso es el pesaje que la app habría tomado al guardar: el último de la ventana (I9).
  * - `recordMeasurement` y `answerQuestion` copian etiqueta, unidad, enunciado y formato (I12).
  * - `submitReview`, `markReviewViewed` —que guarda la copia del peso (I24)— y `sendReviewFeedback`.
@@ -161,6 +160,7 @@ function buildReview(
   const windowStart = reviewWindowForWeek(client.startDate, spec.week).start;
   const dayOf = (offset: number) => addCivilDays(windowStart, offset);
   const newId = sequence(`${client.id}-rv${spec.week}`);
+  const questionIdOf = questionIds(ctx.idPrefix);
 
   const openedOn = dayOf(spec.days.open);
   const openedAt = at(ctx.clock, openedOn, "19:00");
@@ -182,7 +182,7 @@ function buildReview(
   if (review.weekNumber !== spec.week) {
     throw new Error(`La revisión de ${client.id} cae en la semana ${review.weekNumber}`);
   }
-  review = { ...review, id: reviewDocId(client.id, review.weekNumber) };
+  review = { ...review, id: ctx.ids.review(client.id, review.weekNumber) };
 
   const filledOn = dayOf(spec.days.submit ?? spec.days.open);
   const weightLog = weightForReview(
@@ -194,14 +194,14 @@ function buildReview(
     weightLogId: weightLog?.id ?? null,
     measurements: (Object.entries(spec.measurements) as [MeasurementLabel, number][]).map(
       ([label, value]) => {
-        const type = types.find((t) => t.id === measurementTypeId(label));
+        const type = types.find((t) => t.id === measurementTypeId(ctx.idPrefix, label));
         if (!type) throw new Error(`«${label}» no estaba en el catálogo al abrir la revisión`);
         return recordMeasurement(type, value, newId);
       },
     ),
     responses: (Object.entries(spec.answers) as [QuestionKey, number | string][]).map(
       ([questionKey, value]) => {
-        const question = asked.find((q) => q.id === QUESTION_IDS[questionKey]);
+        const question = asked.find((q) => q.id === questionIdOf[questionKey]);
         if (!question) throw new Error(`«${questionKey}» no estaba en el cuestionario al abrirla`);
         return answerQuestion(question, value, newId);
       },
