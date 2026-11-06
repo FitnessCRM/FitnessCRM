@@ -7,13 +7,14 @@
  *
  *   Contra la instancia local (`supabase start`). La URL y la clave las da `supabase status -o env`:
  *     SUPABASE_SERVICE_ROLE_KEY=… pnpm seed:demo:supabase --trainer-email <correo> \
- *       --trainer-name "<nombre>" --client-email <correo> [--apply]
+ *       --trainer-name "<nombre>" --client-email <correo de Lucas> \
+ *       --client-email <correo de Irene> [--apply]
  *
  *   Contra el proyecto remoto (solo `vrddwsnybtketbbmiuvy`). El `--apply` lo ejecuta una persona en su
  *   terminal, no un agente: imprime contraseñas.
  *     SUPABASE_URL=https://vrddwsnybtketbbmiuvy.supabase.co SUPABASE_SERVICE_ROLE_KEY=… \
  *       pnpm seed:demo:supabase --remote --trainer-email <correo> --trainer-name "<nombre>" \
- *       --client-email <correo> [--apply]
+ *       --client-email <correo de Lucas> --client-email <correo de Irene> [--apply]
  *
  * ARGUMENTOS
  *
@@ -21,10 +22,10 @@
  *   --trainer-name <txt>      Nombre del entrenador. Obligatorio solo si falta su fila de `trainers`.
  *   --time-zone <IANA>        Zona del entrenador si falta su fila (por defecto Europe/Madrid). Si ya
  *                             existe, manda la que tiene.
- *   --client-email <correo>   Se puede repetir, hasta dos: el primero es Lucas, el segundo Irene. Cada
- *                             uno es un cliente `activo` con cuenta. Un cliente sin correo se siembra
- *                             igual, como ficha sin cuenta, con un correo `…@demo.invalid` que nunca
- *                             entrega.
+ *   --client-email <correo>   Obligatorio una vez por cliente sembrado, dos en total y en este orden:
+ *                             el primero es Lucas, el segundo Irene. Cada uno es un cliente `activo`
+ *                             con cuenta, porque un `activo` siempre la tiene (docs/dominio.md §7). Si
+ *                             faltan o sobran, aborta antes de leer nada.
  *   --remote                  Contra el proyecto remoto. Sin él, solo la instancia local.
  *   --apply                   Escribe. Sin él solo se informa de lo que se crearía.
  *

@@ -1,4 +1,3 @@
-import { slug } from "@/lib/data/seed/ids";
 import type { SeedIdFormats } from "@/lib/data/seed/library";
 import { accountIdFor } from "../migration/ids";
 
@@ -37,13 +36,3 @@ export const SUPABASE_SEED_IDS: SeedIdFormats = {
   workoutLog: (clientId, line, date, setNumber) => `${clientId}_${line}_${date}_${setNumber}`,
   review: (clientId, weekNumber) => `${clientId}_${weekNumber}`,
 };
-
-/**
- * El correo de un cliente sembrado sin cuenta. `.invalid` es un dominio reservado (RFC 2606) que
- * nunca entrega correo, y el sufijo del entrenador lo hace único en la plataforma (I31).
- */
-export const placeholderEmail = (
-  firstName: string,
-  lastName: string,
-  trainerUserId: string,
-): string => `${slug(firstName)}.${slug(lastName)}+${trainerUserId.slice(0, 8)}@demo.invalid`;

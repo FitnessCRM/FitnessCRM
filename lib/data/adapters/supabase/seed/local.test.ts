@@ -47,12 +47,20 @@ async function readAs(token: string, table: string): Promise<{ id: string }[]> {
   return (await res.json()) as { id: string }[];
 }
 
-/** Las series y las líneas de rutina apuntan a la biblioteca sin cascada: se quitan antes. */
+/**
+ * Lo que no cae en cascada se quita antes: las series y las líneas de rutina apuntan a la biblioteca
+ * sin cascada, y un pesaje que cita una revisión enviada no se borra mientras ella exista (I25). Si
+ * algo no se borra, el test falla: si no, dejaría restos en la base local sin decirlo.
+ */
 async function cleanUp(trainerId: string, userIds: string[]): Promise<void> {
-  for (const table of ["workout_logs", "routine_day_exercises", "routines"]) {
-    await admin(`/rest/v1/${table}?trainer_id=eq.${trainerId}`, { method: "DELETE" });
+  for (const table of ["workout_logs", "reviews", "routine_day_exercises", "routines"]) {
+    const res = await admin(`/rest/v1/${table}?trainer_id=eq.${trainerId}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(`No se pudo limpiar ${table}: HTTP ${res.status}`);
   }
-  for (const id of userIds) await admin(`/auth/v1/admin/users/${id}`, { method: "DELETE" });
+  for (const id of userIds) {
+    const res = await admin(`/auth/v1/admin/users/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(`No se pudo borrar la cuenta ${id}: HTTP ${res.status}`);
+  }
 }
 
 describe.skipIf(!ready)("siembra de Supabase · stack local", () => {
@@ -60,6 +68,7 @@ describe.skipIf(!ready)("siembra de Supabase · stack local", () => {
     const stamp = Date.now().toString(36);
     const trainerEmail = `siembra-entrenador-${stamp}@hector.test`;
     const clientEmail = `siembra-cliente-${stamp}@hector.test`;
+    const secondEmail = `siembra-cliente2-${stamp}@hector.test`;
     const target = resolveTarget({
       remote: false,
       env: { SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: serviceKey },
@@ -70,7 +79,7 @@ describe.skipIf(!ready)("siembra de Supabase · stack local", () => {
         apply,
         trainerEmail,
         trainerName: "Entrenador de la siembra",
-        clientEmails: [clientEmail],
+        clientEmails: [clientEmail, secondEmail],
         now: () => new Date(),
         newPassword: () => `Siembra-${stamp}-1a`,
         credentials,
@@ -87,12 +96,13 @@ describe.skipIf(!ready)("siembra de Supabase · stack local", () => {
     try {
       expect(first.invalid).toEqual([]);
       for (const count of Object.values(first.counts)) expect(count.created).toBe(count.planned);
-      expect(credentials.map((c) => c.email)).toEqual([trainerEmail, clientEmail]);
+      expect(credentials.map((c) => c.email)).toEqual([trainerEmail, clientEmail, secondEmail]);
       const users = await backend.listAuthUsers();
-      const client = users.find((u) => u.email === clientEmail)!;
-      userIds.push(client.id);
-      expect(users.find((u) => u.email === trainerEmail)!.emailConfirmed).toBe(true);
-      expect(client.emailConfirmed).toBe(true);
+      for (const email of [trainerEmail, clientEmail, secondEmail]) {
+        const user = users.find((u) => u.email === email)!;
+        if (email !== trainerEmail) userIds.push(user.id);
+        expect(user.emailConfirmed).toBe(true);
+      }
 
       const again = await run(true);
       expect(again.blockers).toEqual([]);
@@ -103,8 +113,10 @@ describe.skipIf(!ready)("siembra de Supabase · stack local", () => {
       const trainerToken = await signIn(trainerEmail, credentials[0]!.password);
       expect(await readAs(trainerToken, "exercises")).toHaveLength(12);
       expect(await readAs(trainerToken, "clients")).toHaveLength(2);
-      const clientToken = await signIn(clientEmail, credentials[1]!.password);
-      expect(await readAs(clientToken, "clients")).toHaveLength(1);
+      for (const [i, email] of [clientEmail, secondEmail].entries()) {
+        const clientToken = await signIn(email, credentials[i + 1]!.password);
+        expect(await readAs(clientToken, "clients")).toHaveLength(1);
+      }
     } finally {
       await cleanUp(first.trainerUserId, userIds);
     }

@@ -15,15 +15,10 @@ import {
   type TimeZone,
 } from "@/lib/domain";
 import { clientIdFor } from "../migration/ids";
+import { normalizeEmail, seedClientUserId, seedIdPrefix, seedTrainerUserId } from "./ids";
 import {
-  normalizeEmail,
-  placeholderEmail,
-  seedClientUserId,
-  seedIdPrefix,
-  seedTrainerUserId,
-} from "./ids";
-import {
-  MAX_CLIENT_EMAILS,
+  CLIENT_EMAIL_COUNT,
+  assignClientEmails,
   buildSupabaseSeedPlan,
   rowKey,
   type SeedRow,
@@ -81,7 +76,7 @@ export interface SeedRunOptions {
   trainerName?: string;
   /** Solo si falta la fila del entrenador; si existe, manda la suya. */
   timeZone?: string;
-  /** Por orden: Lucas, Irene. Los que falten se siembran sin cuenta. */
+  /** Uno por cliente sembrado y por orden: Lucas, Irene. Si faltan o sobran, no se lee nada. */
   clientEmails: readonly string[];
   now: () => Date;
   newPassword: () => string;
@@ -129,13 +124,17 @@ export async function runSeed(
 
   /* ---------- Correos ---------- */
 
-  const trainerEmail = parseEmail(options.trainerEmail, "--trainer-email");
-  const clientEmails = options.clientEmails.map((email) => parseEmail(email, "--client-email"));
-  if (clientEmails.length > MAX_CLIENT_EMAILS) {
+  // Antes que nada: cada cliente sembrado es `activo` y tiene cuenta, así que hace falta su correo.
+  if (options.clientEmails.length !== CLIENT_EMAIL_COUNT) {
+    const names = CLIENT_KEYS.map(
+      (k) => `${CLIENT_SPECS[k].firstName} ${CLIENT_SPECS[k].lastName}`,
+    );
     throw new SeedAbort(
-      `La siembra tiene ${MAX_CLIENT_EMAILS} clientes (${CLIENT_KEYS.map((k) => CLIENT_SPECS[k].firstName).join(" y ")}) y se han dado ${clientEmails.length} correos.`,
+      `Hacen falta ${CLIENT_EMAIL_COUNT} --client-email, uno por cliente sembrado y en este orden: ${names.join(", ")}. Se han dado ${options.clientEmails.length}.`,
     );
   }
+  const trainerEmail = parseEmail(options.trainerEmail, "--trainer-email");
+  const clientEmails = options.clientEmails.map((email) => parseEmail(email, "--client-email"));
   if (unique(clientEmails).length !== clientEmails.length) {
     throw new SeedAbort("Hay un --client-email repetido.");
   }
@@ -148,23 +147,13 @@ export async function runSeed(
   const plannedClientIds = Object.fromEntries(
     CLIENT_KEYS.map((key) => [key, clientIdFor(seedClientId(prefix, key))]),
   ) as Record<ClientKey, string>;
-  const assignedEmails = Object.fromEntries(
-    CLIENT_KEYS.map((key, i) => [
-      key,
-      clientEmails[i] ??
-        placeholderEmail(CLIENT_SPECS[key].firstName, CLIENT_SPECS[key].lastName, trainerUserId),
-    ]),
-  ) as Record<ClientKey, string>;
+  const assignedEmails = assignClientEmails(clientEmails);
 
   log(`Entrenador ${trainerEmail} (cuenta ${trainerUserId})`);
-  CLIENT_KEYS.forEach((key, i) => {
+  for (const key of CLIENT_KEYS) {
     const spec = CLIENT_SPECS[key];
-    log(
-      clientEmails[i]
-        ? `Cliente ${spec.firstName} ${spec.lastName}: ${assignedEmails[key]}, con cuenta.`
-        : `Cliente ${spec.firstName} ${spec.lastName}: sin correo dado; ficha sin cuenta con ${assignedEmails[key]}.`,
-    );
-  });
+    log(`Cliente ${spec.firstName} ${spec.lastName}: ${assignedEmails[key]}.`);
+  }
 
   /* ---------- Cuentas de Auth ---------- */
 

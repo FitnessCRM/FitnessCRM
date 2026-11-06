@@ -1,4 +1,4 @@
-import { CLIENT_KEYS, CLIENT_SPECS, buildTrainer, type ClientKey } from "@/lib/data/seed/people";
+import { CLIENT_KEYS, buildTrainer, type ClientKey } from "@/lib/data/seed/people";
 import { buildSeedPlan, type SeedPlan } from "@/lib/data/seed/plan";
 import type { SeedClock } from "@/lib/data/seed/time";
 import type { CivilDate, TimeZone, Trainer } from "@/lib/domain";
@@ -10,7 +10,6 @@ import { remapPeople } from "../migration/remap";
 import {
   SUPABASE_SEED_IDS,
   normalizeEmail,
-  placeholderEmail,
   seedClientKey,
   seedClientUserId,
   seedIdPrefix,
@@ -52,7 +51,7 @@ export interface SupabaseSeedInput {
   trainerEmail: string;
   trainerName: string;
   timeZone: TimeZone;
-  /** Por orden: el primero es de Lucas, el segundo de Irene. */
+  /** Uno por cliente sembrado y por orden: el primero es de Lucas, el segundo de Irene. */
   clientEmails: readonly string[];
   anchor: CivilDate;
   now: SeedClock["now"];
@@ -62,11 +61,9 @@ export interface SupabaseSeedPlan {
   trainerUserId: string;
   trainer: Trainer;
   seed: SeedPlan;
-  /** El entrenador y los clientes con correo, por ese orden. */
+  /** El entrenador y cada cliente, por ese orden. */
   accounts: SeedAccountPlan[];
   clientEmails: Record<ClientKey, string>;
-  /** Clientes sin correo: ficha `activo` sin cuenta ni perfil. */
-  clientsWithoutAccount: ClientKey[];
   /** En el orden en que se escriben: lo referenciado antes que lo que lo referencia. */
   tables: TableSet[];
 }
@@ -80,7 +77,11 @@ const CHILD_PARENT: Record<string, string> = {
   questionnaire_responses: "review_id",
 };
 
-export const MAX_CLIENT_EMAILS = CLIENT_KEYS.length;
+/**
+ * Cada cliente sembrado es `activo`, y un `activo` siempre tiene cuenta: aceptó su invitación (§7).
+ * Por eso hace falta exactamente un correo por cliente.
+ */
+export const CLIENT_EMAIL_COUNT = CLIENT_KEYS.length;
 
 /** La clave de una fila según `onConflict`: `id`, o `routine_id/id` en las hijas. */
 export const rowKey = (set: Pick<TableSet, "onConflict">, row: SeedRow): string =>
@@ -90,24 +91,15 @@ export const rowKey = (set: Pick<TableSet, "onConflict">, row: SeedRow): string 
     .join("/");
 
 /**
- * El correo de cada cliente: los dados, por orden, y para los que falten uno que no entrega
- * (`placeholderEmail`). Quien llama comprueba antes cuántos hay y que no se repiten.
+ * El correo de cada cliente, por orden. Quien llama comprueba antes cuántos hay, que son válidos y que
+ * no se repiten; aquí solo se vuelve a exigir que haya uno por cliente.
  */
-export function assignClientEmails(
-  clientEmails: readonly string[],
-  trainerUserId: string,
-): Record<ClientKey, string> {
+export function assignClientEmails(clientEmails: readonly string[]): Record<ClientKey, string> {
+  if (clientEmails.length !== CLIENT_EMAIL_COUNT) {
+    throw new Error(`Hace falta un correo por cliente: ${CLIENT_EMAIL_COUNT}.`);
+  }
   return Object.fromEntries(
-    CLIENT_KEYS.map((key, i) => {
-      const given = clientEmails[i];
-      const spec = CLIENT_SPECS[key];
-      return [
-        key,
-        given
-          ? normalizeEmail(given)
-          : placeholderEmail(spec.firstName, spec.lastName, trainerUserId),
-      ];
-    }),
+    CLIENT_KEYS.map((key, i) => [key, normalizeEmail(clientEmails[i]!)]),
   ) as Record<ClientKey, string>;
 }
 
@@ -115,8 +107,7 @@ export function buildSupabaseSeedPlan(input: SupabaseSeedInput): SupabaseSeedPla
   const trainerEmail = normalizeEmail(input.trainerEmail);
   const trainerKey = seedTrainerKey(trainerEmail);
   const trainerUserId = seedTrainerUserId(trainerEmail);
-  const clientEmails = assignClientEmails(input.clientEmails, trainerUserId);
-  const withAccount = CLIENT_KEYS.filter((_, i) => Boolean(input.clientEmails[i]));
+  const clientEmails = assignClientEmails(input.clientEmails);
 
   const seed = buildSeedPlan({
     trainerId: trainerKey,
@@ -142,7 +133,7 @@ export function buildSupabaseSeedPlan(input: SupabaseSeedInput): SupabaseSeedPla
       clients: Object.values(seed.clients).map((client) => ({ id: client.id, data: client })),
       accounts: [
         { uid: trainerKey, email: trainerEmail },
-        ...withAccount.map((key) => ({
+        ...CLIENT_KEYS.map((key) => ({
           uid: seedClientKey(clientEmails[key]),
           email: clientEmails[key],
         })),
@@ -225,7 +216,7 @@ export function buildSupabaseSeedPlan(input: SupabaseSeedInput): SupabaseSeedPla
     seed,
     accounts: [
       { role: "trainer", userId: trainerUserId, email: trainerEmail },
-      ...withAccount.map((key) => ({
+      ...CLIENT_KEYS.map((key) => ({
         role: "client" as const,
         userId: seedClientUserId(clientEmails[key]),
         email: clientEmails[key],
@@ -233,7 +224,6 @@ export function buildSupabaseSeedPlan(input: SupabaseSeedInput): SupabaseSeedPla
       })),
     ],
     clientEmails,
-    clientsWithoutAccount: CLIENT_KEYS.filter((key) => !withAccount.includes(key)),
     tables,
   };
 }

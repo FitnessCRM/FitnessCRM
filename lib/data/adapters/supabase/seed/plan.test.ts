@@ -86,13 +86,14 @@ describe("siembra de Supabase · plan", () => {
     ).toEqual(clients.map((c) => c.id).sort());
   });
 
-  it("a client without an email is seeded without account, with an address that never delivers", () => {
-    const one = buildSupabaseSeedPlan(input({ clientEmails: ["uno@prueba.test"] }));
-    expect(one.clientsWithoutAccount).toEqual(["irene"]);
-    expect(one.clientEmails.irene).toBe(`irene.soto+${one.trainerUserId.slice(0, 8)}@demo.invalid`);
-    expect(one.accounts.map((a) => a.email)).toEqual(["entrenador@prueba.test", "uno@prueba.test"]);
-    expect(countOf(one, "profiles")).toBe(2);
-    expect(countOf(one, "clients")).toBe(2);
+  it("needs exactly one email per seeded client: an active client always has an account (§7)", () => {
+    for (const clientEmails of [
+      [],
+      ["uno@prueba.test"],
+      ["uno@prueba.test", "dos@prueba.test", "tres@prueba.test"],
+    ]) {
+      expect(() => buildSupabaseSeedPlan(input({ clientEmails }))).toThrow(/un correo por cliente/);
+    }
   });
 
   it("cloned routines and menus keep the uuid of the template they come from", () => {
@@ -112,7 +113,10 @@ describe("siembra de Supabase · plan", () => {
       p.tables.flatMap((set) => set.rows.map((row) => `${set.table}/${rowKey(set, row)}`));
     expect(buildSupabaseSeedPlan(input()).tables).toEqual(plan.tables);
     const other = buildSupabaseSeedPlan(
-      input({ trainerEmail: "otro@prueba.test", clientEmails: ["tres@prueba.test"] }),
+      input({
+        trainerEmail: "otro@prueba.test",
+        clientEmails: ["tres@prueba.test", "cuatro@prueba.test"],
+      }),
     );
     const mine = new Set(keysOf(plan));
     expect(keysOf(other).filter((key) => mine.has(key))).toEqual([]);

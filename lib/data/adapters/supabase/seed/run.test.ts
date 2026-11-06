@@ -240,24 +240,60 @@ describe("siembra de Supabase · ejecución", () => {
     expect(backend.writes).toBe(0);
   });
 
-  it("with one email, Irene is a client without account; three emails or repeated ones abort", async () => {
+  it("one email too few or too many aborts before reading or writing anything, and says why", async () => {
+    for (const clientEmails of [
+      ["uno@prueba.test"],
+      ["uno@prueba.test", "dos@prueba.test", "tres@prueba.test"],
+      [],
+    ]) {
+      const backend = new MemoryBackend();
+      let reads = 0;
+      const select = backend.select.bind(backend);
+      const listAuthUsers = backend.listAuthUsers.bind(backend);
+      backend.select = (...args) => (reads++, select(...args));
+      backend.listAuthUsers = () => (reads++, listAuthUsers());
+      const run = runSeed(backend, options({ clientEmails }).opts);
+      await expect(run).rejects.toBeInstanceOf(SeedAbort);
+      await expect(run).rejects.toThrow(
+        `Hacen falta 2 --client-email, uno por cliente sembrado y en este orden: Lucas Navarro, Irene Soto. Se han dado ${clientEmails.length}.`,
+      );
+      expect(reads).toBe(0);
+      expect(backend.writes).toBe(0);
+    }
+  });
+
+  it("with two emails it creates the three accounts: the trainer and both clients, each linked", async () => {
     const backend = new MemoryBackend();
-    const { opts, credentials } = options({ clientEmails: ["uno@prueba.test"] });
+    const { opts, credentials } = options();
     const result = await runSeed(backend, opts);
     expect(result.invalid).toEqual([]);
-    expect(credentials.map((c) => c.email)).toEqual([TRAINER, "uno@prueba.test"]);
-    expect(backend.rows("clients").map((c) => c.email)).toEqual([
+    expect(backend.users.map((u) => u.email)).toEqual([
+      TRAINER,
       "uno@prueba.test",
-      `irene.soto+${T.slice(0, 8)}@demo.invalid`,
+      "dos@prueba.test",
     ]);
-    expect(backend.rows("profiles")).toHaveLength(2);
+    expect(credentials.map((c) => c.email)).toEqual([
+      TRAINER,
+      "uno@prueba.test",
+      "dos@prueba.test",
+    ]);
+    const clients = backend.rows("clients");
+    expect(clients.map((c) => [c.email, c.status])).toEqual([
+      ["uno@prueba.test", "activo"],
+      ["dos@prueba.test", "activo"],
+    ]);
+    const profiles = backend.rows("profiles");
+    expect(profiles.map((p) => p.user_id)).toEqual(backend.users.map((u) => u.id));
+    expect(profiles.filter((p) => p.role === "client").map((p) => p.client_id)).toEqual(
+      clients.map((c) => c.id),
+    );
+  });
 
-    const three = ["a@prueba.test", "b@prueba.test", "c@prueba.test"];
+  it("repeated, invalid or trainer emails abort", async () => {
     for (const clientEmails of [
-      three,
       ["a@prueba.test", "A@prueba.test"],
-      [TRAINER],
-      ["no-es-correo"],
+      [TRAINER, "b@prueba.test"],
+      ["no-es-correo", "b@prueba.test"],
     ]) {
       await expect(
         runSeed(new MemoryBackend(), options({ clientEmails }).opts),
@@ -267,13 +303,13 @@ describe("siembra de Supabase · ejecución", () => {
 
   it("running again with another email for a seeded client is blocked: emails are not changed", async () => {
     const backend = new MemoryBackend();
-    await runSeed(backend, options({ clientEmails: ["uno@prueba.test"] }).opts);
+    await runSeed(backend, options().opts);
     const result = await runSeed(
       backend,
-      options({ clientEmails: ["uno@prueba.test", "dos@prueba.test"] }).opts,
+      options({ clientEmails: ["uno@prueba.test", "tres@prueba.test"] }).opts,
     );
     expect(result.blockers.join(" ")).toMatch(
-      /La ficha de Irene ya está sembrada con el correo .*demo.invalid/,
+      /La ficha de Irene ya está sembrada con el correo dos@prueba.test, y ahora se pide tres@prueba.test/,
     );
   });
 
