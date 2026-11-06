@@ -23,9 +23,8 @@ import {
   type WeightLog,
   type WorkoutLog,
 } from "@/lib/domain";
-import { weightLogDocId, workoutLogDocId } from "../logs";
 import { sequence } from "./ids";
-import { EXERCISE_IDS, type ExerciseKey, type SeedContext } from "./library";
+import { exerciseIds, type ExerciseKey, type SeedContext } from "./library";
 import type { ClientKey } from "./people";
 import { at, seededRandom } from "./time";
 
@@ -53,7 +52,7 @@ const WEIGHT_TREND: Record<ClientKey, { startKg: number; kgPerWeek: number; seed
 const WEIGHT_NOISE_KG = 0.4;
 
 /**
- * Un pesaje por fecha (I23: el id es `{clientId}_{fecha}`), ninguno anterior al alta ni posterior
+ * Un pesaje por fecha (I23: el id sale del cliente y la fecha), ninguno anterior al alta ni posterior
  * al ancla (I27, con la misma función que usa el adaptador).
  */
 export function buildWeightLogs(ctx: SeedContext, key: ClientKey, client: Client): WeightLog[] {
@@ -66,7 +65,7 @@ export function buildWeightLogs(ctx: SeedContext, key: ClientKey, client: Client
     const previous = offsets[i - 1];
     const backAfterGap = previous !== undefined && offset - previous > 4;
     return weightLogSchema.parse({
-      id: weightLogDocId(client.id, date),
+      id: ctx.ids.weightLog(client.id, date),
       trainerId: ctx.trainerId,
       clientId: client.id,
       date,
@@ -223,17 +222,13 @@ const LOADS: Record<ExerciseKey, [startKg: number, stepKg: number]> = {
 /** Las cargas de Irene son una fracción de las de la tabla. */
 const LOAD_FACTOR: Record<ClientKey, number> = { lucas: 1, irene: 0.6 };
 
-const EXERCISE_KEY_BY_ID = new Map(
-  (Object.entries(EXERCISE_IDS) as [ExerciseKey, string][]).map(([key, id]) => [id, key]),
-);
-
 /** Discos de 1,25 kg en barra y máquina; mancuernas de kilo en kilo. */
 const roundLoad = (kg: number): number => (kg >= 20 ? Math.round(kg / 2.5) * 2.5 : Math.round(kg));
 
 /**
  * Series registradas sobre la rutina activa: todas las prescritas de cada ejercicio del día. El id
- * es el del adaptador (`{clientId}_{línea}_{fecha}_{serie}`), así que una serie es única por línea,
- * fecha y número.
+ * sale del cliente, la línea, la fecha y el número de serie, así que una serie es única por esos
+ * cuatro.
  */
 export function buildWorkoutLogs(
   ctx: SeedContext,
@@ -241,6 +236,12 @@ export function buildWorkoutLogs(
   client: Client,
   routine: Routine,
 ): WorkoutLog[] {
+  const exerciseKeyById = new Map(
+    (Object.entries(exerciseIds(ctx.idPrefix)) as [ExerciseKey, string][]).map(([k, id]) => [
+      id,
+      k,
+    ]),
+  );
   const timesDone = new Map<number, number>();
   return SESSIONS[key].flatMap(([daysAgo, dayNumber]) => {
     const routineDay = routine.days.find((d) => d.dayNumber === dayNumber);
@@ -250,7 +251,7 @@ export function buildWorkoutLogs(
     const date = addCivilDays(ctx.anchor, -daysAgo);
     let minute = 0;
     return routineDay.exercises.flatMap((line) => {
-      const exercise = EXERCISE_KEY_BY_ID.get(line.exerciseId);
+      const exercise = exerciseKeyById.get(line.exerciseId);
       if (!exercise) throw new Error(`Ejercicio ${line.exerciseId} fuera de la siembra`);
       const [startKg, stepKg] = LOADS[exercise];
       const weightKg = roundLoad(startKg * LOAD_FACTOR[key]) + repeat * stepKg;
@@ -258,7 +259,7 @@ export function buildWorkoutLogs(
       return Array.from({ length: sets }, (_, i) => {
         const setNumber = i + 1;
         return workoutLogSchema.parse({
-          id: workoutLogDocId(client.id, line.id, date, setNumber),
+          id: ctx.ids.workoutLog(client.id, line.id, date, setNumber),
           trainerId: ctx.trainerId,
           clientId: client.id,
           exerciseId: line.exerciseId,

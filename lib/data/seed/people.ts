@@ -13,18 +13,14 @@ import {
   type TimeZone,
   type Trainer,
 } from "@/lib/domain";
-import { SEED_PREFIX } from "./ids";
 import type { SeedContext } from "./library";
 import { at } from "./time";
 
-/** El entrenador de la demo. La siembra es para esta cuenta y no para otra. */
-export const TRAINER_EMAIL = "h.damaso@gmail.com";
 export const DEFAULT_TIME_ZONE: TimeZone = "Europe/Madrid";
 
 export type ClientKey = "lucas" | "irene";
 
 interface ClientSpec {
-  id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -41,7 +37,6 @@ interface ClientSpec {
  */
 export const CLIENT_SPECS: Record<ClientKey, ClientSpec> = {
   lucas: {
-    id: `${SEED_PREFIX}lucas`,
     firstName: "Lucas",
     lastName: "Navarro",
     email: "daniel2003ml+lucas@gmail.com",
@@ -50,7 +45,6 @@ export const CLIENT_SPECS: Record<ClientKey, ClientSpec> = {
     startDaysAgo: 40,
   },
   irene: {
-    id: `${SEED_PREFIX}irene`,
     firstName: "Irene",
     lastName: "Soto",
     email: "daniel2003ml+irene@gmail.com",
@@ -61,6 +55,9 @@ export const CLIENT_SPECS: Record<ClientKey, ClientSpec> = {
 };
 
 export const CLIENT_KEYS = Object.keys(CLIENT_SPECS) as ClientKey[];
+
+/** El id de un cliente sembrado: no depende de la fecha, así que se puede buscar antes de sembrar. */
+export const seedClientId = (prefix: string, key: ClientKey): string => `${prefix}${key}`;
 
 /**
  * El ancla que corresponde a un cliente ya sembrado. Las fechas son relativas al día de la primera
@@ -73,14 +70,14 @@ export function anchorFromStartDate(key: ClientKey, startDate: CivilDate): Civil
 
 /**
  * Los dos clientes, ya `activo`: es el estado en que deja a un cliente aceptar su invitación (§7,
- * §12), que la siembra no recorre porque crea ella misma la cuenta y su `users/{uid}`.
+ * §12), que la siembra no recorre porque crea ella misma la cuenta y su enlace con la ficha.
  */
 export function buildClients(ctx: SeedContext): Record<ClientKey, Client> {
   const client = (key: ClientKey): Client => {
     const spec = CLIENT_SPECS[key];
     const startDate = addCivilDays(ctx.anchor, -spec.startDaysAgo);
     return clientSchema.parse({
-      id: spec.id,
+      id: seedClientId(ctx.idPrefix, key),
       trainerId: ctx.trainerId,
       firstName: spec.firstName,
       lastName: spec.lastName,
@@ -149,29 +146,3 @@ export function buildTrainer(input: {
     createdAt: input.now,
   });
 }
-
-/**
- * `users/{uid}`: el puente entre una cuenta de Auth y una persona (§12). No es una entidad del
- * dominio y no tiene esquema; estas son las formas que leen `auth.ts` y las reglas de seguridad.
- */
-export interface UserLink {
-  role: "trainer" | "client";
-  trainerId: string;
-  clientId: string | null;
-  email: string;
-}
-
-export const trainerUserLink = (trainerId: string, email: string): UserLink => ({
-  role: "trainer",
-  trainerId,
-  clientId: null,
-  email,
-});
-
-/** Exactamente las cuatro claves que exigen las reglas a quien acepta una invitación. */
-export const clientUserLink = (client: Client): UserLink => ({
-  role: "client",
-  trainerId: client.trainerId,
-  clientId: client.id,
-  email: client.email,
-});

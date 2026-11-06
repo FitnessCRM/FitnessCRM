@@ -6,21 +6,26 @@ import {
   type CivilDate,
   type TimeZone,
 } from "@/lib/domain";
-import { COLLECTIONS } from "../helpers";
-import { isSeedId } from "./ids";
+import { SEED_PREFIX, isSeedId } from "@/lib/data/seed/ids";
 import {
   CLIENT_KEYS,
-  CLIENT_SPECS,
   DEFAULT_TIME_ZONE,
-  TRAINER_EMAIL,
   anchorFromStartDate,
   buildTrainer,
+  seedClientId,
+  type ClientKey,
+} from "@/lib/data/seed/people";
+import { COLLECTIONS } from "../helpers";
+import {
+  SEED_COLLECTIONS,
+  TRAINER_EMAIL,
+  buildFirestoreSeedPlan,
   clientUserLink,
   trainerUserLink,
-  type ClientKey,
+  type FirestoreSeedPlan,
+  type SeedDoc,
   type UserLink,
-} from "./people";
-import { SEED_COLLECTIONS, buildSeedPlan, type SeedDoc, type SeedPlan } from "./plan";
+} from "./plan";
 import { SeedAbort } from "./target";
 
 /** `users/{uid}`: fuera de `COLLECTIONS` porque no es un agregado del dominio (§12). */
@@ -239,7 +244,7 @@ export async function runSeed(backend: SeedBackend, options: SeedRunOptions): Pr
   const today = civilDateInTimeZone(now, timeZone);
   const clientIds = CLIENT_KEYS.map((key) => ({
     collection: COLLECTIONS.clients,
-    id: CLIENT_SPECS[key].id,
+    id: seedClientId(SEED_PREFIX, key),
   }));
   const seededClients = await backend.readDocs(clientIds);
   const anchors = new Map<ClientKey, CivilDate>();
@@ -249,7 +254,9 @@ export async function runSeed(backend: SeedBackend, options: SeedRunOptions): Pr
     if (!data || data.trainerId !== trainerId) return;
     const startDate = civilDateSchema.safeParse(data.startDate);
     if (!startDate.success) {
-      throw new SeedAbort(`clients/${CLIENT_SPECS[key].id} existe con una fecha de alta ilegible.`);
+      throw new SeedAbort(
+        `clients/${seedClientId(SEED_PREFIX, key)} existe con una fecha de alta ilegible.`,
+      );
     }
     anchors.set(key, anchorFromStartDate(key, startDate.data));
   });
@@ -273,8 +280,8 @@ export async function runSeed(backend: SeedBackend, options: SeedRunOptions): Pr
 
   /* ---------- Plan y lo que ya existe ---------- */
 
-  const planFor = (id: string): SeedPlan =>
-    buildSeedPlan({ trainerId: id, anchor, clock: { timeZone, now: now.toISOString() } });
+  const planFor = (id: string): FirestoreSeedPlan =>
+    buildFirestoreSeedPlan({ trainerId: id, anchor, clock: { timeZone, now: now.toISOString() } });
   let plan = planFor(trainerId ?? PENDING_TRAINER_ID);
 
   const counts: Record<string, CollectionCount> = {};
@@ -485,7 +492,11 @@ export async function runSeed(backend: SeedBackend, options: SeedRunOptions): Pr
  * Relee lo sembrado y lo vuelve a parsear con el esquema del dominio, como hará la app al leerlo.
  * Vale también para lo que ya existía: si alguien lo dejó ilegible, mejor saberlo aquí.
  */
-async function verify(backend: SeedBackend, plan: SeedPlan, trainerId: string): Promise<string[]> {
+async function verify(
+  backend: SeedBackend,
+  plan: FirestoreSeedPlan,
+  trainerId: string,
+): Promise<string[]> {
   const invalid: string[] = [];
   const stored = await backend.readDocs(plan.docs);
   plan.docs.forEach((doc: SeedDoc, i) => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TRAINER_EMAIL } from "./people";
+import { TRAINER_EMAIL } from "./plan";
 import {
   runSeed,
   userLinkDifferences,
