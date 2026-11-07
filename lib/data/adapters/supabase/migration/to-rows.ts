@@ -129,8 +129,33 @@ export function menuTemplateRow(template: MenuTemplate) {
   };
 }
 
+/**
+ * Las plantillas que trae la exportación, por entrenador: `entrenador/plantilla`, con los ids de
+ * Firebase. Un plan solo enlaza con una plantilla de su propio entrenador.
+ */
+export type KnownTemplates = ReadonlySet<string>;
+
+export const templateKey = (trainerId: string, templateId: string): string =>
+  `${trainerId}/${templateId}`;
+
+/**
+ * El id de la plantilla de la que salió un plan (E8), convertido con los mismos ids que la fila de la
+ * plantilla. Si el plan no trae id, o trae el de una plantilla que no está en la exportación (o que
+ * es de otro entrenador), `null`: el mismo estado que un plan anterior a E8, que no cuenta como uso
+ * de ninguna plantilla. No se deduce por el nombre.
+ */
+export function sourceTemplateIdFor(
+  kind: "routine-template" | "menu-template",
+  plan: { trainerId: string; sourceTemplateId: string | null },
+  known: KnownTemplates,
+): string | null {
+  if (plan.sourceTemplateId === null) return null;
+  if (!known.has(templateKey(plan.trainerId, plan.sourceTemplateId))) return null;
+  return entityIdFor(kind, plan.sourceTemplateId);
+}
+
 /** Una rutina y sus partes en filas: días, luego líneas. El orden del array es la posición. */
-export function routineRows(routine: Routine) {
+export function routineRows(routine: Routine, knownTemplates: KnownTemplates) {
   const routineId = entityIdFor("routine", routine.id);
   const trainerId = accountIdFor(routine.trainerId);
 
@@ -170,6 +195,7 @@ export function routineRows(routine: Routine) {
       name: routine.name,
       note: routine.note,
       source_template_name: routine.sourceTemplateName,
+      source_template_id: sourceTemplateIdFor("routine-template", routine, knownTemplates),
       created_at: routine.createdAt,
       updated_at: routine.updatedAt,
     },
@@ -182,7 +208,7 @@ export function routineRows(routine: Routine) {
  * Un menú y sus partes en filas: comidas, y alimentos de cada comida. Un alimento de la biblioteca
  * lleva su copia congelada; uno de texto libre, ninguna (I29, I30).
  */
-export function menuRows(menu: Menu) {
+export function menuRows(menu: Menu, knownTemplates: KnownTemplates) {
   const menuId = entityIdFor("menu", menu.id);
   const trainerId = accountIdFor(menu.trainerId);
 
@@ -227,6 +253,7 @@ export function menuRows(menu: Menu) {
       fat_g: declaredMacros(menu).fatG,
       note: menu.note,
       source_template_name: menu.sourceTemplateName,
+      source_template_id: sourceTemplateIdFor("menu-template", menu, knownTemplates),
       created_at: menu.createdAt,
       updated_at: menu.updatedAt,
     },

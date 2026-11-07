@@ -142,7 +142,7 @@ describe("review rows", () => {
 
 describe("workout log rows", () => {
   it("points at the same routine line id that the routine rows write", () => {
-    const lineId = routineRows(routine).lines[0]?.id;
+    const lineId = routineRows(routine, new Set()).lines[0]?.id;
     expect(workoutLogRow(workout).routine_day_exercise_id).toBe(lineId);
     expect(workoutLogRow(workout).routine_id).toBe(entityIdFor("routine", "routine-1"));
   });

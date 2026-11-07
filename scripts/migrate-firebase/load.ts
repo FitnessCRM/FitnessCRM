@@ -31,6 +31,7 @@ import {
   PLAN_COLLECTIONS,
   findPlanViolations,
   loadCatalogAndPlans,
+  plansWithUnknownTemplate,
   type PlanCollection,
 } from "@/lib/data/adapters/supabase/migration/load-catalog-plans";
 import {
@@ -123,6 +124,11 @@ async function main(argv: string[], env: NodeJS.ProcessEnv): Promise<number> {
     `Ejercicios ${plan.exercises.length}, alimentos ${plan.foods.length}, ` +
       `rutinas ${plan.routines.length}, menús ${plan.menus.length}, ` +
       `objetivos ${plan.macroTargets.length}, membresías ${plan.memberships.length}`,
+  );
+  const unknownTemplate = plansWithUnknownTemplate(plan);
+  console.log(
+    `Planes con plantilla de origen fuera de la exportación: rutinas ${unknownTemplate.routines}, ` +
+      `menús ${unknownTemplate.menus} (se cargan sin source_template_id)`,
   );
   console.log(
     `Pesajes ${logs.weightLogs.length}, revisiones ${logs.reviews.length}, ` +

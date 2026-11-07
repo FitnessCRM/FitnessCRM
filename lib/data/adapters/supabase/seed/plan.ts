@@ -2,7 +2,6 @@ import { CLIENT_KEYS, buildTrainer, type ClientKey } from "@/lib/data/seed/peopl
 import { buildSeedPlan, type SeedPlan } from "@/lib/data/seed/plan";
 import type { SeedClock } from "@/lib/data/seed/time";
 import type { CivilDate, TimeZone, Trainer } from "@/lib/domain";
-import { entityIdFor } from "../migration/ids";
 import { findPlanViolations, planRowSets } from "../migration/load-catalog-plans";
 import { findLogViolations, logRowSets } from "../migration/load-logs";
 import { planPeople } from "../migration/people";
@@ -166,30 +165,6 @@ export function buildSupabaseSeedPlan(input: SupabaseSeedInput): SupabaseSeedPla
     throw new Error(`La siembra no cumple los invariantes: ${problems.join("; ")}.`);
   }
 
-  // Las rutinas y los menús clonados guardan de qué plantilla vienen (E8, §4). `to-rows` de la
-  // migración todavía no escribe esa columna, así que la siembra la añade: sin ella, la plantilla no
-  // contaría a los clientes que la usan.
-  const routineTemplateOf = new Map(
-    planData.routines.map((r) => [
-      entityIdFor("routine", r.id),
-      r.sourceTemplateId ? entityIdFor("routine-template", r.sourceTemplateId) : null,
-    ]),
-  );
-  const menuTemplateOf = new Map(
-    planData.menus.map((m) => [
-      entityIdFor("menu", m.id),
-      m.sourceTemplateId ? entityIdFor("menu-template", m.sourceTemplateId) : null,
-    ]),
-  );
-  const withSourceTemplate = (set: { table: string; rows: object[] }): SeedRow[] => {
-    const of =
-      set.table === "routines" ? routineTemplateOf : set.table === "menus" ? menuTemplateOf : null;
-    return set.rows.map((row) => {
-      const plain = row as SeedRow;
-      return of ? { ...plain, source_template_id: of.get(String(plain.id)) ?? null } : plain;
-    });
-  };
-
   const sets: TableSet[] = [
     {
       table: "trainers",
@@ -202,7 +177,7 @@ export function buildSupabaseSeedPlan(input: SupabaseSeedInput): SupabaseSeedPla
     ...[...planRowSets(planData), ...logRowSets(logData)].map((set) => ({
       table: set.table,
       onConflict: set.onConflict,
-      rows: withSourceTemplate(set),
+      rows: set.rows as SeedRow[],
       parentColumn: CHILD_PARENT[set.table],
     })),
   ];
