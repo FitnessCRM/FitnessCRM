@@ -4,7 +4,8 @@
 // Se vuelve a comprobar aquí todo lo que dice I35, con los datos de la base y no con lo que manda la
 // app: cliente activo, entrenador con la cuenta lista y tarifa activa con precio.
 import Stripe from "npm:stripe@17.7.0";
-import { appUrl, callerProfile, responder, selectRows } from "../_shared/http.ts";
+import { serveBrowserFunction, type Reply } from "../_shared/cors.ts";
+import { appUrl, callerProfile, selectRows } from "../_shared/http.ts";
 
 const TYPES = ["mensual", "trimestral", "semestral", "anual"];
 const PRODUCT_NAME: Record<string, string> = {
@@ -14,19 +15,26 @@ const PRODUCT_NAME: Record<string, string> = {
   anual: "Membresía anual",
 };
 
-Deno.serve(async (request) => {
+Deno.serve((request) => {
   const app = appUrl();
   const secretKey = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
-  if (!app || !secretKey) {
-    return new Response(JSON.stringify({ code: "payment.misconfigured" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-  const { corsHeaders, reply } = responder(app);
-  if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (request.method !== "POST") return reply(405, { code: "method_not_allowed" });
+  return serveBrowserFunction(
+    request,
+    {
+      origin: app,
+      config: app && secretKey ? { app, secretKey } : null,
+      misconfiguredCode: "payment.misconfigured",
+      failureCode: "payment.checkout_failed",
+    },
+    (config, reply) => checkout(request, config, reply),
+  );
+});
 
+async function checkout(
+  request: Request,
+  { app, secretKey }: { app: string; secretKey: string },
+  reply: Reply,
+): Promise<Response> {
   const body = (await request.json().catch(() => null)) as { type?: unknown } | null;
   const type = typeof body?.type === "string" && TYPES.includes(body.type) ? body.type : null;
   if (!type) return reply(400, { code: "payment.invalid_request" });
@@ -90,4 +98,4 @@ Deno.serve(async (request) => {
   } catch {
     return reply(502, { code: "payment.checkout_failed" });
   }
-});
+}

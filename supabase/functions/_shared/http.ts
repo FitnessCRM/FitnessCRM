@@ -1,5 +1,6 @@
 // Piezas comunes de las Edge Functions de Stripe (tarjeta 125). Hablan con la API REST y de Auth de
 // Supabase por HTTP: el SDK de Supabase solo entra en lib/data/adapters/supabase/.
+import { originOf } from "./cors.ts";
 
 export const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 export const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -10,30 +11,12 @@ export const serviceHeaders = {
   Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
 };
 
-/** La URL pública de la app (`APP_URL`), a la que vuelven Stripe Checkout y el alta de la cuenta. */
+/**
+ * El origen público de la app (`APP_URL`), al que vuelven Stripe Checkout y el alta de la cuenta, y el
+ * único que admite el CORS (`cors.ts`).
+ */
 export function appUrl(): string | null {
-  try {
-    return new URL(Deno.env.get("APP_URL") ?? "").origin;
-  } catch {
-    return null;
-  }
-}
-
-/** Respuestas JSON con el CORS de la app. */
-export function responder(origin: string) {
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-  };
-  return {
-    corsHeaders,
-    reply: (status: number, body: Record<string, unknown>): Response =>
-      new Response(JSON.stringify(body), {
-        status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }),
-  };
+  return originOf(Deno.env.get("APP_URL"));
 }
 
 /** Las filas de una consulta REST; `null` si falla. Con `authorization`, como quien llama (RLS). */
