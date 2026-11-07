@@ -59,9 +59,15 @@ export function TrainerShell({ children }: { children: ReactNode }) {
         <Brand tag={es.common.coachTag} className="min-w-0 flex-1" />
         <InitialsAvatar initials={initials} />
       </header>
-      <aside className="bg-background-deep border-border-subtle flex w-[232px] shrink-0 flex-col gap-7 border-r px-4 py-6 max-lg:hidden">
-        <Brand tag={es.common.coachTag} className="px-2" />
-        <nav aria-label={es.roles.trainer} className="flex flex-col gap-0.5">
+      {/* Alto de pantalla y fija al hacer scroll: si creciera con `main`, en las pantallas largas el
+          bloque de usuario (y «Cerrar sesión») quedaría al fondo de la página (tarjeta 140). Si la
+          navegación no cabe, hace scroll ella sola y el bloque de usuario sigue a la vista. */}
+      <aside className="bg-background-deep border-border-subtle sticky top-0 flex h-dvh w-[232px] shrink-0 flex-col gap-7 border-r px-4 py-6 max-lg:hidden">
+        <Brand tag={es.common.coachTag} className="shrink-0 px-2" />
+        <nav
+          aria-label={es.roles.trainer}
+          className="flex min-h-0 flex-col gap-0.5 overflow-y-auto"
+        >
           {items.map((item) => {
             const active = isActive(item.href);
             return (
@@ -81,7 +87,9 @@ export function TrainerShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="border-border-subtle mt-auto border-t px-2 pt-2.5">{userBlock}</div>
+        <div className="border-border-subtle mt-auto shrink-0 border-t px-2 pt-2.5">
+          {userBlock}
+        </div>
       </aside>
       <main className="flex min-w-0 flex-1 flex-col gap-7 px-10 py-9 max-lg:px-4 max-lg:py-6">
         {children}
