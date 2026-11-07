@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { Menu, Routine } from "@/lib/domain";
-import { findPlanViolations, loadCatalogAndPlans, type PlanData } from "./load-catalog-plans";
+import type { Menu, MenuTemplate, Routine, RoutineTemplate } from "@/lib/domain";
+import { entityIdFor } from "./ids";
+import {
+  findPlanViolations,
+  loadCatalogAndPlans,
+  planRowSets,
+  plansWithUnknownTemplate,
+  type PlanData,
+} from "./load-catalog-plans";
 
 const CREATED = "2026-08-03T09:00:00.000Z";
 
@@ -69,6 +76,69 @@ describe("findPlanViolations", () => {
       menus: [menu("m1", true, "activo"), menu("m2", true, "activo")],
     };
     expect(findPlanViolations(plan)).toHaveLength(1);
+  });
+});
+
+describe("source templates (E8)", () => {
+  const routineTemplate: RoutineTemplate = {
+    id: "tpl-routine",
+    trainerId: "uid-trainer",
+    name: "Hiper",
+    description: "",
+    note: "",
+    days: [],
+    createdAt: CREATED,
+    updatedAt: CREATED,
+  };
+  const menuTemplate: MenuTemplate = {
+    id: "tpl-menu",
+    trainerId: "uid-trainer",
+    name: "Base",
+    description: "",
+    menus: [],
+    createdAt: CREATED,
+    updatedAt: CREATED,
+  };
+  const plan: PlanData = {
+    ...emptyPlan(),
+    routineTemplates: [routineTemplate],
+    menuTemplates: [menuTemplate],
+    routines: [
+      { ...routine("with", "activo"), sourceTemplateId: "tpl-routine" },
+      { ...routine("without", "archivado") },
+      { ...routine("missing", "archivado", "client-2"), sourceTemplateId: "tpl-gone" },
+    ],
+    menus: [
+      { ...menu("with", false, "activo"), sourceTemplateId: "tpl-menu" },
+      {
+        ...menu("foreign", false, "archivado"),
+        trainerId: "uid-other",
+        sourceTemplateId: "tpl-menu",
+      },
+    ],
+  };
+  const rowsOf = (table: string) =>
+    (planRowSets(plan).find((set) => set.table === table)?.rows ?? []) as {
+      id: string;
+      source_template_id: string | null;
+    }[];
+
+  it("links a plan to a template of the export and leaves the rest null", () => {
+    const routines = new Map(rowsOf("routines").map((row) => [row.id, row.source_template_id]));
+    expect(routines.get(entityIdFor("routine", "with"))).toBe(
+      entityIdFor("routine-template", "tpl-routine"),
+    );
+    expect(routines.get(entityIdFor("routine", "without"))).toBeNull();
+    expect(routines.get(entityIdFor("routine", "missing"))).toBeNull();
+
+    const menus = new Map(rowsOf("menus").map((row) => [row.id, row.source_template_id]));
+    expect(menus.get(entityIdFor("menu", "with"))).toBe(entityIdFor("menu-template", "tpl-menu"));
+    expect(menus.get(entityIdFor("menu", "foreign"))).toBeNull();
+  });
+
+  it("counts the plans whose template is not in the export or belongs to another trainer", () => {
+    expect(plansWithUnknownTemplate(plan)).toEqual({ routines: 1, menus: 1 });
+    expect(plansWithUnknownTemplate(emptyPlan())).toEqual({ routines: 0, menus: 0 });
   });
 });
 

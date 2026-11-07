@@ -34,6 +34,8 @@ import {
   questionRow,
   routineRows,
   routineTemplateRow,
+  templateKey,
+  type KnownTemplates,
 } from "./to-rows";
 
 /**
@@ -152,10 +154,37 @@ export function findPlanViolations(data: PlanData): string[] {
   return problems;
 }
 
+const knownTemplates = (templates: { id: string; trainerId: string }[]): KnownTemplates =>
+  new Set(templates.map((template) => templateKey(template.trainerId, template.id)));
+
+/**
+ * Planes que traen el id de una plantilla de origen (E8) que no está en la exportación, o que es de
+ * otro entrenador. Se cargan con `source_template_id` a `null` y el cargador los cuenta en su resumen.
+ */
+export function plansWithUnknownTemplate(data: PlanData): { routines: number; menus: number } {
+  const routineTemplates = knownTemplates(data.routineTemplates);
+  const menuTemplates = knownTemplates(data.menuTemplates);
+  const unknown = (
+    plans: { trainerId: string; sourceTemplateId: string | null }[],
+    known: KnownTemplates,
+  ) =>
+    plans.filter(
+      (plan) =>
+        plan.sourceTemplateId !== null &&
+        !known.has(templateKey(plan.trainerId, plan.sourceTemplateId)),
+    ).length;
+  return {
+    routines: unknown(data.routines, routineTemplates),
+    menus: unknown(data.menus, menuTemplates),
+  };
+}
+
 /** Filas por tabla, en el orden en que se escriben: primero lo que otras tablas referencian. */
 export function planRowSets(data: PlanData) {
-  const routines = data.routines.map(routineRows);
-  const menus = data.menus.map(menuRows);
+  const routineTemplates = knownTemplates(data.routineTemplates);
+  const menuTemplates = knownTemplates(data.menuTemplates);
+  const routines = data.routines.map((routine) => routineRows(routine, routineTemplates));
+  const menus = data.menus.map((menu) => menuRows(menu, menuTemplates));
   return [
     { table: "exercises", onConflict: "id", rows: data.exercises.map(exerciseRow) },
     { table: "foods", onConflict: "id", rows: data.foods.map(foodRow) },
