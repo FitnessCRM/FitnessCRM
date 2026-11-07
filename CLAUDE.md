@@ -480,6 +480,7 @@ pnpm typecheck    # tsc --noEmit
 pnpm test:firebase  # adaptador de Firebase contra los emuladores de Firestore y Auth
 pnpm test:rules     # reglas de seguridad (`firestore.rules`) contra el emulador de Firestore
 pnpm seed:demo      # siembra del entrenador de demo; solo lee salvo con `--apply`
+pnpm seed:demo:supabase  # la misma siembra en Supabase, con los correos por argumento
 supabase start      # Supabase local (necesita Docker)
 supabase db reset   # rehace la base local desde supabase/migrations/
 supabase test db    # tests pgTAP de supabase/tests/
@@ -500,6 +501,11 @@ autenticarse.
 `seed:demo` ejecuta `scripts/seed-demo-trainer.ts` con `tsx`, que es dependencia de desarrollo.
 Exige `--project` y solo admite el proyecto real de la app, con `--key`, o los emuladores; sus
 argumentos y garantías están en la cabecera del script.
+
+`seed:demo:supabase` ejecuta `scripts/seed-demo-supabase.ts`, también con `tsx`. Sin `--remote` va
+contra Supabase local; también es un dry-run salvo con `--apply`. **El `--apply` contra el remoto lo
+ejecuta una persona en su terminal, no un agente**: imprime una sola vez las contraseñas de las
+cuentas creadas. Argumentos y garantías, en la cabecera del script.
 
 ---
 
@@ -564,7 +570,8 @@ dentro de «Commits y ramas».
 
 Migración a Supabase decidida el 28-10-2026 (`docs/dominio.md` §12, `docs/plan-migracion-supabase.md`):
 en `main` el esquema con RLS, Storage y Edge Functions, el adaptador con los 18 puertos, la
-exportación de Firebase y el cargador (PR #137–#145). Firebase sigue en producción hasta la Fase 9.
+exportación de Firebase y el cargador (PR #137–#145). Firebase sigue existiendo hasta la Fase 9, pero
+desde el 07-11-2026 la app desplegada ya no lo usa (párrafo siguiente).
 
 Tanda de noviembre (03-11-2026, tarjeta 120, una rama y un PR): CI con Supabase y Node 24; deuda de
 Progreso y de plantillas y editores; archivar un ejercicio versiona las rutinas activas; email del
@@ -573,3 +580,10 @@ cliente único; macros del menú ocultas en la base de datos; consentimiento al 
 Stripe Connect en Edge Functions (solo modo test, sin claves en el repo); favicon. Lo nuevo existe en
 el adaptador en memoria y en el de Supabase; con Firebase responde «no disponible». Detalle en
 `docs/estado.md`.
+
+Supabase en producción (06 y 07-11-2026, tarjeta 135): las 7 migraciones del 03-11 están aplicadas en
+el proyecto remoto y `erase-client` desplegada; las tres funciones de Stripe, todavía no. La app
+desplegada monta el adaptador de Supabase; `providers.tsx` sigue montando el de memoria por defecto,
+y eso se decide aparte. `pnpm seed:demo:supabase` (PR #147–#149) sembró en el remoto un entrenador de
+demo con dos clientes, en correos `@example.com` que no reciben nada. Pendiente, en «Siguiente» de
+`docs/estado.md`: desplegar Stripe con sus secretos y revisar qué queda de las Fases 8 y 9.
