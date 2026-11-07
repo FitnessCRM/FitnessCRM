@@ -16,7 +16,8 @@
     "seed:demo": "tsx scripts/seed-demo-trainer.ts",
     "seed:demo:supabase": "tsx scripts/seed-demo-supabase.ts",
     "migrate:firebase:export": "tsx scripts/migrate-firebase/export.ts",
-    "migrate:firebase:load": "tsx scripts/migrate-firebase/load.ts"
+    "migrate:firebase:load": "tsx scripts/migrate-firebase/load.ts",
+    "icons:generate": "tsx scripts/generate-icons.ts"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
