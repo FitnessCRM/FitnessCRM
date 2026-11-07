@@ -583,8 +583,10 @@ el adaptador en memoria y en el de Supabase; con Firebase responde «no disponib
 `docs/estado.md`.
 
 Supabase en producción (06 y 07-11-2026, tarjeta 135): las 7 migraciones del 03-11 están aplicadas en
-el proyecto remoto y `erase-client` desplegada; las tres funciones de Stripe, todavía no. La app
+el proyecto remoto. Desplegadas `erase-client`, `stripe-connect` y `stripe-checkout`, con `APP_URL`
+y sin claves de Stripe a propósito; `stripe-webhook`, todavía no (tarjeta 139). La app
 desplegada monta el adaptador de Supabase; `providers.tsx` sigue montando el de memoria por defecto,
 y eso se decide aparte. `pnpm seed:demo:supabase` (PR #147–#149) sembró en el remoto un entrenador de
 demo con dos clientes, en correos `@example.com` que no reciben nada. Pendiente, en «Siguiente» de
-`docs/estado.md`: desplegar Stripe con sus secretos y revisar qué queda de las Fases 8 y 9.
+`docs/estado.md`: la prueba del cobro de principio a fin en modo test antes de lanzar, y revisar qué
+queda de las Fases 8 y 9.
