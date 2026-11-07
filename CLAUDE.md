@@ -21,7 +21,8 @@ Estas seis se comprueban antes de dar por buena cualquier tarea.
 
 1. **El backend es Supabase, y cada SDK entra solo por su adaptador.** Supabase para los datos, la
    auth y las fotos de las revisiones (Storage), decidido el 28-10-2026 (`docs/dominio.md` §9 y
-   §12); Firebase sigue en producción hasta que acabe la migración (Fase 9 de
+   §12); la app desplegada monta el adaptador de Supabase (comprobado el 07-11-2026), y Firebase
+   sigue existiendo, sin usarse, hasta que acabe la migración (Fase 9 de
    `docs/plan-migracion-supabase.md`). Detrás de las interfaces de `lib/data/ports/`: ningún
    componente y ningún hook importa `@supabase/*`, `firebase`, `@firebase/*` ni `firebase-admin`,
    que es lo que hace que la regla 3 siga siendo cierta con un backend real detrás, y ESLint lo
@@ -69,7 +70,7 @@ Estas seis se comprueban antes de dar por buena cualquier tarea.
 | Gráficas | Recharts |
 | Fechas | date-fns + @date-fns/tz |
 | PWA | Serwist |
-| Backend | Supabase (Postgres con RLS, Auth, Storage y Edge Functions), con el SDK solo en `lib/data/adapters/supabase/`. Firebase (Firestore y Auth) en producción hasta la Fase 9 de la migración, con el SDK solo en `lib/data/adapters/firebase/` |
+| Backend | Supabase (Postgres con RLS, Auth, Storage y Edge Functions), con el SDK solo en `lib/data/adapters/supabase/`. La app desplegada lo usa desde el 07-11-2026. Firebase (Firestore y Auth) sigue existiendo, sin usarse, hasta la Fase 9 de la migración, con el SDK solo en `lib/data/adapters/firebase/` |
 | Pagos | Stripe Connect (cuentas Standard, cargos directos), solo desde las Edge Functions de `supabase/functions/` |
 | Tests | Vitest; pgTAP contra Supabase local (necesita Docker); el adaptador de Firebase y las reglas, contra los emuladores (necesitan Java) |
 | Gestor de paquetes | pnpm. Node 24 (`.nvmrc`, que es lo que lee la CI) |
