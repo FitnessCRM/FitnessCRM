@@ -1,13 +1,13 @@
 # Estado del proyecto
 
-Última actualización: 03-11-2026, en la rama de la tanda de noviembre (tarjeta 120), sobre `main` en
-`89fa0b2` (PR #145). Este archivo describe lo que deja esa rama cuando se fusione: por excepción de la
-tanda, `estado.md` viaja en la misma rama. Están en `main` los cimientos, las siete pantallas del
-cliente, el panel del entrenador, la auth y las reglas de seguridad, el adaptador de Firebase, el modo
-sin conexión del cliente, la capa de datos de los alimentos y sus pantallas, el flag de kcal y macros
-por cliente, la sección Alimentos propia y la base de la migración a Supabase (esquema, RLS, Storage,
-Edge Functions, adaptador con los 18 puertos, exportación y cargador). La tanda añade lo de «Tanda de
-noviembre», abajo; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
+Última actualización: 07-11-2026, sobre `main` en `0306885` (PR #149). Están en `main` los cimientos,
+las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de seguridad, el
+adaptador de Firebase, el modo sin conexión del cliente, la capa de datos de los alimentos y sus
+pantallas, el flag de kcal y macros por cliente, la sección Alimentos propia, la base de la migración
+a Supabase (esquema, RLS, Storage, Edge Functions, adaptador con los 18 puertos, exportación y
+cargador), la tanda de noviembre (tarjeta 120) y la siembra de demo en Supabase (tarjeta 135). La app
+desplegada usa Supabase desde el 07-11-2026. Lo pendiente, en «Siguiente». Lee `CLAUDE.md` y
+`docs/dominio.md` antes de continuar.
 
 ## Cómo se trabajó hasta aquí
 
