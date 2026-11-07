@@ -1,8 +1,9 @@
 # FitnessCRM
 
-Repositorio `FitnessCRM`, paquete `fitness-crm`. **La app se llama HECTOR**: ese es el nombre que
-ve el usuario y el único que aparece en pantalla. Son cosas distintas a propósito — la marca puede
-cambiar y el repo no.
+Repositorio `FitnessCRM`, paquete `fitness-crm`. **La app se llama FitnessCRM**, nombre provisional
+decidido el 07-11-2026: es el nombre que ve el usuario. HECTOR, el anterior, era la marca de un
+entrenador y no la del producto. Hoy la marca coincide con el nombre del repo, pero siguen siendo
+cosas distintas a propósito — la marca puede cambiar y el repo no.
 
 App de seguimiento para un entrenador personal y sus clientes: rutinas, macros y menús,
 revisiones semanales de composición corporal, y membresías.
@@ -174,9 +175,9 @@ interfaz, 20–44px en display, 76px en el hero del login.
 ## Convenciones
 
 **Nombres.** El nombre visible de la app sale de una constante única, `APP_NAME` en
-`lib/i18n/es.ts`. Nunca se escribe "HECTOR" a pelo en un componente, ni en el `<title>`, ni en el
-manifest: renombrar la marca debe ser cambiar esa línea. El nombre del repo y del paquete no
-aparecen en ninguna pantalla.
+`lib/i18n/es.ts`. Nunca se escribe "FitnessCRM" a pelo en un componente, ni en el `<title>`, ni en
+el manifest: renombrar la marca debe ser cambiar esa línea. Hoy el nombre visible coincide con el
+del repo, algo que Dani y Miguel aceptaron el 07-11-2026, y sigue saliendo solo de `APP_NAME`.
 
 **Idioma.** La UI es española, el código es inglés. Nombres de archivos, tipos, funciones,
 variables, ramas y commits en inglés. Todo literal visible sale de `lib/i18n/es.ts`; no hay
@@ -482,6 +483,7 @@ pnpm test:firebase  # adaptador de Firebase contra los emuladores de Firestore y
 pnpm test:rules     # reglas de seguridad (`firestore.rules`) contra el emulador de Firestore
 pnpm seed:demo      # siembra del entrenador de demo; solo lee salvo con `--apply`
 pnpm seed:demo:supabase  # la misma siembra en Supabase, con los correos por argumento
+pnpm icons:generate # regenera el favicon y los iconos de la PWA; tras cambiar `APP_NAME`
 supabase start      # Supabase local (necesita Docker)
 supabase db reset   # rehace la base local desde supabase/migrations/
 supabase test db    # tests pgTAP de supabase/tests/
@@ -590,3 +592,6 @@ y eso se decide aparte. `pnpm seed:demo:supabase` (PR #147–#149) sembró en el
 demo con dos clientes, en correos `@example.com` que no reciben nada. Pendiente, en «Siguiente» de
 `docs/estado.md`: la prueba del cobro de principio a fin en modo test antes de lanzar, y revisar qué
 queda de las Fases 8 y 9.
+
+Marca del producto (07-11-2026, tarjeta 145, PR #156): `APP_NAME` pasa de HECTOR a FitnessCRM,
+provisional, y el favicon y los iconos de la PWA se regeneran desde él con `pnpm icons:generate`.
