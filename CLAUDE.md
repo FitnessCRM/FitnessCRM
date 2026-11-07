@@ -499,7 +499,9 @@ tiene `SUPABASE_TEST_URL`, `SUPABASE_TEST_ANON_KEY` y `SUPABASE_TEST_SERVICE_ROL
 propio test: ninguna clave.
 
 `test:e2e` necesita Supabase local arrancado y rehecho (`supabase start` y `supabase db reset`) y las
-mismas tres variables `SUPABASE_TEST_*` que el contrato del adaptador. Su semilla borra y vuelve a
+mismas tres variables `SUPABASE_TEST_*` que el contrato del adaptador. El arranque tiene que incluir
+el servidor de correo de pruebas (`mailpit`; no lo quites con `-x`): sin él, Auth no puede mandar la
+invitación del alta y la primera prueba falla con «no se ha podido enviar la invitación». Su semilla borra y vuelve a
 sembrar sus propias cuentas, de un dominio reservado a pruebas, y solo escribe en localhost. La app de
 las pruebas corre con `next dev` en el puerto 3200 y construye en `.next-e2e`, así que no pisa el
 `.next` de un `pnpm dev` abierto; un `.next-e2e` antiguo puede dar el mismo falso rojo en `pnpm

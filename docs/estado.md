@@ -1160,8 +1160,8 @@ el cuerpo del PR; aquí el resumen.
 - **Comprobado el 07-11** sobre Supabase local: `supabase db reset`, los tests pgTAP (300), y
   `pnpm test` con el contrato del adaptador y la prueba de las fotos contra Storage. En el navegador,
   con el adaptador en memoria, a 390, 768 y 1280 px: el alta y la renovación proponen el precio de la
-  tarifa, la tabla muestra el precio cobrado, y el cliente quita y repone una foto. Las pruebas de
-  humo no se ejecutaron el 07-11: el Chromium de la versión fijada de Playwright no estaba instalado.
+  tarifa, la tabla muestra el precio cobrado, y el cliente quita y repone una foto. Las tres pruebas
+  de humo pasan (`pnpm test:e2e`), con Supabase local arrancado con su servidor de correo.
 - **Fuera:** el script de iconos de la tanda (tarjeta 131; se queda el de la 145) y su commit de
   documentación, que se rehízo sobre el `main` del 07-11.
 - **Firebase**: nada nuevo. El precio cobrado y quitar una foto responden «no disponible».
