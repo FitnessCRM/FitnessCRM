@@ -1,4 +1,4 @@
-# Dominio — HECTOR
+# Dominio — FitnessCRM
 
 Cuarta pasada. Reconcilia el dominio cerrado en la tercera pasada con la demo navegable
 aprobada (`docs/design/demo-navegable.html`, 18 pantallas). **Donde el diseño y la tercera

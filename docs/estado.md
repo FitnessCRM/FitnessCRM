@@ -185,7 +185,8 @@ Fase 5 (navegación):
 - El "Eliminar" de la biblioteca (archivar) y las macros por menú ya están resueltos (decisión 15).
 - Sin cubrir por la demo: la pantalla «Medidas» (§11.1) y el envío de feedback (§11.2). Las dos
   están hechas con diseño propuesto (tarjetas 12 y 11).
-- `app/favicon.ico` sigue siendo el de create-next-app (tarjeta 19).
+- ~~`app/favicon.ico` sigue siendo el de create-next-app (tarjeta 19).~~ Resuelto en la tanda de
+  noviembre; desde la tarjeta 145 se regenera con `pnpm icons:generate`.
 
 ### Pantallas del cliente
 
@@ -1101,6 +1102,30 @@ en el cuerpo del PR; aquí el resumen.
 - **Cerrar sesión siempre a la vista** (tarjeta 140, PR #153). La barra lateral del entrenador ocupa
   el alto de la pantalla y se queda fija al hacer scroll, y el menú de móvil deja ver su pie en
   pantallas bajas.
+
+### Marca del producto (07-11-2026, tarjeta 145, PR #156)
+
+- **Nombre.** `APP_NAME` pasa de HECTOR a FitnessCRM, provisional: HECTOR era la marca de un
+  entrenador, no la del producto. Todo lo visible ya salía de `APP_NAME` (título, manifest, la marca
+  del login y de las dos áreas, y los dos literales que lo interpolan), así que el cambio es esa
+  línea. Siguen como estaban los identificadores internos con «hector» (`demo-hector`, la clave
+  `hector-query-cache`, cuyo cambio vaciaría la caché sin conexión, y `demo@hector.test`) y los datos
+  de demo del adaptador en memoria (`adrian@hector.app` y una URL de vídeo).
+- **Iconos.** `pnpm icons:generate` (`scripts/generate-icons.ts`) regenera el favicon (16, 32 y 48),
+  `app/apple-icon.png` y los tres iconos de la PWA con la inicial de `APP_NAME` en Oswald Bold, el
+  color `onAccent` sobre el acento (los dos de `lib/design/tokens.ts`). Se ejecuta a mano tras cambiar
+  `APP_NAME` y los archivos se commitean. No usa dependencias, ni red, ni archivo de fuente: la H y la
+  F de Oswald Bold son uniones exactas de rectángulos, medidas con la fuente que carga la app, y la
+  geometría (esquinas, tamaño y posición de la letra, zona segura del maskable) se midió en los
+  iconos de la «H». Con la «H», el script reproduce aquellos iconos salvo el antialiasing de las
+  esquinas y un píxel de posición.
+- **Comprobado** a 390, 768 y 1280 px en el login, Rutina y Panel de control, y en producción local
+  el `<title>`, el manifest servido y los iconos, iguales byte a byte a los del commit.
+- **Deuda.** El script solo sabe dibujar las iniciales H y F: otra se mide y se añade, y una letra
+  con curvas o diagonales pediría la fuente. La rama local de la tarjeta 128
+  (`feature/128-tanda-noviembre-2`, sin subir) trae otro script de iconos (`pnpm icons`,
+  `scripts/icons.ts`, tarjeta 131). Dani decidió el 07-11-2026 que se queda el de la 145: al
+  integrar esa rama hay que dejar fuera el suyo (detalle en la tarjeta 131).
 
 ## Siguiente
 

@@ -29,7 +29,9 @@ hard constraint from `CLAUDE.md` («Reglas duras») or a convention from its
    comes from `lib/i18n/es.ts`. Hardcoded user-facing strings in components are
    violations.
 7. The app name comes from `APP_NAME` in `lib/i18n/es.ts`. The literal
-   `HECTOR` must not appear in components, `<title>`, or the manifest.
+   `FitnessCRM` must not appear in components, `<title>`, or the manifest.
+   The visible name matching the repo name is accepted (07-11-2026); it still
+   comes only from `APP_NAME`.
 8. Labels about a person are invariant: nouns or phrases such as «En activo»,
    not gendered adjectives such as «Activo» or «Invitado».
 9. Identifiers, branch names and commit messages are in English. Visible copy
