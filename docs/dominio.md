@@ -5,7 +5,8 @@ aprobada (`docs/design/demo-navegable.html`, 18 pantallas). **Donde el diseño y
 pasada discrepaban, manda el diseño**: es posterior y responde a peticiones explícitas.
 
 Estado: dominio cerrado para el MVP. Backend decidido el 28-10-2026: **Supabase para datos, auth
-y fotos de revisión** (§12 y §9), con Firebase en producción hasta que acabe la migración (Fase 9 de
+y fotos de revisión** (§12 y §9). La app desplegada usa Supabase desde el 07-11-2026, y Firebase
+sigue existiendo, sin usarse, hasta que acabe la migración (Fase 9 de
 `docs/plan-migracion-supabase.md`). El acceso es con correo y contraseña, con invitación por enlace
 de correo (§12, 03-10-2026). Implementados: la autenticación, las reglas de seguridad y los
 adaptadores de datos de Firebase y de Supabase, que cubren los 18 puertos; el catálogo común de
