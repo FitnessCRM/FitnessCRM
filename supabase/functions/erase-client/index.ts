@@ -9,6 +9,7 @@
 // Si un paso falla, los anteriores ya están hechos y volver a pedirlo solo hace lo que falta.
 // Habla con la API REST, de Storage y de Auth por HTTP: el SDK de Supabase solo entra en
 // lib/data/adapters/supabase/.
+import { originOf, serveBrowserFunction, type Reply } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -37,32 +38,22 @@ async function rpc<T>(
   return { ok: false, status: response.status, code };
 }
 
-Deno.serve(async (request) => {
+Deno.serve((request) => {
   // Igual que `invite-client`: el origen de la app sale de `INVITE_URL`, para el CORS del navegador.
-  const inviteUrl = Deno.env.get("INVITE_URL") ?? "";
-  let origin: string;
-  try {
-    origin = new URL(inviteUrl).origin;
-  } catch {
-    return new Response(JSON.stringify({ code: "client.erase_misconfigured" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-  };
-  const reply = (status: number, body: Record<string, unknown>): Response =>
-    new Response(JSON.stringify(body), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  const origin = originOf(Deno.env.get("INVITE_URL"));
+  return serveBrowserFunction(
+    request,
+    {
+      origin,
+      config: origin,
+      misconfiguredCode: "client.erase_misconfigured",
+      failureCode: "client.erase_incomplete",
+    },
+    (_origin, reply) => erase(request, reply),
+  );
+});
 
-  if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (request.method !== "POST") return reply(405, { code: "method_not_allowed" });
-
+async function erase(request: Request, reply: Reply): Promise<Response> {
   const body = (await request.json().catch(() => null)) as { clientId?: unknown } | null;
   if (typeof body?.clientId !== "string") {
     return reply(400, { code: "client.erase_invalid_request" });
@@ -113,4 +104,4 @@ Deno.serve(async (request) => {
   }
 
   return reply(200, { photos: paths.data.length, accounts: accounts.data.length });
-});
+}

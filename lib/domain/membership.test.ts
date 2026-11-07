@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assertPayable,
+  isPaymentMisconfigured,
   compareMembershipsForList,
   membershipFromPayment,
   paidMembershipStart,
@@ -15,6 +16,7 @@ import {
   overlappingMembershipIds,
   suggestedRenewalStart,
 } from "./membership";
+import { DomainError } from "./errors";
 import {
   membershipRateSchema,
   membershipSchema,
@@ -299,6 +301,15 @@ describe("I35 · who can pay online", () => {
     expect(code(() => assertPayable({ status: "activo" }, undefined, true))).toBe(
       "payment.rate_not_payable",
     );
+  });
+});
+
+describe("isPaymentMisconfigured (card 139)", () => {
+  it("recognises only the misconfigured payment code", () => {
+    expect(isPaymentMisconfigured(new DomainError("payment.misconfigured", "x"))).toBe(true);
+    expect(isPaymentMisconfigured(new DomainError("payment.connect_failed", "x"))).toBe(false);
+    expect(isPaymentMisconfigured(new Error("payment.misconfigured"))).toBe(false);
+    expect(isPaymentMisconfigured(null)).toBe(false);
   });
 });
 

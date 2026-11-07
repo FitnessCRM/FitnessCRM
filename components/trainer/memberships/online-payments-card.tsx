@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState, LoadingState } from "@/components/ui/states";
 import { useOnlinePaymentStatus, useStartPaymentConnection } from "@/lib/data/hooks";
+import { isPaymentMisconfigured } from "@/lib/domain";
 import { es } from "@/lib/i18n/es";
 
 const t = es.screensTrainerMemberships.online;
@@ -49,7 +50,7 @@ export function OnlinePaymentsCard() {
           </p>
           {connect.isError ? (
             <p role="alert" className="text-danger text-[13px]">
-              {t.failed}
+              {isPaymentMisconfigured(connect.error) ? t.misconfigured : t.failed}
             </p>
           ) : null}
           {status.data.enabled ? null : (
