@@ -1,6 +1,8 @@
 # Estado del proyecto
 
-Última actualización: 07-11-2026, sobre `main` en `0306885` (PR #149). Están en `main` los cimientos,
+Última actualización: 07-11-2026, en la rama de la tanda 2 de noviembre (tarjeta 128), sobre `main` en
+`2950dfb` (PR #157); por excepción de las tandas, `estado.md` viaja en la rama y describe lo que deja
+cuando se fusione (abajo, «Tanda 2 de noviembre»). Están en `main` los cimientos,
 las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de seguridad, el
 adaptador de Firebase, el modo sin conexión del cliente, la capa de datos de los alimentos y sus
 pantallas, el flag de kcal y macros por cliente, la sección Alimentos propia, la base de la migración
@@ -1122,10 +1124,47 @@ en el cuerpo del PR; aquí el resumen.
 - **Comprobado** a 390, 768 y 1280 px en el login, Rutina y Panel de control, y en producción local
   el `<title>`, el manifest servido y los iconos, iguales byte a byte a los del commit.
 - **Deuda.** El script solo sabe dibujar las iniciales H y F: otra se mide y se añade, y una letra
-  con curvas o diagonales pediría la fuente. La rama local de la tarjeta 128
-  (`feature/128-tanda-noviembre-2`, sin subir) trae otro script de iconos (`pnpm icons`,
-  `scripts/icons.ts`, tarjeta 131). Dani decidió el 07-11-2026 que se queda el de la 145: al
-  integrar esa rama hay que dejar fuera el suyo (detalle en la tarjeta 131).
+  con curvas o diagonales pediría la fuente. La tanda 2 (tarjeta 128) traía otro script de iconos
+  (`pnpm icons`, tarjeta 131); Dani decidió el 07-11-2026 que se queda el de la 145, y al integrar la
+  tanda 2 el suyo se dejó fuera.
+
+### Tanda 2 de noviembre (03-11-2026, integrada el 07-11-2026, tarjeta 128)
+
+Hecha en la nube el 03-11 en una rama apilada sobre la de la tanda 1, y pasada a `main` el 07-11
+copiando sus commits uno a uno sobre el `main` de ese día. Lo de cada tarjeta, en su comentario y en
+el cuerpo del PR; aquí el resumen.
+
+- **Precio cobrado en el registro manual** (127): el alta y la renovación proponen el precio de la
+  tarifa del tipo, activa o no, y lo siguen al cambiar de tipo mientras el entrenador no lo toque; se
+  puede cambiar o dejar vacío. Se guarda en céntimos como copia congelada (E2, E3) y no se edita en la
+  fila. La tabla de Membresías tiene columna Precio («—» sin precio). En Supabase, el disparador que
+  protege las columnas del pago deja escribir el precio al crear la fila, nunca el id del pago ni
+  cambiarlo después (pgTAP). `dominio.md` §4 y §7.
+- **M1 en el cargador** (129): los clientes `activo` sin cuenta de Auth se cargan como `invitado`, y el
+  informe lista por id los que quedan para reenviarles la invitación; la cuenta de Auth sin ficha no
+  se carga y sale por uid. Un cliente de baja sin cuenta sigue de baja: **pendiente de que lo confirme
+  Dani**.
+- **Fotos de revisión con Supabase** (17): el navegador las reduce a 1600 px de lado largo y las sube
+  en JPEG al 0,8 (T3a, T3b, `dominio.md` §9); el cliente puede quitar una foto mientras la revisión es
+  editable (RPC `detach_review_media` y `delete-review-photos`). Con datos reales sigue bloqueado por
+  el consentimiento (117).
+- **Pruebas de humo** (130): Playwright con `pnpm test:e2e`, contra Supabase local y
+  `NEXT_PUBLIC_DATA_BACKEND=supabase`: alta de un cliente, rutina desde plantilla publicada, y
+  revisión con fotos que abre el entrenador. Fuera de la CI. Su semilla
+  (`lib/data/adapters/supabase/seed/e2e.ts`) solo escribe en localhost, con cuentas sintéticas.
+- **Migraciones.** Se hicieron con fecha 04-11 y se renombraron a `20261107140000_manual_membership_price`
+  y `20261107140100_detach_review_media`, para ir después de `20261107120000_security_advisors`, que
+  ya está en producción. Revisadas con los criterios de esa migración: `detach_review_media` es
+  `security definer` con `search_path` vacío y solo la ejecuta `authenticated`, y el disparador del
+  pago sigue siendo `security invoker`. No hacía falta ningún cambio.
+- **Comprobado el 07-11** sobre Supabase local: `supabase db reset`, los tests pgTAP (300), y
+  `pnpm test` con el contrato del adaptador y la prueba de las fotos contra Storage. En el navegador,
+  con el adaptador en memoria, a 390, 768 y 1280 px: el alta y la renovación proponen el precio de la
+  tarifa, la tabla muestra el precio cobrado, y el cliente quita y repone una foto. Las pruebas de
+  humo no se ejecutaron el 07-11: el Chromium de la versión fijada de Playwright no estaba instalado.
+- **Fuera:** el script de iconos de la tanda (tarjeta 131; se queda el de la 145) y su commit de
+  documentación, que se rehízo sobre el `main` del 07-11.
+- **Firebase**: nada nuevo. El precio cobrado y quitar una foto responden «no disponible».
 
 ## Siguiente
 
@@ -1146,9 +1185,12 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
 - **Migración a Supabase (decidida el 28-10-2026, `docs/plan-migracion-supabase.md`).** Hechos el
   esquema, el adaptador, la exportación y el cargador (#137–#145) y, en la tanda de noviembre, lo que
   dice «Tanda de noviembre». Pendiente con Dani: validar el borrador del consentimiento y el
-  responsable del tratamiento de las fotos (tarjeta 117); el inventario de Firebase (Fase 0.3); M1 en
-  el cargador (clientes sin cuenta como `invitado` y reenvío de su invitación); decidir cuándo
+  responsable del tratamiento de las fotos (tarjeta 117); el inventario de Firebase (Fase 0.3);
+  reenviar la invitación a los clientes sin cuenta después de la carga (M1: el cargador ya los deja
+  `invitado`, tarjeta 129) y confirmar qué se hace con un cliente de baja sin cuenta; decidir cuándo
   `providers.tsx` monta Supabase por defecto.
+  - **Aplicar en el remoto las dos migraciones de la tanda 2** (`20261107140000` y
+    `20261107140100`) cuando se fusione su PR, con `supabase db push`, como las del 03-11.
   - **Revisar qué queda de las Fases 8 y 9** del plan ahora que la app desplegada usa Supabase
     (07-11-2026). Que `providers.tsx` siga montando el adaptador en memoria por defecto es una
     decisión aparte.
@@ -1168,8 +1210,9 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   `users/{uid}` del entrenador está creado, y las reglas de seguridad (tarjeta 34) y los índices de
   `reviews` están desplegados. Las reglas se comprobaron con sesión de entrenador contra el proyecto
   real el 08-10-2026 (tarjeta 34, PR #86). Falta, por este orden: decidir cuándo el adaptador de Firebase (16)
-  pasa a ser el adaptador por defecto de `providers.tsx`; fotos de revisión (17), ya decididas: van
-  a Supabase Storage (ver la migración arriba); y consentimiento del alta con el borrado a petición
+  pasa a ser el adaptador por defecto de `providers.tsx`; fotos de revisión (17), hechas con Supabase
+  Storage en la tanda 2 y bloqueadas con datos reales por el consentimiento (117); y consentimiento
+  del alta con el borrado a petición
   (31).
 - **Recuperación de contraseña (85), paso manual:** apuntar la URL de acción de la plantilla
   «Restablecer contraseña» de Firebase Authentication a `/reset-password` (`docs/dominio.md` §12) y

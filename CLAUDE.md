@@ -73,7 +73,7 @@ Estas seis se comprueban antes de dar por buena cualquier tarea.
 | PWA | Serwist |
 | Backend | Supabase (Postgres con RLS, Auth, Storage y Edge Functions), con el SDK solo en `lib/data/adapters/supabase/`. La app desplegada lo usa desde el 07-11-2026. Firebase (Firestore y Auth) sigue existiendo, sin usarse, hasta la Fase 9 de la migración, con el SDK solo en `lib/data/adapters/firebase/` |
 | Pagos | Stripe Connect (cuentas Standard, cargos directos), solo desde las Edge Functions de `supabase/functions/` |
-| Tests | Vitest; pgTAP contra Supabase local (necesita Docker); el adaptador de Firebase y las reglas, contra los emuladores (necesitan Java) |
+| Tests | Vitest; pgTAP contra Supabase local (necesita Docker); el adaptador de Firebase y las reglas, contra los emuladores (necesitan Java); pruebas de humo con Playwright contra Supabase local |
 | Gestor de paquetes | pnpm. Node 24 (`.nvmrc`, que es lo que lee la CI) |
 
 **Sin fetching en Server Components.** Es deliberado: los datos llegan por los hooks de
@@ -127,6 +127,8 @@ scripts/
   seed-demo-trainer.ts   entrada de `pnpm seed:demo`, con sus instrucciones en la cabecera; los
                          datos salen de `lib/data/seed/` y la escritura vive en
                          `lib/data/adapters/firebase/seed/`
+e2e/                     pruebas de humo de Playwright (`pnpm test:e2e`); su semilla escribe con el
+                         SDK de Supabase y vive en `lib/data/adapters/supabase/seed/e2e.ts`
 docs/
   dominio.md
   estado.md
@@ -487,6 +489,7 @@ pnpm icons:generate # regenera el favicon y los iconos de la PWA; tras cambiar `
 supabase start      # Supabase local (necesita Docker)
 supabase db reset   # rehace la base local desde supabase/migrations/
 supabase test db    # tests pgTAP de supabase/tests/
+pnpm test:e2e       # pruebas de humo con Playwright contra Supabase local; no van en la CI
 ```
 
 Con Supabase local arrancado, `pnpm test` corre también el contrato del adaptador de Supabase si
@@ -494,6 +497,15 @@ tiene `SUPABASE_TEST_URL`, `SUPABASE_TEST_ANON_KEY` y `SUPABASE_TEST_SERVICE_ROL
 `supabase status -o env`); la CI lo hace así. Los tests del webhook de Stripe
 (`supabase/functions/_shared/*.test.ts`) firman eventos de ejemplo con un secreto generado en el
 propio test: ninguna clave.
+
+`test:e2e` necesita Supabase local arrancado y rehecho (`supabase start` y `supabase db reset`) y las
+mismas tres variables `SUPABASE_TEST_*` que el contrato del adaptador. Su semilla borra y vuelve a
+sembrar sus propias cuentas, de un dominio reservado a pruebas, y solo escribe en localhost. La app de
+las pruebas corre con `next dev` en el puerto 3200 y construye en `.next-e2e`, así que no pisa el
+`.next` de un `pnpm dev` abierto; un `.next-e2e` antiguo puede dar el mismo falso rojo en `pnpm
+typecheck` que un `.next` antiguo (ver «Verificar el entorno antes de concluir»). El navegador es el
+Chromium de la versión fijada de Playwright: la primera vez, y cada vez que esa versión cambie,
+`pnpm exec playwright install chromium`.
 
 Los dos `test:*` de Firebase arrancan los emuladores con `firebase-tools` y necesitan **Java**
 (JDK 21). Sin emulador, `pnpm test` salta esos archivos y corre el resto: el dominio, el
@@ -595,3 +607,9 @@ queda de las Fases 8 y 9.
 
 Marca del producto (07-11-2026, tarjeta 145, PR #156): `APP_NAME` pasa de HECTOR a FitnessCRM,
 provisional, y el favicon y los iconos de la PWA se regeneran desde él con `pnpm icons:generate`.
+
+Tanda 2 de noviembre (hecha el 03-11-2026 e integrada sobre `main` el 07-11-2026, tarjeta 128): precio
+cobrado en el registro manual de las membresías (127); M1 en el cargador de la migración (129); fotos
+de revisión con Supabase, reducidas a 1600 px y en JPEG, y que el cliente puede quitar (17); y pruebas
+de humo con Playwright (130, `pnpm test:e2e`). Sus dos migraciones van después de la última aplicada
+en producción (`20261107140000` y `20261107140100`). Detalle en `docs/estado.md`.
