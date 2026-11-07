@@ -205,6 +205,15 @@ export function assertPayable(
 }
 
 /**
+ * Si un fallo del cobro en línea es que el servidor no tiene configurado el pago
+ * (`payment.misconfigured`, tarjeta 139). Volver a intentarlo no sirve: lo arregla quien mantiene la
+ * app, así que la pantalla lo dice en vez de pedir que se reintente.
+ */
+export function isPaymentMisconfigured(error: unknown): boolean {
+  return error instanceof DomainError && error.code === "payment.misconfigured";
+}
+
+/**
  * E4: inicio de una membresía pagada en línea. El día siguiente al fin de la membresía en vigor el
  * día del pago, si la hay; si no, el día del pago. Una que empiece más adelante no cuenta: los
  * solapes se marcan, no se evitan.

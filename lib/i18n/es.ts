@@ -1044,6 +1044,9 @@ export const es = {
       submit: "Pagar {price}",
       redirecting: "Abriendo el pago…",
       failed: "No se ha podido abrir el pago. Inténtalo de nuevo en un momento.",
+      /** `payment.misconfigured`: the server lacks the Stripe secrets; retrying will not help. */
+      misconfigured:
+        "El pago con tarjeta no está disponible ahora mismo. No se ha cobrado nada; avisa a tu entrenador.",
       paid: "Pago recibido. Tu membresía aparecerá aquí en cuanto se confirme.",
       cancelled: "Has salido del pago sin pagar. No se ha cobrado nada.",
     },
@@ -1113,6 +1116,9 @@ export const es = {
       connecting: "Abriendo Stripe…",
       connected: "Conectado",
       failed: "No se ha podido abrir Stripe. Inténtalo de nuevo en un momento.",
+      /** `payment.misconfigured`: the server lacks the Stripe secrets; retrying will not help. */
+      misconfigured:
+        "El cobro en línea todavía no está configurado en el servidor. Avisa a quien mantiene la app.",
       unavailable: "El cobro en línea no está disponible en este entorno.",
     },
     /** Frozen price of a membership paid online (E2). */

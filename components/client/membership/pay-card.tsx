@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useMembershipRates, useOnlinePaymentStatus, useStartCheckout } from "@/lib/data/hooks";
-import { payableRates, type MembershipType } from "@/lib/domain";
+import { isPaymentMisconfigured, payableRates, type MembershipType } from "@/lib/domain";
 import { formatPriceCents } from "@/lib/format";
 import { es } from "@/lib/i18n/es";
 import { cn } from "@/lib/utils";
@@ -74,7 +74,7 @@ export function PayCard({ trainerId }: { trainerId: string }) {
       </ul>
       {checkout.isError ? (
         <p role="alert" className="text-danger text-[13px]">
-          {t.failed}
+          {isPaymentMisconfigured(checkout.error) ? t.misconfigured : t.failed}
         </p>
       ) : null}
       <Button type="button" onClick={() => void pay()} disabled={checkout.isPending}>
