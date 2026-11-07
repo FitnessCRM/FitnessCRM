@@ -23,6 +23,12 @@
  *   catálogos (ejercicios, alimentos, tipos de medida, preguntas); plantillas, rutinas, menús,
  *   objetivos de macros y membresías; pesajes, revisiones (con sus medidas y respuestas) y registros
  *   de entrenamiento. Las fotos de las revisiones no se cargan (Fase 0.1).
+ *
+ * M1
+ *
+ *   Los clientes sin cuenta de Auth se cargan como `invitado` (los `activo` cambian de estado; los de
+ *   baja no) y el informe lista sus ids: reenviarles la invitación es un paso de producción que no
+ *   hace el cargador. Las cuentas de Auth sin ficha no se cargan, y el informe lista sus uids.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -118,8 +124,15 @@ async function main(argv: string[], env: NodeJS.ProcessEnv): Promise<number> {
   console.log(`Entrenadores: ${people.trainers.length}`);
   console.log(`Clientes: ${people.clients.length}`);
   console.log(`Cuentas enlazadas: ${linkedAccounts.length}`);
+  // M1: lo que no se carga y lo que queda para reenviar la invitación, por id (nunca por correo).
   console.log(`Cuentas sin ficha: ${people.unlinkedAccountUids.length} (no se cargan)`);
-  console.log(`Clientes sin cuenta: ${people.clientsWithoutAccount.length} (se cargan sin perfil)`);
+  for (const uid of people.unlinkedAccountUids) console.log(`  - cuenta ${uid}`);
+  console.log(
+    `Clientes sin cuenta: ${people.clientsWithoutAccount.length} (se cargan sin perfil; ` +
+      `${people.clientsMovedToInvited.length} pasan de activo a invitado)`,
+  );
+  console.log(`Invitaciones por reenviar desde Supabase: ${people.clientsToInvite.length}`);
+  for (const id of people.clientsToInvite) console.log(`  - cliente ${id}`);
   console.log(
     `Ejercicios ${plan.exercises.length}, alimentos ${plan.foods.length}, ` +
       `rutinas ${plan.routines.length}, menús ${plan.menus.length}, ` +

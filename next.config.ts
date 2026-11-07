@@ -33,6 +33,9 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Las pruebas de humo (`pnpm test:e2e`) construyen aparte, en `.next-e2e`: así no pisan el `.next`
+  // de un `pnpm dev` abierto (ver «Para el servidor de desarrollo antes de construir» en CLAUDE.md).
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   env: { NEXT_PUBLIC_BUILD_ID: revision },
 };
 

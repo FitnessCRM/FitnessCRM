@@ -65,7 +65,11 @@ export function buildClients(d: DemoDates): Client[] {
   ];
 }
 
-/** Membresías encadenadas hacia atrás desde la vigente; a Marta le quedan ~30 días, como en la demo. */
+/**
+ * Membresías encadenadas hacia atrás desde la vigente; a Marta le quedan ~30 días, como en la demo.
+ * Las más antiguas no tienen precio cobrado: son de antes de que el registro manual lo guardara
+ * (tarjeta 127), y la tabla las pinta con «—».
+ */
 export function buildMemberships(d: DemoDates): Membership[] {
   let n = 0;
   const membership = (
@@ -74,6 +78,7 @@ export function buildMemberships(d: DemoDates): Membership[] {
     startOffset: number,
     endOffset: number,
     paymentStatus: Membership["paymentStatus"],
+    priceCents: number | null = null,
   ): Membership => {
     const startDate = d.daysAhead(startOffset);
     return {
@@ -84,7 +89,7 @@ export function buildMemberships(d: DemoDates): Membership[] {
       startDate,
       endDate: d.daysAhead(endOffset),
       paymentStatus,
-      priceCents: null,
+      priceCents,
       onlinePaymentId: null,
       createdAt: ts(startDate),
     };
@@ -93,12 +98,12 @@ export function buildMemberships(d: DemoDates): Membership[] {
     membership(CLIENT_IDS.marta, "mensual", -210, -182, "pagada"),
     membership(CLIENT_IDS.marta, "mensual", -181, -151, "pagada"),
     membership(CLIENT_IDS.marta, "trimestral", -150, -60, "pagada"),
-    membership(CLIENT_IDS.marta, "trimestral", -59, 30, "pagada"),
-    membership(CLIENT_IDS.marta, "trimestral", 31, 122, "no_pagada"),
+    membership(CLIENT_IDS.marta, "trimestral", -59, 30, "pagada", 12900),
+    membership(CLIENT_IDS.marta, "trimestral", 31, 122, "no_pagada", 12900),
     membership(CLIENT_IDS.jorge, "mensual", -48, -19, "pagada"),
-    membership(CLIENT_IDS.jorge, "mensual", -18, 11, "no_pagada"),
-    membership(CLIENT_IDS.sara, "mensual", -15, 14, "pagada"),
-    membership(CLIENT_IDS.david, "semestral", -70, 112, "pagada"),
+    membership(CLIENT_IDS.jorge, "mensual", -18, 11, "no_pagada", 4900),
+    membership(CLIENT_IDS.sara, "mensual", -15, 14, "pagada", 4500),
+    membership(CLIENT_IDS.david, "semestral", -70, 112, "pagada", 23900),
     membership(CLIENT_IDS.lucia, "mensual", -48, -19, "no_pagada"),
   ];
 }

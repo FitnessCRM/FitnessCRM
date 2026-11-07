@@ -365,6 +365,13 @@ export function createReviewPort(ctx: FirebaseContext): ReviewPort {
     },
     reviewPhotoUrl: async (storagePath) => storagePath,
 
+    // Quitar una foto (tarjeta 17) es nuevo: con Firebase no se trabaja.
+    detachReviewMedia: async () => {
+      throw new Error(
+        "Quitar fotos de revisión solo está disponible con el adaptador de Supabase.",
+      );
+    },
+
     attachReviewMedia: (trainerId, reviewId, pose, url) =>
       runTransaction(ctx.db, async (tx) => {
         const review = await editableIn(tx, trainerId, reviewId);

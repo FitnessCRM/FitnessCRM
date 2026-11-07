@@ -287,9 +287,11 @@ export const es = {
       done: "✓ subida",
       upload: "Subir",
       replace: "Cambiar",
+      /** Removes the photo of the pose; its file leaves Storage (§9, card 17). */
+      remove: "Quitar",
       hint: "Misma luz, misma hora y misma pose que la semana anterior.",
       unavailable: "No disponible",
-      unsupported: "Solo se admiten fotos en JPEG, PNG o WebP.",
+      unsupported: "No se ha podido leer esa foto. Prueba con una en JPEG, PNG o WebP.",
       allUploaded: " ✓",
     },
     weight: {
@@ -1070,7 +1072,16 @@ export const es = {
       /** `{page}`, `{pages}` and `{total}` are filled in by the screen. */
       summary: "Página {page} de {pages} · {total} membresías",
     },
-    columns: { client: "Cliente", type: "Tipo", start: "Inicio", end: "Fin", status: "Estado" },
+    columns: {
+      client: "Cliente",
+      type: "Tipo",
+      start: "Inicio",
+      end: "Fin",
+      price: "Precio",
+      status: "Estado",
+    },
+    /** Membership saved without the price charged (card 127). */
+    noPrice: "—",
     actions: { edit: "Editar", save: "Guardar", saving: "Guardando…", cancel: "Cancelar" },
     overlap: {
       tag: "Solapada",
@@ -1123,6 +1134,18 @@ export const es = {
     },
     /** Frozen price of a membership paid online (E2). */
     paidOnline: "Pagada en línea · {price}",
+  },
+  /**
+   * Price charged in a manual registration of a membership (card 127): sign-up and renewal. It
+   * proposes the price of the rate of that type; `{type}` is filled in with the type, lowercase,
+   * and `{price}` with the price of its rate.
+   */
+  manualMembershipPrice: {
+    label: "Precio cobrado (€)",
+    placeholder: "Sin precio",
+    fromRate: "Tu tarifa {type} está en {price}. Cámbialo si cobraste otra cosa.",
+    noRate: "Tu tarifa {type} no tiene precio. Escribe lo que cobraste o déjalo vacío.",
+    invalid: "Escribe un precio mayor que 0, con dos decimales como mucho",
   },
   /** Charts from `components/charts/`: used by both areas, so they don't hang off one screen. */
   charts: {

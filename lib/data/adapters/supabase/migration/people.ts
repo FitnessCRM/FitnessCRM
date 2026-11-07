@@ -7,6 +7,10 @@ import { trainerSchema } from "@/lib/domain/schemas/trainer";
  *
  * Las filas se validan con los esquemas de `lib/domain` antes de salir de aquí. Si un documento no
  * cumple, se aborta con su id, nunca con sus datos.
+ *
+ * M1 (plan de migración): los clientes sin cuenta de Auth se cargan como `invitado`, listos para
+ * reenviarles la invitación, y las cuentas de Auth sin ficha no se cargan. Las dos listas salen en
+ * el informe del cargador, por id y nunca por correo.
  */
 
 /** Un documento exportado: el id aparte y los campos tal cual los guardó la app de Firebase. */
@@ -58,10 +62,17 @@ export interface PeoplePlan {
   clients: ClientRow[];
   /** Un perfil por cuenta enlazada. Las cuentas sin entrenador ni cliente no tienen perfil. */
   profiles: ProfileRow[];
-  /** Cuentas de Auth que no son de ningún entrenador ni cliente exportado. */
+  /** Cuentas de Auth que no son de ningún entrenador ni cliente exportado: no se cargan (M1). */
   unlinkedAccountUids: string[];
   /** Clientes sin cuenta de Auth: su ficha se carga igual, sin perfil. */
   clientsWithoutAccount: string[];
+  /**
+   * De esos, los que quedan `invitado` y listos para reenviarles la invitación desde Supabase (M1):
+   * los que ya lo eran y los `activo` sin cuenta, que se cargan como `invitado`.
+   */
+  clientsToInvite: string[];
+  /** De esos, los que estaban `activo` en Firebase y pasan a `invitado` (M1). */
+  clientsMovedToInvited: string[];
 }
 
 const normalize = (email: string | null | undefined): string => (email ?? "").trim().toLowerCase();
@@ -160,11 +171,24 @@ export function planPeople({
     }
   }
 
+  // M1 (03-11-2026): un cliente sin cuenta no ha podido entrar nunca, así que no es `activo` de
+  // verdad. Se carga como `invitado`, sin perfil, para reenviarle la invitación desde Supabase. Uno
+  // de baja sigue de baja: invitarlo lo reactivaría, y eso no lo decide el cargador.
+  const withoutAccount = clientRows.filter((row) => !linkedClientIds.has(row.id));
+  const movedToInvited = withoutAccount.filter((row) => row.status === "activo");
+  const loadedClients = clientRows.map((row) =>
+    movedToInvited.includes(row) ? { ...row, status: "invitado" as const } : row,
+  );
+
   return {
     trainers: trainerRows,
-    clients: clientRows,
+    clients: loadedClients,
     profiles,
     unlinkedAccountUids,
-    clientsWithoutAccount: clientRows.map((row) => row.id).filter((id) => !linkedClientIds.has(id)),
+    clientsWithoutAccount: withoutAccount.map((row) => row.id),
+    clientsToInvite: withoutAccount
+      .filter((row) => row.status !== "dado_de_baja")
+      .map((row) => row.id),
+    clientsMovedToInvited: movedToInvited.map((row) => row.id),
   };
 }

@@ -42,12 +42,13 @@ select throws_ok(
 
 select is((select count(*)::int from public.membership_rates), 3, 'a trainer reads only their own rates');
 
+-- Card 127: manual registration writes the price charged, but never the id of a payment.
 select throws_ok(
-  $$insert into public.memberships (trainer_id, client_id, type, start_date, end_date, payment_status, price_cents)
-    values ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'mensual', '2026-11-01', '2026-11-30', 'pagada', 4900)$$,
+  $$insert into public.memberships (trainer_id, client_id, type, start_date, end_date, payment_status, online_payment_id)
+    values ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'mensual', '2026-11-01', '2026-11-30', 'pagada', 'cs_test_manual')$$,
   'P0001',
   'membership.payment_readonly',
-  'manual registration cannot write a charged price: only a confirmed payment does (I21)'
+  'manual registration cannot write a payment id: only a confirmed payment does (I21, I34)'
 );
 
 select lives_ok(

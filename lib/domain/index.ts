@@ -18,3 +18,4 @@ export * from "./progress";
 export * from "./client-email";
 export * from "./consent";
 export * from "./client-status";
+export * from "./review-photo";

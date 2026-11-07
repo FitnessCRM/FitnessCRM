@@ -17,7 +17,8 @@
     "seed:demo:supabase": "tsx scripts/seed-demo-supabase.ts",
     "migrate:firebase:export": "tsx scripts/migrate-firebase/export.ts",
     "migrate:firebase:load": "tsx scripts/migrate-firebase/load.ts",
-    "icons:generate": "tsx scripts/generate-icons.ts"
+    "icons:generate": "tsx scripts/generate-icons.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
@@ -46,6 +47,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@firebase/rules-unit-testing": "^5.0.2",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22",
     "@types/react": "^19",

@@ -14,10 +14,12 @@ import {
   membershipStanding,
   overlapsAnyMembership,
   overlappingMembershipIds,
+  suggestedManualPriceCents,
   suggestedRenewalStart,
 } from "./membership";
 import { DomainError } from "./errors";
 import {
+  manualMembershipSchema,
   membershipRateSchema,
   membershipSchema,
   type Membership,
@@ -348,5 +350,59 @@ describe("E4 · start of a membership paid online", () => {
     expect(
       membershipSchema.safeParse({ ...made, id: "m", createdAt: "2026-11-03T10:00:00Z" }).success,
     ).toBe(true);
+  });
+});
+
+describe("card 127 · price charged in a manual registration", () => {
+  const rates = ratesByType("t", [
+    { trainerId: "t", type: "mensual", active: true, priceCents: 4900 },
+    { trainerId: "t", type: "trimestral", active: false, priceCents: 12900 },
+    { trainerId: "t", type: "anual", active: true, priceCents: null },
+  ]);
+
+  it("proposes the current price of the rate of that type", () => {
+    expect(suggestedManualPriceCents(rates, "mensual")).toBe(4900);
+  });
+
+  it("proposes it also for an inactive rate: manual registration admits any type (E1)", () => {
+    expect(suggestedManualPriceCents(rates, "trimestral")).toBe(12900);
+  });
+
+  it("proposes nothing for a type without price or without rate", () => {
+    expect(suggestedManualPriceCents(rates, "anual")).toBeNull();
+    expect(suggestedManualPriceCents(rates, "semestral")).toBeNull();
+    expect(suggestedManualPriceCents([], "mensual")).toBeNull();
+  });
+
+  const manual = {
+    type: "mensual" as const,
+    startDate: "2026-11-01",
+    endDate: "2026-11-30",
+    paymentStatus: "pagada" as const,
+  };
+
+  it("E3 · saves the price as positive whole cents, or without price", () => {
+    expect(manualMembershipSchema.parse({ ...manual, priceCents: 4500 }).priceCents).toBe(4500);
+    expect(manualMembershipSchema.parse({ ...manual, priceCents: null }).priceCents).toBeNull();
+    expect(manualMembershipSchema.safeParse({ ...manual, priceCents: 45.5 }).success).toBe(false);
+    expect(manualMembershipSchema.safeParse({ ...manual, priceCents: 0 }).success).toBe(false);
+  });
+
+  it("keeps the end-not-before-start rule of the edited row", () => {
+    const result = manualMembershipSchema.safeParse({
+      ...manual,
+      endDate: "2026-10-01",
+      priceCents: null,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("never carries the id of an online payment (I21, I34)", () => {
+    const parsed = manualMembershipSchema.parse({
+      ...manual,
+      priceCents: 4900,
+      onlinePaymentId: "cs_test",
+    });
+    expect("onlinePaymentId" in parsed).toBe(false);
   });
 });

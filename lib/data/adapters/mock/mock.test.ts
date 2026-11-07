@@ -431,6 +431,37 @@ describe("flows", () => {
     expect(paid).toMatchObject({ type: "mensual", paymentStatus: "pagada", priceCents: 4900 });
   });
 
+  it("card 127 · a manual registration keeps the price charged, or none", async () => {
+    const p = ports();
+    const base = {
+      trainerId: TRAINER,
+      clientId: MARTA,
+      type: "mensual" as const,
+      startDate: "2030-01-01",
+      endDate: "2030-01-31",
+      paymentStatus: "pagada" as const,
+    };
+    const priced = await p.memberships.createMembership({ ...base, priceCents: 4500 });
+    expect(priced).toMatchObject({ priceCents: 4500, onlinePaymentId: null });
+    const unpriced = await p.memberships.createMembership(base);
+    expect(unpriced.priceCents).toBeNull();
+    await expect(
+      p.memberships.createMembership({ ...base, priceCents: 45.5 }),
+    ).rejects.toBeDefined();
+
+    // Copia congelada: cambiar la tarifa o editar la fila no la toca (E2).
+    await p.memberships.saveRate({
+      trainerId: TRAINER,
+      type: "mensual",
+      active: true,
+      priceCents: 9900,
+    });
+    const edited = await p.memberships.updateMembership(TRAINER, priced.id, {
+      paymentStatus: "no_pagada",
+    });
+    expect(edited.priceCents).toBe(4500);
+  });
+
   it("lists the four rates and saves one (E1)", async () => {
     const p = ports();
     const rates = await p.memberships.listRates(TRAINER);
@@ -961,6 +992,10 @@ describe("writes are tenant-scoped (I1, I2): one cross-tenant case per method (E
       "reviews.attachReviewMedia",
       (p) => p.reviews.attachReviewMedia(OTHER, "rv-marta-s5", "frente", "x"),
     ],
+    [
+      "reviews.detachReviewMedia",
+      (p) => p.reviews.detachReviewMedia(OTHER, "rv-marta-s5", "frente"),
+    ],
     ["reviews.submitReview", (p) => p.reviews.submitReview(OTHER, "rv-marta-s5")],
     ["reviews.markReviewViewed", (p) => p.reviews.markReviewViewed(OTHER, "rv-marta-s5")],
     [
@@ -1141,6 +1176,24 @@ describe("invariants the adapter keeps on writes the old tests did not cover (E0
     ).rejects.toMatchObject({ code: "review.locked" });
     await expect(
       p.reviews.attachReviewMedia(TRAINER, "rv-marta-s4", "perfil", "storage://otra.jpg"),
+    ).rejects.toMatchObject({ code: "review.locked" });
+  });
+
+  it("card 17 · removes the photo of a pose while editable, and only then (I17)", async () => {
+    const p = ports();
+    await p.reviews.attachReviewMedia(TRAINER, "rv-marta-s5", "frente", "storage://a.jpg");
+    await p.reviews.attachReviewMedia(TRAINER, "rv-marta-s5", "perfil", "storage://b.jpg");
+    const review = await p.reviews.detachReviewMedia(TRAINER, "rv-marta-s5", "frente");
+    const poses = review.media.map((m) => m.pose);
+    expect(poses).not.toContain("frente");
+    expect(poses).toContain("perfil");
+    // Una pose sin foto no cambia nada.
+    const same = await p.reviews.detachReviewMedia(TRAINER, "rv-marta-s5", "frente");
+    expect(same.media.map((m) => m.pose)).toEqual(poses);
+
+    await p.reviews.markReviewViewed(TRAINER, "rv-marta-s5");
+    await expect(
+      p.reviews.detachReviewMedia(TRAINER, "rv-marta-s5", "perfil"),
     ).rejects.toMatchObject({ code: "review.locked" });
   });
 

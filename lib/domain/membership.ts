@@ -171,6 +171,18 @@ export function ratesByType(trainerId: string, rates: readonly MembershipRate[])
   );
 }
 
+/**
+ * Precio que el registro manual propone para un tipo (tarjeta 127): el actual de su tarifa, esté
+ * activa o no, porque el registro manual admite cualquier tipo (E1). Sin precio, `null`: el campo
+ * queda vacío y se puede guardar así. Solo propone: el entrenador lo cambia si cobró otra cosa.
+ */
+export function suggestedManualPriceCents(
+  rates: readonly MembershipRate[],
+  type: MembershipType,
+): number | null {
+  return rates.find((r) => r.type === type)?.priceCents ?? null;
+}
+
 /** Lo que se puede pagar con Stripe: activas y con precio (E1, I35). */
 export function payableRates(
   rates: readonly MembershipRate[],

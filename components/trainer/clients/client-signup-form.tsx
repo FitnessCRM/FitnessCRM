@@ -11,6 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ToggleChip } from "@/components/ui/toggle-chip";
 import {
+  ManualPriceField,
+  useManualPrice,
+} from "@/components/trainer/memberships/manual-price-field";
+import {
   civilDateSchema,
   clientSignupSchema,
   membershipEndDate,
@@ -34,8 +38,9 @@ export type SignupIntent = "invite" | "assign";
 export type SignupValues = z.output<typeof clientSignupSchema>;
 
 /**
- * Formulario del alta. La fecha de inicio de la membresía sigue a la fecha de alta y el fin sigue
- * al tipo mientras el entrenador no los toque; en cuanto los edita, dejan de moverse solos.
+ * Formulario del alta. La fecha de inicio de la membresía sigue a la fecha de alta, y el fin y el
+ * precio cobrado siguen al tipo mientras el entrenador no los toque; en cuanto los edita, dejan de
+ * moverse solos.
  */
 export function ClientSignupForm({
   today,
@@ -46,7 +51,12 @@ export function ClientSignupForm({
   today: string;
   isSaving: boolean;
   error: string | null;
-  onSubmit: (values: SignupValues, intent: SignupIntent) => Promise<unknown>;
+  /** `priceCents`: el precio cobrado de la membresía inicial, o `null` sin precio (tarjeta 127). */
+  onSubmit: (
+    values: SignupValues,
+    intent: SignupIntent,
+    priceCents: number | null,
+  ) => Promise<unknown>;
 }) {
   const form = useForm<z.input<typeof clientSignupSchema>, unknown, SignupValues>({
     resolver: zodResolver(clientSignupSchema),
@@ -80,6 +90,7 @@ export function ClientSignupForm({
   const startDate = form.watch("startDate");
   const membershipType = form.watch("membership.type");
   const membershipStart = form.watch("membership.startDate");
+  const price = useManualPrice(membershipType);
 
   // Sigue a la fecha de alta hasta que se edite a mano.
   useEffect(() => {
@@ -112,8 +123,9 @@ export function ClientSignupForm({
         id={SIGNUP_FORM_ID}
         noValidate
         onSubmit={form.handleSubmit(async (values) => {
+          if (price.invalid) return;
           // El error lo pinta `error`; aquí solo se evita el rechazo sin capturar.
-          await onSubmit(values, intent.current).catch(() => undefined);
+          await onSubmit(values, intent.current, price.cents).catch(() => undefined);
         })}
         className="flex flex-col gap-6"
       >
@@ -193,6 +205,7 @@ export function ClientSignupForm({
                   <FieldError message={endError} />
                 </div>
               </div>
+              <ManualPriceField id="su-m-price" type={membershipType} price={price} />
               <div className="flex flex-col gap-2">
                 <span
                   id="su-pay-label"

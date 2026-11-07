@@ -99,6 +99,7 @@ type ReviewMutation =
   | { open: { clientId: string } }
   | { reviewId: string; draft: ReviewDraftChanges }
   | { reviewId: string; photo: ReviewPhotoInput }
+  | { reviewId: string; removePhoto: Pose }
   | { reviewId: string; submit: true }
   | { reviewId: string; markViewed: true }
   | { reviewId: string; feedback: ReviewFeedback };
@@ -153,6 +154,9 @@ export function useReviewMutation() {
           contentType,
         });
         return r.attachReviewMedia(trainerId!, input.reviewId, pose, storagePath);
+      }
+      if ("removePhoto" in input) {
+        return r.detachReviewMedia(trainerId!, input.reviewId, input.removePhoto);
       }
       if ("submit" in input) return r.submitReview(trainerId!, input.reviewId);
       if ("markViewed" in input) return r.markReviewViewed(trainerId!, input.reviewId);

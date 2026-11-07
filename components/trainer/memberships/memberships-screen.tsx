@@ -133,6 +133,7 @@ export function MembershipsScreen({ initialClientId }: { initialClientId?: strin
                     <TableHead>{t.columns.type}</TableHead>
                     <TableHead>{t.columns.start}</TableHead>
                     <TableHead>{t.columns.end}</TableHead>
+                    <TableHead className="text-right">{t.columns.price}</TableHead>
                     <TableHead>{t.columns.status}</TableHead>
                     <TableHead className="pr-5">
                       <span className="sr-only">{t.actions.edit}</span>

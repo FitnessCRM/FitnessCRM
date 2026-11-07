@@ -98,6 +98,50 @@ describe("planPeople", () => {
     expect(plan.clients.find((row) => row.id === "client-doc-2")?.status).toBe("invitado");
   });
 
+  describe("M1", () => {
+    const plan = () =>
+      planPeople({
+        trainers: [trainer],
+        clients: [
+          client("client-linked", "linked@example.com"),
+          client("client-active-no-account", "active@example.com"),
+          client("client-invited", "invited@example.com", "invitado"),
+          client("client-discharged", "gone@example.com", "dado_de_baja"),
+        ],
+        accounts: [
+          account(TRAINER_UID, "trainer@example.com"),
+          account(CLIENT_ACCOUNT, "linked@example.com"),
+          account("uid-orphan", "orphan@example.com"),
+        ],
+      });
+    const statusOf = (id: string) => plan().clients.find((row) => row.id === id)?.status;
+
+    it("loads an active client without an auth account as invited, without profile", () => {
+      expect(statusOf("client-active-no-account")).toBe("invitado");
+      expect(plan().profiles.map((p) => p.client_id)).not.toContain("client-active-no-account");
+      expect(plan().clientsMovedToInvited).toEqual(["client-active-no-account"]);
+    });
+
+    it("leaves them ready to resend the invitation, with the ones already invited", () => {
+      expect(plan().clientsToInvite).toEqual(["client-active-no-account", "client-invited"]);
+      expect(statusOf("client-invited")).toBe("invitado");
+    });
+
+    it("keeps a discharged client without account discharged, and does not invite them", () => {
+      expect(statusOf("client-discharged")).toBe("dado_de_baja");
+      expect(plan().clientsToInvite).not.toContain("client-discharged");
+    });
+
+    it("keeps a client with an account in the state it had", () => {
+      expect(statusOf("client-linked")).toBe("activo");
+    });
+
+    it("leaves out an auth account without a record, and reports it by uid", () => {
+      expect(plan().unlinkedAccountUids).toEqual(["uid-orphan"]);
+      expect(plan().profiles.map((p) => p.user_id)).not.toContain("uid-orphan");
+    });
+  });
+
   it("refuses a document that does not match the domain schema, naming only its id", () => {
     const broken = client("client-broken", "broken@example.com");
     (broken.data as { email: string }).email = "not-an-email";

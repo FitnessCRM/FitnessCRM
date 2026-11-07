@@ -125,8 +125,12 @@ export function createMembershipPort(ctx: FirebaseContext): MembershipPort {
         await listOwn(ctx, name, membershipSchema, trainerId, where("clientId", "==", clientId))
       ).sort(byStartDesc),
 
-    createMembership: (input) =>
-      runTransaction(ctx.db, async (tx) => {
+    createMembership: async (input) => {
+      // El precio cobrado del registro manual (tarjeta 127) es nuevo: con Firebase no se trabaja.
+      if (input.priceCents != null) {
+        throw new Error("El precio cobrado solo está disponible con el adaptador de Supabase.");
+      }
+      return runTransaction(ctx.db, async (tx) => {
         // I1/I2: el cliente existe y es de este entrenador; si no, `not_found`.
         await txRequireOwn(
           tx,
@@ -137,12 +141,14 @@ export function createMembershipPort(ctx: FirebaseContext): MembershipPort {
         );
         const membership = membershipSchema.parse({
           ...input,
+          priceCents: null,
           id: ctx.newId(),
           createdAt: ctx.now(),
         });
         tx.set(ref(ctx, name, membership.id), membership);
         return membership;
-      }),
+      });
+    },
 
     updateMembership: (trainerId, membershipId, changes) =>
       runTransaction(ctx.db, async (tx) => {

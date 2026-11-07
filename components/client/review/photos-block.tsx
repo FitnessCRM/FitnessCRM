@@ -16,12 +16,14 @@ function PhotoSlot({
   photo,
   editable,
   onPick,
+  onRemove,
 }: {
   pose: Pose;
   media: ReviewMedia | undefined;
   photo: PhotoState;
   editable: boolean;
   onPick: (pose: Pose, file: File) => void;
+  onRemove: (pose: Pose) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const url = photo.status === "ready" ? photo.url : undefined;
@@ -63,28 +65,47 @@ function PhotoSlot({
             variant="secondary"
             size="sm"
             className="mt-1"
+            aria-label={`${media ? t.replace : t.upload} · ${es.status.pose[pose]}`}
             onClick={() => input.current?.click()}
           >
             {media ? t.replace : t.upload}
           </Button>
+          {media ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="bg-background/70"
+              aria-label={`${t.remove} · ${es.status.pose[pose]}`}
+              onClick={() => onRemove(pose)}
+            >
+              {t.remove}
+            </Button>
+          ) : null}
         </>
       ) : null}
     </div>
   );
 }
 
-/** Tres poses cerradas (§5). Cada foto se pide por su ruta en Storage, con una URL firmada. */
+/**
+ * Tres poses cerradas (§5). Cada foto se pide por su ruta en Storage, con una URL firmada; mientras
+ * la revisión es editable, se cambia o se quita (§9).
+ */
 export function PhotosBlock({
   media,
   editable,
   rejected,
   onPick,
+  onRemove,
 }: {
   media: ReviewMedia[];
   editable: boolean;
-  /** La última elección no era un formato que admita el bucket. */
+  /** El navegador no supo leer la última foto elegida. */
   rejected: boolean;
   onPick: (pose: Pose, file: File) => void;
+  /** Quita la foto de esa pose; su objeto sale de Storage (§9). */
+  onRemove: (pose: Pose) => void;
 }) {
   const photos = useReviewPhotos(media);
   const uploaded = media.length;
@@ -109,6 +130,7 @@ export function PhotosBlock({
               photo={photos[pose]}
               editable={editable}
               onPick={onPick}
+              onRemove={onRemove}
             />
           ))}
         </div>

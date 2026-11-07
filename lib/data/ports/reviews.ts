@@ -84,8 +84,16 @@ export interface ReviewPort {
   uploadReviewPhoto(input: ReviewPhotoUpload): Promise<string>;
   /** URL firmada de corta duración para ver una foto, o `null` si el objeto ya no existe (§9.4). */
   reviewPhotoUrl(storagePath: string): Promise<string | null>;
-  /** Registra una foto de una pose; sustituye la anterior de esa pose si la había. */
+  /**
+   * Registra una foto de una pose; sustituye la anterior de esa pose si la había, y su objeto sale de
+   * Storage (§9).
+   */
   attachReviewMedia(trainerId: string, reviewId: string, pose: Pose, url: string): Promise<Review>;
+  /**
+   * Quita la foto de una pose mientras la revisión es editable (I17), y su objeto sale de Storage
+   * (§9, tarjeta 17). Una pose sin foto no cambia nada.
+   */
+  detachReviewMedia(trainerId: string, reviewId: string, pose: Pose): Promise<Review>;
   submitReview(trainerId: string, reviewId: string): Promise<Review>;
   markReviewViewed(trainerId: string, reviewId: string): Promise<Review>;
   sendReviewFeedback(
