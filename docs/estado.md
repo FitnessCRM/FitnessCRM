@@ -1060,14 +1060,14 @@ en el cuerpo del PR; aquí el resumen.
 - **Firebase**: no se trabaja nada nuevo. Lo nuevo responde «no disponible con Firebase» (borrado,
   tarifas, cobro en línea); aceptar la invitación con Firebase sigue sin pedir consentimiento.
 
-### Supabase en producción y siembra de demo (06 y 07-11-2026, tarjeta 135)
+### Supabase en producción y siembra de demo (06 y 07-11-2026, tarjetas 135, 136, 138, 139 y 140)
 
 - **Migraciones en remoto (06-11).** Las 7 migraciones del 03-11 se aplicaron al proyecto
   `vrddwsnybtketbbmiuvy` con `supabase db push --remote`, con backup previo del esquema y de los datos
   fuera del repo. El historial del remoto queda con las versiones del repo y los conteos que ya había,
   intactos.
-- **Edge Functions.** Se desplegó `erase-client`. Las tres de Stripe (`stripe-connect`,
-  `stripe-checkout` y `stripe-webhook`) siguen sin desplegar.
+- **Edge Functions.** El 06-11 se desplegó `erase-client`. El 07-11, con la tarjeta 139 (abajo),
+  `stripe-connect` y `stripe-checkout`; `stripe-webhook` sigue sin desplegar.
 - **La app desplegada usa Supabase.** `https://fitness-crm-dun.vercel.app` monta el adaptador de
   Supabase: se comprobó el 07-11 porque llama a las Edge Functions del proyecto. Firebase sigue
   existiendo, pero la app desplegada ya no lo usa.
@@ -1080,7 +1080,27 @@ en el cuerpo del PR; aquí el resumen.
   `cliente@example.com` (Lucas) y `cliente2@example.com` (Irene): 462 filas y 3 cuentas. Son correos
   `@example.com`, que no reciben nada: no hay recuperación de contraseña por correo para esas cuentas.
 - **Tarjetas nuevas:** 136 (avisos de seguridad de Supabase), 138 (`source_template_id` en el
-  cargador), 139 (CORS de las funciones de Stripe) y 140 (botón de cerrar sesión).
+  cargador), 139 (CORS de las funciones de Stripe) y 140 (botón de cerrar sesión). Las cuatro se
+  hicieron después:
+- **Avisos de seguridad** (tarjeta 136, PR #150). Se revoca `EXECUTE` en las 4 funciones de trigger
+  SECURITY DEFINER, que PostgREST exponía en `/rest/v1/rpc`. La migración
+  `20261107120000_security_advisors` se aplicó en remoto el 07-11. Después, el asesor de seguridad
+  solo avisa de lo que es intencionado (`menu_reads` y `trainer_payment_accounts`, con el porqué
+  escrito en la propia base), de `rls_auto_enable`, que es de la plataforma, y de las 32 RPC de la
+  app, todas con comprobación de propietario. La protección de contraseñas filtradas queda como
+  ajuste del panel.
+- **`source_template_id` en el cargador** (tarjeta 138, PR #151). El cargador escribe el id de la
+  plantilla de origen (E8) cuando la exportación lo trae. Los planes cargados el 29-10 no lo tienen,
+  porque Firebase no guardaba ese dato antes del 03-11, y no se completan.
+- **CORS de las Edge Functions** (tarjeta 139, PR #152). Las que llama el navegador
+  (`stripe-connect`, `stripe-checkout` y `erase-client`) ponen las cabeceras CORS en todas las
+  respuestas, también en los errores de configuración. El origen permitido es solo `APP_URL`. El
+  07-11 se desplegaron las tres y se puso el secreto `APP_URL`. A propósito, sin claves de Stripe ni
+  `stripe-webhook`: la app está en pruebas con entrenadores, y el botón dice que el cobro no está
+  configurado (comprobado en producción el 07-11).
+- **Cerrar sesión siempre a la vista** (tarjeta 140, PR #153). La barra lateral del entrenador ocupa
+  el alto de la pantalla y se queda fija al hacer scroll, y el menú de móvil deja ver su pie en
+  pantallas bajas.
 
 ## Siguiente
 
@@ -1107,12 +1127,18 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   - **Revisar qué queda de las Fases 8 y 9** del plan ahora que la app desplegada usa Supabase
     (07-11-2026). Que `providers.tsx` siga montando el adaptador en memoria por defecto es una
     decisión aparte.
-- **Cobro en línea, pasos fuera del repo:** desplegar las tres funciones de Stripe con sus secretos
-  (`APP_URL`, `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET`, claves en modo test) y el endpoint del
-  webhook de Connect apuntando a `stripe-webhook` (eventos `checkout.session.completed`,
-  `checkout.session.async_payment_succeeded` y `account.updated`). Las migraciones ya están en el
-  remoto (06-11-2026). Las Edge Functions de Stripe no se han ejecutado de punta a punta (ver el PR de
-  la tanda).
+  - **Datos escritos en Firebase después de la carga del 29-10 (tarjeta 142).**
+- **Cobro en línea.** Desplegadas `stripe-connect` y `stripe-checkout`, con `APP_URL` y sin claves
+  de Stripe: el botón dice que el cobro no está configurado (tarjeta 139). Las Edge Functions de
+  Stripe no se han ejecutado de punta a punta.
+  - **Antes de lanzar:** una prueba de principio a fin en modo test, con `STRIPE_SECRET_KEY` y
+    `STRIPE_WEBHOOK_SECRET` de test, `stripe-webhook` desplegada y el endpoint del webhook de Connect
+    apuntando a ella (eventos `checkout.session.completed`,
+    `checkout.session.async_payment_succeeded` y `account.updated`).
+  - **Al lanzar:** claves y webhook de modo live, y verificación de la cuenta de plataforma de
+    Connect.
+- **CORS de `invite-client` y `delete-review-photos` (tarjeta 141):** repiten el patrón que arregló
+  la 139 cuando falta `INVITE_URL`. Hoy no rompe nada, porque en el remoto está puesto.
 - **Backend.** Firebase está conectado y se ha probado con el proyecto real (06-10-2026): el
   `users/{uid}` del entrenador está creado, y las reglas de seguridad (tarjeta 34) y los índices de
   `reviews` están desplegados. Las reglas se comprobaron con sesión de entrenador contra el proyecto
