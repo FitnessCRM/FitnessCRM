@@ -32,6 +32,12 @@ import { reviewDocId } from "../reviews";
 /** El entrenador de la demo. La siembra es para esta cuenta y no para otra. */
 export const TRAINER_EMAIL = "h.damaso@gmail.com";
 
+/** Los clientes de la demo de Firebase. Son los de la primera ejecución: no se cambian. */
+export const FIREBASE_CLIENT_EMAILS: SeedContext["clientEmails"] = {
+  lucas: "daniel2003ml+lucas@gmail.com",
+  irene: "daniel2003ml+irene@gmail.com",
+};
+
 /** Pesajes, series y revisiones llevan como id la clave compuesta que usa el adaptador. */
 export const FIRESTORE_SEED_IDS: SeedIdFormats = {
   weightLog: weightLogDocId,
@@ -39,11 +45,15 @@ export const FIRESTORE_SEED_IDS: SeedIdFormats = {
   review: reviewDocId,
 };
 
-/** El contexto de la siembra en Firestore: ids con `seed-`, como los de la primera ejecución. */
-export const firestoreSeedContext = (base: Omit<SeedContext, "idPrefix" | "ids">): SeedContext => ({
+/** Lo que la siembra de Firestore recibe de fuera; el resto del contexto es fijo. */
+export type FirestoreSeedBase = Omit<SeedContext, "idPrefix" | "ids" | "clientEmails">;
+
+/** El contexto de la siembra en Firestore: ids con `seed-` y correos, los de la primera ejecución. */
+export const firestoreSeedContext = (base: FirestoreSeedBase): SeedContext => ({
   ...base,
   idPrefix: SEED_PREFIX,
   ids: FIRESTORE_SEED_IDS,
+  clientEmails: FIREBASE_CLIENT_EMAILS,
 });
 
 /** Un documento de la siembra, listo para `create()`. */
@@ -62,9 +72,7 @@ export interface FirestoreSeedPlan extends SeedPlan {
   docs: SeedDoc[];
 }
 
-export function buildFirestoreSeedPlan(
-  base: Omit<SeedContext, "idPrefix" | "ids">,
-): FirestoreSeedPlan {
+export function buildFirestoreSeedPlan(base: FirestoreSeedBase): FirestoreSeedPlan {
   const plan = buildSeedPlan(firestoreSeedContext(base));
   const { measured, answered } = plan;
 

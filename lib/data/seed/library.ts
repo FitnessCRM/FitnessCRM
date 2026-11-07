@@ -22,6 +22,7 @@ import {
   type RoutineTemplate,
 } from "@/lib/domain";
 import { slug } from "./ids";
+import type { ClientKey } from "./people";
 import { at, type SeedClock } from "./time";
 
 /**
@@ -49,6 +50,8 @@ export interface SeedContext {
    */
   idPrefix: string;
   ids: SeedIdFormats;
+  /** El correo de cada cliente: cada backend decide cuál, la siembra no lo inventa. */
+  clientEmails: Record<ClientKey, string>;
   /** El «hoy» de la siembra en la zona del entrenador: todas las fechas son relativas a él. */
   anchor: CivilDate;
   clock: SeedClock;
@@ -161,8 +164,9 @@ export type FoodKey = (typeof FOOD_ROWS)[number][0];
 
 /**
  * Quince alimentos propios, `pendiente` de publicar: es el estado real de cualquier alimento creado
- * con Firebase mientras el catálogo común no responde (§7, §12, tarjeta 90). Sembrarlos como
- * `publicado` sería falso, y además nunca llegarían al catálogo: la app solo publica lo pendiente.
+ * mientras el catálogo común no responde, que hoy es así con Firebase y con Supabase (§7, §12,
+ * tarjeta 90). Sembrarlos como `publicado` sería falso, y además nunca llegarían al catálogo: la app
+ * solo publica lo pendiente.
  */
 export function buildFoods(ctx: SeedContext): Food[] {
   const createdAt = at(ctx.clock, daysAgo(ctx, LIBRARY_AGE_DAYS), "10:30");

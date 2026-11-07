@@ -71,21 +71,63 @@ export async function upsertRows(
   onConflict: string,
   rows: object[],
 ): Promise<void> {
+  await postRows(
+    target,
+    table,
+    `on_conflict=${onConflict}`,
+    rows,
+    "resolution=merge-duplicates,return=minimal",
+  );
+}
+
+/**
+ * Inserta las filas que faltan y deja como están las que ya existen por su clave: nunca sobrescribe.
+ * Devuelve cuántas se crearon. Para la siembra de la demo (tarjeta 135), que solo crea.
+ */
+export async function insertRows(
+  target: LoadTarget,
+  table: string,
+  onConflict: string,
+  rows: object[],
+): Promise<number> {
+  // Con `ignore-duplicates`, la respuesta trae solo las filas insertadas; se piden sus claves y nada más.
+  const select = onConflict;
+  let created = 0;
+  await postRows(
+    target,
+    table,
+    `on_conflict=${onConflict}&select=${select}`,
+    rows,
+    "resolution=ignore-duplicates,return=representation",
+    async (res) => {
+      const body = (await res.json()) as unknown[];
+      created += body.length;
+    },
+  );
+  return created;
+}
+
+async function postRows(
+  target: LoadTarget,
+  table: string,
+  query: string,
+  rows: object[],
+  prefer: string,
+  onBatch?: (res: Response) => Promise<void>,
+): Promise<void> {
   const send = target.fetch ?? fetch;
   for (let start = 0; start < rows.length; start += BATCH_SIZE) {
     const batch = rows.slice(start, start + BATCH_SIZE);
-    const res = await send(`${target.url}/rest/v1/${table}?on_conflict=${onConflict}`, {
+    const res = await send(`${target.url}/rest/v1/${table}?${query}`, {
       method: "POST",
-      headers: {
-        ...serviceHeaders(target.serviceKey),
-        Prefer: "resolution=merge-duplicates,return=minimal",
-      },
+      headers: { ...serviceHeaders(target.serviceKey), Prefer: prefer },
       body: JSON.stringify(batch),
     });
     if (!res.ok) {
       const detail = await readPostgrestError(res);
       throw new Error(`REST ${res.status} al escribir ${table}${detail}.`);
     }
+    await onBatch?.(res);
   }
 }
 
