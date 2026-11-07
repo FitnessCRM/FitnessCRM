@@ -43,12 +43,19 @@ export function MobileNav({
       <SheetContent aria-describedby={undefined}>
         <SheetTitle className="sr-only">{label}</SheetTitle>
         <SheetClose asChild>
-          <Button variant="ghost" size="icon" aria-label={es.common.close} className="self-end">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={es.common.close}
+            className="shrink-0 self-end"
+          >
             <XIcon />
           </Button>
         </SheetClose>
-        <div className="px-2">{header}</div>
-        <nav aria-label={label} className="flex flex-col gap-0.5">
+        <div className="shrink-0 px-2">{header}</div>
+        {/* El panel mide lo que la pantalla: si los enlaces no caben, hacen scroll ellos solos y el
+            pie (el bloque de usuario con «Cerrar sesión») sigue a la vista (tarjeta 140). */}
+        <nav aria-label={label} className="flex min-h-0 flex-col gap-0.5 overflow-y-auto">
           {items.map((item) => (
             <SheetClose asChild key={item.href}>
               <Link
@@ -66,7 +73,7 @@ export function MobileNav({
             </SheetClose>
           ))}
         </nav>
-        <div className="border-border-subtle mt-auto border-t px-2 pt-2.5">{footer}</div>
+        <div className="border-border-subtle mt-auto shrink-0 border-t px-2 pt-2.5">{footer}</div>
       </SheetContent>
     </Sheet>
   );
