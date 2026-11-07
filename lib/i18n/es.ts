@@ -2,7 +2,7 @@
  * All visible literals of the application.
  * The brand name comes ONLY from APP_NAME: changing the brand means changing this line.
  */
-export const APP_NAME = "HECTOR";
+export const APP_NAME = "FitnessCRM";
 
 export const es = {
   actions: {

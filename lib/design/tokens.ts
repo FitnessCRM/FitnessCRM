@@ -1,6 +1,6 @@
 /**
  * Espejo en TypeScript de los pocos tokens que hacen falta fuera de CSS
- * (manifest, viewport, gráficas). La fuente de verdad es `@theme` en app/globals.css.
+ * (manifest, viewport, gráficas, iconos). La fuente de verdad es `@theme` en app/globals.css.
  */
 export const tokens = {
   color: {
@@ -15,6 +15,7 @@ export const tokens = {
     textDisabled: "#4a453f",
     borderSubtle: "rgba(255, 255, 255, 0.08)",
     accent: "oklch(0.68 0.21 30)",
+    onAccent: "#16100d",
     accentSoft: "oklch(0.68 0.21 30 / 0.14)",
     success: "oklch(0.72 0.13 155)",
     danger: "oklch(0.72 0.19 25)",
