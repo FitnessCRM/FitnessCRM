@@ -1,13 +1,13 @@
 # Estado del proyecto
 
-Última actualización: 03-11-2026, en la rama de la tanda de noviembre (tarjeta 120), sobre `main` en
-`89fa0b2` (PR #145). Este archivo describe lo que deja esa rama cuando se fusione: por excepción de la
-tanda, `estado.md` viaja en la misma rama. Están en `main` los cimientos, las siete pantallas del
-cliente, el panel del entrenador, la auth y las reglas de seguridad, el adaptador de Firebase, el modo
-sin conexión del cliente, la capa de datos de los alimentos y sus pantallas, el flag de kcal y macros
-por cliente, la sección Alimentos propia y la base de la migración a Supabase (esquema, RLS, Storage,
-Edge Functions, adaptador con los 18 puertos, exportación y cargador). La tanda añade lo de «Tanda de
-noviembre», abajo; el resto, en «Siguiente». Lee `CLAUDE.md` y `docs/dominio.md` antes de continuar.
+Última actualización: 07-11-2026, sobre `main` en `0306885` (PR #149). Están en `main` los cimientos,
+las siete pantallas del cliente, el panel del entrenador, la auth y las reglas de seguridad, el
+adaptador de Firebase, el modo sin conexión del cliente, la capa de datos de los alimentos y sus
+pantallas, el flag de kcal y macros por cliente, la sección Alimentos propia, la base de la migración
+a Supabase (esquema, RLS, Storage, Edge Functions, adaptador con los 18 puertos, exportación y
+cargador), la tanda de noviembre (tarjeta 120) y la siembra de demo en Supabase (tarjeta 135). La app
+desplegada usa Supabase desde el 07-11-2026. Lo pendiente, en «Siguiente». Lee `CLAUDE.md` y
+`docs/dominio.md` antes de continuar.
 
 ## Cómo se trabajó hasta aquí
 
@@ -1060,6 +1060,28 @@ en el cuerpo del PR; aquí el resumen.
 - **Firebase**: no se trabaja nada nuevo. Lo nuevo responde «no disponible con Firebase» (borrado,
   tarifas, cobro en línea); aceptar la invitación con Firebase sigue sin pedir consentimiento.
 
+### Supabase en producción y siembra de demo (06 y 07-11-2026, tarjeta 135)
+
+- **Migraciones en remoto (06-11).** Las 7 migraciones del 03-11 se aplicaron al proyecto
+  `vrddwsnybtketbbmiuvy` con `supabase db push --remote`, con backup previo del esquema y de los datos
+  fuera del repo. El historial del remoto queda con las versiones del repo y los conteos que ya había,
+  intactos.
+- **Edge Functions.** Se desplegó `erase-client`. Las tres de Stripe (`stripe-connect`,
+  `stripe-checkout` y `stripe-webhook`) siguen sin desplegar.
+- **La app desplegada usa Supabase.** `https://fitness-crm-dun.vercel.app` monta el adaptador de
+  Supabase: se comprobó el 07-11 porque llama a las Edge Functions del proyecto. Firebase sigue
+  existiendo, pero la app desplegada ya no lo usa.
+- **Siembra de demo en Supabase** (tarjeta 135, PR #147, #148 y #149). Los datos de la siembra pasan
+  a `lib/data/seed/`, neutros y sin backend; Firebase y Supabase los traducen cada uno a su forma.
+  `pnpm seed:demo:supabase` siembra un entrenador con su biblioteca y dos clientes `activo` con
+  historial, con los correos por argumento. Como la de Firebase: dry-run por defecto, solo crea, es
+  repetible y se niega a tocar un entrenador con datos propios.
+- **Ejecutada contra el remoto (07-11)** con el entrenador `santi@example.com` y los clientes
+  `cliente@example.com` (Lucas) y `cliente2@example.com` (Irene): 462 filas y 3 cuentas. Son correos
+  `@example.com`, que no reciben nada: no hay recuperación de contraseña por correo para esas cuentas.
+- **Tarjetas nuevas:** 136 (avisos de seguridad de Supabase), 138 (`source_template_id` en el
+  cargador), 139 (CORS de las funciones de Stripe) y 140 (botón de cerrar sesión).
+
 ## Siguiente
 
 Las pantallas del cliente y del panel están en `main`. Desde el 21-09-2026 trabajan dos personas
@@ -1082,11 +1104,15 @@ documentación después de cada fusión. Lo que queda, con su tarjeta:
   responsable del tratamiento de las fotos (tarjeta 117); el inventario de Firebase (Fase 0.3); M1 en
   el cargador (clientes sin cuenta como `invitado` y reenvío de su invitación); decidir cuándo
   `providers.tsx` monta Supabase por defecto.
-- **Cobro en línea, pasos fuera del repo:** claves de Stripe (modo test) y secreto del webhook como
-  secretos de las Edge Functions, endpoint del webhook de Connect apuntando a `stripe-webhook`
-  (eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded` y
-  `account.updated`), `APP_URL`, y desplegar las funciones y las migraciones. Las Edge Functions de
-  Stripe no se han ejecutado de punta a punta (ver el PR de la tanda).
+  - **Revisar qué queda de las Fases 8 y 9** del plan ahora que la app desplegada usa Supabase
+    (07-11-2026). Que `providers.tsx` siga montando el adaptador en memoria por defecto es una
+    decisión aparte.
+- **Cobro en línea, pasos fuera del repo:** desplegar las tres funciones de Stripe con sus secretos
+  (`APP_URL`, `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET`, claves en modo test) y el endpoint del
+  webhook de Connect apuntando a `stripe-webhook` (eventos `checkout.session.completed`,
+  `checkout.session.async_payment_succeeded` y `account.updated`). Las migraciones ya están en el
+  remoto (06-11-2026). Las Edge Functions de Stripe no se han ejecutado de punta a punta (ver el PR de
+  la tanda).
 - **Backend.** Firebase está conectado y se ha probado con el proyecto real (06-10-2026): el
   `users/{uid}` del entrenador está creado, y las reglas de seguridad (tarjeta 34) y los índices de
   `reviews` están desplegados. Las reglas se comprobaron con sesión de entrenador contra el proyecto
